@@ -22,7 +22,7 @@ A **Intranet Cressem** é um sistema interno desenvolvido para centralizar proce
 
 ---
 
-## 🧠 Por que esse projeto é foda (visão LinkedIn)
+## 🧠 Por que esse projeto é foda
 
 Este projeto demonstra na prática habilidades de **engenharia de software moderna aplicada a um cenário real de negócio**, incluindo:
 
@@ -197,18 +197,6 @@ Este projeto está preparado para integração com pipelines de deploy contínuo
 
 * 🌐 Frontend: Vercel
 * ⚙️ Backend: Render / Railway
-
----
-
-## 👩‍💻 Autora
-
-Desenvolvido por:
-
-**Mônica Nathalia Sousa Torres**
-
-💼 Desenvolvedora Fullstack  
-🌐 Especialista em desenvolvimento web  
-🚀 Focada em soluções reais para negócios  
 
 ---
 
