@@ -140,7 +140,7 @@ http://localhost:3000
 ### 📁 Backend (.env)
 
 ```env
-PORT=3333
+PORT=3001
 ORACLE_USER=
 ORACLE_PASSWORD=
 ORACLE_CONNECTION_STRING=
