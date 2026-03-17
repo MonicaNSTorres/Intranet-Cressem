@@ -62,7 +62,7 @@ intranet_cressem
         ┌──────────────────────┐
         │      Backend         │
         │   Node.js / Express  │
-        │  http://localhost:3333
+        │  http://localhost:3001
         └─────────┬────────────┘
                   │ SQL Queries
                   ▼
@@ -114,7 +114,7 @@ npm run dev
 📍 Rodará em:
 
 ```
-http://localhost:3333
+http://localhost:3001
 ```
 
 ---
@@ -152,7 +152,7 @@ CORS_ORIGIN=http://localhost:3000
 ### 📁 Frontend (.env.local)
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3333
+NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
 ---
