@@ -16,6 +16,7 @@ import { bolsaEstudoController } from "../controllers/bolsa-estudo.controller";
 import { reembolsoConvenioMedicoController } from "../controllers/reembolso-convenio-medico.controller";
 import { auditoriaController } from "../controllers/auditoria.controller";
 import { antecipacaoCapitalController } from "../controllers/antecipacao-capital.controller";
+import { rcoController } from "../controllers/rco.controller";
 
 const routes = Router();
 
@@ -117,6 +118,21 @@ routes.get(
 routes.get(
   "/v1/antecipacao-capital/cidades",
   antecipacaoCapitalController.listarCidades
+);
+
+routes.get(
+  "/v1/rco/origens",
+  rcoController.listarOrigens
+);
+
+routes.get(
+  "/v1/rco/buscar",
+  rcoController.buscarRco
+  );
+
+routes.post(
+  "/v1/rco/processar",
+  rcoController.processaCalculoRco
 );
 
 export { routes };
