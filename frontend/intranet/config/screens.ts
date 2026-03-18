@@ -139,4 +139,12 @@ export const SCREENS: ScreenItem[] = [
     group: "Formulários de Cadastro",
     keywords: ["faturamento", "relatorio", "formulario"],
   },
+    {
+    title: "Calculadora de Juros Cartão",
+    desc: "Acesso ao formulário.",
+    href: "/auth/calculadora_juros_cartao",
+    group: "Ferramentas",
+    keywords: ["calculadora", "juros", "cartao", "cartão"],
+  },
+  
 ];
