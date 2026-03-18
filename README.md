@@ -1,107 +1,52 @@
-# 🚀 Intranet Cressem
+# 🚧 Intranet Cressem - Ambiente de Desenvolvimento
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-em%20desenvolvimento-yellow" />
-  <img src="https://img.shields.io/badge/frontend-Next.js-black" />
-  <img src="https://img.shields.io/badge/backend-Node.js-green" />
-  <img src="https://img.shields.io/badge/database-Oracle-red" />
-  <img src="https://img.shields.io/badge/deploy-CI/CD-blueviolet" />
+  <img src="https://img.shields.io/badge/status-desenvolvimento-orange" />
+  <img src="https://img.shields.io/badge/branch-dev-blue" />
+  <img src="https://img.shields.io/badge/uso-interno-red" />
 </p>
 
 ---
 
-## 📌 Sobre o Projeto
+## ⚠️ Atenção
 
-A **Intranet Cressem** é um sistema interno desenvolvido para centralizar processos, consultas e automações da cooperativa, com foco em:
+🚨 Este é o ambiente de desenvolvimento (**branch `dev`**)
 
-* 📊 Dashboards e indicadores
-* 📄 Geração de documentos
-* 🔎 Consultas por CPF/usuário
-* ⚙️ Automação de processos internos
-* 🏦 Integração com banco Oracle
+* Código em evolução
+* Pode conter instabilidades
+* Não representa versão final do sistema
 
----
-
-## 🧠 Por que esse projeto é foda
-
-Este projeto demonstra na prática habilidades de **engenharia de software moderna aplicada a um cenário real de negócio**, incluindo:
-
-* 🏗️ Arquitetura fullstack desacoplada (frontend + backend)
-* 🔗 Integração com banco Oracle (cenário corporativo real)
-* ⚡ Performance e organização com Next.js
-* 🧩 Construção de APIs robustas com Node.js
-* 📊 Foco em dados e geração de valor para negócio
-* 🚀 Estrutura pronta para escalar e ir para produção
-
-💡 Diferencial: não é um projeto fictício — resolve problemas reais da operação.
+👉 Para versão estável, utilize a branch **main**
 
 ---
 
-## 🧠 Arquitetura
+## 🧪 Objetivo desta branch
 
-Este projeto segue o padrão **monorepo**, contendo frontend e backend no mesmo repositório:
+Esta branch é utilizada para:
 
-```
-intranet_cressem
-├── backend   → API Node.js / Express
-└── frontend  → Aplicação Next.js
-```
-
----
-
-## 📊 Diagrama de Arquitetura
-
-```
-        ┌──────────────────────┐
-        │      Frontend        │
-        │     (Next.js)        │
-        │  http://localhost:3000
-        └─────────┬────────────┘
-                  │ API Requests (Axios / Fetch)
-                  ▼
-        ┌──────────────────────┐
-        │      Backend         │
-        │   Node.js / Express  │
-        │  http://localhost:3001
-        └─────────┬────────────┘
-                  │ SQL Queries
-                  ▼
-        ┌──────────────────────┐
-        │    Oracle Database   │
-        │   DBACRESSEM         │
-        └──────────────────────┘
-```
+* Desenvolvimento de novas funcionalidades
+* Testes e validações
+* Ajustes antes de ir para produção
+* Integração de features
 
 ---
 
-## 🛠️ Tecnologias
+## 🔄 Fluxo de trabalho
 
-### 🔹 Frontend
-
-* ⚛️ Next.js
-* 🎨 Tailwind CSS
-* 📦 Axios
-* 🧩 React Hooks
-
-### 🔹 Backend
-
-* 🟢 Node.js
-* 🚀 Express
-* 🗄️ Oracle DB
-* 🔐 JWT (autenticação)
+- `dev` → ambiente de desenvolvimento (testes e ajustes)  
+- `main` → ambiente estável (produção)  
 
 ---
 
-## ⚙️ Como rodar o projeto
+## 🧠 Como trabalhar neste projeto
 
-### 📥 Clonar repositório
-
-```bash
-git clone https://github.com/MonicaNSTorres/Intranet-Cressem.git
-cd Intranet-Cressem
-```
+1. Sempre desenvolver na branch `dev`  
+2. Testar tudo antes de subir  
+3. Após validação, enviar para a `main`  
 
 ---
+
+## 🛠️ Como rodar o projeto
 
 ### 🔧 Backend
 
@@ -109,12 +54,6 @@ cd Intranet-Cressem
 cd backend
 npm install
 npm run dev
-```
-
-📍 Rodará em:
-
-```
-http://localhost:3001
 ```
 
 ---
@@ -127,107 +66,29 @@ npm install
 npm run dev
 ```
 
-📍 Rodará em:
-
-```
-http://localhost:3000
-```
-
 ---
 
 ## 🔐 Variáveis de ambiente
 
-### 📁 Backend (.env)
-
-```env
-PORT=3001
-ORACLE_USER=
-ORACLE_PASSWORD=
-ORACLE_CONNECTION_STRING=
-CORS_ORIGIN=http://localhost:3000
-```
+⚠️ Configure seus arquivos `.env` antes de rodar o projeto
 
 ---
 
-### 📁 Frontend (.env.local)
+## 🚀 Boas práticas
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
----
-
-## 📂 Estrutura do Projeto
-
-```
-backend
- ├── src
- ├── controllers
- ├── routes
- ├── services
- └── config
-
-frontend
- ├── app
- ├── components
- ├── services
- └── lib
-```
-
----
-
-## ⚙️ CI/CD (Deploy Automatizado)
-
-Este projeto está preparado para integração com pipelines de deploy contínuo:
-
-* 🔁 Deploy automático via Git (push → deploy)
-* 🌐 Frontend: Vercel
-* ⚙️ Backend: Render / Railway
-* 🔐 Variáveis de ambiente configuráveis por ambiente
-
-💡 Estrutura pronta para CI/CD com:
-
-* GitHub Actions (futuro)
-* Build automatizado
-* Deploy contínuo
-
----
-
-## 🚀 Deploy (planejado)
-
-* 🌐 Frontend: Vercel
-* ⚙️ Backend: Render / Railway
-
----
-
-## ⭐ Objetivo
-
-Este projeto faz parte da evolução de sistemas internos da Cressem, com foco em:
-
-* Modernização tecnológica
-* Melhoria de performance
-* Experiência do usuário
-* Escalabilidade
-
----
-
-## 🧩 Próximos passos
-
-* [ ] Deploy em produção
-* [ ] Autenticação integrada
-* [ ] Dashboard analítico avançado
-* [ ] Integração com novos sistemas
-* [ ] Upload e gestão de arquivos
-* [ ] Pipeline CI/CD completo
+✔ Não commitar direto na `main`
+✔ Criar branch de feature
+✔ Testar antes de merge
+✔ Manter código organizado
 
 ---
 
 ## 💡 Status
 
-🚧 Projeto em desenvolvimento ativo
+🧪 Ambiente em desenvolvimento ativo
 
 ---
 
 <p align="center">
-  Feito com ❤️, dados e muito código
+  ⚙️ Ambiente de desenvolvimento — use com responsabilidade
 </p>
