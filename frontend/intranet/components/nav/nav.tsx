@@ -1334,11 +1334,11 @@ const Sidebar = () => {
 
           {/*Resgate Capital*/}
           <li>
-            <Link href="/auth/formulario_resgate_parcial_capital" legacyBehavior>
+            <Link href="/auth/resgate_capital" legacyBehavior>
               <a
                 onClick={closeSidebar}
                 className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/formulario_resgate_parcial_capital"
+                  "/auth/resgate_capital"
                 )}`}
               >
                 <FaMoneyBillWave className="text-2xl" />

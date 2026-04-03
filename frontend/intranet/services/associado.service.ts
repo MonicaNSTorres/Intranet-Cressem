@@ -17,6 +17,7 @@ export type BuscarPorCpfResponse =
       cep?: string;
       empresa?: string;
       endereco?: string;
+      saldo_capital?: number;
     };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -46,3 +47,4 @@ export async function buscarFuncionarioPorCpf(
 
   return json as BuscarPorCpfResponse;
 }
+

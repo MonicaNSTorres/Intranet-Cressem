@@ -26,7 +26,8 @@ export const associadoController = {
           a.NM_CIDADE    AS CIDADE,
           a.DS_ENDERECO  AS RUA,
           a.SG_ESTADO    AS UF,
-          a.NR_CEP       AS CEP
+          a.NR_CEP       AS CEP,
+          a.SL_CONTA_CAPITAL as SALDO_CAPITAL
         FROM ASSOCIADO_ANALITICO a
         WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') = :cpf
           AND ROWNUM = 1
@@ -50,6 +51,7 @@ export const associadoController = {
                 rua: row.RUA || "",
                 uf: row.UF || "",
                 cep: row.CEP || "",
+                saldo_capital: row.SALDO_CAPITAL || "",
             });
         } catch (err: any) {
             console.error("buscarPorCpf erro:", err);
@@ -58,5 +60,6 @@ export const associadoController = {
                 details: String(err?.message || err),
             });
         }
-    }
+    },
+
 };

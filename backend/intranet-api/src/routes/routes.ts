@@ -17,6 +17,10 @@ import { reembolsoConvenioMedicoController } from "../controllers/reembolso-conv
 import { auditoriaController } from "../controllers/auditoria.controller";
 import { antecipacaoCapitalController } from "../controllers/antecipacao-capital.controller";
 import { rcoController } from "../controllers/rco.controller";
+import { resgateCapitalController } from "../controllers/resgate-capital.controller";
+import { cidadesCressemController } from "../controllers/cidades-cressem.controller";
+import { motivoResgateController } from "../controllers/motivo-resgate.controller";
+import { autorizacaoResgateController } from "../controllers/autorizacao-resgate.controller";
 
 const routes = Router();
 
@@ -128,11 +132,31 @@ routes.get(
 routes.get(
   "/v1/rco/buscar",
   rcoController.buscarRco
-  );
+);
 
 routes.post(
   "/v1/rco/processar",
   rcoController.processaCalculoRco
 );
+
+routes.post(
+  "/v1/resgate-capital/criar",
+  resgateCapitalController.criar
+)
+
+routes.get(
+  "/v1/cidades-cressem",
+  cidadesCressemController.buscarCidades
+)
+
+routes.get(
+  "/v1/motivo-resgate",
+  motivoResgateController.buscarMotivos
+)
+
+routes.get(
+  "/v1/autorizacao-resgate",
+  autorizacaoResgateController.buscarAutorizacao
+)
 
 export { routes };
