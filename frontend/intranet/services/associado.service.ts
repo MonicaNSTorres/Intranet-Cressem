@@ -6,6 +6,7 @@ export type BuscarPorCpfResponse =
       found: true;
       nome: string;
       matricula: string;
+      nascimento?: string;
       cpf?: string;
       rg?: string;
       rua?: string;

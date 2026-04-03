@@ -8,6 +8,7 @@ import { onlyDigits } from "@/utils/br";
 export type AssociadoData = {
   nome: string;
   matricula?: string;
+  nascimento?: string;
   cpf?: string;
   rg?: string;
   rua?: string;
@@ -60,6 +61,7 @@ export function useAssociadoPorCpf() {
       const mapped: AssociadoData = {
         nome: data.nome || "",
         matricula: data.matricula || "",
+        nascimento: data.nascimento || "",
         cpf: data.cpf || clean,
         rg: data.rg || "",
 

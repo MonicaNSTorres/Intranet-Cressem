@@ -248,8 +248,8 @@ const Sidebar = () => {
             </Link>
           </li>
 
-          {/*Cheque Especial*/}
-          <li className="hidden">
+          {/*Cheque Especial className="hidden"*/}
+          <li>
             <Link href="/auth/cheque_especial" legacyBehavior>
               <a
                 onClick={closeSidebar}
@@ -280,11 +280,11 @@ const Sidebar = () => {
 
           {/*Demissão*/}
           <li>
-            <Link href="/auth/formulario_demissao" legacyBehavior>
+            <Link href="/auth/demissao" legacyBehavior>
               <a
                 onClick={closeSidebar}
                 className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/formulario_demissao"
+                  "/auth/demissao"
                 )}`}
               >
                 <FaUserSlash className="text-2xl" />
@@ -535,11 +535,11 @@ const Sidebar = () => {
                 </li>
 
                 <li>
-                  <Link href="/auth/adiantamento_salarial" legacyBehavior>
+                  <Link href="/auth/adiantamento_salarial_emprestimo" legacyBehavior>
                     <a
                       onClick={closeSidebar}
                       className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/adiantamento_salarial"
+                        "/auth/adiantamento_salarial_emprestimo"
                       )}`}
                     >
                       <span className="text-base"><Circle size={14} /></span>
@@ -605,11 +605,11 @@ const Sidebar = () => {
                 </li>
 
                 <li>
-                  <Link href="/auth/simulador" legacyBehavior>
+                  <Link href="/auth/simulador_desconto" legacyBehavior>
                     <a
                       onClick={closeSidebar}
                       className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/simulador"
+                        "/auth/simulador_desconto"
                       )}`}
                     >
                       <span className="text-base"><Circle size={14} /></span>
@@ -903,8 +903,8 @@ const Sidebar = () => {
             )}
           </li>
 
-          {/*Gerenciador de Funcionários (enabled manteve escondido)*/}
-          <li className="hidden">
+          {/*Gerenciador de Funcionários (enabled manteve escondido) -> className="hidden"*/}
+          <li>
             <button
               type="button"
               onClick={() => setIsGerFuncionariosOpen((v) => !v)}
@@ -980,8 +980,8 @@ const Sidebar = () => {
             )}
           </li>
 
-          {/*Gerenciador de Férias (enabled menteve escondido)*/}
-          <li className="hidden">
+          {/*Gerenciador de Férias (enabled menteve escondido) className="hidden"*/}
+          <li>
             <button
               type="button"
               onClick={() => setIsGerFeriasOpen((v) => !v)}
@@ -1118,13 +1118,13 @@ const Sidebar = () => {
             )}
           </li>
 
-          {/*Migração Contratos*/}
-          <li className="hidden">
-            <Link href="/auth/formulario_migracao_contrato" legacyBehavior>
+          {/*Migração Contratos className="hidden"*/}
+          <li>
+            <Link href="/auth/migracao_contrato" legacyBehavior>
               <a
                 onClick={closeSidebar}
                 className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/formulario_migracao_contrato"
+                  "/auth/migracao_contrato"
                 )}`}
               >
                 <FaFileAlt className="text-2xl" />
@@ -1362,8 +1362,8 @@ const Sidebar = () => {
             </Link>
           </li>
 
-          {/*Termo de Responsabilidade TI (enabled manteve escondido)*/}
-          <li className="hidden">
+          {/*Termo de Responsabilidade TI (enabled manteve escondido) className="hidden"*/}
+          <li>
             <Link href="/auth/termo_responsabilidade_uso" legacyBehavior>
               <a
                 onClick={closeSidebar}

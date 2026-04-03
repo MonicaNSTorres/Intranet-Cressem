@@ -70,7 +70,7 @@ export default function HomePage() {
         <div className="p-6 lg:p-8">
             <div className="flex flex-col gap-4 mb-10 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold text-gray-900">Intranet (Protótipo)</h1>
+                    <h1 className="text-2xl font-semibold text-gray-900">Intranet</h1>
                     <p className="text-sm text-gray-600 mt-1">
                         Central de acesso rápido aos módulos.
                     </p>
@@ -212,7 +212,7 @@ export default function HomePage() {
             </div>
 
             <div className="mt-8 text-xs text-gray-500">
-                * Dados reais — integrados ao backend via API.
+                * Dados reais — integrados via API.
             </div>
         </div>
     );

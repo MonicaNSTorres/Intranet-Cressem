@@ -186,14 +186,14 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <a
+                        {/*<a
                             className="block text-right text-sm font-semibold text-secondary hover:underline"
                             //href="/forget_password"
                             href="http://glpi/glpi/front/ticket.form.php"
                             //target="_blank"
                         >
                             Esqueci minha senha
-                        </a>
+                        </a>*/}
 
                         <button
                             type="submit"

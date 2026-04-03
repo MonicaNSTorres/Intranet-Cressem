@@ -235,7 +235,7 @@ export function AssinaturaEmailForm() {
 
                         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
                             <InfoItem
-                                label="Função"
+                                label="Setor"
                                 value={loadingUsuario ? "Carregando..." : dados.funcao}
                             />
                             <InfoItem label="Telefone" value={TELEFONE_PADRAO} />
