@@ -41,6 +41,8 @@ app.use(
   fileUpload({
     limits: { fileSize: 20 * 1024 * 1024 },
     abortOnLimit: true,
+    useTempFiles: false,
+    createParentPath: true,
   })
 );
 

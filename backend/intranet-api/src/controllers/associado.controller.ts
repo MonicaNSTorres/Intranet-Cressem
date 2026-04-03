@@ -17,20 +17,21 @@ export const associadoController = {
             }
 
             const sql = `
-        SELECT
-          a.NM_CLIENTE   AS NOME,
-          a.NR_MATRICULA AS MATRICULA,
-          a.NM_EMPRESA   AS EMPRESA,
-          a.NR_CPF_CNPJ  AS CPF,
-          a.NM_BAIRRO    AS BAIRRO,
-          a.NM_CIDADE    AS CIDADE,
-          a.DS_ENDERECO  AS RUA,
-          a.SG_ESTADO    AS UF,
-          a.NR_CEP       AS CEP
-        FROM ASSOCIADO_ANALITICO a
-        WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') = :cpf
-          AND ROWNUM = 1
-      `;
+                SELECT
+                a.NM_CLIENTE   AS NOME,
+                a.NR_MATRICULA AS MATRICULA,
+                a.DT_NASCIMENTO AS NASCIMENTO,
+                a.NM_EMPRESA   AS EMPRESA,
+                a.NR_CPF_CNPJ  AS CPF,
+                a.NM_BAIRRO    AS BAIRRO,
+                a.NM_CIDADE    AS CIDADE,
+                a.DS_ENDERECO  AS RUA,
+                a.SG_ESTADO    AS UF,
+                a.NR_CEP       AS CEP
+                FROM ASSOCIADO_ANALITICO a
+                WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') = :cpf
+                AND ROWNUM = 1
+            `;
 
             const result = await oracleExecute(sql, { cpf }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
 
@@ -43,6 +44,7 @@ export const associadoController = {
                 found: true,
                 nome: row.NOME || "",
                 matricula: row.MATRICULA || "",
+                nascimento: row.NASCIMENTO || "",
                 empresa: row.EMPRESA || "",
                 cpf: row.CPF || cpf,
                 bairro: row.BAIRRO || "",
