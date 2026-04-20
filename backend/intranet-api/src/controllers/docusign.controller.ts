@@ -6,10 +6,12 @@ import { oracleExecute } from "../services/oracle.service";
 
 const PDF_OUTPUT_BASE_DIR = process.env.PDF_STORAGE_PATH
   ? path.resolve(process.env.PDF_STORAGE_PATH)
-  : path.join(process.cwd(), "docusign_exported_pdfs");
+  : "C:\\inetpub\\wwwroot\\docusign\\docusign_exported_pdfs\\pdfs";
 
 type EnvelopeRow = {
-  CREATED_AT: Date | string;
+  ENVELOPE_ID: string;
+  ANO: string;
+  MES: string;
 };
 
 export const docusignController = {
@@ -26,7 +28,10 @@ export const docusignController = {
 
       const result = await oracleExecute(
         `
-          SELECT CREATED_AT
+          SELECT
+            ENVELOPE_ID,
+            TO_CHAR(CREATED_AT, 'YYYY') AS ANO,
+            TO_CHAR(CREATED_AT, 'MM') AS MES
           FROM DBACRESSEM.DOCUSIGN_ENVELOPES_RESOLVIDO
           WHERE ENVELOPE_ID = :envelopeId
         `,
@@ -36,31 +41,26 @@ export const docusignController = {
 
       const rows = (result.rows || []) as EnvelopeRow[];
 
-      if (!rows.length || !rows[0]?.CREATED_AT) {
+      if (!rows.length) {
         return res.status(404).json({
           error: "Envelope não encontrado no banco.",
         });
       }
 
-      const createdAtRaw = rows[0].CREATED_AT;
-      const createdAt =
-        createdAtRaw instanceof Date ? createdAtRaw : new Date(createdAtRaw);
+      const row = rows[0];
 
-      if (Number.isNaN(createdAt.getTime())) {
-        return res.status(500).json({
-          error: "Data CREATED_AT inválida para o envelope.",
-          createdAt: createdAtRaw,
+      if (!row?.ENVELOPE_ID || !row?.ANO || !row?.MES) {
+        return res.status(404).json({
+          error: "Dados insuficientes para localizar o PDF.",
+          row,
         });
       }
 
-      const year = String(createdAt.getFullYear());
-      const month = String(createdAt.getMonth() + 1).padStart(2, "0");
-
       const pdfPath = path.join(
         PDF_OUTPUT_BASE_DIR,
-        year,
-        month,
-        `${envelopeId}.pdf`
+        row.ANO,
+        row.MES,
+        `${row.ENVELOPE_ID}.pdf`
       );
 
       let pdfBuffer: Buffer;
@@ -81,8 +81,8 @@ export const docusignController = {
       res.setHeader(
         "Content-Disposition",
         inline
-          ? `inline; filename="${envelopeId}.pdf"`
-          : `attachment; filename="${envelopeId}.pdf"`
+          ? `inline; filename="${row.ENVELOPE_ID}.pdf"`
+          : `attachment; filename="${row.ENVELOPE_ID}.pdf"`
       );
       res.setHeader("Content-Length", pdfBuffer.length.toString());
       res.setHeader("Cache-Control", "no-store");

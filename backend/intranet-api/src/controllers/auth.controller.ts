@@ -3,11 +3,28 @@ import jwt, { Secret, SignOptions } from "jsonwebtoken";
 import { Client } from "ldapts";
 
 const LDAP_URL = process.env.LDAP_URL || "ldap://10.0.107.251";
-const LDAP_BASE_DN = process.env.LDAP_BASE_DN || "ou=CRESSEM,dc=CRESSEM,dc=INTRA";
+const LDAP_BASE_DN =
+  process.env.LDAP_BASE_DN || "ou=CRESSEM,dc=CRESSEM,dc=INTRA";
 const LDAP_DOMAIN = process.env.LDAP_DOMAIN || "@CRESSEM.INTRA";
 
-const JWT_SECRET: Secret = process.env.JWT_SECRET || "4d38b779b34fd8ed1153eb6a1ad00f6b";
-const JWT_EXPIRES_IN: SignOptions["expiresIn"] = "180m";
+const JWT_SECRET: Secret =
+  process.env.JWT_SECRET || "4d38b779b34fd8ed1153eb6a1ad00f6b";
+
+const JWT_EXPIRES_IN: SignOptions["expiresIn"] =
+  (process.env.JWT_EXPIRES_IN as SignOptions["expiresIn"]) || "180m";
+
+function getCookieMaxAge() {
+  const raw = String(process.env.JWT_COOKIE_MAX_AGE_MS || "").trim();
+
+  if (raw) {
+    const parsed = Number(raw);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return 1000 * 60 * 180;
+}
 
 async function authenticateOnAd(username: string, password: string) {
   const client = new Client({
@@ -23,21 +40,22 @@ async function authenticateOnAd(username: string, password: string) {
     const { searchEntries } = await client.search(LDAP_BASE_DN, {
       scope: "sub",
       filter: `(&(objectClass=user)(sAMAccountName=${login}))`,
-      attributes: ["*", "displayName", "name", "memberOf", "sAMAccountName", "department", "physicalDeliveryOfficeName"],
+      attributes: [
+        "*",
+        "displayName",
+        "name",
+        "memberOf",
+        "sAMAccountName",
+        "department",
+        "physicalDeliveryOfficeName",
+      ],
     });
-
-    console.log("searchEntries:", JSON.stringify(searchEntries, null, 2));
 
     if (!searchEntries.length) {
       return false;
     }
 
     const userEntry: any = searchEntries[0];
-
-    console.log("userEntry completo:", JSON.stringify(userEntry, null, 2));
-    console.log("userEntry.department:", userEntry.department);
-    console.log("userEntry.physicalDeliveryOfficeName:", userEntry.physicalDeliveryOfficeName);
-    console.log("keys:", Object.keys(userEntry));
 
     const nomeCompleto = Array.isArray(userEntry.displayName)
       ? String(userEntry.displayName[0] || "")
@@ -47,7 +65,9 @@ async function authenticateOnAd(username: string, password: string) {
       ? String(userEntry.department[0] || "")
       : String(userEntry.department || "");
 
-    const physicalDeliveryOfficeName = Array.isArray(userEntry.physicalDeliveryOfficeName)
+    const physicalDeliveryOfficeName = Array.isArray(
+      userEntry.physicalDeliveryOfficeName
+    )
       ? String(userEntry.physicalDeliveryOfficeName[0] || "")
       : String(userEntry.physicalDeliveryOfficeName || "");
 
@@ -82,8 +102,12 @@ async function authenticateOnAd(username: string, password: string) {
 export const authController = {
   async loginSemAutomatico(req: Request, res: Response) {
     try {
-      const username = String(req.query.username || req.body.username || "").trim();
-      const password = String(req.query.password || req.body.password || "").trim();
+      const username = String(
+        req.query.username || req.body.username || ""
+      ).trim();
+      const password = String(
+        req.query.password || req.body.password || ""
+      ).trim();
 
       if (!username || !password) {
         return res.status(400).json({
@@ -116,8 +140,9 @@ export const authController = {
       res.cookie("access_token", token, {
         httpOnly: true,
         sameSite: "lax",
-        secure: false,
+        secure: process.env.NODE_ENV === "production",
         path: "/",
+        maxAge: getCookieMaxAge(),
       });
 
       return res.json({
@@ -138,27 +163,15 @@ export const authController = {
 
   async me(req: Request, res: Response) {
     try {
-      const authHeader = req.headers.authorization;
-      const cookieToken = req.cookies?.access_token;
-
-      let token = cookieToken || "";
-
-      if (!token && authHeader?.startsWith("Bearer ")) {
-        token = authHeader.replace("Bearer ", "");
-      }
-
-      if (!token) {
-        return res.status(401).json({ detail: "Não autenticado." });
-      }
-
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const authReq = req as any;
 
       return res.json({
-        username: decoded.sub,
-        nome_completo: decoded.nome_completo,
-        department: decoded.department || "",
-        physicalDeliveryOfficeName: decoded.physicalDeliveryOfficeName || "",
-        grupos: decoded.grupos || [],
+        username: authReq.user?.sub || "",
+        nome_completo: authReq.user?.nome_completo || "",
+        department: authReq.user?.department || "",
+        physicalDeliveryOfficeName:
+          authReq.user?.physicalDeliveryOfficeName || "",
+        grupos: authReq.user?.grupos || [],
       });
     } catch (error) {
       return res.status(401).json({ detail: "Token inválido ou expirado." });
@@ -169,7 +182,7 @@ export const authController = {
     res.clearCookie("access_token", {
       httpOnly: true,
       sameSite: "lax",
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       path: "/",
     });
 

@@ -7,6 +7,7 @@ import { sisbrTiController } from '../controllers/sisbrTI.controller';
 import { grDocumentMissingController } from "../controllers/gr-document-missing.controller";
 import { docusignController } from "../controllers/docusign.controller";
 import { authController } from "../controllers/auth.controller";
+import { authorizeGroups } from "../middleware/authorize-groups.middleware";
 import { consultaNotebookController } from "../controllers/consulta-notebook.controller";
 import { cadastroNotebookController } from "../controllers/cadastro_notebook.controller";
 import { funcionariosNotebookController } from "../controllers/funcionarios_notebook.controller";
@@ -32,15 +33,55 @@ import { migracaoContratoController } from "../controllers/migracao-contrato.con
 import { patrocinioController } from "../controllers/patrocinio.controller";
 import { cidadeController } from "../controllers/cidade.controller";
 import { emailController } from "../controllers/email.controller";
-
+import { resgateCapitalController } from "../controllers/resgate-capital.controller";
+import { analiseLimiteController } from "../controllers/analise-limite.controller";
+import { convenioOdontoController } from "../controllers/convenio-odonto.controller";
+import { fatorAjusteController } from "../controllers/fator-ajuste.controller";
+import { relatorioConvenioOdontoController } from "../controllers/relatorio-convenio-odonto.controller";
+import { consultaContratosController } from "../controllers/consulta-contratos.controller";
+import { contratosEmpresasController } from "../controllers/contratos-empresas.controller";
+import { funcionariosSimplesController } from "../controllers/funcionarios-simples.controller";
+import { emailContratoController } from "../controllers/email-contrato.controller";
+import { reciboCrmController } from "../controllers/recibo-crm.controller";
+import { authMiddleware } from "../middleware/auth.middleware";
+import {
+  criarPopupAviso,
+  listarPopupsAviso,
+  buscarPopupAvisoPorId,
+  editarPopupAviso,
+  ativarDesativarPopupAviso,
+  obterPopupPendenteDoUsuario,
+  responderPopupAviso,
+} from "../controllers/popup-aviso.controller";
+import { solicitacaoReembolsoDespesaController } from "../controllers/solicitacao-reembolso-despesa.controller";
+import { tipoDespesaController } from "../controllers/tipo-despesa.controller";
+import { emailInformativoFinanceiroController } from "../controllers/email-informativo-financeiro.controller";
+import {
+  glpiHealth,
+  listarConsumiveisGlpi,
+  buscarConsumivelGlpiPorId,
+} from "../controllers/glpi.controller";
+import { solicitacaoReembolsoDespesaPaginadoController } from "../controllers/solicitacao_reembolso_despesa_paginado.controller";
+import { juntarPdfController } from "../controllers/juntar-pdf.controller";
+import { producaoMetaCooperativaPaController } from "../controllers/producao-meta-cooperativa-pa.controller";
+import { producaoMetaFuncionarioController } from "../controllers/producao-meta-funcionario.controller";
 
 const routes = Router();
 
 routes.get("/", (_req, res) => res.json({ message: "INTRANET-API" }));
 
 routes.post("/v1/login_sem_automatico", authController.loginSemAutomatico);
-routes.get("/v1/me", authController.me);
+routes.get("/v1/me", authMiddleware, authController.me);
 routes.post("/v1/logout", authController.logout);
+
+routes.get(
+  "/v1/exemplo-cadastro",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_CADASTRO", "GG_USERS_SUPORTE"]),
+  (_req, res) => {
+    return res.json({ ok: true });
+  }
+);
 
 routes.get("/v1/associados/buscar-por-cpf", associadoController.buscarPorCpf);
 
@@ -144,7 +185,7 @@ routes.get(
 routes.get(
   "/v1/rco/buscar",
   rcoController.buscarRco
-  );
+);
 
 routes.post(
   "/v1/rco/processar",
@@ -474,4 +515,330 @@ routes.get(
   "/v1/email_informativo_parecer_final/tipo_funcionario/:tipo/patrocinio/:id",
   emailController.emailParecerFinal
 );
+
+//resgate capital
+routes.get("/v1/resgate-capital/motivos", resgateCapitalController.buscarMotivos);
+routes.get("/v1/resgate-capital/autorizacoes", resgateCapitalController.buscarAutorizacoes);
+routes.get("/v1/resgate-capital/cidades", resgateCapitalController.buscarCidades);
+routes.get("/v1/resgate-capital/emprestimos", resgateCapitalController.buscarEmprestimosPorCpf);
+routes.get("/v1/resgate-capital/associado-id", resgateCapitalController.buscarIdAssociado);
+routes.get("/v1/resgate-capital/dia-util", resgateCapitalController.buscarDiaUtil);
+
+routes.post("/v1/resgate-capital", resgateCapitalController.criarResgate);
+routes.post("/v1/resgate-capital/emprestimo", resgateCapitalController.criarEmprestimo);
+routes.post("/v1/resgate-capital/conta-corrente", resgateCapitalController.criarContaCorrente);
+routes.post("/v1/resgate-capital/cartao-credito", resgateCapitalController.criarCartaoCredito);
+routes.post("/v1/resgate-capital/conta-deposito", resgateCapitalController.criarContaDeposito);
+routes.post("/v1/resgate-capital/parcela", resgateCapitalController.criarParcela);
+
+//analise limite
+routes.post("/v1/analise_limite_cheque_cartao", analiseLimiteController.criar);
+routes.get("/v1/analise_limite_cheque_cartao", analiseLimiteController.listarPaginado);
+routes.get("/v1/analise_limite_cheque_cartao/:id", analiseLimiteController.buscarPorId);
+
+routes.post(
+  "/v1/analise_limite_cheque_cartao",
+  analiseLimiteController.criar
+);
+
+routes.get(
+  "/v1/analise_limite_cheque_cartao",
+  analiseLimiteController.listarPaginado
+);
+
+routes.get(
+  "/v1/analise_limite_cheque_cartao/:id",
+  analiseLimiteController.buscarPorId
+);
+
+routes.put(
+  "/v1/analise_limite_cheque_cartao_upload",
+  analiseLimiteController.uploadAssinatura
+);
+
+routes.post(
+  "/v1/analise_limite_cheque_cartao_download",
+  analiseLimiteController.downloadAssinatura
+);
+
+// convênio odonto
+routes.get("/v1/fator_ajuste", convenioOdontoController.listarFatorAjuste);
+routes.get("/v1/parentesco", convenioOdontoController.listarParentesco);
+
+routes.get(
+  "/v1/pessoa_odontologica/cpf_titular/:cpf",
+  convenioOdontoController.buscarCpfTitular
+);
+
+routes.get(
+  "/v1/pessoa_odontologica/cpf_titular_unico/:cpf",
+  convenioOdontoController.buscarCpfTitularUnico
+);
+
+routes.get(
+  "/v1/pessoa_odontologica/cpf_usuario/:cpf",
+  convenioOdontoController.buscarCpfUsuario
+);
+
+routes.get(
+  "/v1/pessoa_odontologica/todos_cpf_usuario/:cpf",
+  convenioOdontoController.buscarTodosCpfUsuario
+);
+
+routes.get(
+  "/v1/pessoa_odontologica/cpf_usuario/lista/:cpf",
+  convenioOdontoController.buscarCpfUsuarioLista
+);
+
+routes.get(
+  "/v1/pessoa_odontologica/cpf_usuario/sem_cpf/:nome",
+  convenioOdontoController.buscarUsuarioSemCpf
+);
+
+routes.get(
+  "/v1/pessoa_odontologica/cod_associado/:cod",
+  convenioOdontoController.buscarPorCodAssociado
+);
+
+routes.get(
+  "/v1/pessoa_odontologica/cod_cartao/:cod/cpf_usuario/:cpf_usuario/cpf_titular/:cpf_titular/nome/:nome",
+  convenioOdontoController.buscarPorCodCartao
+);
+
+routes.get(
+  "/v1/pessoa_odontologica/total_custo_e_status/:cpf",
+  convenioOdontoController.totalCustoEStatus
+);
+
+routes.post(
+  "/v1/pessoa_odontologica",
+  convenioOdontoController.criar
+);
+
+routes.put(
+  "/v1/pessoa_odontologica/id/:id",
+  convenioOdontoController.editar
+);
+
+routes.post(
+  "/v1/pessoa_odontologica_historico",
+  convenioOdontoController.criarHistorico
+);
+
+routes.put(
+  "/v1/pessoa_odontologica/desativar/cpf_titular/:cpf",
+  convenioOdontoController.desativarPorCpfTitular
+);
+
+routes.get(
+  "/v1/download_pessoas_odontologicas_titular/:cpf",
+  convenioOdontoController.downloadCsvTitular
+);
+
+// fator ajuste / gestão valor convênio
+routes.get("/v1/fator_ajuste", fatorAjusteController.listar);
+
+routes.get(
+  "/v1/fator_ajuste/:id",
+  fatorAjusteController.buscarPorId
+);
+
+routes.post(
+  "/v1/fator_ajuste",
+  fatorAjusteController.criar
+);
+
+routes.put(
+  "/v1/fator_ajuste/:id/usuario/:usuario",
+  fatorAjusteController.editar
+);
+
+// relatórios convênio odonto
+routes.get(
+  "/v1/download_pessoas_odontologicas",
+  relatorioConvenioOdontoController.downloadContratantes
+);
+
+routes.get(
+  "/v1/download_custo_odonto",
+  relatorioConvenioOdontoController.downloadHistoricoCusto
+);
+
+routes.get(
+  "/v1/download_pessoas_odontologicas_maior_idade",
+  relatorioConvenioOdontoController.downloadMaiorIdade
+);
+
+routes.get(
+  "/v1/download_pessoas_odontologicas_folha",
+  relatorioConvenioOdontoController.downloadFolha
+);
+
+// consulta contratos
+routes.get(
+  "/v1/contratos_empresas",
+  consultaContratosController.listarPaginado
+);
+
+routes.get(
+  "/v1/contratos_empresas/:id",
+  consultaContratosController.buscarPorId
+);
+
+// contratos empresas
+routes.post(
+  "/v1/contratos_empresas",
+  contratosEmpresasController.criar
+);
+
+routes.put(
+  "/v1/contratos_empresas/:id",
+  contratosEmpresasController.editar
+);
+
+routes.get(
+  "/v1/contratos_empresas",
+  contratosEmpresasController.listarPaginado
+);
+
+routes.get(
+  "/v1/contratos_empresas/:id",
+  contratosEmpresasController.buscarPorId
+);
+
+routes.get(
+  "/v1/contratos_empresas_cidades",
+  contratosEmpresasController.listarCidades
+);
+
+routes.get(
+  "/v1/contratos_empresas_tipo",
+  contratosEmpresasController.listarTiposContrato
+);
+
+routes.get(
+  "/v1/contratos_empresas_sistema",
+  contratosEmpresasController.listarSistemas
+);
+
+routes.get(
+  "/v1/funcionarios_simples_email_sicoob_cressem",
+  funcionariosSimplesController.listarEmails
+);
+
+routes.get(
+  "/v1/funcionarios_sicoob_cressem/email/:email",
+  funcionariosSimplesController.buscarPorEmail
+);
+
+routes.post(
+  "/v1/email_contrato",
+  emailContratoController.criar
+);
+
+routes.get(
+  "/v1/email_contrato/contrato/:id",
+  emailContratoController.listarPorContrato
+);
+
+routes.get(
+  "/v1/email_contrato/funcionario/:id",
+  emailContratoController.listarPorFuncionario
+);
+
+routes.delete(
+  "/v1/email_contrato/:id",
+  emailContratoController.remover
+);
+
+routes.post("/v1/recibo_crm", reciboCrmController.criar);
+routes.put("/v1/recibo_crm/:id", reciboCrmController.editar);
+routes.get("/v1/recibo_crm/:id", reciboCrmController.buscarPorId);
+
+routes.get("/v1/tipo_atendimento_recibo", reciboCrmController.listarTiposAtendimento);
+routes.get("/v1/categoria_contrato_recibo", reciboCrmController.listarCategoriasContrato);
+routes.get("/v1/forma_pagamento_recibo", reciboCrmController.listarFormasPagamento);
+
+routes.get("/v1/recibo_crm_paginado", reciboCrmController.listarPaginado);
+routes.delete("/v1/recibo_crm/:id", reciboCrmController.excluir);
+
+routes.post("/v1/popup-aviso", criarPopupAviso);
+routes.get("/v1/popup-aviso", listarPopupsAviso);
+routes.get("/v1/popup-aviso/:id", buscarPopupAvisoPorId);
+routes.put("/v1/popup-aviso/:id", editarPopupAviso);
+routes.patch("/v1/popup-aviso/:id/ativar", ativarDesativarPopupAviso);
+
+routes.get("/v1/popup-aviso/pendente/me", authMiddleware, obterPopupPendenteDoUsuario);
+routes.post("/v1/popup-aviso/responder", authMiddleware, responderPopupAviso);
+
+routes.post(
+  "/v1/solicitacao_reembolso_despesa",
+  solicitacaoReembolsoDespesaController.cadastrar
+);
+
+routes.put(
+  "/v1/solicitacao_reembolso_despesa",
+  solicitacaoReembolsoDespesaController.editar
+);
+
+routes.get(
+  "/v1/solicitacao_reembolso_despesa/:id",
+  solicitacaoReembolsoDespesaController.buscarPorId
+);
+
+routes.post(
+  "/v1/solicitacao_reembolso_despesa/download",
+  solicitacaoReembolsoDespesaController.downloadComprovante
+);
+
+routes.put(
+  "/v1/solicitacao_reembolso_despesa/:id/decisao/name/:nomeResponsavel",
+  solicitacaoReembolsoDespesaController.decidir
+);
+
+routes.put(
+  "/v1/solicitacao_reembolso_despesa/:id/concluir",
+  solicitacaoReembolsoDespesaController.concluir
+);
+
+routes.get("/v1/tipo_despesa", tipoDespesaController.listar);
+
+routes.get(
+  "/v1/email_informativo_financeiro/funcionario/:funcionario/solicitacao/:id",
+  emailInformativoFinanceiroController.enviar
+);
+
+routes.get(
+  "/v1/solicitacao_reembolso_despesa_paginado",
+  solicitacaoReembolsoDespesaPaginadoController.listar
+);
+
+routes.get("/v1/glpi/health", glpiHealth);
+routes.get("/v1/glpi/consumables", listarConsumiveisGlpi);
+routes.get("/v1/glpi/consumables/:id", buscarConsumivelGlpiPorId);
+
+routes.post("/v1/juntar-pdf", juntarPdfController);
+
+routes.get(
+  "/v1/producao-meta-cooperativa-pa",
+  producaoMetaCooperativaPaController.listar
+);
+
+routes.get(
+  "/v1/producao-meta-cooperativa-pa/datas",
+  producaoMetaCooperativaPaController.datas
+);
+
+routes.get(
+  "/v1/producao-meta-funcionario",
+  authMiddleware,
+  producaoMetaFuncionarioController.listar
+);
+
+routes.get(
+  "/v1/producao-meta-funcionario/datas",
+  authMiddleware,
+  producaoMetaFuncionarioController.datas
+);
+
 export { routes };

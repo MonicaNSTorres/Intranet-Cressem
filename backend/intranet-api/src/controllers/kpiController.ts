@@ -90,17 +90,18 @@ export const kpiController = {
             }
 
             const sql = `
-        SELECT
-          FS.NM_FUNCIONARIO AS NOME,
-          SC.NM_SETOR       AS SETOR,
-          FS.NR_RAMAL       AS RAMAL,
-          TO_NUMBER(TO_CHAR(FS.DT_NASCIMENTO, 'DD')) AS DIA
-        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM FS
-        INNER JOIN DBACRESSEM.SETOR_SICOOB_CRESSEM SC
-          ON FS.ID_SETOR = SC.ID_SETOR
-        WHERE TO_NUMBER(TO_CHAR(FS.DT_NASCIMENTO, 'MM')) = :mes
-        ORDER BY DIA, NOME
-      `;
+      SELECT
+        FS.NM_FUNCIONARIO AS NOME,
+        SC.NM_SETOR       AS SETOR,
+        FS.NR_RAMAL       AS RAMAL,
+        TO_NUMBER(TO_CHAR(FS.DT_NASCIMENTO, 'DD')) AS DIA
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM FS
+      INNER JOIN DBACRESSEM.SETOR_SICOOB_CRESSEM SC
+        ON FS.ID_SETOR = SC.ID_SETOR
+      WHERE TO_NUMBER(TO_CHAR(FS.DT_NASCIMENTO, 'MM')) = :mes
+        AND FS.DT_DESLIGAMENTO IS NULL
+      ORDER BY DIA, NOME
+    `;
 
             const result = await oracleExecute(
                 sql,

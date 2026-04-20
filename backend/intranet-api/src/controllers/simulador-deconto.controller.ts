@@ -13,10 +13,24 @@ function toNumberOrNull(value: any) {
         return Number.isFinite(value) ? value : null;
     }
 
-    const normalized = String(value)
-        .trim()
-        .replace(/\./g, "")
-        .replace(",", ".");
+    const raw = String(value).trim();
+
+    if (!raw) return null;
+
+    const hasComma = raw.includes(",");
+    const hasDot = raw.includes(".");
+
+    let normalized = raw;
+
+    if (hasComma && hasDot) {
+        normalized = raw.replace(/\./g, "").replace(",", ".");
+    } else if (hasComma) {
+        normalized = raw.replace(",", ".");
+    } else {
+        normalized = raw;
+    }
+
+    normalized = normalized.replace(/[^\d.-]/g, "");
 
     const parsed = Number(normalized);
     return Number.isNaN(parsed) ? null : parsed;

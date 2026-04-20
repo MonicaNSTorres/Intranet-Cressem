@@ -67,13 +67,14 @@ export const bolsaEstudoController = {
       }
 
       const sql = `
-        SELECT
-          f.NM_FUNCIONARIO,
-          f.CD_GERENCIA
-        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
-        WHERE TRIM(TO_CHAR(f.CD_GERENCIA)) = TRIM(:codigo)
-        FETCH FIRST 1 ROWS ONLY
-      `;
+      SELECT
+        f.NM_FUNCIONARIO,
+        f.CD_GERENCIA,
+        f.ID_FUNCIONARIO
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      WHERE TRIM(TO_CHAR(f.ID_FUNCIONARIO)) = TRIM(:codigo)
+      FETCH FIRST 1 ROWS ONLY
+    `;
 
       const result = await oracleExecute(
         sql,
@@ -85,13 +86,14 @@ export const bolsaEstudoController = {
 
       if (!row) {
         return res.status(404).json({
-          error: "Gerência não encontrada.",
+          error: "Gestor não encontrado.",
         });
       }
 
       return res.json({
         NM_FUNCIONARIO: row.NM_FUNCIONARIO || "",
         CD_GERENCIA: row.CD_GERENCIA || "",
+        ID_FUNCIONARIO: row.ID_FUNCIONARIO || "",
       });
     } catch (error: any) {
       console.error("Erro ao buscar gerência por código:", error);
