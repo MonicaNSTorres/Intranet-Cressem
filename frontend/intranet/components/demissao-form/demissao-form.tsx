@@ -10,6 +10,9 @@ import {
 } from "@/services/demissao.service";
 import { gerarPdfDemissao } from "@/lib/pdf/gerarPdfDemissao";
 import { formatCpfView, monetizarDigitacao, parseBRL, fmtBRL, hojeBR } from "@/utils/br";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type CidadeOption = {
   value: string;
@@ -180,42 +183,38 @@ export function DemissaoForm() {
 
   return (
     <div className="min-w-0 mx-auto rounded-xl bg-white p-6 shadow">
-      <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">
-          CPF do associado
-        </label>
+      <SearchForm onSearch={onBuscar}>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">
+            CPF do associado
+          </label>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-          <input
-            value={formatCpfView(cpf)}
-            onChange={(e) => setCpf(e.target.value)}
-            placeholder="CPF (somente números)"
-            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            inputMode="numeric"
-            maxLength={14}
-          />
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+            <SearchInput
+              value={formatCpfView(cpf)}
+              onChange={(e) => setCpf(e.target.value)}
+              placeholder="CPF (somente números)"
+              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              inputMode="numeric"
+              maxLength={14}
+            />
 
-          <button
-            onClick={onBuscar}
-            disabled={loading}
-            className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {loading ? "Buscando..." : "Pesquisar"}
-          </button>
+            <SearchButton loading={loading} label="Pesquisar" />
+          </div>
+
+          {erro && (
+            <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {erro}
+            </div>
+          )}
+
+          {info && (
+            <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              {info}
+            </div>
+          )}
         </div>
-
-        {erro && (
-          <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {erro}
-          </div>
-        )}
-
-        {info && (
-          <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-            {info}
-          </div>
-        )}
-      </div>
+      </SearchForm>
 
       <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>

@@ -13,6 +13,9 @@ import {
   type FuncionarioFeriasResponse,
   type PeriodoFeriasPayload,
 } from "@/services/cadastro_ferias.service";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type LinhaFerias = {
   id?: number | string;
@@ -252,10 +255,10 @@ export function CadastroFeriasForm() {
         prev.map((item, index) =>
           index === indiceEditando
             ? {
-                ...item,
-                dataInicio: inputInicio,
-                dataFim: inputVolta,
-              }
+              ...item,
+              dataInicio: inputInicio,
+              dataFim: inputVolta,
+            }
             : item
         )
       );
@@ -337,29 +340,23 @@ export function CadastroFeriasForm() {
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr]">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              CPF
-            </label>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-              <input
-                value={cpf}
-                onChange={(e) => setCpf(formatCpfView(e.target.value))}
-                maxLength={14}
-                className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              />
+          <SearchForm onSearch={buscarFuncionario}>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                CPF
+              </label>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                <SearchInput
+                  value={cpf}
+                  onChange={(e) => setCpf(formatCpfView(e.target.value))}
+                  maxLength={14}
+                  className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                />
 
-              <button
-                type="button"
-                onClick={buscarFuncionario}
-                disabled={loadingBusca}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <FaSearch />
-                {loadingBusca ? "Buscando..." : "Buscar"}
-              </button>
+                <SearchButton loading={loadingBusca} label="Pesquisar" />
+              </div>
             </div>
-          </div>
+          </SearchForm>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">

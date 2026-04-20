@@ -5,6 +5,7 @@ export type LoginResponse = {
   username?: string;
   nome_completo?: string;
   department?: string;
+  physicalDeliveryOfficeName?: string;
   grupos?: string[];
 };
 
@@ -12,10 +13,11 @@ export type MeResponse = {
   username?: string;
   nome_completo?: string;
   department?: string;
+  physicalDeliveryOfficeName?: string;
   grupos?: string[];
 };
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   withCredentials: true,
   timeout: 15000,
@@ -43,4 +45,19 @@ export async function getMeAdUser(): Promise<MeResponse> {
 export async function logoutAdUser() {
   const response = await api.post("/v1/logout");
   return response.data;
+}
+
+export function userHasGroup(
+  userGroups: string[] | undefined,
+  allowedGroups: string[]
+): boolean {
+  if (!Array.isArray(userGroups) || userGroups.length === 0) return false;
+  return allowedGroups.some((group) => userGroups.includes(group));
+}
+
+export function userHasAnyGroup(
+  me: MeResponse | undefined,
+  allowedGroups: string[]
+): boolean {
+  return userHasGroup(me?.grupos, allowedGroups);
 }

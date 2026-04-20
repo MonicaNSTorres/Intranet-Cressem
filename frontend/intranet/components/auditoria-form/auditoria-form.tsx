@@ -9,6 +9,9 @@ import {
   type AssociadoAuditoriaResponse,
   type AuditoriaResponse,
 } from "@/services/auditoria.service";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type CampoInlineKey =
   | "cpf_cnpj"
@@ -194,8 +197,8 @@ export function AuditoriaForm() {
       console.error("Erro ao preencher auditoria:", error);
       setErro(
         error?.response?.data?.error ||
-          error?.response?.data?.details ||
-          "Não foi possível preencher os dados automaticamente."
+        error?.response?.data?.details ||
+        "Não foi possível preencher os dados automaticamente."
       );
     } finally {
       setLoadingBusca(false);
@@ -310,48 +313,42 @@ export function AuditoriaForm() {
 
   return (
     <div className="mx-auto min-w-0 rounded-xl bg-white p-6 shadow">
-      {erro && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {erro}
-        </div>
-      )}
+      <SearchForm onSearch={preencherFormulario}>
+        {erro && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {erro}
+          </div>
+        )}
 
-      {info && !erro && (
-        <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-          {info}
-        </div>
-      )}
+        {info && !erro && (
+          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+            {info}
+          </div>
+        )}
 
-      <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
-        <p className="text-sm font-medium text-gray-700">
-          Digite o CPF/CNPJ, busque os dados automáticos e complete o parecer antes de copiar o texto final.
-        </p>
-      </div>
-
-      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end">
-        <div className="w-full md:max-w-sm">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            CPF/CNPJ
-          </label>
-          <input
-            value={form.cpf_cnpj}
-            onChange={(e) => updateField("cpf_cnpj", formatarCpfCnpj(e.target.value))}
-            onBlur={preencherFormulario}
-            placeholder="Digite CPF ou CNPJ"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-          />
+        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
+          <p className="text-sm font-medium text-gray-700">
+            Digite o CPF/CNPJ, busque os dados automáticos e complete o parecer antes de copiar o texto final.
+          </p>
         </div>
 
-        <button
-          type="button"
-          onClick={preencherFormulario}
-          disabled={loadingBusca || !cpfCnpjLimpo}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary px-5 py-2 font-semibold text-white shadow transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          <FaSearch />
-          {loadingBusca ? "Buscando..." : "Buscar dados"}
-        </button>
-      </div>
+        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end">
+          <div className="w-full md:max-w-sm">
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              CPF/CNPJ
+            </label>
+            <SearchInput
+              value={form.cpf_cnpj}
+              onChange={(e) => updateField("cpf_cnpj", formatarCpfCnpj(e.target.value))}
+              onBlur={preencherFormulario}
+              placeholder="Digite CPF ou CNPJ"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+            />
+          </div>
+
+          <SearchButton loading={loadingBusca} label="Pesquisar" />
+        </div>
+      </SearchForm>
 
       <div className="space-y-4 text-sm text-gray-900">
         <div className="leading-8">

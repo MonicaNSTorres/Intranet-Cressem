@@ -18,6 +18,7 @@ export type ScreenItem = {
   badge?: string;
   group?: string;//ex: 'RH', 'Financeiro'
   pinned?: boolean;//aparece em 'Favoritos'
+  allowedGroups?: string[];
 };
 
 function normalize(s: string) {
@@ -50,6 +51,10 @@ function scoreItem(q: string, item: ScreenItem) {
   if (item.pinned) score += 8;
 
   return score;
+}
+
+function isExternalHref(href: string) {
+  return /^https?:\/\//i.test(String(href || ""));
 }
 
 export default function HomeScreenSearch({
@@ -90,6 +95,12 @@ export default function HomeScreenSearch({
   function goTo(item: ScreenItem) {
     setOpen(false);
     setQuery("");
+
+    if (isExternalHref(item.href)) {
+      window.open(item.href, "_blank", "noopener,noreferrer");
+      return;
+    }
+
     router.push(item.href);
   }
 
@@ -295,7 +306,7 @@ export default function HomeScreenSearch({
       </div>
 
       <p className="mt-2 text-xs text-gray-500">
-        * Essa busca navega apenas entre telas (rotas). Depois dá pra plugar permissões por perfil.
+        * Essa busca navega entre as telas disponíveis conforme as permissões do usuário logado.
       </p>
     </div>
   );

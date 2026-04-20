@@ -6,6 +6,9 @@ import { gerarPdfAuxilioCreche } from "@/lib/pdf/gerarPdfAuxilioCreche";
 import { AUXILIO_CRECHE_TETO } from "@/config/auxilio-creche";
 import { fmtBRL, formatCpfView, hojeBR, monetizarDigitacao, parseBRL } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 export function AuxilioCrecheForm() {
   const [cpf, setCpf] = useState("");
@@ -45,49 +48,65 @@ export function AuxilioCrecheForm() {
 
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">CPF do empregado(a)</label>
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-          <input
-            value={formatCpfView(cpf)}
-            onChange={(e) => setCpf(e.target.value)}
-            placeholder="CPF (somente números)"
-            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            inputMode="numeric"
-            maxLength={14}
-          />
-          <button
-            onClick={onBuscar}
-            disabled={loading}
-            className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md"
-          >
-            {loading ? "Buscando..." : "Pesquisar"}
-          </button>
-        </div>
+      <SearchForm onSearch={onBuscar}>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            CPF do empregado(a)
+          </label>
 
-        {erro && (
-          <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-            {erro}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+            <SearchInput
+              value={formatCpfView(cpf)}
+              onChange={(e) => setCpf(e.target.value)}
+              placeholder="CPF (somente números)"
+              inputMode="numeric"
+              maxLength={14}
+            />
+
+            <SearchButton loading={loading} label="Pesquisar" />
           </div>
-        )}
-        {info && (
-          <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-            {info}
-          </div>
-        )}
-      </div>
+
+          {erro && (
+            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+              {erro}
+            </div>
+          )}
+
+          {info && (
+            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
+              {info}
+            </div>
+          )}
+        </div>
+      </SearchForm>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Nome do empregado(a)</label>
-          <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full border px-3 py-2 rounded" />
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Nome do empregado(a)
+          </label>
+          <input
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+          />
         </div>
+
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Matrícula</label>
-          <input value={matricula} onChange={(e) => setMatricula(e.target.value)} className="w-full border px-3 py-2 rounded" />
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Matrícula
+          </label>
+          <input
+            value={matricula}
+            onChange={(e) => setMatricula(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+          />
         </div>
+
         <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Creche/Instituição</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Creche/Instituição
+          </label>
           <input
             value={instituicao}
             onChange={(e) => setInstituicao(e.target.value)}
@@ -98,7 +117,9 @@ export function AuxilioCrecheForm() {
       </div>
 
       <div className="mt-6">
-        <label className="block text-xs font-medium text-gray-600 mb-1">Descritivo</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">
+          Descritivo
+        </label>
         <textarea
           value={descritivo}
           onChange={(e) => setDescritivo(e.target.value)}
@@ -110,7 +131,9 @@ export function AuxilioCrecheForm() {
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Valor total pago</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Valor total pago
+          </label>
           <input
             value={valorPago}
             onChange={(e) => setValorPago(monetizarDigitacao(e.target.value))}
@@ -118,16 +141,22 @@ export function AuxilioCrecheForm() {
             placeholder="R$ 0,00"
           />
         </div>
+
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Total a reembolsar</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Total a reembolsar
+          </label>
           <input
             readOnly
             value={fmtBRL(totalReembolsar)}
             className="w-full border px-3 py-2 rounded bg-gray-50 text-right"
           />
         </div>
+
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Data de entrega</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Data de entrega
+          </label>
           <input
             value={dataEntrega}
             onChange={(e) => setDataEntrega(e.target.value)}

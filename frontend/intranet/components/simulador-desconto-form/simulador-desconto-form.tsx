@@ -36,6 +36,9 @@ import {
   type TempoRegimeOption,
 } from "@/services/simulador_desconto.service";
 import { gerarPdfSimuladorDesconto } from "@/lib/pdf/gerarPdfSimuladorDesconto";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type TipoEmprestimo = "" | "trabalhador" | "consignado" | "pessoal";
 
@@ -695,44 +698,40 @@ export function SimuladorDescontoForm() {
 
   return (
     <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-      <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">
-          CPF do associado
-        </label>
+      <SearchForm onSearch={onBuscar}>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">
+            CPF do associado
+          </label>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-          <input
-            value={formatCpfView(cpf)}
-            onChange={(e) => {
-              setCpf(e.target.value);
-              resetResultados();
-            }}
-            placeholder="CPF/CNPJ"
-            className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            inputMode="numeric"
-            maxLength={18}
-          />
-          <button
-            onClick={onBuscar}
-            disabled={loading || loadingComplementar || loadingTabelas}
-            className="cursor-pointer rounded bg-secondary px-6 py-2 font-semibold text-white hover:bg-primary hover:shadow-md disabled:opacity-70"
-          >
-            {loading || loadingComplementar ? "Buscando..." : "Pesquisar"}
-          </button>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+            <SearchInput
+              value={formatCpfView(cpf)}
+              onChange={(e) => {
+                setCpf(e.target.value);
+                resetResultados();
+              }}
+              placeholder="CPF/CNPJ"
+              className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              inputMode="numeric"
+              maxLength={18}
+            />
+            <SearchButton loading={loading || loadingComplementar} label="Pesquisar" />
+          </div>
+
+          {(erro || erroLocal) && (
+            <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {erroLocal || erro}
+            </div>
+          )}
+
+          {(info || infoLocal) && !(erro || erroLocal) && (
+            <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              {infoLocal || info}
+            </div>
+          )}
         </div>
-
-        {(erro || erroLocal) && (
-          <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {erroLocal || erro}
-          </div>
-        )}
-
-        {(info || infoLocal) && !(erro || erroLocal) && (
-          <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-            {infoLocal || info}
-          </div>
-        )}
-      </div>
+      </SearchForm>
 
       <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>

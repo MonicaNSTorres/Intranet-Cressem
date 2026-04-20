@@ -1,1412 +1,593 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   FaHome,
-  FaBirthdayCake,
-  FaClipboardCheck,
   FaMoneyBillWave,
-  FaSignature,
-  FaCalculator,
   FaFileInvoiceDollar,
-  FaUserSlash,
-  FaPlaneDeparture,
   FaFileAlt,
   FaFolderOpen,
   FaHandshake,
   FaUsersCog,
   FaUmbrellaBeach,
   FaLaptop,
-  FaBullhorn,
-  FaChartBar,
-  FaKey,
-  FaIdCard,
   FaChartLine,
-  FaUserFriends,
-  FaExternalLinkAlt,
   FaBars,
   FaCashRegister,
-  FaArchive,
   FaPenSquare,
-  FaNetworkWired
+  FaIdCard,
 } from "react-icons/fa";
-import { Circle } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
+import { useMe } from "@/hooks/use-me";
 import styles from "./nav.module.css";
 
+export const AD_GROUPS = {
+  SUPORTE: "GG_USERS_SUPORTE",
+  CADASTRO: "GG_USERS_CAD",
+  RH: "GG_USERS_RH",
+  FINANCEIRO: "GG_USERS_FIN",
+  AGENCIA: "GG_USERS_AGE",
+  COBRANCA: "GG_USERS_COB",
+  TI: "GG_USERS_TI",
+  MARKETING: "GG_USERS_MKT",
+  AUDITORIA: "GG_USERS_ANTEC",
+  DOCUSIGN: "GG_USERS_DOCUSIGN",
+} as const;
+
+const ALL_AD_GROUPS = Object.values(AD_GROUPS);
+
+type MenuChild = {
+  label: string;
+  href: string;
+  allowedGroups?: string[];
+};
+
+type MenuGroup = {
+  key: string;
+  label: string;
+  icon: any;
+  children: MenuChild[];
+};
+
+function hasAnyGroup(userGroups: string[], allowedGroups?: string[]) {
+  if (!allowedGroups?.length) return true;
+  return allowedGroups.some((group) => userGroups.includes(group));
+}
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [isAnaliseLimiteOpen, setIsAnaliseLimiteOpen] = useState(false);
-  const [isDespesasViagensOpen, setIsDespesasViagensOpen] = useState(false);
-  const [isFormsCadastroOpen, setIsFormsCadastroOpen] = useState(false);
-  const [isFormsEmprestimosOpen, setIsFormsEmprestimosOpen] = useState(false);
-  const [isFormsRhOpen, setIsFormsRhOpen] = useState(false);
-  const [isGerArqOpen, setIsGerArqOpen] = useState(false);
-  const [isGerContratosOpen, setIsGerContratosOpen] = useState(false);
-  const [isGerConveniosOpen, setIsGerConveniosOpen] = useState(false);
-  const [isGerFuncionariosOpen, setIsGerFuncionariosOpen] = useState(false);
-  const [isGerFeriasOpen, setIsGerFeriasOpen] = useState(false);
-  const [isGerNotebookOpen, setIsGerNotebookOpen] = useState(false);
-  const [isGerMarketingOpen, setIsGerMarketingOpen] = useState(false);
-  const [isProcessosGedOpen, setIsProcessosGedOpen] = useState(false);
-  const [isRecibosOpen, setIsRecibosOpen] = useState(false);
-  const [isRelatoriosOpen, setIsRelatoriosOpen] = useState(false);
+  const [selectedMenuKey, setSelectedMenuKey] = useState<string | null>(null);
+
+  const meResult = useMe() as any;
+  const usuarioLogado =
+    meResult?.user ??
+    meResult?.me ??
+    meResult?.data ??
+    meResult?.usuario ??
+    null;
+
+  const loadingPermissions = Boolean(
+    meResult?.loading ?? meResult?.isLoading ?? meResult?.pending
+  );
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const toggleSidebar = () => setIsOpen(!isOpen);
-  const closeSidebar = () => setIsOpen(false);
+  const pathname =
+    (typeof window !== "undefined" ? window.location.pathname : "") as string;
 
-  if (!isClient) return null;//evita mismatch no ssr
+  useEffect(() => {
+    setSelectedMenuKey(null);
+  }, [pathname]);
 
-  const pathname = (typeof window !== "undefined" ? window.location.pathname : "") as string;
+  const toggleSidebar = () => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (!next) {
+        setSelectedMenuKey(null);
+      }
+      return next;
+    });
+  };
+
+  const closeSidebar = () => {
+    setIsOpen(false);
+    setSelectedMenuKey(null);
+  };
+
+  const toggleMenu = (key: string) => {
+    if (!isOpen) return;
+
+    setSelectedMenuKey((prev) => (prev === key ? null : key));
+  };
+
+  const userGroups = Array.isArray(usuarioLogado?.grupos)
+    ? usuarioLogado.grupos
+    : [];
 
   const isActive = (path: string) => {
-    const active = pathname === path || (path !== "/auth/home" && pathname?.startsWith(path));
+    const active =
+      pathname === path || (path !== "/auth/home" && pathname?.startsWith(path));
     return active ? "bg-secondary text-white" : "text-gray-400";
   };
 
-  const isAnyActive = (paths: string[]) => paths.some((p) => pathname === p || pathname?.startsWith(p));
+  const isAnyActive = (paths: string[]) =>
+    paths.some((p) => pathname === p || pathname?.startsWith(p));
+
+  const itemClass = (path: string) =>
+    `flex items-center rounded-md hover:text-white transition-colors duration-200 ${
+      isOpen
+        ? `space-x-4 p-3 justify-start ${isActive(path)}`
+        : `justify-center p-3 ${isActive(path)}`
+    }`;
+
+  const groupButtonClass = (active: boolean) =>
+    `w-full flex items-center rounded-md hover:text-white transition-colors duration-200 ${
+      isOpen
+        ? `space-x-4 p-3 justify-start ${
+            active ? "bg-secondary text-white" : "text-gray-400"
+          }`
+        : `justify-center p-3 ${
+            active ? "bg-secondary text-white" : "text-gray-400"
+          }`
+    }`;
+
+  const panelItemClass = (path: string) =>
+    `flex items-center justify-between gap-3 py-2 px-3 rounded-md transition-colors duration-200 ${
+      pathname === path || pathname?.startsWith(path)
+        ? "bg-secondary text-white"
+        : "text-gray-400 hover:text-white hover:bg-white/10"
+    }`;
+
+  const menuGroups: MenuGroup[] = [
+    {
+      key: "agencia",
+      label: "Agência",
+      icon: FaCashRegister,
+      children: [
+        {
+          label: "Calculadora de Atraso Cartão de Crédito",
+          href: "/auth/calculadora_juros_cartao",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+        },
+        {
+          label: "Simulador de Investimento",
+          href: "/auth/simulador_investimento",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+        },
+      ],
+    },
+    {
+      key: "analises-limites",
+      label: "Análises e Limites",
+      icon: FaChartLine,
+      children: [
+        {
+          label: "Cheque Especial",
+          href: "/auth/cheque_especial",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+        },
+        {
+          label: "Auditoria",
+          href: "/auth/auditoria",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AUDITORIA],
+        },
+        {
+          label: "Análise de Limite",
+          href: "/auth/cadastro_analise_limite",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+        },
+      ],
+    },
+    {
+      key: "arquivos",
+      label: "Arquivos",
+      icon: FaFolderOpen,
+      children: [
+        {
+          label: "Gerenciador de Arquivo",
+          href: "/auth/juntar_pdf",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
+        },
+        {
+          label: "Gerador Assinatura Email",
+          href: "/auth/assinatura_email",
+          allowedGroups: ALL_AD_GROUPS,
+        },
+        {
+          label: "Docusign",
+          href: "/auth/docusign",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.DOCUSIGN],
+        },
+      ],
+    },
+    {
+      key: "assessoria",
+      label: "Assessoria",
+      icon: FaHandshake,
+      children: [
+        {
+          label: "Gerenciador de Contrato",
+          href: "/auth/consulta_contratos",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+        },
+        {
+          label: "Relatórios",
+          href: "/auth/producao_meta_cooperativa_pa",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+        },
+        {
+          label: "Gerenciador de Marketing",
+          href: "/auth/gerenciamento_participacao",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+        },
+        {
+          label: "Popup",
+          href: "/auth/popup_aviso",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+        },
+      ],
+    },
+    {
+      key: "cadastro",
+      label: "Cadastro",
+      icon: FaIdCard,
+      children: [
+        {
+          label: "Ficha de Desimpedimento",
+          href: "/auth/ficha_desimpedimento",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+        },
+        {
+          label: "Gerenciador de Convênios",
+          href: "/auth/gerenciamento_convenio_odonto",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+        },
+      ],
+    },
+    {
+      key: "consulta",
+      label: "Consulta",
+      icon: FaUsersCog,
+      children: [
+        {
+          label: "Empréstimo Consignado",
+          href: "/auth/emprestimo_consignado",
+          allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.FINANCEIRO,
+            AD_GROUPS.COBRANCA,
+          ],
+        },
+        {
+          label: "Aniversariantes",
+          href: "/auth/aniversariantes",
+          allowedGroups: ALL_AD_GROUPS,
+        },
+        {
+          label: "Ramal",
+          href: "/auth/ramais",
+          allowedGroups: ALL_AD_GROUPS,
+        },
+      ],
+    },
+    {
+      key: "formularios-cadastro",
+      label: "Formulários Cadastro",
+      icon: FaPenSquare,
+      children: [
+        {
+          label: "Relação de Faturamento",
+          href: "/auth/relacao_faturamento",
+          allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.CADASTRO,
+            AD_GROUPS.FINANCEIRO,
+          ],
+        },
+        {
+          label: "Declaração de Rendimentos",
+          href: "/auth/declaracao_rendimentos",
+          allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.CADASTRO,
+            AD_GROUPS.RH,
+            AD_GROUPS.FINANCEIRO,
+          ],
+        },
+        {
+          label: "Formulários Cadastro",
+          href: "/auth/links_uteis",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+        },
+      ],
+    },
+    {
+      key: "formularios-capital",
+      label: "Formulários Capital",
+      icon: FaMoneyBillWave,
+      children: [
+        {
+          label: "Resgate Parcial de Capital",
+          href: "/auth/resgate_capital",
+          allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.FINANCEIRO,
+            AD_GROUPS.COBRANCA,
+          ],
+        },
+        {
+          label: "Formulário Demissão Espontânea",
+          href: "/auth/demissao",
+          allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.RH,
+            AD_GROUPS.CADASTRO,
+          ],
+        },
+        {
+          label: "Antecipação de Capital",
+          href: "/auth/antecipacao_capital",
+          allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.FINANCEIRO,
+            AD_GROUPS.COBRANCA,
+          ],
+        },
+      ],
+    },
+    {
+      key: "formularios-emprestimo",
+      label: "Formulários Empréstimo",
+      icon: FaFileAlt,
+      children: [
+        {
+          label: "RCO",
+          href: "/auth/rco",
+          allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.FINANCEIRO,
+            AD_GROUPS.COBRANCA,
+          ],
+        },
+        {
+          label: "Formulários de Empréstimo",
+          href: "/auth/adendo_contratual",
+          allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.FINANCEIRO,
+            AD_GROUPS.COBRANCA,
+          ],
+        },
+      ],
+    },
+    {
+      key: "formularios-rh",
+      label: "Formulários RH",
+      icon: FaUsersCog,
+      children: [
+        {
+          label: "Formulários de RH",
+          href: "/auth/adiantamento_salarial",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
+        },
+      ],
+    },
+    {
+      key: "formularios-financeiro",
+      label: "Formulários Financeiro",
+      icon: FaFileInvoiceDollar,
+      children: [
+        {
+          label: "Recibos Financeiros",
+          href: "/auth/consulta_recibo_financeiro",
+          allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.FINANCEIRO,
+            AD_GROUPS.COBRANCA,
+          ],
+        },
+        {
+          label: "Despesas e Viagens",
+          href: "/auth/cadastro_reembolso_despesa",
+          allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.FINANCEIRO,
+            AD_GROUPS.RH,
+          ],
+        },
+      ],
+    },
+    {
+      key: "rh",
+      label: "RH",
+      icon: FaUmbrellaBeach,
+      children: [
+        {
+          label: "Gerenciador de Funcionários",
+          href: "/auth/gerenciamento_funcionario",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
+        },
+        {
+          label: "Gerenciador de Férias",
+          href: "/auth/gerenciamento_ferias",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
+        },
+      ],
+    },
+    {
+      key: "ti",
+      label: "TI",
+      icon: FaLaptop,
+      children: [
+        {
+          label: "Migração de Contrato",
+          href: "/auth/migracao_contrato",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI, AD_GROUPS.CADASTRO],
+        },
+        {
+          label: "Termo de Responsabilidade TI",
+          href: "/auth/termo_responsabilidade_uso",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
+        },
+        {
+          label: "Tabela Sisbr TI",
+          href: "/auth/tabela_sisbr_ti",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
+        },
+        {
+          label: "Gerenciador de Notebook",
+          href: "/auth/consulta_notebook",
+          allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
+        },
+      ],
+    },
+  ];
+
+  const visibleMenuGroups = useMemo(() => {
+    return menuGroups
+      .map((group) => ({
+        ...group,
+        children: group.children.filter((child) =>
+          hasAnyGroup(userGroups, child.allowedGroups)
+        ),
+      }))
+      .filter((group) => group.children.length > 0);
+  }, [userGroups]);
+
+  const selectedMenu = useMemo(() => {
+    if (!selectedMenuKey) return null;
+    return visibleMenuGroups.find((group) => group.key === selectedMenuKey) ?? null;
+  }, [selectedMenuKey, visibleMenuGroups]);
+
+  if (!isClient || loadingPermissions) return null;
 
   return (
-    <div
-      className={`${isOpen ? "w-84" : "w-20"} bg-gray-900 text-gray-400 flex flex-col transition-all duration-300 h-screen`}
-    >
-      <div className="flex justify-center items-center p-4">
-        {isOpen ? (
-          <div className={`${styles.logoCressem} justify-center text-center items-center flex`} />
-        ) : (
-          <div className={`${styles.logoCressemIcon} justify-center text-center items-center flex`} />
-        )}
-      </div>
-
-      {/*toggle*/}
-      <button onClick={toggleSidebar} className="flex items-center justify-center h-15 cursor-pointer">
-        {isOpen ? "Menu" : <FaBars size={20} color="#9B9B9B" />}
-      </button>
-
-      <div
-        className={
-          `flex-1 min-h-0 ` + //min-h-0 e importante pra flex permitir scroll
-          (isOpen ? "overflow-y-auto" : "overflow-y-visible")
-        }
+    <>
+      <aside
+        className={`${
+          isOpen ? "w-80" : "w-20"
+        } sticky top-0 self-start h-screen shrink-0 overflow-hidden bg-gray-900 text-gray-400 flex flex-col transition-all duration-300`}
       >
-        <ul className="space-y-2 p-4">
-          {/*Home*/}
-          <li>
-            <Link href="/auth/home" legacyBehavior>
-              <a
+        <div className={`flex justify-center items-center ${isOpen ? "p-4" : "p-3"}`}>
+          <Link
+            href="/auth/home"
+            onClick={closeSidebar}
+            className="flex justify-center items-center w-full p-1"
+            title="Ir para a Home"
+          >
+            {isOpen ? (
+              <div className={`${styles.logoCressem} flex justify-center items-center w-full h-10`} />
+            ) : (
+              <div className={`${styles.logoCressemIcon} flex justify-center items-center w-10 h-10`} />
+            )}
+          </Link>
+        </div>
+
+        <button
+          onClick={toggleSidebar}
+          className="mx-2 mb-2 flex items-center justify-center h-12 rounded-md cursor-pointer transition-colors duration-200 hover:bg-white/10"
+          title={isOpen ? "Fechar menu" : "Abrir menu"}
+        >
+          {isOpen ? (
+            <span className="text-sm text-gray-300">Menu</span>
+          ) : (
+            <FaBars size={20} color="#9B9B9B" />
+          )}
+        </button>
+
+        <div
+          className={`flex-1 min-h-0 ${
+            isOpen ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden"
+          }`}
+        >
+          <ul className={`${isOpen ? "space-y-2 p-4" : "space-y-3 px-2 py-4"}`}>
+            <li>
+              <Link
+                href="/auth/home"
                 onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/home"
-                )}`}
+                className={itemClass("/auth/home")}
+                title={!isOpen ? "Home" : undefined}
               >
-                <FaHome className="text-2xl" />
+                <FaHome className="text-2xl shrink-0" />
                 {isOpen && <span>Home</span>}
-              </a>
-            </Link>
-          </li>
+              </Link>
+            </li>
 
-          {/*Analise de Limite (grupo) - enabled false no seu menu (manteve escondido)*/}
-          {/*para mostrar, é só remover o "hidden"*/}
-          <li className="hidden">
+            {visibleMenuGroups.map((group) => {
+              const GroupIcon = group.icon;
+              const groupPaths = group.children.map((child) => child.href);
+              const isGroupActive = isAnyActive(groupPaths);
+              const isGroupSelected = selectedMenuKey === group.key;
+
+              return (
+                <li key={group.key}>
+                  <button
+                    type="button"
+                    onClick={() => toggleMenu(group.key)}
+                    className={groupButtonClass(isGroupActive || isGroupSelected)}
+                    title={!isOpen ? group.label : undefined}
+                  >
+                    <GroupIcon className="text-2xl shrink-0" />
+
+                    {isOpen ? (
+                      <>
+                        <span className="whitespace-nowrap flex-1 text-left">
+                          {group.label}
+                        </span>
+                        <ChevronRight
+                          size={16}
+                          className={`shrink-0 transition-transform duration-200 ${
+                            isGroupSelected ? "rotate-90" : ""
+                          }`}
+                        />
+                      </>
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </aside>
+
+      {isOpen && selectedMenu && (
+        <div
+          className="fixed top-0 left-70 z-50 h-screen w-70 bg-gray-900 text-white shadow-xl border-l border-white/10"
+        >
+          <div className="flex h-full flex-col py-6 px-4">
             <button
               type="button"
-              onClick={() => setIsAnaliseLimiteOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive(["/auth/cadastro_analise_limite", "/auth/consulta_analise_limite"])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
+              onClick={() => setSelectedMenuKey(null)}
+              className="mb-6 flex items-center gap-2 text-left text-white hover:text-gray-200 transition-colors"
             >
-              <FaChartLine className="text-2xl" />
-              {isOpen && <span>Analise de Limite</span>}
+              <ArrowLeft size={20} />
+              <span className="text-base font-semibold">{selectedMenu.label}</span>
             </button>
 
-            {isOpen && isAnaliseLimiteOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/cadastro_analise_limite" legacyBehavior>
-                    <a
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              <ul className="space-y-2">
+                {selectedMenu.children.map((child) => (
+                  <li key={child.href}>
+                    <Link
+                      href={child.href}
                       onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/cadastro_analise_limite"
-                      )}`}
+                      className={panelItemClass(child.href)}
                     >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Cadastro</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/consulta_analise_limite" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/consulta_analise_limite"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Consulta</span>
-                    </a>
-                  </Link>
-                </li>
+                      <span className="text-sm">{child.label}</span>
+                      <ChevronRight size={16} className="shrink-0" />
+                    </Link>
+                  </li>
+                ))}
               </ul>
-            )}
-          </li>
-
-          {/*Aniversariantes*/}
-          <li>
-            <Link href="/auth/aniversariantes" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/aniversariantes"
-                )}`}
-              >
-                <FaBirthdayCake className="text-2xl" />
-                {isOpen && <span>Aniversariantes</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Auditoria*/}
-          <li>
-            <Link href="/auth/auditoria" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/auditoria"
-                )}`}
-              >
-                <FaClipboardCheck className="text-2xl" />
-                {isOpen && <span>Auditoria</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Antecipação de Capital*/}
-          <li>
-            <Link href="/auth/antecipacao_capital" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/antecipacao_capital"
-                )}`}
-              >
-                <FaMoneyBillWave className="text-2xl" />
-                {isOpen && <span>Antecipação de Capital</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Assinatura E-mail*/}
-          <li>
-            <Link href="/auth/assinatura_email" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/assinatura_email"
-                )}`}
-              >
-                <FaSignature className="text-2xl" />
-                {isOpen && <span>Assinatura E-mail</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Calculadora de Juros Cartão*/}
-          <li>
-            <Link href="/auth/calculadora_juros_cartao" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/calculadora_juros_cartao"
-                )}`}
-              >
-                <FaCalculator className="text-2xl" />
-                {isOpen && <span>Calculadora de Juros Cartão</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Simulador de investimento*/}
-          <li>
-            <Link href="/auth/simulador_investimento" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/simulador_investimento"
-                )}`}
-              >
-                <FaCashRegister className="text-2xl" />
-                {isOpen && <span>Simulador de Investimento</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Cheque Especial className="hidden"*/}
-          <li>
-            <Link href="/auth/cheque_especial" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/cheque_especial"
-                )}`}
-              >
-                <FaFileInvoiceDollar className="text-2xl" />
-                {isOpen && <span>Cheque Especial</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Declaração de Rendimentos*/}
-          <li>
-            <Link href="/auth/declaracao_rendimentos" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/declaracao_rendimentos"
-                )}`}
-              >
-                <FaFileAlt className="text-2xl" />
-                {isOpen && <span>Declaração de Rendimentos</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Demissão*/}
-          <li>
-            <Link href="/auth/demissao" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/demissao"
-                )}`}
-              >
-                <FaUserSlash className="text-2xl" />
-                {isOpen && <span>Demissão</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Ficha de Desimpedimento*/}
-          <li>
-            <Link href="/auth/ficha_desimpedimento" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/ficha_desimpedimento"
-                )}`}
-              >
-                <FaPenSquare className="text-2xl" />
-                {isOpen && <span>Ficha de Desimpedimento</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Despesas/Viagens (grupo)*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsDespesasViagensOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive(["/auth/cadastro_reembolso_despesa", "/auth/gerenciamento_reembolso_despesa"])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaPlaneDeparture className="text-2xl" />
-              {isOpen && <span>Despesas/Viagens</span>}
-            </button>
-
-            {isOpen && isDespesasViagensOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/cadastro_reembolso_despesa" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/cadastro_reembolso_despesa"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Solicitação</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/gerenciamento_reembolso_despesa" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/gerenciamento_reembolso_despesa"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Gerenciamento</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Docusign*/}
-          <li>
-            <Link href="/auth/docusign" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/docusign"
-                )}`}
-              >
-                <FaArchive className="text-2xl" />
-                {isOpen && <span>Docusign</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Empréstimo Consignado*/}
-          <li>
-            <Link href="/auth/emprestimo_consignado" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/emprestimo_consignado"
-                )}`}
-              >
-                <FaFileInvoiceDollar className="text-2xl" />
-                {isOpen && <span>Empréstimo Consignado</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Formulários de Cadastro (grupo)*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsFormsCadastroOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive([
-                "/auth/capital",
-                "/auth/declaracao_residencia",
-                "/auth/ficha_desimpedimento",
-                "/auth/procuracao_ortugante",
-                "/auth/renuncia_procurador",
-                "/auth/tabela_integralizacao",
-              ])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaIdCard className="text-2xl" />
-              {isOpen && <span>Formulários de Cadastro</span>}
-            </button>
-
-            {isOpen && isFormsCadastroOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/alteracao_capital" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/alteracao_capital"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Alteração de Capital</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/declaracao_residencia" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/declaracao_residencia"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Declaração de Residência</span>
-                    </a>
-                  </Link>
-                </li>
-
-                {/*Ficha de Desimpedimento*/}
-                <li>
-                  <Link href="/auth/ficha_desimpedimento" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/ficha_desimpedimento"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Ficha de Desimpedimento</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/procuracao_ortugante" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/procuracao_ortugante"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Procuração Ortugante PF/PJ</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/renuncia_procurador" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/renuncia_procurador"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Renúncia de Procurador</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/tabela_integralizacao" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/tabela_integralizacao"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Tabela de integralização</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Formulários de Empréstimos (grupo)*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsFormsEmprestimosOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive([
-                "/auth/adendo_contratual",
-                "/auth/adiantamento_salarial",
-                "/auth/autorizacao_debito",
-                "/auth/margem_consignavel",
-                "/auth/formulario_dps",
-                "/auth/previsul",
-                "/auth/simulador",
-                "/auth/termo_garantia",
-              ])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaFileAlt className="text-2xl" />
-              {isOpen && <span>Formulários de Empréstimos</span>}
-            </button>
-
-            {isOpen && isFormsEmprestimosOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/adendo_contratual" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/adendo_contratual"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Adendo Contratual</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/adiantamento_salarial_emprestimo" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/adiantamento_salarial_emprestimo"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Adiantamento Salarial</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/autorizacao_debito" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/autorizacao_debito"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Autorização de Débito</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/margem_consignavel" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/margem_consignavel"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Cálculo de Margem</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/formulario_dps" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/formulario_dps"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Formulário DPS</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/previsul" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/previsul"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Formulário Previsul</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/simulador_desconto" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/simulador_desconto"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Simulador de desconto</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/termo_garantia" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/termo_garantia"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Termo de Garantia</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Formulários de RH (grupo)*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsFormsRhOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive([
-                "/auth/adiantamento_salarial",
-                "/auth/auxilio_cheche_baba",
-                "/auth/bolsa_estudo",
-                "/auth/reembolso_convenio_medico",
-              ])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaUsersCog className="text-2xl" />
-              {isOpen && <span>Formulários de RH</span>}
-            </button>
-
-            {isOpen && isFormsRhOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/adiantamento_salarial" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/adiantamento_salarial_rh"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Adiatamento Salarial</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/auxilio_creche" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/auxilio_creche"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Auxílio Creche/Babá</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/bolsa_estudo" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/bolsa_estudo"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Bolsa de Estudo</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/reembolso_convenio_medico" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/reembolso_convenio_medico"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Reembolso Convênio Médico</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Gerenciador de Arquivos (grupo)*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsGerArqOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive(["/auth/aplica_marca_dagua", "/auth/conversor_arquivos", "/auth/juntar_pdf"])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaFolderOpen className="text-2xl" />
-              {isOpen && <span>Gerenciador de Arquivos</span>}
-            </button>
-
-            {isOpen && isGerArqOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/aplica_marca_dagua" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/aplica_marca_dagua"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Aplica marca d'agua</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/conversor_arquivos" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/conversor_arquivos"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Conversor Arquivos</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/juntar_pdf" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/juntar_pdf"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Juntar PDF</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Gerenciador de Contratos (enabled manteve escondido)*/}
-          <li className="hidden">
-            <button
-              type="button"
-              onClick={() => setIsGerContratosOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive(["/auth/cadastro_contratos", "/auth/consulta_contratos"])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaHandshake className="text-2xl" />
-              {isOpen && <span>Gerenciador de Contratos</span>}
-            </button>
-
-            {isOpen && isGerContratosOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/cadastro_contratos" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/cadastro_contratos"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Cadastro</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/consulta_contratos" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/consulta_contratos"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Consulta</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Gerenciador de Convênios (grupo)*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsGerConveniosOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive([
-                "/auth/cadastro_convenio_odonto",
-                "/auth/gerenciamento_convenio_odonto",
-                "/auth/gerenciamento_valor_convenio_odonto",
-                "/auth/relatorio_convenio_odonto",
-              ])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaUserFriends className="text-2xl" />
-              {isOpen && <span>Gerenciador de Convênios</span>}
-            </button>
-
-            {isOpen && isGerConveniosOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                {/*Cadastro (enabled manteve escondido)*/}
-                <li className="hidden">
-                  <Link href="/auth/cadastro_convenio_odonto" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/cadastro_convenio_odonto"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Cadastro</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li>
-                  <Link href="/auth/gerenciamento_convenio_odonto" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/gerenciamento_convenio_odonto"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Consulta</span>
-                    </a>
-                  </Link>
-                </li>
-
-                {/*Gerenciar Valores (enabled manteve escondido)*/}
-                <li className="hidden">
-                  <Link href="/auth/gerenciamento_valor_convenio_odonto" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/gerenciamento_valor_convenio_odonto"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Gerenciar Valores</span>
-                    </a>
-                  </Link>
-                </li>
-
-                {/*Relatórios (enabled manteve escondido)*/}
-                <li className="hidden">
-                  <Link href="/auth/relatorio_convenio_odonto" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/relatorio_convenio_odonto"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Relatórios</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Gerenciador de Funcionários (enabled manteve escondido) -> className="hidden"*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsGerFuncionariosOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive([
-                "/auth/gerenciamento_cargo",
-                "/auth/gerenciamento_funcionario",
-                "/auth/gerenciamento_posicao",
-                "/auth/gerenciamento_setor",
-              ])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaUsersCog className="text-2xl" />
-              {isOpen && <span>Gerenciador de Funcionários</span>}
-            </button>
-
-            {isOpen && isGerFuncionariosOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/gerenciamento_cargo" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/gerenciamento_cargo"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Cargos</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/gerenciamento_funcionario" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/gerenciamento_funcionario"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Funcionários</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/gerenciamento_posicao" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/gerenciamento_posicao"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Posições</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/gerenciamento_setor" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/gerenciamento_setor"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Setores</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Gerenciador de Férias (enabled menteve escondido) className="hidden"*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsGerFeriasOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive(["/auth/cadastro_ferias", "/auth/gerenciamento_ferias"])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaUmbrellaBeach className="text-2xl" />
-              {isOpen && <span>Gerenciador de Férias</span>}
-            </button>
-
-            {isOpen && isGerFeriasOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/cadastro_ferias" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/cadastro_ferias"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Cadastro</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/gerenciamento_ferias" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/gerenciamento_ferias"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Consulta</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Gerenciador de Notebook*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsGerNotebookOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive(["/auth/cadastro_notebook", "/auth/consulta_notebook"])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaLaptop className="text-2xl" />
-              {isOpen && <span>Gerenciador de Notebook</span>}
-            </button>
-
-            {isOpen && isGerNotebookOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/cadastro_notebook" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/cadastro_notebook"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Cadastro</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/consulta_notebook" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/consulta_notebook"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Consulta</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Gerenciador de Participação de Marketing*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsGerMarketingOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive(["/auth/solicitacao_participacao", "/auth/gerenciamento_participacao"])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaBullhorn className="text-2xl" />
-              {isOpen && <span>Gerenciador de Marketing</span>}
-            </button>
-
-            {isOpen && isGerMarketingOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/solicitacao_participacao" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/solicitacao_participacao"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Solicitações</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/gerenciamento_participacao" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/gerenciamento_participacao"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Consulta</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Migração Contratos className="hidden"*/}
-          <li>
-            <Link href="/auth/migracao_contrato" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/migracao_contrato"
-                )}`}
-              >
-                <FaFileAlt className="text-2xl" />
-                {isOpen && <span>Migração Contratos</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Processos GED*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsProcessosGedOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive(["/auth/assinatura_eletronica", "/auth/senha_sicoobnet"])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaFolderOpen className="text-2xl" />
-              {isOpen && <span>Processos GED</span>}
-            </button>
-
-            {isOpen && isProcessosGedOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/assinatura_eletronica" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/assinatura_eletronica"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>GED no App</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/senha_sicoobnet" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/senha_sicoobnet"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Senha não correntista App</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Ramal*/}
-          <li>
-            <Link href="/auth/ramais" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/ramais"
-                )}`}
-              >
-                <FaUsersCog className="text-2xl" />
-                {isOpen && <span>Ramal</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*RCO*/}
-          <li>
-            <Link href="/auth/rco" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/rco"
-                )}`}
-              >
-                <FaChartLine className="text-2xl" />
-                {isOpen && <span>RCO</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Recibos Financeiros (enabled manteve escondido)*/}
-          <li className="hidden">
-            <button
-              type="button"
-              onClick={() => setIsRecibosOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive(["/auth/cadastro_recibo_financeiro", "/auth/consulta_recibo_financeiro"])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaFileInvoiceDollar className="text-2xl" />
-              {isOpen && <span>Recibos Financeiros</span>}
-            </button>
-
-            {isOpen && isRecibosOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                <li>
-                  <Link href="/auth/cadastro_recibo_financeiro" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/cadastro_recibo_financeiro"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Cadastro</span>
-                    </a>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/consulta_recibo_financeiro" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/consulta_recibo_financeiro"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Consulta</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Relação de Faturamento*/}
-          <li>
-            <Link href="/auth/relacao_faturamento" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/relacao_faturamento"
-                )}`}
-              >
-                <FaChartBar className="text-2xl" />
-                {isOpen && <span>Relação de Faturamento</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Relatórios (grupo)*/}
-          <li>
-            <button
-              type="button"
-              onClick={() => setIsRelatoriosOpen((v) => !v)}
-              className={`w-full flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isAnyActive(["/auth/producao_meta_cooperativa_pa", "/auth/producao_meta_cooperativa_macro"])
-                ? "bg-secondary text-white"
-                : "text-gray-400"
-                }`}
-            >
-              <FaChartBar className="text-2xl" />
-              {isOpen && <span>Relatórios</span>}
-            </button>
-
-            {isOpen && isRelatoriosOpen && (
-              <ul className="mt-1 ml-10 space-y-1">
-                {/*ambos enabled false no seu menu - escondidos*/}
-                <li className="hidden">
-                  <Link href="/auth/producao_meta_cooperativa_pa" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/producao_meta_cooperativa_pa"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Consolidado/Meta/PA</span>
-                    </a>
-                  </Link>
-                </li>
-
-                <li className="hidden">
-                  <Link href="/auth/producao_meta_cooperativa_macro" legacyBehavior>
-                    <a
-                      onClick={closeSidebar}
-                      className={`flex items-center space-x-2 hover:text-white transition-colors duration-200 py-2 px-3 rounded-md ${isActive(
-                        "/auth/producao_meta_cooperativa_macro"
-                      )}`}
-                    >
-                      <span className="text-base"><Circle size={14} /></span>
-                      <span>Consolidado/Meta/Macro</span>
-                    </a>
-                  </Link>
-                </li>
-              </ul>
-            )}
-          </li>
-
-          {/*Reset de Senha e-mail Sicoob (externo)*/}
-          <li>
-            <a
-              href="https://sistemas.sisbr.coop.br/mtse/login"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md text-gray-400"
-              title="Reset de Senha e-mail Sicoob"
-            >
-              <FaKey className="text-2xl" />
-              {isOpen && <span>Reset de Senha e-mail Sicoob</span>}
-            </a>
-          </li>
-
-          {/*Resgate Capital*/}
-          <li>
-            <Link href="/auth/formulario_resgate_parcial_capital" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/formulario_resgate_parcial_capital"
-                )}`}
-              >
-                <FaMoneyBillWave className="text-2xl" />
-                {isOpen && <span>Resgate Capital</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Simulador de Investimento (enabled manteve escondido)*/}
-          <li className="hidden">
-            <Link href="/auth/simulador_investimento" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/simulador_investimento"
-                )}`}
-              >
-                <FaChartLine className="text-2xl" />
-                {isOpen && <span>Simulador de Investimento</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Termo de Responsabilidade TI (enabled manteve escondido) className="hidden"*/}
-          <li>
-            <Link href="/auth/termo_responsabilidade_uso" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/termo_responsabilidade_uso"
-                )}`}
-              >
-                <FaFileAlt className="text-2xl" />
-                {isOpen && <span>Termo de Responsabilidade TI</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Tabela Sisbr TI (enabled manteve escondido)*/}
-          <li>
-            <Link href="/auth/tabela_sisbr_ti" legacyBehavior>
-              <a
-                onClick={closeSidebar}
-                className={`flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md ${isActive(
-                  "/auth/tabela_sisbr_ti"
-                )}`}
-              >
-                <FaNetworkWired className="text-2xl" />
-                {isOpen && <span>Tabela Sisbr TI</span>}
-              </a>
-            </Link>
-          </li>
-
-          {/*Placeholder (enabled)*/}
-          <li className="hidden pt-2">
-            <a
-              href="#"
-              onClick={(e) => e.preventDefault()}
-              className="flex items-center space-x-4 hover:text-white transition-colors duration-200 p-3 rounded-md text-gray-400"
-              title="Sistemas Externos (placeholder)"
-            >
-              <FaExternalLinkAlt className="text-2xl" />
-              {isOpen && <span>Sistemas Externos</span>}
-            </a>
-          </li>
-        </ul>
-      </div>
-    </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

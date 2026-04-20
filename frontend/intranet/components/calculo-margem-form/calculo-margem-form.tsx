@@ -12,6 +12,9 @@ import {
 import {
     buscarAssociadoMargemPorCpf,
 } from "@/services/calculo_margem.service";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 function toMoney(value: number) {
     return fmtBRL(Number.isFinite(value) ? value : 0);
@@ -189,40 +192,36 @@ export function CalculoMargemForm() {
 
     return (
         <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-            <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                    CPF do associado
-                </label>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                    <input
-                        value={formatCpfView(cpf)}
-                        onChange={(e) => setCpf(e.target.value)}
-                        placeholder="CPF do associado"
-                        className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                        inputMode="numeric"
-                        maxLength={14}
-                    />
-                    <button
-                        onClick={onBuscar}
-                        disabled={loading}
-                        className="cursor-pointer rounded bg-secondary px-6 py-2 font-semibold text-white hover:bg-primary hover:shadow-md disabled:opacity-70"
-                    >
-                        {loading ? "Buscando..." : "Pesquisar"}
-                    </button>
+            <SearchForm onSearch={onBuscar}>
+                <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                        CPF do associado
+                    </label>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                        <SearchInput
+                            value={formatCpfView(cpf)}
+                            onChange={(e) => setCpf(e.target.value)}
+                            placeholder="CPF do associado"
+                            className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                            inputMode="numeric"
+                            maxLength={14}
+                        />
+                        <SearchButton loading={loading} label="Pesquisar" />
+                    </div>
+
+                    {erro && (
+                        <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            {erro}
+                        </div>
+                    )}
+
+                    {info && !erro && (
+                        <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                            {info}
+                        </div>
+                    )}
                 </div>
-
-                {erro && (
-                    <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                        {erro}
-                    </div>
-                )}
-
-                {info && !erro && (
-                    <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                        {info}
-                    </div>
-                )}
-            </div>
+            </SearchForm>
 
             <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-12">
                 <div className="md:col-span-5">
@@ -434,8 +433,8 @@ export function CalculoMargemForm() {
                         readOnly
                         value={toMoney(margemDisponivel)}
                         className={`w-full rounded border px-3 py-2 text-right ${alertMargemNegativa
-                                ? "border-red-300 bg-red-50 text-red-700"
-                                : "bg-gray-50"
+                            ? "border-red-300 bg-red-50 text-red-700"
+                            : "bg-gray-50"
                             }`}
                     />
                 </div>

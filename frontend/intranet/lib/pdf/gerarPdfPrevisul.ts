@@ -70,26 +70,89 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
 
   y += 12;
 
-  drawField(doc, "Proposta nº", o.proposta, margin, y);
+  const labels = [
+    "Proposta nº",
+    "Valor do empréstimo",
+    "Total de parcelas",
+    "Data 1ª parcela empréstimo",
+    "Valor mensal do seguro",
+    "Valor total do seguro",
+    "Porcentagem de juros sobre o seguro",
+    "Data 1ª parcela seguro",
+    "Data última parcela seguro",
+    "Cidade do atendimento",
+    "Data de hoje",
+  ];
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+
+  const maxLabelWidth = Math.max(
+    ...labels.map((label) => doc.getTextWidth(`${label}:`))
+  );
+
+  drawField(doc, "Proposta nº", o.proposta, margin, y, maxLabelWidth);
   y += 18;
-  drawField(doc, "Valor do empréstimo", o.valorEmprestimo, margin, y);
+  drawField(doc, "Valor do empréstimo", o.valorEmprestimo, margin, y, maxLabelWidth);
   y += 18;
-  drawField(doc, "Total de parcelas", o.totalParcelas, margin, y);
+  drawField(doc, "Total de parcelas", o.totalParcelas, margin, y, maxLabelWidth);
   y += 18;
-  drawField(doc, "Data 1ª parcela empréstimo", o.dataPrimeiraParcelaEmprestimo, margin, y);
+  drawField(
+    doc,
+    "Data 1ª parcela empréstimo",
+    o.dataPrimeiraParcelaEmprestimo,
+    margin,
+    y,
+    maxLabelWidth
+  );
   y += 28;
 
-  drawField(doc, "Valor mensal do seguro", o.valorMensalSeguro, margin, y);
+  drawField(
+    doc,
+    "Valor mensal do seguro",
+    o.valorMensalSeguro,
+    margin,
+    y,
+    maxLabelWidth
+  );
   y += 18;
-  drawField(doc, "Valor total do seguro", o.valorTotalSeguro, margin, y);
+  drawField(
+    doc,
+    "Valor total do seguro",
+    o.valorTotalSeguro,
+    margin,
+    y,
+    maxLabelWidth
+  );
   y += 18;
-  drawField(doc, "Porcentagem de juros sobre o seguro", o.taxaJuros, margin, y);
+  drawField(
+    doc,
+    "Porcentagem de juros sobre o seguro",
+    o.taxaJuros,
+    margin,
+    y,
+    maxLabelWidth
+  );
   y += 24;
 
   if (o.mostrarCompetencia) {
-    drawField(doc, "Data 1ª parcela seguro", o.dataPrimeiraParcelaSeguro, margin, y);
+    drawField(
+      doc,
+      "Data 1ª parcela seguro",
+      o.dataPrimeiraParcelaSeguro,
+      margin,
+      y,
+      maxLabelWidth
+    );
     y += 18;
-    drawField(doc, "Data última parcela seguro", o.dataUltimaParcelaSeguro, margin, y);
+    drawField(
+      doc,
+      "Data última parcela seguro",
+      o.dataUltimaParcelaSeguro,
+      margin,
+      y,
+      maxLabelWidth
+    );
     y += 24;
 
     const competencia =
@@ -115,9 +178,9 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
   });
 
   y += 20;
-  drawField(doc, "Cidade do atendimento", o.cidadeAtendimento, margin, y);
+  drawField(doc, "Cidade do atendimento", o.cidadeAtendimento, margin, y, maxLabelWidth);
   y += 18;
-  drawField(doc, "Data de hoje", o.dataHoje, margin, y);
+  drawField(doc, "Data de hoje", o.dataHoje, margin, y, maxLabelWidth);
   y += 50;
 
   const assinaturaW = 300;
@@ -140,11 +203,20 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
   doc.save(`previsul_${sanitize(o.nome || "associado")}.pdf`);
 }
 
-function drawField(doc: jsPDF, label: string, value: string, x: number, y: number) {
+function drawField(
+  doc: jsPDF,
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  maxLabelWidth: number
+) {
   doc.setFont("helvetica", "bold");
   doc.text(`${label}:`, x, y);
+
   doc.setFont("helvetica", "normal");
-  doc.text(value || "-", x + doc.getTextWidth(`${label}:`) + 6, y);
+  const valueX = x + maxLabelWidth + 10;
+  doc.text(value || "-", valueX, y);
 }
 
 function sanitize(s: string) {

@@ -21,6 +21,9 @@ import {
   type FichaRow,
   type TipoFicha,
 } from "@/services/ficha-desimpedimento.service";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 const initialForm: FichaFormData = {
   nome: "",
@@ -434,39 +437,35 @@ export function FichaDesimpedimentoForm() {
 
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">CPF do empregado(a)</label>
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-          <input
-            name="cpf"
-            value={formatCpfView(form.cpf)}
-            onChange={handleChange}
-            placeholder="CPF (somente números)"
-            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            inputMode="numeric"
-            maxLength={14}
-          />
-          <button
-            onClick={handleBuscarCpf}
-            disabled={loadingCpf}
-            className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md"
-          >
-            {loadingCpf ? "Buscando..." : "Pesquisar"}
-          </button>
+      <SearchForm onSearch={handleBuscarCpf}>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">CPF do empregado(a)</label>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+            <SearchInput
+              name="cpf"
+              value={formatCpfView(form.cpf)}
+              onChange={handleChange}
+              placeholder="CPF (somente números)"
+              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              inputMode="numeric"
+              maxLength={14}
+            />
+            <SearchButton loading={loading} label="Pesquisar" />
+          </div>
+
+          {erroCpf && (
+            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+              {erroCpf}
+            </div>
+          )}
+
+          {infoCpf && (
+            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
+              {infoCpf}
+            </div>
+          )}
         </div>
-
-        {erroCpf && (
-          <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-            {erroCpf}
-          </div>
-        )}
-
-        {infoCpf && (
-          <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-            {infoCpf}
-          </div>
-        )}
-      </div>
+      </SearchForm>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>

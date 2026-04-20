@@ -241,7 +241,7 @@ export function FaturamentoFormPJ() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6">
+    <div className="min-w-225 mx-auto w-full space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
       <section className="overflow-hidden rounded-[32px] border border-emerald-100 bg-white shadow-[0_16px_60px_rgba(16,24,40,0.08)]">
         <div className="bg-gradient-to-r from-emerald-50 via-lime-50 to-white px-6 py-6 lg:px-8 lg:py-8">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">

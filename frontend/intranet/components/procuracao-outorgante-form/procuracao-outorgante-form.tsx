@@ -6,6 +6,10 @@ import { gerarPdfProcuracaoPF } from "@/lib/pdf/procuracaoPF";
 import { gerarPdfProcuracaoPJ } from "@/lib/pdf/procuracaoPJ";
 import { formatCpfView, onlyDigits } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
+
 
 type AcaoPF = {
   outorganteNome: string;
@@ -211,48 +215,44 @@ export function ProcuracaoOutorganteForm() {
 
   return (
     <div className="space-y-6">
-      {/* Card: Busca por CPF */}
-      <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-        <h2 className="text-lg font-semibold mb-2">Buscar OUTORGANTE (PF) por CPF</h2>
+      <SearchForm onSearch={onBuscar}>
+        <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
+          <h2 className="text-lg font-semibold mb-2">Buscar OUTORGANTE (PF) por CPF</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
-          <input
-            value={formatCpfView(cpfBusca)}
-            onChange={(e) => setCpfBusca(e.target.value)}
-            placeholder="CPF (somente números)"
-            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            inputMode="numeric"
-            maxLength={14}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
+            <SearchInput
+              value={formatCpfView(cpfBusca)}
+              onChange={(e) => setCpfBusca(e.target.value)}
+              placeholder="CPF (somente números)"
+              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              inputMode="numeric"
+              maxLength={14}
+            />
 
-          <button
-            onClick={onBuscar}
-            disabled={loading}
-            className="bg-secondary text-white font-semibold px-4 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md"
-          >
-            {loading ? "Buscando..." : "Pesquisar"}
-          </button>
+            <SearchButton loading={loading} label="Pesquisar" />
 
-          <button
-            onClick={fillHoje}
-            className="bg-secondary text-white font-semibold px-4 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md"
-            title="Preencher dia/mês/ano com hoje"
-          >
-            Usar data de hoje
-          </button>
+            <button
+              onClick={fillHoje}
+              className="bg-secondary text-white font-semibold px-4 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md"
+              title="Preencher dia/mês/ano com hoje"
+            >
+              Usar data de hoje
+            </button>
+          </div>
+
+          {erro && (
+            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+              {erro}
+            </div>
+          )}
+          {info && (
+            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
+              {info}
+            </div>
+          )}
         </div>
+      </SearchForm>
 
-        {erro && (
-          <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-            {erro}
-          </div>
-        )}
-        {info && (
-          <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-            {info}
-          </div>
-        )}
-      </div>
 
       {/* OUTORGANTE PF */}
       <section className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">

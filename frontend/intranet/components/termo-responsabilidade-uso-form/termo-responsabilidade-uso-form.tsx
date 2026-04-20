@@ -6,6 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import { FaFilePdf, FaSearch } from "react-icons/fa";
 import { buscarFuncionarioPorCpfTermo } from "@/services/termo_responsabilidade_uso.service";
 import { gerarPdfTermoResponsabilidadeUso } from "@/lib/pdf/gerarPdfTermoResponsabilidadeUso";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type EquipamentoTipo = "" | "celular" | "notebook";
 
@@ -239,58 +242,52 @@ export function TermoResponsabilidadeUsoForm() {
 
     return (
         <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr]">
-                <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        CPF
-                    </label>
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                        <input
-                            value={cpf}
-                            onChange={(e) => setCpf(formatarCpf(e.target.value))}
-                            placeholder="000.000.000-00"
-                            maxLength={14}
-                            className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                        />
+            <SearchForm onSearch={buscarFuncionario}>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr]">
+                    <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                            CPF
+                        </label>
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                            <SearchInput
+                                value={cpf}
+                                onChange={(e) => setCpf(formatarCpf(e.target.value))}
+                                placeholder="000.000.000-00"
+                                maxLength={14}
+                                className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                            />
 
-                        <button
-                            type="button"
-                            onClick={buscarFuncionario}
-                            disabled={loadingBusca}
-                            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            <FaSearch />
-                            {loadingBusca ? "Buscando..." : "Buscar"}
-                        </button>
+                            <SearchButton loading={loadingBusca} label="Pesquisar" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                            Nome
+                        </label>
+                        <input
+                            value={nome}
+                            onChange={(e) => setNome(e.target.value)}
+                            className="w-full rounded border px-3 py-2"
+                            placeholder="Nome do colaborador"
+                        />
                     </div>
                 </div>
 
-                <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Nome
-                    </label>
-                    <input
-                        value={nome}
-                        onChange={(e) => setNome(e.target.value)}
-                        className="w-full rounded border px-3 py-2"
-                        placeholder="Nome do colaborador"
-                    />
-                </div>
-            </div>
-
-            {(erro || info) && (
-                <div className="mt-4">
-                    {erro ? (
-                        <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                            {erro}
-                        </div>
-                    ) : (
-                        <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                            {info}
-                        </div>
-                    )}
-                </div>
-            )}
+                {(erro || info) && (
+                    <div className="mt-4">
+                        {erro ? (
+                            <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                {erro}
+                            </div>
+                        ) : (
+                            <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                                {info}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </SearchForm>
 
             <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-12">
                 <div className="lg:col-span-3">

@@ -4,7 +4,8 @@ import { FormEvent, useMemo, useState } from "react";
 import { IoLockClosedOutline, IoEyeOffOutline, IoEyeOutline, IoPersonOutline } from "react-icons/io5";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import LoginBackground from "@/public/backgrounds/login_background.png";
+//import LoginBackground from "@/public/backgrounds/login_background.png";
+import LoginBackground from "@/public/backgrounds/background-login.jpeg";
 import { loginAdUser } from "@/services/auth.service";
 
 type LoginErrors = {

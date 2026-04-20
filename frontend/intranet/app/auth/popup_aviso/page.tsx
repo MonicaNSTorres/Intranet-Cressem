@@ -1,0 +1,40 @@
+"use client";
+
+import { FaBullhorn } from "react-icons/fa";
+import BackButton from "@/components/back-button/back-button";
+import { PopupAvisoForm } from "@/components/popup-aviso-form/popup-aviso-form";
+
+export default function PopupAvisoPage() {
+  return (
+    <div className="p-6 lg:p-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <BackButton />
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
+              <FaBullhorn size={16} />
+            </div>
+
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold text-gray-900 truncate">
+                Configuração de Popup
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Cadastre o aviso que será exibido ao usuário após o login, configure período,
+                status, botões e imagem de destaque.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <PopupAvisoForm />
+      </div>
+
+      <div className="mt-8 text-xs text-gray-500">
+        * O popup será exibido conforme status ativo, período configurado e ausência de resposta do usuário.
+      </div>
+    </div>
+  );
+}

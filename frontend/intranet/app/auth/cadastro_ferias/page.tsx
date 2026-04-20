@@ -3,6 +3,7 @@
 import { FaUmbrellaBeach } from "react-icons/fa";
 import BackButton from "@/components/back-button/back-button";
 import { CadastroFeriasForm } from "@/components/cadastro-ferias-form/cadastro-ferias-form";
+import { Suspense } from "react";
 
 export default function CadastroFeriasPage() {
   return (
@@ -27,7 +28,9 @@ export default function CadastroFeriasPage() {
       </div>
 
       <div className="mt-6">
-        <CadastroFeriasForm />
+        <Suspense fallback={<div>Carregando...</div>}>
+          <CadastroFeriasForm />
+        </Suspense>
       </div>
 
       <div className="mt-8 text-xs text-gray-500">

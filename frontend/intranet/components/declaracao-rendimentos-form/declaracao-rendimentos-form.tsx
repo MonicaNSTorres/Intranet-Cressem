@@ -4,6 +4,10 @@
 import { useMemo, useState } from "react";
 import { gerarPdfDeclaracaoRendimentos } from "@/lib/pdf/gerarPdfRendimentos";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
+
 
 type Associado = {
   nome: string;
@@ -68,42 +72,38 @@ export function DeclaracaoRendimentosForm() {
 
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          CPF do empregado(a)
-        </label>
+      <SearchForm onSearch={onBuscar}>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            CPF do empregado(a)
+          </label>
 
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-          <input
-            value={maskCpfView(cpf)}
-            onChange={(e) => setCpf(e.target.value)}
-            placeholder="CPF (somente números)"
-            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            inputMode="numeric"
-            maxLength={14}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+            <SearchInput
+              value={maskCpfView(cpf)}
+              onChange={(e) => setCpf(e.target.value)}
+              placeholder="CPF (somente números)"
+              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              inputMode="numeric"
+              maxLength={14}
+            />
 
-          <button
-            onClick={onBuscar}
-            disabled={loading}
-            className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer"
-          >
-            {loading ? "Buscando..." : "Pesquisar"}
-          </button>
+            <SearchButton loading={loading} label="Pesquisar" />
+          </div>
+
+          {erro && (
+            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+              {erro}
+            </div>
+          )}
+
+          {info && (
+            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
+              {info}
+            </div>
+          )}
         </div>
-
-        {erro && (
-          <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-            {erro}
-          </div>
-        )}
-
-        {info && (
-          <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-            {info}
-          </div>
-        )}
-      </div>
+      </SearchForm>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
         <InputRO label="Nome" value={data?.nome || ""} />

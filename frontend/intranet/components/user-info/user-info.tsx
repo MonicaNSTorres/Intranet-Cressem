@@ -165,7 +165,7 @@ export default function UserInfo() {
             {menuOpen && (
                 <div className="absolute right-0 top-14 z-50 w-56 rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
                     <ul className="py-2">
-                        <li
+                        {/*<li
                             onClick={() => {
                                 setMenuOpen(false);
                                 router.push("/auth/profile_settings");
@@ -173,7 +173,7 @@ export default function UserInfo() {
                             className="cursor-pointer px-4 py-3 text-sm text-gray-700 hover:bg-secondary hover:text-white dark:text-gray-200"
                         >
                             Perfil do usuário
-                        </li>
+                        </li>*/}
 
                         <li
                             onClick={handleLogout}

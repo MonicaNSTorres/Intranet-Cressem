@@ -17,7 +17,7 @@ export default function AuxilioCrechePage() {
                         </div>
                         <div className="min-w-0">
                             <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                                Cálculadora de Atraso Cartão de Crédito
+                                Calculadora de Atraso Cartão de Crédito
                             </h1>
                             <p className="text-sm text-gray-600 mt-1">
                                 Informe os dados e calcule juros, multa, mora e total a pagar.

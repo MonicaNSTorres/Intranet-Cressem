@@ -6,8 +6,10 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
-
   const token = request.cookies.get("access_token")?.value;
+
+  console.log("MIDDLEWARE PATH:", pathname);
+  console.log("MIDDLEWARE TOKEN:", token);
 
   if (!isPublicRoute && !token) {
     return NextResponse.redirect(new URL("/login", request.url));

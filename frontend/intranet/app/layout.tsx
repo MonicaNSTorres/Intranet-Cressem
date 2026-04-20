@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 //import { Geist, Geist_Mono } from "next/font/google";
 import { Asap } from "next/font/google";
 import "./globals.css";
+import { SessionWatcher } from "@/components/sessao-expirada-login/sessao-expirada-login";
+import Footer from "@/components/footer/footer";
 
 {/*const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +36,7 @@ export default function RootLayout({
       <body
         className={`${asap.className} antialiased`}
       >
+        <SessionWatcher />
         {children}
       </body>
     </html>

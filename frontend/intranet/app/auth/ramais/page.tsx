@@ -14,12 +14,29 @@ type RamalRow = {
     LOGIN: string | null;
 };
 
+function normalizeField(value: string | number | null | undefined) {
+    if (value === null || value === undefined) return "";
+    return String(value).trim();
+}
+
+function isMissing(value: string | number | null | undefined) {
+    const v = normalizeField(value).toLowerCase();
+
+    return (
+        v === "" ||
+        v === "-" ||
+        v === "--" ||
+        v === "null" ||
+        v === "undefined"
+    );
+}
+
 export default function RamaisPage() {
     const [q, setQ] = useState("");
     const [loading, setLoading] = useState(false);
     const [rows, setRows] = useState<RamalRow[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const debouncedQ = useDebouncedValue(q, 300);//bounc para nao bater no back
+    const debouncedQ = useDebouncedValue(q, 300);
 
     useEffect(() => {
         const load = async () => {
@@ -117,34 +134,46 @@ export default function RamaisPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {rows.map((r) => (
-                                    <tr
-                                        key={String(r.ID)}
-                                        className="border-t border-gray-100 hover:bg-gray-50/60"
-                                    >
-                                        <td className="py-3 px-3 font-semibold text-gray-900">
-                                            {r.RAMAL ?? "-"}
-                                        </td>
+                                {rows.map((r) => {
+                                    const ramal = normalizeField(r.RAMAL);
+                                    const nome = normalizeField(r.NOME);
+                                    const departamento = normalizeField(r.DEPARTAMENTO);
+                                    const email = normalizeField(r.EMAIL);
+                                    const login = normalizeField(r.LOGIN);
 
-                                        <td className="py-3 px-3 text-gray-900">{r.NOME ?? "-"}</td>
+                                    return (
+                                        <tr
+                                            key={String(r.ID)}
+                                            className="border-t border-gray-100 hover:bg-gray-50/60"
+                                        >
+                                            <td className="py-3 px-3 font-semibold text-gray-900">
+                                                {isMissing(r.RAMAL) ? "Sem ramal" : ramal}
+                                            </td>
 
-                                        <td className="py-3 px-3 text-gray-700">
-                                            {r.DEPARTAMENTO ?? "-"}
-                                        </td>
+                                            <td className="py-3 px-3 text-gray-900">
+                                                {isMissing(r.NOME) ? "Sem nome" : nome}
+                                            </td>
 
-                                        <td className="py-3 px-3 text-gray-700">
-                                            {r.EMAIL ? (
-                                                <a className="text-secondary hover:underline" href={`mailto:${r.EMAIL}`}>
-                                                    {r.EMAIL}
-                                                </a>
-                                            ) : (
-                                                "-"
-                                            )}
-                                        </td>
+                                            <td className="py-3 px-3 text-gray-700">
+                                                {isMissing(r.DEPARTAMENTO) ? "Sem departamento" : departamento}
+                                            </td>
 
-                                        <td className="py-3 px-3 text-gray-700">{r.LOGIN ?? "-"}</td>
-                                    </tr>
-                                ))}
+                                            <td className="py-3 px-3 text-gray-700">
+                                                {isMissing(r.EMAIL) ? (
+                                                    <span className="text-red-500">Sem e-mail</span>
+                                                ) : (
+                                                    <a className="text-secondary hover:underline" href={`mailto:${email}`}>
+                                                        {email}
+                                                    </a>
+                                                )}
+                                            </td>
+
+                                            <td className="py-3 px-3 text-gray-700">
+                                                {isMissing(r.LOGIN) ? "Sem login" : login}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

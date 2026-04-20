@@ -5,6 +5,9 @@ import { useState } from "react";
 import { gerarPdfAssociado } from "@/lib/pdf/gerarPdf";
 import { formatCpfView, monetizarDigitacao } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type Associado = {
   nome: string;
@@ -53,42 +56,37 @@ export function ConsultaAssociadoForm() {
 
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          CPF do associado(a)
-        </label>
+      <SearchForm onSearch={onBuscar}>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            CPF do associado(a)
+          </label>
 
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-          <input
-            value={formatCpfView(cpf)}
-            onChange={(e) => setCpf(e.target.value)}
-            placeholder="CPF (somente números)"
-            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            inputMode="numeric"
-            maxLength={14}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+            <SearchInput
+              value={formatCpfView(cpf)}
+              onChange={(e) => setCpf(e.target.value)}
+              placeholder="CPF (somente números)"
+              inputMode="numeric"
+              maxLength={14}
+            />
 
-          <button
-            onClick={onBuscar}
-            disabled={loading}
-            className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md disabled:opacity-60"
-          >
-            {loading ? "Buscando..." : "Pesquisar"}
-          </button>
+            <SearchButton loading={loading} label="Pesquisar" />
+          </div>
+
+          {erro && (
+            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+              {erro}
+            </div>
+          )}
+
+          {info && (
+            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
+              {info}
+            </div>
+          )}
         </div>
-
-        {erro && (
-          <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-            {erro}
-          </div>
-        )}
-
-        {info && (
-          <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-            {info}
-          </div>
-        )}
-      </div>
+      </SearchForm>
 
       {data && (
         <div className="mt-6 space-y-4">
@@ -105,7 +103,9 @@ export function ConsultaAssociadoForm() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">CPF</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                CPF
+              </label>
               <input
                 readOnly
                 value={formatCpfView(data.cpf)}
@@ -168,7 +168,9 @@ export function ConsultaAssociadoForm() {
               <input
                 type="text"
                 value={valorAnterior}
-                onChange={(e) => setValorAnterior(monetizarDigitacao(e.target.value))}
+                onChange={(e) =>
+                  setValorAnterior(monetizarDigitacao(e.target.value))
+                }
                 className="w-full border px-3 py-2 rounded"
                 placeholder="R$ 0,00"
               />
@@ -181,7 +183,9 @@ export function ConsultaAssociadoForm() {
               <input
                 type="text"
                 value={valorNovo}
-                onChange={(e) => setValorNovo(monetizarDigitacao(e.target.value))}
+                onChange={(e) =>
+                  setValorNovo(monetizarDigitacao(e.target.value))
+                }
                 className="w-full border px-3 py-2 rounded"
                 placeholder="R$ 0,00"
               />

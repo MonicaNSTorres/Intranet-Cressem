@@ -5,6 +5,9 @@ import { useMemo, useState } from "react";
 import { formatCpfView, monetizarDigitacao, parseBRL, fmtBRL, hojeBR } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { gerarPdfPrevisul } from "@/lib/pdf/gerarPdfPrevisul";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 function toIsoFromBr(value: string) {
     if (!value) return "";
@@ -96,7 +99,7 @@ export function PrevisulForm() {
     const [dataPrimeiraParcelaEmprestimo, setDataPrimeiraParcelaEmprestimo] = useState("");
     const [valorMensalSeguro, setValorMensalSeguro] = useState("");
     const [valorTotalSeguro, setValorTotalSeguro] = useState("");
-    const [taxaJuros] = useState("0,1%");
+    const [taxaJuros] = useState("0,8%");
     const [dataPrimeiraParcelaSeguro, setDataPrimeiraParcelaSeguro] = useState("");
     const [dataUltimaParcelaSeguro, setDataUltimaParcelaSeguro] = useState("");
     const [cidadeAtendimento, setCidadeAtendimento] = useState("");
@@ -261,41 +264,37 @@ export function PrevisulForm() {
 
     return (
         <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-            <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                    CPF do associado
-                </label>
+            <SearchForm onSearch={onBuscar}>
+                <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                        CPF do associado
+                    </label>
 
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-                    <input
-                        value={formatCpfView(cpf)}
-                        onChange={(e) => setCpf(e.target.value)}
-                        placeholder="CPF (somente números)"
-                        className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                        inputMode="numeric"
-                        maxLength={14}
-                    />
-                    <button
-                        onClick={onBuscar}
-                        disabled={loading}
-                        className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md"
-                    >
-                        {loading ? "Buscando..." : "Pesquisar"}
-                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+                        <SearchInput
+                            value={formatCpfView(cpf)}
+                            onChange={(e) => setCpf(e.target.value)}
+                            placeholder="CPF (somente números)"
+                            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                            inputMode="numeric"
+                            maxLength={14}
+                        />
+                        <SearchButton loading={loading} label="Pesquisar" />
+                    </div>
+
+                    {(erro || erroLocal) && (
+                        <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+                            {erroLocal || erro}
+                        </div>
+                    )}
+
+                    {(info || infoLocal) && !(erro || erroLocal) && (
+                        <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
+                            {infoLocal || info}
+                        </div>
+                    )}
                 </div>
-
-                {(erro || erroLocal) && (
-                    <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-                        {erroLocal || erro}
-                    </div>
-                )}
-
-                {(info || infoLocal) && !(erro || erroLocal) && (
-                    <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-                        {infoLocal || info}
-                    </div>
-                )}
-            </div>
+            </SearchForm>
 
             <div className="mt-6 space-y-3 border rounded p-4 bg-gray-50 text-sm text-gray-700">
                 <p>

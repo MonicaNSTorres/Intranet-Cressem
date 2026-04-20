@@ -9,6 +9,9 @@ import {
     type CidadeOption,
 } from "@/services/antecipacao_capital.service";
 import { pdfGerarAntecipacaoCapital } from "@/lib/pdf/gerarPdfAntecipacaoCapital";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type FormState = {
     cpf: string;
@@ -213,134 +216,129 @@ export function AntecipacaoCapitalForm() {
 
     return (
         <div className="mx-auto min-w-0 rounded-xl bg-white p-6 shadow">
-            {erro && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                    {erro}
-                </div>
-            )}
+            <SearchForm onSearch={preencherAssociado}>
+                {erro && (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        {erro}
+                    </div>
+                )}
 
-            {info && !erro && (
-                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                    {info}
-                </div>
-            )}
+                {info && !erro && (
+                    <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                        {info}
+                    </div>
+                )}
 
-            <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
-                <p className="text-sm font-medium text-gray-700">
-                    Informe o CPF do associado, preencha os valores e gere o PDF da solicitação.
-                </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                <div className="md:col-span-3">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        CPF
-                    </label>
-                    <input
-                        value={form.cpf}
-                        onChange={(e) => updateField("cpf", formatarCpf(e.target.value))}
-                        onBlur={preencherAssociado}
-                        placeholder="000.000.000-00"
-                        maxLength={14}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                    />
+                <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
+                    <p className="text-sm font-medium text-gray-700">
+                        Informe o CPF do associado, preencha os valores e gere o PDF da solicitação.
+                    </p>
                 </div>
 
-                <div className="md:col-span-9 flex items-end gap-3">
-                    <div className="flex-1">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                    <div className="md:col-span-3">
                         <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Nome
+                            CPF
                         </label>
-                        <input
-                            value={loadingBusca ? "Buscando associado..." : form.nome}
-                            onChange={(e) => updateField("nome", e.target.value)}
-                            placeholder="Nome do associado"
-                            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                        <SearchInput
+                            value={form.cpf}
+                            onChange={(e) => updateField("cpf", formatarCpf(e.target.value))}
+                            onBlur={preencherAssociado}
+                            placeholder="000.000.000-00"
+                            maxLength={14}
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                         />
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={preencherAssociado}
-                        disabled={loadingBusca || cpfLimpo.length !== 11}
-                        className="inline-flex h-10.5 items-center justify-center gap-2 rounded-lg bg-secondary px-5 font-semibold text-white shadow transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                        <FaSearch />
-                        {loadingBusca ? "Buscando..." : "Buscar"}
-                    </button>
-                </div>
+                    <div className="md:col-span-9 flex items-end gap-3">
+                        <div className="flex-1">
+                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                                Nome
+                            </label>
+                            <input
+                                value={loadingBusca ? "Buscando associado..." : form.nome}
+                                onChange={(e) => updateField("nome", e.target.value)}
+                                placeholder="Nome do associado"
+                                className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                            />
+                        </div>
 
-                <div className="md:col-span-4">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Integralização
-                    </label>
-                    <input
-                        value={form.integralizacao}
-                        onChange={(e) =>
-                            updateField("integralizacao", formatarMoedaInput(e.target.value))
-                        }
-                        placeholder="R$ 0,00"
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                    />
-                </div>
+                        <SearchButton loading={loadingBusca} label="Pesquisar" />
+                    </div>
 
-                <div className="md:col-span-4">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Taxa manutenção
-                    </label>
-                    <input
-                        value={form.taxa}
-                        onChange={(e) => updateField("taxa", formatarMoedaInput(e.target.value))}
-                        placeholder="R$ 0,00"
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                    />
-                </div>
 
-                <div className="md:col-span-4">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Total
-                    </label>
-                    <input
-                        value={formatarMoeda(total)}
-                        readOnly
-                        className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 outline-none"
-                    />
-                </div>
+                    <div className="md:col-span-4">
+                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                            Integralização
+                        </label>
+                        <input
+                            value={form.integralizacao}
+                            onChange={(e) =>
+                                updateField("integralizacao", formatarMoedaInput(e.target.value))
+                            }
+                            placeholder="R$ 0,00"
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                        />
+                    </div>
 
-                <div className="md:col-span-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Cidade
-                    </label>
-                    <select
-                        value={form.cidade}
-                        onChange={(e) => updateField("cidade", e.target.value)}
-                        disabled={loadingCidades}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 disabled:bg-gray-100"
-                    >
-                        <option value="">
-                            {loadingCidades ? "Carregando cidades..." : "Selecione"}
-                        </option>
-                        {cidades.map((cidade) => (
-                            <option key={cidade.value} value={cidade.value}>
-                                {cidade.label}
+                    <div className="md:col-span-4">
+                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                            Taxa manutenção
+                        </label>
+                        <input
+                            value={form.taxa}
+                            onChange={(e) => updateField("taxa", formatarMoedaInput(e.target.value))}
+                            placeholder="R$ 0,00"
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                        />
+                    </div>
+
+                    <div className="md:col-span-4">
+                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                            Total
+                        </label>
+                        <input
+                            value={formatarMoeda(total)}
+                            readOnly
+                            className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 outline-none"
+                        />
+                    </div>
+
+                    <div className="md:col-span-5">
+                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                            Cidade
+                        </label>
+                        <select
+                            value={form.cidade}
+                            onChange={(e) => updateField("cidade", e.target.value)}
+                            disabled={loadingCidades}
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 disabled:bg-gray-100"
+                        >
+                            <option value="">
+                                {loadingCidades ? "Carregando cidades..." : "Selecione"}
                             </option>
-                        ))}
-                    </select>
+                            {cidades.map((cidade) => (
+                                <option key={cidade.value} value={cidade.value}>
+                                    {cidade.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
-            </div>
 
-            <div className="mt-6 border-t border-gray-200 pt-5">
-                <div className="flex items-center justify-end">
-                    <button
-                        type="button"
-                        onClick={handleGerarPdf}
-                        className="inline-flex items-center gap-2 rounded-lg bg-secondary px-6 py-2 font-semibold text-white shadow transition hover:bg-primary"
-                    >
-                        <FaFilePdf />
-                        Gerar PDF
-                    </button>
+                <div className="mt-6 border-t border-gray-200 pt-5">
+                    <div className="flex items-center justify-end">
+                        <button
+                            type="button"
+                            onClick={handleGerarPdf}
+                            className="inline-flex items-center gap-2 rounded-lg bg-secondary px-6 py-2 font-semibold text-white shadow transition hover:bg-primary"
+                        >
+                            <FaFilePdf />
+                            Gerar PDF
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </SearchForm>
         </div>
     );
 }

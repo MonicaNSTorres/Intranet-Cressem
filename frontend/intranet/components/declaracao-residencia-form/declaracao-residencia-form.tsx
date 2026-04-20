@@ -5,6 +5,10 @@ import { useMemo, useState } from "react";
 import { gerarPdfDeclaracaoResidencia } from "@/lib/pdf/gerarPdfResidencia";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { formatCpfView, hojeBR, onlyDigits } from "@/utils/br";
+import { useCep } from "@/hooks/use-cep";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type Assoc = {
   nome: string;
@@ -62,6 +66,8 @@ export function DeclaracaoResidenciaForm() {
 
   const { loading, erro, info, buscar } = useAssociadoPorCpf();
 
+  const { loadingCep, erroCep, infoCep, buscar: buscarCep, limparMensagens } = useCep();
+
   const emptyAssoc: Assoc = {
     nome: "",
     cpf: "",
@@ -103,16 +109,23 @@ export function DeclaracaoResidenciaForm() {
 
     const r = await buscar(cpfBusca);
     if (r.found) {
+      const assocData = r.data;
+
+      if (!assocData) {
+        setData({ ...emptyAssoc, cpf: onlyDigits(cpfBusca) });
+        return;
+      }
+
       const assoc: Assoc = {
         ...emptyAssoc,
-        nome: r.data.nome || "",
-        cpf: r.data.cpf || onlyDigits(cpfBusca),
-        rg: r.data.rg || "",
-        cidade: r.data.cidade || "",
-        bairro: r.data.bairro || "",
-        rua: r.data.rua || "",
-        uf: r.data.uf || "",
-        cep: r.data.cep || "",
+        nome: assocData.nome || "",
+        cpf: assocData.cpf || onlyDigits(cpfBusca),
+        rg: assocData.rg || "",
+        cidade: assocData.cidade || "",
+        bairro: assocData.bairro || "",
+        rua: assocData.rua || "",
+        uf: assocData.uf || "",
+        cep: assocData.cep || "",
       };
 
       setData(assoc);
@@ -143,85 +156,121 @@ export function DeclaracaoResidenciaForm() {
     });
   };
 
+  const onBuscarCep = async (cepValue?: string) => {
+    if (!data || !isNaoAssociado) return;
+
+    const cepAtual = onlyDigits(cepValue ?? data.cep);
+
+    if (cepAtual.length !== 8) return;
+
+    const r = await buscarCep(cepAtual);
+
+    if (!r.found || !r.data) return;
+
+    const cepData = r.data;
+
+    setData((prev) =>
+      prev
+        ? {
+          ...prev,
+          cep: cepData.cep || cepAtual,
+          rua: cepData.rua || prev.rua,
+          complemento: prev.complemento || cepData.complemento || "",
+          bairro: cepData.bairro || prev.bairro,
+          cidade: cepData.cidade || prev.cidade,
+          uf: cepData.uf || prev.uf,
+        }
+        : prev
+    );
+
+    setCidadeRodape((prev) => prev || cepData.cidade || "");
+  };
+
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <h2 className="text-xl font-semibold mb-1">Declaração de Residência</h2>
+      <SearchForm onSearch={onBuscar}>
+        <h2 className="text-xl font-semibold mb-1">Declaração de Residência</h2>
 
-      <p className="text-md text-gray-500 mb-3">
-        Selecione se é associado ou não associado para continuar.
-      </p>
+        <p className="text-md text-gray-500 mb-3">
+          Selecione se é associado ou não associado para continuar.
+        </p>
 
-      <div className="flex gap-3 mb-6">
-        <button
-          type="button"
-          onClick={handleSelecionarAssociado}
-          className={`px-4 py-2 rounded-full border text-sm font-semibold transition cursor-pointer
-            ${
-              isAssociado
+        <div className="flex gap-3 mb-6">
+          <button
+            type="button"
+            onClick={handleSelecionarAssociado}
+            className={`px-4 py-2 rounded-full border text-sm font-semibold transition cursor-pointer
+            ${isAssociado
                 ? "bg-secondary text-white border-secondary"
                 : "bg-white text-gray-700 border-gray-300 hover:border-primary"
-            }`}
-        >
-          Associado
-        </button>
+              }`}
+          >
+            Associado
+          </button>
 
-        <button
-          type="button"
-          onClick={handleSelecionarNaoAssociado}
-          className={`px-4 py-2 rounded-full border text-sm font-semibold transition cursor-pointer
-            ${
-              isNaoAssociado
+          <button
+            type="button"
+            onClick={handleSelecionarNaoAssociado}
+            className={`px-4 py-2 rounded-full border text-sm font-semibold transition cursor-pointer
+            ${isNaoAssociado
                 ? "bg-secondary text-white border-secondary"
                 : "bg-white text-gray-700 border-gray-300 hover:border-secondary"
-            }`}
-        >
-          Não associado
-        </button>
-      </div>
-
-      {isAssociado && (
-        <p className="text-md text-gray-500 mb-6">
-          Digite o CPF para preencher automaticamente (nome/CPF/RG). Complete o endereço se necessário.
-        </p>
-      )}
-
-      {isNaoAssociado && (
-        <p className="text-md text-gray-500 mb-6">
-          Preencha os dados manualmente para gerar a declaração.
-        </p>
-      )}
-
-      {isAssociado && (
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-          <input
-            value={formatCpfView(cpfBusca)}
-            onChange={(e) => setCpfBusca(e.target.value)}
-            placeholder="CPF (somente números)"
-            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            inputMode="numeric"
-            maxLength={14}
-          />
-          <button
-            onClick={onBuscar}
-            disabled={loading}
-            className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md"
+              }`}
           >
-            {loading ? "Buscando..." : "Pesquisar"}
+            Não associado
           </button>
         </div>
-      )}
 
-      {erro && (
-        <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-          {erro}
-        </div>
-      )}
+        {isAssociado && (
+          <p className="text-md text-gray-500 mb-6">
+            Digite o CPF para preencher automaticamente (nome/CPF/RG). Complete o endereço se necessário.
+          </p>
+        )}
 
-      {info && (
-        <div className="mt-3 text-sm text-secondary bg-emerald-50 border border-emerald-200 rounded p-3">
-          {info}
-        </div>
-      )}
+        {isNaoAssociado && (
+          <p className="text-md text-gray-500 mb-6">
+            Preencha os dados manualmente para gerar a declaração.
+          </p>
+        )}
+
+        {isAssociado && (
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+            <SearchInput
+              value={formatCpfView(cpfBusca)}
+              onChange={(e) => setCpfBusca(e.target.value)}
+              placeholder="CPF (somente números)"
+              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              inputMode="numeric"
+              maxLength={14}
+            />
+            <SearchButton loading={loading} label="Pesquisar" />
+          </div>
+        )}
+
+        {erro && (
+          <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            {erro}
+          </div>
+        )}
+
+        {info && (
+          <div className="mt-3 text-sm text-secondary bg-emerald-50 border border-emerald-200 rounded p-3">
+            {info}
+          </div>
+        )}
+
+        {erroCep && (
+          <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            {erroCep}
+          </div>
+        )}
+
+        {infoCep && (
+          <div className="mt-3 text-sm text-secondary bg-emerald-50 border border-emerald-200 rounded p-3">
+            {infoCep}
+          </div>
+        )}
+      </SearchForm>
 
       {data && (
         <div className="mt-6 space-y-4">
@@ -257,9 +306,27 @@ export function DeclaracaoResidenciaForm() {
             <InputRW
               label="CEP"
               value={maskCepView(data.cep)}
-              onChange={(v) => setData({ ...data, cep: v })}
+              onChange={(v) => {
+                const cepDigitado = onlyDigits(v).slice(0, 8);
+                setData({ ...data, cep: cepDigitado });
+
+                if (cepDigitado.length < 8) {
+                  limparMensagens();
+                }
+              }}
+              onBlur={() => {
+                if (isNaoAssociado) {
+                  onBuscarCep();
+                }
+              }}
             />
           </div>
+
+          {loadingCep && (
+            <div className="mt-2 text-xs text-gray-500">
+              Buscando endereço pelo CEP...
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <InputRW label="Cidade (no rodapé)" value={cidadeRodape} onChange={setCidadeRodape} />
@@ -296,15 +363,25 @@ function InputRW({
   label,
   value,
   onChange,
+  onBlur,
+  readOnly = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: () => void;
+  readOnly?: boolean;
 }) {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full border px-3 py-2 rounded" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        readOnly={readOnly}
+        className="w-full border px-3 py-2 rounded"
+      />
     </div>
   );
 }

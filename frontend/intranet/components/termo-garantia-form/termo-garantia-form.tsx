@@ -9,6 +9,10 @@ import {
   type CidadeOption,
 } from "@/services/termo_garantia.service";
 import { gerarPdfTermoGarantia } from "@/lib/pdf/gerarPdfTermoGarantia";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
+
 
 type GarantiaEscolha = "" | "sim" | "nao";
 type EstadoCivil =
@@ -231,49 +235,44 @@ export function TermoGarantiaForm() {
 
   return (
     <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-      {(erro || info) && (
-        <div className="mb-6">
-          {erro ? (
-            <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              {erro}
-            </div>
-          ) : (
-            <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-              {info}
-            </div>
-          )}
-        </div>
-      )}
+      <SearchForm onSearch={handleBuscarAssociado}>
+        {(erro || info) && (
+          <div className="mb-6">
+            {erro ? (
+              <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {erro}
+              </div>
+            ) : (
+              <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                {info}
+              </div>
+            )}
+          </div>
+        )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            CPF do associado
-          </label>
-          <input
-            value={formatCpfView(cpf)}
-            onChange={(e) => {
-              setCpf(e.target.value);
-              resetResultado();
-            }}
-            placeholder="000.000.000-00"
-            className="w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            inputMode="numeric"
-            maxLength={14}
-          />
-        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              CPF do associado
+            </label>
+            <SearchInput
+              value={formatCpfView(cpf)}
+              onChange={(e) => {
+                setCpf(e.target.value);
+                resetResultado();
+              }}
+              placeholder="000.000.000-00"
+              className="w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              inputMode="numeric"
+              maxLength={14}
+            />
+          </div>
 
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={handleBuscarAssociado}
-            disabled={loadingBuscar}
-            className="cursor-pointer rounded bg-secondary px-6 py-2 font-semibold text-white hover:bg-primary hover:shadow-md disabled:opacity-70"
-          >
-            {loadingBuscar ? "Buscando..." : "Buscar"}
-          </button>
+          <div className="flex items-end">
+            <SearchButton loading={loadingBuscar} label="Pesquisar" />
+          </div>
         </div>
-      </div>
+      </SearchForm>
 
       <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-12">
         <div className="md:col-span-8">

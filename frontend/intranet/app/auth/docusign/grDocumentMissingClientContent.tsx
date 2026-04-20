@@ -2,7 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { ArrowDownAZ, ArrowUpZA, Download, ExternalLink } from "lucide-react";
+import {
+  ArrowDownAZ,
+  ArrowUpZA,
+  CalendarDays,
+  Download,
+  ExternalLink,
+  FileSearch,
+  Filter,
+  Search,
+  ShieldCheck,
+  UserCircle2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/back-button/back-button";
 
@@ -83,37 +94,45 @@ export default function GrDocumentMissingClientContent() {
     async function checkAuthentication() {
       if (!isClientLoaded || autenticado !== null) return;
 
-      let identifiedUserName: string | null = null;
-
       try {
-        const response = await axios.get("http://10.0.107.233/usuario_info.php", {
-          withCredentials: true,
-        });
-        identifiedUserName = response.data?.NORMALIZADO;
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/v1/me`,
+          {
+            withCredentials: true,
+          }
+        );
+
+        const identifiedUserName = response.data?.username;
+        const grupos = Array.isArray(response.data?.grupos)
+          ? response.data.grupos
+          : [];
+
+        if (identifiedUserName) {
+          const normalizedName = normalizeUserName(identifiedUserName);
+          setLoggedInUserName(normalizedName);
+        } else {
+          setError(
+            "Acesso restrito: Nome de usuário não fornecido na sessão. Redirecionando para autenticação."
+          );
+          setAutenticado(false);
+          return;
+        }
+
+        const pertenceAoGrupo = grupos.some(
+          (grupo: string) => String(grupo).toUpperCase() === "GG_USERS_DOCUSIGN"
+        );
+
+        if (pertenceAoGrupo) {
+          setAutenticado(true);
+        } else {
+          setError("Acesso restrito: Você não tem permissão para visualizar esta tela.");
+          setAutenticado(false);
+        }
       } catch (err) {
         console.error("Erro ao verificar sessão Next.js:", err);
         setError(
           "Acesso restrito: Sua sessão expirou ou não foi iniciada. Redirecionando para autenticação."
         );
-        setAutenticado(false);
-        return;
-      }
-
-      if (identifiedUserName) {
-        const normalizedName = normalizeUserName(identifiedUserName);
-        setLoggedInUserName(normalizedName);
-      } else {
-        setError(
-          "Acesso restrito: Nome de usuário não fornecido na sessão. Redirecionando para autenticação."
-        );
-        setAutenticado(false);
-        return;
-      }
-
-      if (usuariosDiretoria.includes(normalizeUserName(identifiedUserName))) {
-        setAutenticado(true);
-      } else {
-        setError("Acesso restrito: Você não tem permissão para visualizar esta tela.");
         setAutenticado(false);
       }
     }
@@ -216,242 +235,426 @@ export default function GrDocumentMissingClientContent() {
 
   if (autenticado === null) {
     return (
-      <div className="text-center mt-40 text-lg text-gray-600">
-        Verificando permissões de acesso...
+      <div className="p-6 lg:p-8">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300]/20 text-[#00AE9D]">
+            <ShieldCheck className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-semibold text-[var(--title)]">
+            Verificando permissões de acesso
+          </h2>
+          <p className="mt-2 text-sm text-[var(--paragraph)]">
+            Aguarde enquanto validamos seu acesso ao painel da DocuSign.
+          </p>
+        </div>
       </div>
     );
   }
 
   if (autenticado === false) {
     return (
-      <div className="max-w-xl mx-auto mt-40 p-6 bg-white shadow-lg rounded-xl text-center">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Acesso Negado</h1>
-        <p className="text-gray-700 mb-4">
-          {error || "Você não tem permissão para acessar esta tela."}
-        </p>
-        <button
-          onClick={() => router.push("https://intranet/menu")}
-          className="bg-blue-600 hover:cursor-pointer text-white font-bold py-2 px-4 rounded"
-        >
-          Retornar à Intranet
-        </button>
+      <div className="p-6 lg:p-8">
+        <div className="mx-auto mt-20 max-w-xl rounded-3xl border border-red-100 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <ShieldCheck className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-semibold text-red-600">Acesso Negado</h1>
+          <p className="mt-3 text-sm leading-6 text-[var(--paragraph)]">
+            {error || "Você não tem permissão para acessar esta tela."}
+          </p>
+          <button
+            onClick={() => router.push("https://intranet/menu")}
+            className="mt-6 inline-flex items-center justify-center rounded-xl bg-[var(--primary)] px-5 py-2.5 font-semibold text-white transition hover:cursor-pointer hover:bg-[var(--secondary)] hover:shadow-md"
+          >
+            Retornar à Intranet
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto mt-10 p-6 bg-white dark:bg-gray-900 shadow-lg rounded-xl text-gray-900 dark:text-gray-100">
-      <BackButton />
+    <div className="p-6 lg:p-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <BackButton />
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300]/20 text-[#00AE9D]">
+              <FileSearch size={18} />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-2xl font-semibold text-[var(--title)]">
+                Dashboard DocuSign
+              </h1>
+              <p className="mt-1 text-sm text-[var(--paragraph)]">
+                Consulte documentos, localize envelopes com facilidade e abra ou baixe os PDFs em poucos cliques.
+              </p>
+            </div>
+          </div>
+        </div>
 
-      <h1 className="text-3xl font-bold mb-6 text-center">Dashboard Docusign</h1>
+        {loggedInUserName && (
+          <div className="inline-flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-[var(--paragraph)] shadow-sm">
+            <UserCircle2 className="h-4 w-4 text-[var(--primary)]" />
+            <span>Logado como:</span>
+            <span className="font-semibold text-[var(--title)]">{loggedInUserName}</span>
+          </div>
+        )}
+      </div>
 
-      {loggedInUserName && (
-        <p className="text-sm text-gray-600 text-center mb-4 dark:text-white">
-          Logado como:{" "}
-          <span className="font-semibold dark:text-white">{loggedInUserName}</span>
-        </p>
+      <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr_1fr]">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)]">
+              <FileSearch className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--title)]">
+                Consulta de documentos na DocuSign
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-[var(--paragraph)]">
+                Use os filtros abaixo para localizar documentos por período, status, responsável ou qualquer termo livre.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-[#00AE9D]/10 via-white to-white p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[var(--primary)] shadow-sm">
+              <CalendarDays className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                Período
+              </p>
+              <p className="text-sm text-[var(--paragraph)]">
+                Informe data inicial e final para iniciar a consulta.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-[#79B729]/10 via-white to-white p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[var(--secondary)] shadow-sm">
+              <Download className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                Ações rápidas
+              </p>
+              <p className="text-sm text-[var(--paragraph)]">
+                Abra o PDF no navegador ou faça o download do arquivo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
+          Erro: {error}
+        </div>
       )}
-
-      {error && <p className="text-red-500 mb-4">Erro: {error}</p>}
 
       {loadingProgress !== null && (
-        <div className="mt-2 mb-6 w-full max-w-md mx-auto text-center">
-          <div className="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden shadow-md">
-            <div
-              className="absolute top-0 left-0 h-full transition-all duration-500 ease-out"
-              style={{
-                width: `${loadingProgress}%`,
-                background: "linear-gradient(90deg, #4ade80, #16a34a)",
-              }}
-            />
-            <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
-              {loadingProgress}% carregado
+        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--title)]">
+                Carregando registros
+              </h3>
+              <p className="text-xs text-[var(--paragraph)]">
+                Aguarde enquanto buscamos os documentos solicitados.
+              </p>
+            </div>
+            <span className="rounded-full bg-[var(--primary)]/10 px-3 py-1 text-xs font-semibold text-[var(--primary)]">
+              {loadingProgress}%
             </span>
           </div>
-          <p className="text-sm text-gray-700 mt-2 mb-2 animate-pulse">
-            Aguarde, carregando registros...
-          </p>
+
+          <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="absolute left-0 top-0 h-full rounded-full transition-all duration-500 ease-out"
+              style={{
+                width: `${loadingProgress}%`,
+                background: "linear-gradient(90deg, #00AE9D, #79B729)",
+              }}
+            />
+          </div>
         </div>
       )}
 
-      <div className="border border-gray-200 p-6 rounded bg-gray-50 dark:bg-gray-900">
-        <h2 className="text-lg font-semibold mb-4">
-          Consulta de documentos na Docusign
-        </h2>
+      <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-[var(--primary)]" />
+              <h2 className="text-lg font-semibold text-[var(--title)]">Filtros de pesquisa</h2>
+            </div>
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
+              É obrigatório informar a data inicial e a data final. Os demais filtros são opcionais.
+            </p>
+          </div>
 
-        <div className="text-center text-md py-4 my-6 bg-white dark:bg-gray-900 border-b-emerald-50 shadow-lg rounded-lg">
-          <p>É obrigatório o preenchimento da data inicial e data final, os outros campos não são obrigatórios.</p>
+          <div className="rounded-2xl border border-[#C7D300]/40 bg-[#C7D300]/10 px-4 py-3 text-sm text-[var(--title)]">
+            Pesquise por período e refine o resultado com status, responsável ou busca livre.
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 items-end">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
           <div>
-            <label className="block mb-1">Data Inicial:</label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="border rounded px-4 py-2 w-full dark:bg-gray-800 dark:text-white"
-            />
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+              Data Inicial
+            </label>
+            <div className="relative">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-[var(--title)] outline-none transition focus:border-[var(--primary)] focus:bg-white focus:ring-2 focus:ring-[var(--primary)]/15"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block mb-1">Data Final:</label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="border rounded px-4 py-2 w-full dark:bg-gray-800 dark:text-white"
-            />
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+              Data Final
+            </label>
+            <div className="relative">
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-[var(--title)] outline-none transition focus:border-[var(--primary)] focus:bg-white focus:ring-2 focus:ring-[var(--primary)]/15"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block mb-1">Status:</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+              Status
+            </label>
             <input
               type="text"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border rounded px-4 py-2 w-full dark:bg-gray-800 dark:text-white"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-[var(--title)] outline-none transition placeholder:text-[var(--text-darken-placeholder)] focus:border-[var(--primary)] focus:bg-white focus:ring-2 focus:ring-[var(--primary)]/15"
               placeholder="Ex: missing"
             />
           </div>
 
           <div>
-            <label className="block mb-1">Responsável:</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+              Responsável
+            </label>
             <input
               type="text"
               value={responsavelFilter}
               onChange={(e) => setResponsavelFilter(e.target.value)}
-              className="border rounded px-4 py-2 w-full dark:bg-gray-800 dark:text-white"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-[var(--title)] outline-none transition placeholder:text-[var(--text-darken-placeholder)] focus:border-[var(--primary)] focus:bg-white focus:ring-2 focus:ring-[var(--primary)]/15"
               placeholder="Ex: Lucas"
             />
           </div>
 
           <div>
-            <label className="block mb-1">Busca livre:</label>
-            <input
-              type="text"
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              className="border rounded px-4 py-2 w-full dark:bg-gray-800 dark:text-white"
-              placeholder="envelope, doc, id..."
-            />
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+              Busca livre
+            </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-darken)]" />
+              <input
+                type="text"
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-[var(--title)] outline-none transition placeholder:text-[var(--text-darken-placeholder)] focus:border-[var(--primary)] focus:bg-white focus:ring-2 focus:ring-[var(--primary)]/15"
+                placeholder="envelope, doc, id..."
+              />
+            </div>
           </div>
         </div>
 
-        <button
-          onClick={handleBuscar}
-          className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md"
-        >
-          Buscar
-        </button>
+        <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-[var(--paragraph)]">
+            Dica: use a busca livre para localizar rapidamente por envelope, documento, status ou identificador.
+          </p>
 
-        {rowsFiltradas.length > 0 && (
-          <>
-            <p className="text-sm text-gray-700 font-medium mt-6 mb-4 text-center">
-              {rowsFiltradas.length} registros encontrados
-              {fromDate && toDate
-                ? ` entre ${new Date(fromDate).toLocaleDateString("pt-BR")} e ${new Date(
-                  toDate
-                ).toLocaleDateString("pt-BR")}.`
-                : "."}
-            </p>
+          <button
+            onClick={handleBuscar}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--secondary)] px-6 py-3 font-semibold text-white transition hover:cursor-pointer hover:bg-[var(--primary)] hover:shadow-md"
+          >
+            <Search className="h-4 w-4" />
+            Buscar
+          </button>
+        </div>
+      </div>
 
-            <div className="flex justify-between items-center mb-4 mt-4">
+      {rowsFiltradas.length > 0 && (
+        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-[var(--title)]">Resultados encontrados</h3>
+              <p className="mt-1 text-sm text-[var(--paragraph)]">
+                {rowsFiltradas.length} registros encontrados
+                {fromDate && toDate
+                  ? ` entre ${new Date(fromDate).toLocaleDateString("pt-BR")} e ${new Date(
+                      toDate
+                    ).toLocaleDateString("pt-BR")}.`
+                  : "."}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={() => setPaginaAtual((prev) => Math.max(prev - 1, 1))}
-                className="px-4 py-2 bg-gray-300 font-semibold rounded disabled:opacity-50 hover:shadow-md cursor-pointer hover:bg-blue-400 hover:text-white"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-[var(--title)] transition hover:bg-slate-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={paginaAtual === 1}
               >
                 Anterior
               </button>
 
-              <span className="text-sm font-medium text-gray-700">
+              <span className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-[var(--paragraph)]">
                 Página {paginaAtual} de {totalPaginas}
               </span>
 
               <button
                 onClick={() => setPaginaAtual((prev) => (prev < totalPaginas ? prev + 1 : prev))}
-                className="px-4 py-2 bg-gray-300 font-semibold rounded disabled:opacity-50 hover:shadow-md cursor-pointer hover:bg-blue-400 hover:text-white"
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-[var(--title)] transition hover:bg-slate-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={paginaAtual >= totalPaginas}
               >
                 Próxima
               </button>
             </div>
+          </div>
 
-            <table className="table-auto w-full border border-gray-300 mt-6">
-              <thead className="sticky top-0 bg-gray-50 z-10 shadow-sm">
-                <tr className="bg-gray-100">
-                  <th
-                    onClick={() => setOrdenacaoDataAsc((prev) => !prev)}
-                    className="border px-4 py-2 text-left cursor-pointer select-none"
-                  >
-                    <div className="flex items-center gap-1">
-                      Data
-                      {ordenacaoDataAsc ? (
-                        <ArrowDownAZ className="w-4 h-4 text-blue-700" />
-                      ) : (
-                        <ArrowUpZA className="w-4 h-4 text-blue-700" />
-                      )}
-                    </div>
-                  </th>
+          <div className="overflow-hidden rounded-3xl border border-slate-200">
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto">
+                <thead className="sticky top-0 z-10 bg-slate-50">
+                  <tr>
+                    <th
+                      onClick={() => setOrdenacaoDataAsc((prev) => !prev)}
+                      className="cursor-pointer select-none border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]"
+                    >
+                      <div className="flex items-center gap-2">
+                        Data
+                        {ordenacaoDataAsc ? (
+                          <ArrowDownAZ className="h-4 w-4 text-[var(--primary)]" />
+                        ) : (
+                          <ArrowUpZA className="h-4 w-4 text-[var(--primary)]" />
+                        )}
+                      </div>
+                    </th>
 
-                  <th className="border px-4 py-2 text-left">Envelope</th>
-                  <th className="border px-4 py-2 text-left">Documento</th>
-                  <th className="border px-4 py-2 text-left">Status</th>
-                  <th className="border px-4 py-2 text-left">Responsável</th>
-                  <th className="border px-4 py-2 text-left">Ações</th>
-                </tr>
-              </thead>
+                    <th className="border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                      Envelope
+                    </th>
+                    <th className="border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                      Documento
+                    </th>
+                    <th className="border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                      Status
+                    </th>
+                    <th className="border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                      Responsável
+                    </th>
+                    <th className="border-b border-slate-200 px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
 
-              <tbody>
-                {rowsPaginadas.map((r, idx) => {
-                  const key = String(r.ID || r.ENVELOPE_ID || idx);
+                <tbody>
+                  {rowsPaginadas.map((r, idx) => {
+                    const key = String(r.ID || r.ENVELOPE_ID || idx);
 
-                  return (
-                    <tr key={key} className="hover:bg-gray-100 transition-colors duration-200">
-                      <td className="border px-4 py-2">
-                        {r.CREATED_AT ? new Date(r.CREATED_AT).toLocaleDateString("pt-BR") : "—"}
-                      </td>
+                    return (
+                      <tr
+                        key={key}
+                        className="border-b border-slate-100 bg-white transition hover:bg-slate-50/80"
+                      >
+                        <td className="px-4 py-4 text-sm text-[var(--paragraph)]">
+                          {r.CREATED_AT ? new Date(r.CREATED_AT).toLocaleDateString("pt-BR") : "—"}
+                        </td>
 
-                      <td className="border px-4 py-3">{r.ENVELOPE_ID || "—"}</td>
-                      <td className="border px-4 py-3">{r.EMAIL_SUBJECT || "—"}</td>
-                      <td className="border px-4 py-3">{r.STATUS || "—"}</td>
-                      <td className="border px-4 py-3">{r.RESPONSAVEL_NOME || "—"}</td>
+                        <td className="px-4 py-4 text-sm font-medium text-[var(--title)]">
+                          <div className="max-w-[180px] truncate" title={r.ENVELOPE_ID || "—"}>
+                            {r.ENVELOPE_ID || "—"}
+                          </div>
+                        </td>
 
-                      <td className="border px-4 py-3">
-                        <div className="flex flex-col gap-2">
-                          {r.ENVELOPE_ID ? (
-                            <>
-                              <a
-                                href={`${process.env.NEXT_PUBLIC_API_URL}/v1/download-from-db?envelopeId=${r.ENVELOPE_ID}&inline=true`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-700 hover:underline flex items-center gap-1"
-                              >
-                                <Download className="w-4 h-4" /> Baixar
-                              </a>
+                        <td className="px-4 py-4 text-sm text-[var(--paragraph)]">
+                          <div className="max-w-[320px] truncate" title={r.EMAIL_SUBJECT || "—"}>
+                            {r.EMAIL_SUBJECT || "—"}
+                          </div>
+                        </td>
 
-                              <a
-                                href={`${process.env.NEXT_PUBLIC_API_URL}/v1/download-from-db?envelopeId=${r.ENVELOPE_ID}&inline=true`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-green-700 hover:underline flex items-center gap-1"
-                              >
-                                <ExternalLink className="w-4 h-4" /> Abrir
-                              </a>
-                            </>
-                          ) : (
-                            <span className="text-gray-500">—</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </>
-        )}
+                        <td className="px-4 py-4 text-sm">
+                          <span className="inline-flex rounded-full bg-[var(--third)]/20 px-3 py-1 text-xs font-semibold text-[var(--title)]">
+                            {r.STATUS || "—"}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-4 text-sm text-[var(--paragraph)]">
+                          <div className="max-w-[180px] truncate" title={r.RESPONSAVEL_NOME || "—"}>
+                            {r.RESPONSAVEL_NOME || "—"}
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            {r.ENVELOPE_ID ? (
+                              <>
+                                <a
+                                  href={`${process.env.NEXT_PUBLIC_API_URL}/v1/download-from-db?envelopeId=${r.ENVELOPE_ID}&inline=false`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-[var(--title)] transition hover:border-[var(--secondary)] hover:bg-[var(--secondary)]/10 hover:text-[var(--secondary)]"
+                                >
+                                  <Download className="h-4 w-4" /> Baixar
+                                </a>
+
+                                <a
+                                  href={`${process.env.NEXT_PUBLIC_API_URL}/v1/download-from-db?envelopeId=${r.ENVELOPE_ID}&inline=true`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 rounded-xl bg-[var(--primary)] px-3 py-2 text-sm font-medium text-white transition hover:bg-[var(--fourth)] hover:shadow-sm"
+                                >
+                                  <ExternalLink className="h-4 w-4" /> Abrir
+                                </a>
+                              </>
+                            ) : (
+                              <span className="text-sm text-slate-400">—</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rowsFiltradas.length === 0 && !loadingProgress && (
+        <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-[var(--primary)]">
+            <FileSearch className="h-7 w-7" />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--title)]">
+            Nenhum documento exibido no momento
+          </h3>
+          <p className="mt-2 text-sm text-[var(--paragraph)]">
+            Preencha os filtros e clique em <span className="font-semibold">Buscar</span> para consultar os documentos da DocuSign.
+          </p>
+        </div>
+      )}
+
+      <div className="mt-8 text-xs text-[var(--text-darken)]">
+        * Os arquivos são consultados na base interna e disponibilizados para abertura ou download conforme o envelope selecionado.
       </div>
     </div>
   );

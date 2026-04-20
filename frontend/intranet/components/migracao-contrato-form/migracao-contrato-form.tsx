@@ -10,6 +10,9 @@ import {
   type MigracaoContratoLinhaPayload,
 } from "@/services/migracao_contrato.service";
 import { gerarArquivoMigracaoContratoTxt } from "@/lib/txt/gerarArquivoMigracaoContrato";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type LinhaMigracao = {
   id: string;
@@ -63,10 +66,10 @@ function mapResponseToLinha(
     salario:
       typeof data.salario === "number"
         ? data.salario.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-            minimumFractionDigits: 2,
-          })
+          style: "currency",
+          currency: "BRL",
+          minimumFractionDigits: 2,
+        })
         : "",
     admissao: data.admissao || data.nascimento || "",
     cpf: data.cpf || "",
@@ -146,14 +149,14 @@ export function MigracaoContratoForm() {
       prev.map((linha) =>
         linha.id === id
           ? {
-              ...linha,
-              [field]:
-                field === "cpf"
-                  ? formatCpfView(value)
-                  : field === "salario"
+            ...linha,
+            [field]:
+              field === "cpf"
+                ? formatCpfView(value)
+                : field === "salario"
                   ? formatCurrencyInput(value)
                   : value,
-            }
+          }
           : linha
       )
     );
@@ -235,41 +238,36 @@ export function MigracaoContratoForm() {
 
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          CPF do associado(a)
-        </label>
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-          <input
-            value={formatCpfView(cpfBusca)}
-            onChange={(e) => setCpfBusca(e.target.value)}
-            placeholder="CPF (somente números)"
-            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-            inputMode="numeric"
-            maxLength={14}
-          />
-          <button
-            onClick={onBuscar}
-            disabled={loadingBusca}
-            className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md inline-flex items-center justify-center gap-2"
-          >
-            <FaPlus size={12} />
-            {loadingBusca ? "Buscando..." : "Adicionar migração"}
-          </button>
+      <SearchForm onSearch={onBuscar}>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            CPF do associado(a)
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+            <SearchInput
+              value={formatCpfView(cpfBusca)}
+              onChange={(e) => setCpfBusca(e.target.value)}
+              placeholder="CPF (somente números)"
+              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              inputMode="numeric"
+              maxLength={14}
+            />
+            <SearchButton loading={loadingBusca} label="Pesquisar" />
+          </div>
+
+          {erro && (
+            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+              {erro}
+            </div>
+          )}
+
+          {info && (
+            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
+              {info}
+            </div>
+          )}
         </div>
-
-        {erro && (
-          <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-            {erro}
-          </div>
-        )}
-
-        {info && (
-          <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-            {info}
-          </div>
-        )}
-      </div>
+      </SearchForm>
 
       <div className="mt-6 overflow-x-auto">
         <table className="w-full min-w-[1000px] border-separate border-spacing-0">
