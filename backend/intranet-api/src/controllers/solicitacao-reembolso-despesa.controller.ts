@@ -53,6 +53,15 @@ function sanitizeFileName(name: string) {
     .replace(/[^\w.\-]+/g, "_");
 }
 
+function sanitizeFolderName(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, " ");
+}
+
 function parseBase64File(dataUrl: string | null, nomeOriginal?: string | null) {
   if (!dataUrl || typeof dataUrl !== "string") {
     return null;
@@ -80,6 +89,27 @@ async function ensureDir(dirPath: string) {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
+function formatFolderDateTime(date = new Date()) {
+  const dia = String(date.getDate()).padStart(2, "0");
+  const mes = String(date.getMonth() + 1).padStart(2, "0");
+  const ano = String(date.getFullYear());
+  const hora = String(date.getHours()).padStart(2, "0");
+  const minuto = String(date.getMinutes()).padStart(2, "0");
+
+  return `${dia}-${mes}-${ano}_${hora}-${minuto}`;
+}
+
+function getBaseReembolsoPath() {
+  return (
+    process.env.REEMBOLSO_DESPESA_BASE_PATH ||
+    "\\\\10.0.107.251\\dados$\\CRM\\REEMBOLSO_DESPESA"
+  );
+}
+
+function isUncPath(filePath: string | null | undefined) {
+  return String(filePath || "").startsWith("\\\\");
+}
+
 async function removeFileIfExists(filePath: string | null | undefined) {
   if (!filePath) return;
 
@@ -94,20 +124,25 @@ async function salvarComprovante(
   dataUrl: string | null,
   nomeOriginal: string | null | undefined,
   idSolicitacao: number,
-  indice: number
+  indice: number,
+  nomeFuncionario?: string | null
 ) {
   const parsed = parseBase64File(dataUrl, nomeOriginal);
   if (!parsed) return null;
 
-  const uploadDir = path.resolve(process.cwd(), "uploads", "reembolso_despesa");
-  await ensureDir(uploadDir);
+  const funcionarioSafe = sanitizeFolderName(nomeFuncionario || "SEM_NOME");
+  const pastaDataHora = formatFolderDateTime();
 
-  const timestamp = Date.now();
-  const finalName = `${idSolicitacao}_${indice}_${timestamp}_${sanitizeFileName(
-    parsed.nomeOriginal
-  )}`;
+  const baseDir = path.join(
+    getBaseReembolsoPath(),
+    funcionarioSafe,
+    pastaDataHora
+  );
 
-  const finalPath = path.join(uploadDir, finalName);
+  await ensureDir(baseDir);
+
+  const finalName = sanitizeFileName(parsed.nomeOriginal);
+  const finalPath = path.join(baseDir, finalName);
 
   await fs.writeFile(finalPath, parsed.buffer);
 
@@ -359,7 +394,8 @@ export const solicitacaoReembolsoDespesaController = {
           despesa?.COMPROVANTE || null,
           despesa?.COMPROVANTE_NOME || null,
           idSolicitacao,
-          i + 1
+          i + 1,
+          req.body.NM_FUNCIONARIO
         );
 
         await connection.execute(insertDespesaSql, {
@@ -553,7 +589,8 @@ export const solicitacaoReembolsoDespesaController = {
           despesa?.COMPROVANTE || null,
           despesa?.COMPROVANTE_NOME || null,
           idSolicitacao,
-          i + 1
+          i + 1,
+          req.body.NM_FUNCIONARIO
         );
 
         await connection.execute(insertDespesaSql, {
@@ -940,7 +977,7 @@ export const solicitacaoReembolsoDespesaController = {
         return res.status(400).json({ error: "Arquivo não informado." });
       }
 
-      const filePath = path.isAbsolute(oficio)
+      const filePath = path.isAbsolute(oficio) || isUncPath(oficio)
         ? oficio
         : path.resolve(process.cwd(), oficio);
 

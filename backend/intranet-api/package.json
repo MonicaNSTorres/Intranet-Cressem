@@ -30,7 +30,8 @@
     "nodemailer": "^8.0.4",
     "oracledb": "^6.10.0",
     "pdf-lib": "^1.17.1",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",

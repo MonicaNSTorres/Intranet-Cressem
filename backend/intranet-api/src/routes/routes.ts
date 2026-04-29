@@ -58,13 +58,16 @@ import { tipoDespesaController } from "../controllers/tipo-despesa.controller";
 import { emailInformativoFinanceiroController } from "../controllers/email-informativo-financeiro.controller";
 import {
   glpiHealth,
-  listarConsumiveisGlpi,
-  buscarConsumivelGlpiPorId,
+  listarEstoqueGlpi,
+  buscarEquipamentoGlpiPorId,
+  testarItemtypeGlpi,
 } from "../controllers/glpi.controller";
 import { solicitacaoReembolsoDespesaPaginadoController } from "../controllers/solicitacao_reembolso_despesa_paginado.controller";
 import { juntarPdfController } from "../controllers/juntar-pdf.controller";
 import { producaoMetaCooperativaPaController } from "../controllers/producao-meta-cooperativa-pa.controller";
 import { producaoMetaFuncionarioController } from "../controllers/producao-meta-funcionario.controller";
+import { estoqueConsumiveisController } from "../controllers/estoque-consumiveis.controller";
+import { GlpiService } from "../services/glpi.service";
 
 const routes = Router();
 
@@ -814,8 +817,9 @@ routes.get(
 );
 
 routes.get("/v1/glpi/health", glpiHealth);
-routes.get("/v1/glpi/consumables", listarConsumiveisGlpi);
-routes.get("/v1/glpi/consumables/:id", buscarConsumivelGlpiPorId);
+routes.get("/v1/glpi/estoque", listarEstoqueGlpi);
+routes.get("/v1/glpi/estoque/:id", buscarEquipamentoGlpiPorId);
+routes.get("/v1/glpi/test-itemtype", testarItemtypeGlpi);
 
 routes.post("/v1/juntar-pdf", juntarPdfController);
 
@@ -839,6 +843,85 @@ routes.get(
   "/v1/producao-meta-funcionario/datas",
   authMiddleware,
   producaoMetaFuncionarioController.datas
+);
+
+routes.get("/v1/estoque-consumiveis/itens", estoqueConsumiveisController.listarItens);
+routes.post("/v1/estoque-consumiveis/itens", estoqueConsumiveisController.criarItem);
+
+routes.post(
+  "/v1/estoque-consumiveis/importar-excel",
+  upload.single("file"),
+  estoqueConsumiveisController.importarExcel
+);
+
+routes.get("/v1/estoque-consumiveis/solicitacoes-glpi", estoqueConsumiveisController.listarSolicitacoesGlpi);
+routes.post("/v1/estoque-consumiveis/solicitacoes-glpi/sincronizar", estoqueConsumiveisController.sincronizarChamadoManual);
+routes.post("/v1/estoque-consumiveis/solicitacoes-glpi/:idSolicitacao/baixa", estoqueConsumiveisController.darBaixaSolicitacao);
+
+routes.post("/v1/estoque-consumiveis/entrada", estoqueConsumiveisController.lancarEntrada);
+routes.get("/v1/estoque-consumiveis/movimentacoes", estoqueConsumiveisController.listarMovimentacoes);
+
+routes.get("/v1/estoque-consumiveis/balanco-mensal", estoqueConsumiveisController.buscarBalancoMensal);
+
+routes.post(
+  "/v1/estoque-consumiveis/solicitacoes-glpi/sincronizar-real",
+  estoqueConsumiveisController.sincronizarChamadosReaisGlpi
+);
+
+routes.get("/v1/glpi/test-ticket/:id", async (req, res) => {
+  try {
+    const glpiService = new GlpiService();
+    const data = await glpiService.getTicketById(req.params.id);
+    return res.json(data);
+  } catch (error: any) {
+    return res.status(500).json({
+      error: error?.response?.data || error?.message,
+    });
+  }
+});
+
+routes.get("/v1/glpi/list-search-options-ticket", async (req, res) => {
+  try {
+    const glpiService = new GlpiService();
+    const data = await glpiService.listSearchOptions("Ticket");
+    return res.json(data);
+  } catch (error: any) {
+    return res.status(500).json({
+      error: error?.response?.data || error?.message,
+    });
+  }
+});
+
+routes.post(
+  "/v1/estoque-consumiveis/solicitacoes-glpi/:idSolicitacao/resposta-manual",
+  estoqueConsumiveisController.responderManualGlpi
+);
+
+routes.get("/estoque-consumiveis/alertas", estoqueConsumiveisController.verificarEstoqueCritico);
+
+routes.post(
+  "/v1/estoque-consumiveis/alertas/whatsapp",
+  estoqueConsumiveisController.enviarAlertaWhatsapp
+);
+
+routes.post(
+  "/v1/estoque-consumiveis/alertas/email",
+  estoqueConsumiveisController.enviarAlertaEmail
+);
+
+routes.get(
+  "/v1/estoque-consumiveis/alertas-email",
+  estoqueConsumiveisController.listarAlertasEmail
+);
+
+routes.get(
+  "/v1/estoque-consumiveis/painel-glpi",
+  estoqueConsumiveisController.buscarPainelGlpiEstoque
+);
+
+routes.post(
+    "/v1/estoque-consumiveis/saida-manual-glpi",
+    estoqueConsumiveisController.registrarSaidaManualComGlpi
 );
 
 export { routes };

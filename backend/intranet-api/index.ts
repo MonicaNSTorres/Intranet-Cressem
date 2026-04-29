@@ -10,6 +10,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import fileUpload from "express-fileupload";
 import { initOraclePool, closeOraclePool } from "./src/config/oracle.pool";
+import { estoqueConsumiveisService } from "./src/services/estoque_consumiveis.service";
 
 const app = express();
 
@@ -60,6 +61,18 @@ async function bootstrap() {
     console.log(`API running at port ${port}`);
   });
 
+  setTimeout(async () => {
+    try {
+      console.log("Verificando estoque crítico para teste...");
+
+      const result = await estoqueConsumiveisService.enviarAlertaEmailEstoqueCritico();
+
+      console.log("Resultado do alerta de estoque:", result);
+    } catch (error) {
+      console.error("Erro ao enviar alerta de estoque:", error);
+    }
+  }, 10000);
+
   const httpServer = createServer();
   const io = new Server(httpServer, {
     cors: {
@@ -81,6 +94,18 @@ async function bootstrap() {
     });
   });
 
+  setInterval(async () => {
+    try {
+      console.log("Verificando estoque crítico automaticamente...");
+
+      const result = await estoqueConsumiveisService.enviarAlertaEmailEstoqueCritico();
+
+      console.log("Resultado verificação estoque crítico:", result);
+    } catch (error) {
+      console.error("Erro na verificação automática de estoque crítico:", error);
+    }
+  }, 1000 * 60 * 60);
+
   const shutdown = async () => {
     console.log("Encerrando...");
     server.close(async () => {
@@ -98,4 +123,4 @@ bootstrap().catch((err) => {
   process.exit(1);
 });
 
-export {};
+export { };

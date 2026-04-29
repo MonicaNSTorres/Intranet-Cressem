@@ -25,6 +25,10 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
         try {
             const pesquisa = String(req.query.pesquisa || "").trim();
             const nome = String(req.query.nome || "").trim().toUpperCase();
+            const cpf = onlyDigits(String(req.query.cpf || ""));
+            const cidade = String(req.query.cidade || "").trim().toUpperCase();
+            const status = String(req.query.status || "").trim().toUpperCase();
+
             const page = parsePage(req.query.page, 1);
             const limit = parseLimit(req.query.limit, 10);
             const offset = (page - 1) * limit;
@@ -39,11 +43,18 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
                 nome4: nome || " ",
                 nome5: nome || " ",
                 nome6: nome || " ",
+
                 pesq1: normalizeLike(pesquisaUpper || " "),
                 pesq2: normalizeLike(pesquisaUpper || " "),
                 pesq3: normalizeLike(pesquisaUpper || " "),
                 pesq4: normalizeLike(pesquisaUpper || " "),
-                cpf1: pesquisaCpf || "00000000000",
+                cpfPesq1: pesquisaCpf || "00000000000",
+
+                cpfFiltro1: cpf || " ",
+                cidade1: cidade || " ",
+                cidade2: normalizeLike(cidade || " "),
+                status1: status || " ",
+                status2: status || " ",
             };
 
             const whereSql = `
@@ -60,7 +71,19 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
         OR UPPER(NVL(s.NM_FUNCIONARIO, ' ')) LIKE :pesq2
         OR UPPER(NVL(s.DESC_ANDAMENTO, ' ')) LIKE :pesq3
         OR UPPER(NVL(s.NM_CIDADE, ' ')) LIKE :pesq4
-        OR REGEXP_REPLACE(NVL(s.NR_CPF_FUNCIONARIO, ' '), '[^0-9]', '') LIKE '%' || :cpf1 || '%'
+        OR REGEXP_REPLACE(NVL(s.NR_CPF_FUNCIONARIO, ' '), '[^0-9]', '') LIKE '%' || :cpfPesq1 || '%'
+      )
+      AND (
+        :cpfFiltro1 = ' '
+        OR REGEXP_REPLACE(NVL(s.NR_CPF_FUNCIONARIO, ' '), '[^0-9]', '') = :cpfFiltro1
+      )
+      AND (
+        :cidade1 = ' '
+        OR UPPER(NVL(s.NM_CIDADE, ' ')) LIKE :cidade2
+      )
+      AND (
+        :status1 = ' '
+        OR UPPER(NVL(s.DESC_ANDAMENTO, ' ')) = :status2
       )
     `;
 
@@ -90,11 +113,19 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
                 nome8: nome || " ",
                 nome9: nome || " ",
                 nome10: nome || " ",
+
                 pesq1: normalizeLike(pesquisaUpper || " "),
                 pesq2: normalizeLike(pesquisaUpper || " "),
                 pesq3: normalizeLike(pesquisaUpper || " "),
                 pesq4: normalizeLike(pesquisaUpper || " "),
-                cpf1: pesquisaCpf || "00000000000",
+                cpfPesq1: pesquisaCpf || "00000000000",
+
+                cpfFiltro1: cpf || " ",
+                cidade1: cidade || " ",
+                cidade2: normalizeLike(cidade || " "),
+                status1: status || " ",
+                status2: status || " ",
+
                 offset,
                 limit,
             };
