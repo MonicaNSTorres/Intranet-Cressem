@@ -218,14 +218,22 @@ export function GerenciamentoReembolsoDespesaForm() {
     }
   }
 
-  async function carregarContadores(nome: string, verTodos = podeVerTodos) {
+  async function carregarContadores(
+    nome: string,
+    verTodos = podeVerTodos,
+    filtros?: {
+      cpf?: string;
+      cidade?: string;
+      status?: string;
+    }
+  ) {
     try {
       const response = await buscarSolicitacoesReembolsoPaginado({
         nome: verTodos ? "" : nome,
         pesquisa: " ",
-        cpf: onlyDigits(filtroCpf),
-        cidade: filtroCidade || "",
-        status: filtroStatus || "",
+        cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
+        cidade: filtros?.cidade ?? filtroCidade ?? "",
+        status: filtros?.status ?? filtroStatus ?? "",
         page: 1,
         limit: 999999,
       });
@@ -260,7 +268,12 @@ export function GerenciamentoReembolsoDespesaForm() {
     pagina = 1,
     textoPesquisa = pesquisa,
     nome = nomeResponsavel,
-    verTodos = podeVerTodos
+    verTodos = podeVerTodos,
+    filtros?: {
+      cpf?: string;
+      cidade?: string;
+      status?: string;
+    }
   ) {
     try {
       setLoadingBusca(true);
@@ -268,9 +281,9 @@ export function GerenciamentoReembolsoDespesaForm() {
       const response = await buscarSolicitacoesReembolsoPaginado({
         pesquisa: textoPesquisa || " ",
         nome: verTodos ? "" : nome,
-        cpf: onlyDigits(filtroCpf),
-        cidade: filtroCidade || "",
-        status: filtroStatus || "",
+        cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
+        cidade: filtros?.cidade ?? filtroCidade ?? "",
+        status: filtros?.status ?? filtroStatus ?? "",
         page: pagina,
         limit: 10,
       });
@@ -312,6 +325,18 @@ export function GerenciamentoReembolsoDespesaForm() {
     setLista([]);
     setTotalPages(1);
     setPaginaAtual(1);
+
+    buscarDespesas(1, "", nomeResponsavel, podeVerTodos, {
+      cpf: "",
+      cidade: "",
+      status: "",
+    });
+
+    carregarContadores(nomeResponsavel, podeVerTodos, {
+      cpf: "",
+      cidade: "",
+      status: "",
+    });
   }
 
   function podeEditarSolicitacao() {
@@ -715,8 +740,8 @@ export function GerenciamentoReembolsoDespesaForm() {
               type="button"
               onClick={() => buscarDespesas(page)}
               className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
-                  ? "bg-green-600 text-white"
-                  : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                ? "bg-green-600 text-white"
+                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                 }`}
             >
               {page}

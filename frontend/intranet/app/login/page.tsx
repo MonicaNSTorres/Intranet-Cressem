@@ -2,8 +2,10 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { IoLockClosedOutline, IoEyeOffOutline, IoEyeOutline, IoPersonOutline } from "react-icons/io5";
+import { FaPhone } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 //import LoginBackground from "@/public/backgrounds/login_background.png";
 import LoginBackground from "@/public/backgrounds/background-login.jpeg";
 import { loginAdUser } from "@/services/auth.service";
@@ -203,6 +205,14 @@ export default function LoginPage() {
                         >
                             {loading ? "Entrando..." : "Entrar"}
                         </button>
+
+                        <Link
+                            href="/ramal"
+                            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-secondary bg-white p-3 text-lg font-semibold text-secondary transition hover:bg-secondary hover:text-white"
+                        >
+                            <FaPhone size={16} />
+                            Acessar Ramais
+                        </Link>
                     </form>
                 </div>
             </div>

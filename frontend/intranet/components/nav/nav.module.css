@@ -1,4 +1,4 @@
-.logoCressem {
+/*.logoCressem {
   height: 10vh;
   width: 80%;
   display: flex;
@@ -22,4 +22,30 @@
   background-position: center;
   background-size: contain;
   background-image: url("../../public/logo-icon.png");
+}*/
+
+.logoCressem {
+  height: 10vh;
+  width: 80%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("/logo.png");
+}
+
+.logoCressemIcon {
+  height: 10vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("/logo-icon.png");
 }

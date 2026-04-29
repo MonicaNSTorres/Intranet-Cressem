@@ -266,7 +266,7 @@ export function EmprestimoConsignadoForm() {
               <button
                 type="button"
                 onClick={() => downloadCSV(filtered, "empresas-filtradas.csv")}
-                className="px-3 py-2 text-sm rounded border hover:shadow-md cursor-pointer dark:border-gray-700 dark:text-gray-100"
+                className="px-3 py-2 text-sm rounded border hover:shadow-md cursor-pointer bg-secondary hover:bg-primary font-semibold dark:border-gray-700 dark:text-gray-100"
               >
                 Baixar CSV (filtrado)
               </button>
@@ -274,7 +274,7 @@ export function EmprestimoConsignadoForm() {
               <button
                 type="button"
                 onClick={() => downloadCSV(novosHoje, "empresas-novas-hoje.csv")}
-                className="px-3 py-2 text-sm rounded border hover:shadow-md cursor-pointer dark:border-gray-700 dark:text-gray-100"
+                className="px-3 py-2 text-sm rounded border hover:shadow-md cursor-pointer bg-secondary hover:bg-primary font-semibold dark:border-gray-700 dark:text-gray-100"
               >
                 Baixar CSV (novas hoje)
               </button>

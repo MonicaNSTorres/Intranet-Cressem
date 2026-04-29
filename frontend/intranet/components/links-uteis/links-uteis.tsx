@@ -22,7 +22,9 @@ import {
     FaCircle,
     FaPhoneAlt,
     FaAddressBook,
-    FaBirthdayCake
+    FaBirthdayCake,
+    FaArchive,
+    FaDesktop
 } from "react-icons/fa";
 import { useMe } from "@/hooks/use-me";
 
@@ -37,6 +39,7 @@ const AD_GROUPS = {
     MARKETING: "GG_USERS_MKT",
     AUDITORIA: "GG_USERS_ANTEC",
     DOCUSIGN: "GG_USERS_DOCUSIGN",
+    ESTOQUE: "GG_USERS_ALMO",
 } as const;
 
 const SECRETARIA = [
@@ -182,6 +185,22 @@ const links: LinkItem[] = [
         category: "Cadastro",
     },
     {
+        title: "Estoque de Consumíveis",
+        description: "Acesse rapidamente a tela de estoque de consumíveis.",
+        href: "/auth/estoque_consumiveis",
+        icon: FaArchive,
+        category: "Estoque",
+        allowedGroups: [AD_GROUPS.ESTOQUE, AD_GROUPS.SUPORTE],
+    },
+    {
+        title: "Painel GLPI",
+        description: "Acesse rapidamente e acompanhe os chamados que chegam para o estoque.",
+        href: "/auth/painel_glpi_estoque",
+        icon: FaDesktop,
+        category: "Estoque",
+        allowedGroups: [AD_GROUPS.ESTOQUE, AD_GROUPS.SUPORTE],
+    },
+    {
         title: "Resgate Parcial de Capital",
         description: "Acesse rapidamente a tela de resgate de capital.",
         href: "/auth/resgate_capital",
@@ -229,6 +248,14 @@ const links: LinkItem[] = [
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AUDITORIA],
     },
     {
+        title: "Docusign",
+        description: "Acesse rapidamente a tela da docusign.",
+        href: "/auth/docusign",
+        icon: FaArchive,
+        category: "Cadastro",
+        allowedGroups: [AD_GROUPS.DOCUSIGN],
+    },
+    {
         title: "Antecipação de Capital",
         description: "Acesse rapidamente a tela de solicitação de antecipação de capital.",
         href: "/auth/antecipacao_capital",
@@ -242,6 +269,22 @@ const links: LinkItem[] = [
         icon: FaIdCard,
         category: "Cadastro",
         allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+    {
+        title: "Aniversariantes",
+        description: "Acesse rapidamente a tela aniversariantes.",
+        href: "/auth/aniversariantes",
+        icon: FaBirthdayCake,
+        category: "Informativo",
+        //allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+    {
+        title: "Ramais",
+        description: "Acesse rapidamente a tela ramais.",
+        href: "/auth/ramais",
+        icon: FaPhoneAlt,
+        category: "Informativo",
+        //allowedGroups: [AD_GROUPS.SUPORTE],
     },
     {
         title: "Tabela SISBR TI",
@@ -738,7 +781,7 @@ export function LinksUteis() {
                                         {item.title}
                                     </h3>
 
-                                    <p className="mt-2 min-h-[48px] text-sm leading-6 text-slate-500">
+                                    <p className="mt-2 min-h-12 text-sm leading-6 text-slate-500">
                                         {item.description}
                                     </p>
 

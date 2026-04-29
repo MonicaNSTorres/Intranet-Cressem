@@ -14,6 +14,7 @@ export const GROUPS = {
   MARKETING: "GG_USERS_MARKETING",
   CHEQUE_ESPECIAL: "GG_USERS_CHEQUE_ESPECIAL",
   GERENCIA_DIRETORIA: "GG_USERS_GERENCIA_DIRETORIA",
+  ESTOQUE: "GG_USERS_ALMO",
 } as const;
 
 export const SCREENS: ScreenItem[] = [
@@ -99,6 +100,24 @@ export const SCREENS: ScreenItem[] = [
     group: "Ferramentas",
     pinned: true,
     keywords: ["calculadora", "juros", "cartao", "cartão", "simulacao", "simulação"],
+  },
+  {
+    title: "Estoque de Consumíveis",
+    desc: "Controle e dê baixa.",
+    href: "/auth/estoque_consumiveis",
+    group: "Ferramentas",
+    pinned: true,
+    allowedGroups: [GROUPS.SUPORTE, GROUPS.ESTOQUE],
+    keywords: ["estoque", "almoxerifado", "consumiveis", "chamado"],
+  },
+  {
+    title: "Chamados de Estoque",
+    desc: "Painel de chamados do GLPI de estoque.",
+    href: "/auth/painel_glpi_estoque",
+    group: "Ferramentas",
+    pinned: true,
+    allowedGroups: [GROUPS.SUPORTE, GROUPS.ESTOQUE],
+    keywords: ["estoque", "almoxerifado", "consumiveis", "chamado", "monitoramento"],
   },
   {
     title: "Simulador de Investimento",

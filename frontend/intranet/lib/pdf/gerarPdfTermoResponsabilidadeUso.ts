@@ -54,8 +54,8 @@ export async function gerarPdfTermoResponsabilidadeUso(o: PdfOpts) {
     try {
         const logoUrl = "/sicoob-cressem-logo.png";
         const dataUrl = await toDataURL(logoUrl);
-        const w = 90;//largura do logo
-        const h = 50;//altura
+        const w = 90;
+        const h = 50;
         doc.addImage(dataUrl, "PNG", margin, y, w, h);
         y += h + 18;
     } catch {
@@ -79,12 +79,12 @@ export async function gerarPdfTermoResponsabilidadeUso(o: PdfOpts) {
     y += 4;
 
     write(
-        "EMPRESA: Sicoob Cressem, inscrita no CNPJ sob o nº 54.190.525/0001-66, com sede à Rua Henrique Dias, 1000, Monte Castelo, São José dos Campos - SP, doravante denominada EMPREGADORA."
+        "Sicoob Cressem, inscrita no CNPJ sob o nº 54.190.525/0001-66, com sede à Rua Henrique Dias, 1000, Monte Castelo, São José dos Campos - SP, doravante denominada EMPREGADORA;"
     );
     y += 4;
 
     write(
-        `COLABORADOR: ${o.nome}, portador do CPF nº ${o.cpf}, doravante denominado USUÁRIO.`
+        `FUNCIONÁRIO: ${o.nome}, portador do CPF nº ${o.cpf}, doravante denominado USUÁRIO.`
     );
     y += 4;
 
@@ -95,15 +95,18 @@ export async function gerarPdfTermoResponsabilidadeUso(o: PdfOpts) {
     write("1. OBJETO");
     doc.setFont("helvetica", "normal");
 
-    write("A EMPREGADORA entrega ao USUÁRIO os seguintes equipamentos de TI:");
+    write(`A Sicoob Cressem entrega ao ${o.nome} os seguintes equipamentos de TI:`);
+
     writeBullet(`Equipamento: ${o.modelo};`);
     writeBullet(`Número de Série: ${o.numeroSerie};`);
 
     if (o.equipamento === "celular") {
         writeBullet(`Número da Linha: ${o.linha};`);
+        writeBullet(`Acessórios: ${o.acessorios || "Carregador"};`);
+    } else {
+        writeBullet("Carregador e kit teclado e mouse sem fio;");
     }
 
-    writeBullet(`Acessórios: ${o.acessorios}`);
     writeBullet(`Data da Entrega: ${formatarDataBrasil(o.entrega)}.`);
     y += 8;
 
@@ -112,16 +115,21 @@ export async function gerarPdfTermoResponsabilidadeUso(o: PdfOpts) {
     doc.setFont("helvetica", "normal");
 
     write("O USUÁRIO declara-se ciente de que:");
-    writeBullet("O equipamento é de uso exclusivo profissional;");
-    writeBullet("É responsável pela guarda e conservação;");
-    writeBullet("Deve comunicar qualquer dano ou perda imediatamente;");
-    writeBullet("Poderá arcar com custos em caso de negligência;");
-    writeBullet("Compromete-se a seguir as normas internas e de segurança da informação.");
 
     if (o.equipamento === "celular") {
+        writeBullet("É responsável pela guarda e conservação;");
+        writeBullet("Deve comunicar qualquer dano ou perda imediatamente;");
+        writeBullet("Poderá arcar com custos em caso de negligência ou imprudência;");
         writeBullet(
-            "Atenção: Este dispositivo é monitorado. As mensagens e dados trafegados estão sujeitos a auditoria periódica pela equipe de Segurança da Informação da Sicoob Cressem."
+            "O equipamento e acessórios deste termo destina-se exclusivamente ao uso profissional. O empregado compromete-se a utilizar o dispositivo e seus aplicativos de comunicação apenas durante sua jornada de trabalho contratual, sendo vedada a utilização para fins particulares ou fora do horário de expediente, salvo em casos de regime de sobreaviso formalmente estabelecido."
         );
+        writeBullet(
+            "Em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), o empregado está ciente e concorda de que o dispositivo corporativo está sujeito a monitoramento remoto. O monitoramento visa garantir a segurança das informações da Cooperativa, a integridade dos dados dos cooperados e o cumprimento de políticas de conformidade. Privacidade: Não haverá coleta de dados de natureza estritamente pessoal, reforçando-se a proibição do uso do aparelho para fins particulares."
+        );
+    } else {
+        writeBullet("É responsável pela guarda e conservação;");
+        writeBullet("Deve comunicar qualquer dano ou perda imediatamente;");
+        writeBullet("Poderá arcar com custos em caso de negligência ou imprudência;");
     }
 
     y += 8;
@@ -131,8 +139,9 @@ export async function gerarPdfTermoResponsabilidadeUso(o: PdfOpts) {
     doc.setFont("helvetica", "normal");
 
     write(
-        "O USUÁRIO compromete-se a devolver todos os itens quando solicitado ou no fim do vínculo."
+        "O empregado reitera o compromisso de devolução do equipamento e acessórios em perfeito estado de conservação no ato do desligamento ou encerramento do vínculo com a Cooperativa. A não devolução do equipamento e acessórios no prazo de 2 dias úteis após o desligamento, ou a entrega do mesmo com danos decorrentes de mau uso, autoriza a Cooperativa a proceder ao desconto do valor de mercado do dispositivo (ou valor residual conforme nota fiscal) diretamente nas verbas rescisórias, conforme facultado pelo Art. 462, § 1º da CLT. Para fins de desconto, será considerado o valor de substituição do aparelho por um modelo idêntico ou equivalente na data da rescisão."
     );
+
     y += 10;
 
     const dataAtual = new Date();
@@ -150,7 +159,12 @@ export async function gerarPdfTermoResponsabilidadeUso(o: PdfOpts) {
     const colW = (contentW - colGap) / 2;
 
     doc.line(margin, assinaturaY, margin + colW, assinaturaY);
-    doc.line(margin + colW + colGap, assinaturaY, margin + colW + colGap + colW, assinaturaY);
+    doc.line(
+        margin + colW + colGap,
+        assinaturaY,
+        margin + colW + colGap + colW,
+        assinaturaY
+    );
 
     y += 18;
 
