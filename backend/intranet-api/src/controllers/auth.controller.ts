@@ -48,6 +48,8 @@ async function authenticateOnAd(username: string, password: string) {
         "sAMAccountName",
         "department",
         "physicalDeliveryOfficeName",
+        "mail",
+        "telephoneNumber",
       ],
     });
 
@@ -71,6 +73,14 @@ async function authenticateOnAd(username: string, password: string) {
       ? String(userEntry.physicalDeliveryOfficeName[0] || "")
       : String(userEntry.physicalDeliveryOfficeName || "");
 
+    const email = Array.isArray(userEntry.mail)
+      ? String(userEntry.mail[0] || "")
+      : String(userEntry.mail || "");
+
+    const ramal = Array.isArray(userEntry.telephoneNumber)
+      ? String(userEntry.telephoneNumber[0] || "")
+      : String(userEntry.telephoneNumber || "");
+
     let grupos: string[] = [];
 
     if (userEntry.memberOf) {
@@ -89,6 +99,8 @@ async function authenticateOnAd(username: string, password: string) {
       nome_completo: nomeCompleto,
       department,
       physicalDeliveryOfficeName,
+      email,
+      ramal,
       grupos,
     };
   } catch (error) {
@@ -130,6 +142,8 @@ export const authController = {
           department: resultado.department,
           physicalDeliveryOfficeName: resultado.physicalDeliveryOfficeName,
           grupos: resultado.grupos,
+          email: resultado.email,
+          ramal: resultado.ramal,
         },
         JWT_SECRET,
         {
@@ -151,6 +165,8 @@ export const authController = {
         nome_completo: resultado.nome_completo,
         department: resultado.department,
         physicalDeliveryOfficeName: resultado.physicalDeliveryOfficeName,
+        email: resultado.email,
+        ramal: resultado.ramal,
         grupos: resultado.grupos,
       });
     } catch (error) {
@@ -171,6 +187,8 @@ export const authController = {
         department: authReq.user?.department || "",
         physicalDeliveryOfficeName:
           authReq.user?.physicalDeliveryOfficeName || "",
+        email: authReq.user?.email || "",
+        ramal: authReq.user?.ramal || "",
         grupos: authReq.user?.grupos || [],
       });
     } catch (error) {

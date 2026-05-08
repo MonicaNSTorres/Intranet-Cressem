@@ -52,7 +52,7 @@ export class GlpiService {
         },
       });
     } catch {
-      // não quebra o fluxo caso falhe ao encerrar a sessão
+      //nao quebra o fluxo caso falhe ao encerrar a sessao
     }
   }
 
@@ -319,6 +319,109 @@ Observação: ${data.observacao || "-"}
             impact: 3,
             priority: 3,
           },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "App-Token": this.appToken,
+            "Session-Token": sessionToken,
+          },
+        }
+      );
+
+      return response.data;
+    });
+  }
+
+  async createConsumableItemEstoque(data: {
+    nome: string;
+    descricao?: string | null;
+  }) {
+    return this.withSession(async (sessionToken) => {
+      const response = await this.client.post(
+        "/ConsumableItem/",
+        {
+          input: {
+            name: data.nome,
+            comment: data.descricao || "",
+            is_active: 1,
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "App-Token": this.appToken,
+            "Session-Token": sessionToken,
+          },
+        }
+      );
+
+      return response.data;
+    });
+  }
+
+  async getConsumableItemById(id: number | string) {
+    return this.withSession(async (sessionToken) => {
+      const response = await this.client.get(`/ConsumableItem/${id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "App-Token": this.appToken,
+          "Session-Token": sessionToken,
+        },
+        params: {
+          expand_dropdowns: true,
+        },
+      });
+
+      return response.data;
+    });
+  }
+
+  async updateConsumableItemEstoque(
+    id: number | string,
+    data: {
+      nome?: string;
+      descricao?: string | null;
+    }
+  ) {
+    return this.withSession(async (sessionToken) => {
+      const response = await this.client.put(
+        `/ConsumableItem/${id}`,
+        {
+          input: {
+            id: Number(id),
+            ...(data.nome ? { name: data.nome } : {}),
+            comment: data.descricao || "",
+            is_active: 1,
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "App-Token": this.appToken,
+            "Session-Token": sessionToken,
+          },
+        }
+      );
+
+      return response.data;
+    });
+  }
+
+  async createConsumableEstoque(data: {
+    idItem: number;
+    quantidade: number;
+  }) {
+    return this.withSession(async (sessionToken) => {
+      const response = await this.client.post(
+        "/Consumable/",
+        {
+          input: {
+            consumableitems_id: data.idItem,
+            entities_id: 0,
+            locations_id: 0,
+            comment: "Criado automaticamente pela Intranet",
+          }
         },
         {
           headers: {

@@ -270,4 +270,23 @@ export const estoqueConsumiveisController = {
             });
         }
     },
+
+    async listarMovimentacoesMensais(req: Request, res: Response) {
+        try {
+            const ano = Number(req.query.ano);
+            const mes = Number(req.query.mes);
+
+            const data = await estoqueConsumiveisService.listarMovimentacoesMensais(ano, mes);
+
+            return res.status(200).json({
+                items: data,
+                total: data.length,
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                error: "Falha ao listar movimentações mensais.",
+                details: error?.message || "Erro desconhecido",
+            });
+        }
+    },
 };

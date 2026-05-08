@@ -68,6 +68,8 @@ import { producaoMetaCooperativaPaController } from "../controllers/producao-met
 import { producaoMetaFuncionarioController } from "../controllers/producao-meta-funcionario.controller";
 import { estoqueConsumiveisController } from "../controllers/estoque-consumiveis.controller";
 import { GlpiService } from "../services/glpi.service";
+import { feriasNotificacaoController } from "../controllers/ferias-notificacao.controller";
+import { contratosNotificacaoController } from "../controllers/contratos-notificacao.controller";
 
 const routes = Router();
 
@@ -198,6 +200,26 @@ routes.post(
 routes.get(
   "/v1/demissao/associado/:cpf",
   demissaoController.buscarAssociado
+);
+
+routes.get(
+  "/v1/demissao/convenio/:cpf",
+  demissaoController.buscarConvenio
+);
+
+routes.post(
+  "/v1/demissao/convenio/:cpf/desativacao",
+  demissaoController.desativarConvenio
+);
+
+routes.get(
+  "/v1/demissao/motivos",
+  demissaoController.buscarMotivos
+);
+
+routes.get(
+  "/v1/demissao/cidades",
+  demissaoController.buscarCidades
 );
 
 //simulador de descontos
@@ -920,8 +942,40 @@ routes.get(
 );
 
 routes.post(
-    "/v1/estoque-consumiveis/saida-manual-glpi",
-    estoqueConsumiveisController.registrarSaidaManualComGlpi
+  "/v1/estoque-consumiveis/saida-manual-glpi",
+  estoqueConsumiveisController.registrarSaidaManualComGlpi
+);
+
+routes.get(
+  "/v1/estoque-consumiveis/movimentacoes-mensais",
+  estoqueConsumiveisController.listarMovimentacoesMensais
+);
+
+//automacao de ferias
+routes.get(
+  "/ferias-notificacao/executar-todas",
+  feriasNotificacaoController.executarTodas
+);
+
+routes.get(
+  "/ferias-notificacao/rh-diretoria",
+  feriasNotificacaoController.executarRhDiretoria
+);
+
+routes.get(
+  "/ferias-notificacao/gerencias",
+  feriasNotificacaoController.executarGerencias
+);
+
+routes.get(
+  "/ferias-notificacao/ti",
+  feriasNotificacaoController.executarTi
+);
+
+//automacao de contratos
+routes.get(
+  "/v1/contratos-notificacao/executar",
+  contratosNotificacaoController.executar
 );
 
 export { routes };
