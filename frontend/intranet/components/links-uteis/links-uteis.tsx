@@ -24,7 +24,8 @@ import {
     FaAddressBook,
     FaBirthdayCake,
     FaArchive,
-    FaDesktop
+    FaDesktop,
+    FaBookReader
 } from "react-icons/fa";
 import { useMe } from "@/hooks/use-me";
 
@@ -293,6 +294,14 @@ const links: LinkItem[] = [
         icon: FaAddressBook,
         category: "Informativo",
         allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+    {
+        title: "Links Externos",
+        description: "Acesse rapidamente a tela e confira os links.",
+        href: "/auth/links_externos",
+        icon: FaBookReader,
+        category: "Informativo",
+        //allowedGroups: [AD_GROUPS.SUPORTE],
     },
     {
         title: "Formulários de Cadastro",

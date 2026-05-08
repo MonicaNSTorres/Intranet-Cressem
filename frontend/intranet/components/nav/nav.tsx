@@ -21,6 +21,9 @@ import {
     FaAddressBook,
     FaBullhorn,
     FaUserFriends,
+    FaWarehouse,
+    FaChartBar,
+    FaMoneyCheck
 } from "react-icons/fa";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useMe } from "@/hooks/use-me";
@@ -37,6 +40,20 @@ export const AD_GROUPS = {
     MARKETING: "GG_USERS_MKT",
     AUDITORIA: "GG_USERS_ANTEC",
     DOCUSIGN: "GG_USERS_DOCUSIGN",
+    ESTOQUE: "GG_USERS_ALMO",
+    GERENCIA_DIRETORIA: "GG_USERS_GERENCIA_DIRETORIA",
+    TODO_MUNDO: "GG_INTRANET_FULL",
+    CHEQUE_ESPCIAL: "GG_INTRANET_CHEQUE_ESPECIAL",
+    CONSULTA_ANALISE_LIMITE: "GG_INTRANET_CONSULTA_ANALISE",
+    CADASTRO_CONVENIADA: "GG_INTRANET_EMPRESA_CONVENIADA",
+    NOTIFICACAO: "GG_INTRANET_MKT_NOTIFICACAO",
+    META_PA: "GG_INTRANET_META_PA",
+    DESEMPEDIMENTO: "GG_INTRANET_FICHA_DESEMPEDIMENTO",
+    CONVENIO_ODONTO: "GG_INTRANET_CADASTRO_ODONTO",
+    GERENCIAR_CONVENIO_ODONTO: "GG_INTRANET_GERENCIADOR_ODONTO",
+    FINANCEIRO_CADASTRO: "GG_INTRANET_CADASTRO_FIN",
+    RH_INTRANET: "GG_INTRANET_RH",
+    MIGRACAO_CONTRATO: "GG_INTRANET_MIGRACAO_CONTRATO",
 } as const;
 
 const ALL_AD_GROUPS = Object.values(AD_GROUPS);
@@ -135,14 +152,21 @@ const Sidebar = () => {
             section: "Operações",
             children: [
                 {
+                    label: "Autorização de Débito",
+                    href: "/auth/autorizacao_debito",
+                    allowedGroups: [ //todo mundo precisa ter acesso: grupo domain_users, alterar
+                        AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO
+                    ],
+                },
+                {
                     label: "Calculadora de Atraso Cartão de Crédito",
                     href: "/auth/calculadora_juros_cartao",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO], //cobranca precisa ter acesso tambem
                 },
                 {
                     label: "Simulador de Investimento",
                     href: "/auth/simulador_investimento",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO], //todo mundo precisa ter acesso - domain_users, alterar
                 },
             ],
         },
@@ -153,24 +177,42 @@ const Sidebar = () => {
             section: "Operações",
             children: [
                 {
-                    label: "Cheque Especial",
+                    label: "Alteração de Cheque Especial",
                     href: "/auth/cheque_especial",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
-                },
-                {
-                    label: "Auditoria",
-                    href: "/auth/auditoria",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AUDITORIA],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CHEQUE_ESPCIAL], //agencia sede e agencia sul precisam ter acesso, remover AD_GROUPS.AGENCIA
                 },
                 {
                     label: "Análise de Limite",
                     href: "/auth/cadastro_analise_limite",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO], //alterar para domain_users
                 },
                 {
                     label: "Consulta de Análise de Limite",
                     href: "/auth/consulta_analise_limite",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CONSULTA_ANALISE_LIMITE], //limitar somente para quem criou o seu, pegar o usuario logado. Alterar o grupo agencia para o grupo de analise de limite
+                },
+                {
+                    label: "Solicitação de Crédito",
+                    href: "/auth/auditoria",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO], //todo mundo precisa ter acesso, remover o grupo auditoria
+                },
+            ],
+        },
+        {
+            key: "estoque",
+            label: "Estoque",
+            icon: FaWarehouse,
+            section: "Operações",
+            children: [
+                {
+                    label: "Balanço",
+                    href: "/auth/balanco",
+                    allowedGroups: [AD_GROUPS.SUPORTE], //limitar apenas para suporte, remover estoque
+                },
+                {
+                    label: "Consumíveis",
+                    href: "/auth/estoque_consumiveis",
+                    allowedGroups: [AD_GROUPS.SUPORTE], //limitar apenas para suporte, remover estoque
                 },
             ],
         },
@@ -181,29 +223,29 @@ const Sidebar = () => {
             section: "Ferramentas",
             children: [
                 {
-                    label: "Gerenciador de Arquivo",
-                    href: "/auth/juntar_pdf",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
-                },
-                {
                     label: "Aplicar marca d'água",
                     href: "/auth/aplica_marca_dagua",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO], //todo mundo precisa ter acesso, no caso domain_users
                 },
                 {
                     label: "Conversor de Arquivos",
                     href: "/auth/conversor_arquivos",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
-                },
-                {
-                    label: "Gerador Assinatura Email",
-                    href: "/auth/assinatura_email",
-                    allowedGroups: ALL_AD_GROUPS,
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],//todo mundo precisa ter acesso, no caso domain_users
                 },
                 {
                     label: "Docusign",
                     href: "/auth/docusign",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.DOCUSIGN],
+                },
+                {
+                    label: "Gerador Assinatura Email",
+                    href: "/auth/assinatura_email",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],//todo mundo precisa ter acesso, no caso domain_users
+                },
+                {
+                    label: "Juntar Arquivo",
+                    href: "/auth/juntar_pdf",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],//todo mundo precisa ter acesso, no caso domain_users
                 },
             ],
         },
@@ -214,24 +256,14 @@ const Sidebar = () => {
             section: "Gestão e Comunicação",
             children: [
                 {
-                    label: "Cadastro de Contrato",
+                    label: "Cadastro de Empresa Conveniada",
                     href: "/auth/cadastro_contrato",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO_CONVENIADA], //remover o grupo cadastro e colocar o grupo GG_USERS_SECRETARIA
                 },
                 {
-                    label: "Gerenciador de Contrato",
+                    label: "Gerenciador de Empresa Conveniada",
                     href: "/auth/consulta_contratos",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
-                },
-                {
-                    label: "Relatórios",
-                    href: "/auth/producao_meta_cooperativa_pa",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
-                },
-                {
-                    label: "Meta Funcionários",
-                    href: "/auth/producao_meta_funcionario",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO_CONVENIADA], //
                 },
             ],
         },
@@ -242,19 +274,37 @@ const Sidebar = () => {
             section: "Gestão e Comunicação",
             children: [
                 {
-                    label: "Solicitações",
-                    href: "/auth/solicitacao_participacao",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
-                },
-                {
-                    label: "Gerenciador de Marketing",
+                    label: "Gerenciador de Subsídio",
                     href: "/auth/gerenciamento_participacao",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],//todo mundo
                 },
                 {
-                    label: "Popup",
+                    label: "Notificação",
                     href: "/auth/popup_aviso",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.NOTIFICACAO],//liberar para o diego
+                },
+                {
+                    label: "Solicitação de Subsídio",
+                    href: "/auth/solicitacao_participacao",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],//todo mundo faz
+                },
+            ],
+        },
+        {
+            key: "metricas",
+            label: "Métricas",
+            icon: FaChartBar,
+            section: "Gestão e Comunicação",
+            children: [
+                {
+                    label: "Meta PA",
+                    href: "/auth/producao_meta_cooperativa_pa",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.META_PA],//a limitacao do que ela precisa ver esta por codigo
+                },
+                {
+                    label: "Meta por Funcionário",
+                    href: "/auth/producao_meta_funcionario",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.META_PA],
                 },
             ],
         },
@@ -267,77 +317,40 @@ const Sidebar = () => {
                 {
                     label: "Ficha de Desimpedimento",
                     href: "/auth/ficha_desimpedimento",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
-                },
-                {
-                    label: "Declaração de Rendimentos",
-                    href: "/auth/declaracao_rendimentos",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.CADASTRO,
-                        AD_GROUPS.RH,
-                        AD_GROUPS.FINANCEIRO,
-                    ],
-                },
-                {
-                    label: "Resgate Parcial de Capital",
-                    href: "/auth/resgate_capital",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.DESEMPEDIMENTO],
                 },
                 {
                     label: "Migração de Contrato",
                     href: "/auth/migracao_contrato",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI, AD_GROUPS.CADASTRO],
-                },
-                {
-                    label: "Formulário Demissão Espontânea",
-                    href: "/auth/demissao",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.RH,
-                        AD_GROUPS.CADASTRO,
-                    ],
-                },
-                {
-                    label: "Antecipação de Capital",
-                    href: "/auth/antecipacao_capital",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MIGRACAO_CONTRATO],
                 },
             ],
         },
         {
             key: "convenios",
-            label: "Convênios",
+            label: "Convênio Odontológico",
             icon: FaUserFriends,
             section: "Cadastros e Consultas",
             children: [
                 {
                     label: "Cadastro",
                     href: "/auth/cadastro_convenio_odonto",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CONVENIO_ODONTO],//ao inves de cadastro, precisa ser o grupo de desimpedimento
                 },
                 {
                     label: "Consulta",
                     href: "/auth/gerenciamento_convenio_odonto",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CONVENIO_ODONTO],
                 },
                 {
                     label: "Gerenciar Valores",
                     href: "/auth/gerenciamento_valor_convenio_odonto",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.GERENCIAR_CONVENIO_ODONTO],
                 },
                 {
                     label: "Relatórios",
                     href: "/auth/relatorio_convenio_odonto",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.GERENCIAR_CONVENIO_ODONTO],
                 },
             ],
         },
@@ -348,23 +361,34 @@ const Sidebar = () => {
             section: "Cadastros e Consultas",
             children: [
                 {
-                    label: "Empréstimo Consignado",
-                    href: "/auth/emprestimo_consignado",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
-                },
-                {
                     label: "Aniversariantes",
                     href: "/auth/aniversariantes",
-                    allowedGroups: ALL_AD_GROUPS,
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Empréstimo Consignado",
+                    href: "/auth/emprestimo_consignado",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Links Externos",
+                    href: "/auth/links_externos",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Ramal",
                     href: "/auth/ramais",
-                    allowedGroups: ALL_AD_GROUPS,
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Telas Intranet",
+                    href: "/auth/links_uteis",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Tabela de integralização",
+                    href: "/auth/tabela_integralizacao",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
             ],
         },
@@ -375,53 +399,34 @@ const Sidebar = () => {
             section: "Formulários",
             children: [
                 {
-                    label: "Relação de Faturamento",
-                    href: "/auth/relacao_faturamento",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.CADASTRO,
-                        AD_GROUPS.FINANCEIRO,
-                    ],
-                },
-                {
-                    label: "Declaração de Rendimentos",
-                    href: "/auth/declaracao_rendimentos",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.CADASTRO,
-                        AD_GROUPS.RH,
-                        AD_GROUPS.FINANCEIRO,
-                    ],
-                },
-                {
-                    label: "Formulários Cadastro",
-                    href: "/auth/links_uteis",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
-                },
-                {
                     label: "Alteração de Capital",
                     href: "/auth/alteracao_capital",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Declaração de Residência",
                     href: "/auth/declaracao_residencia",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
-                    label: "Procuração Ortugante PF/PJ",
+                    label: "Declaração de Rendimentos",
+                    href: "/auth/declaracao_rendimentos",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Procuração Outorgante PF/PJ",
                     href: "/auth/procuracao_ortugante",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Relação de Faturamento",
+                    href: "/auth/relacao_faturamento",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Renúncia de Procurador",
                     href: "/auth/renuncia_procurador",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
-                },
-                {
-                    label: "Tabela de integralização",
-                    href: "/auth/tabela_integralizacao",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
             ],
         },
@@ -432,31 +437,19 @@ const Sidebar = () => {
             section: "Formulários",
             children: [
                 {
-                    label: "Resgate Parcial de Capital",
-                    href: "/auth/resgate_capital",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    label: "Antecipação de Capital",
+                    href: "/auth/antecipacao_capital",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Formulário Demissão Espontânea",
                     href: "/auth/demissao",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.RH,
-                        AD_GROUPS.CADASTRO,
-                    ],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
-                    label: "Antecipação de Capital",
-                    href: "/auth/antecipacao_capital",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    label: "Resgate Parcial de Capital",
+                    href: "/auth/resgate_capital",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
             ],
         },
@@ -467,85 +460,44 @@ const Sidebar = () => {
             section: "Formulários",
             children: [
                 {
-                    label: "RCO",
-                    href: "/auth/rco",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
-                },
-                {
-                    label: "Formulários de Empréstimo",
+                    label: "Adendo Contratual",
                     href: "/auth/adendo_contratual",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Adiantamento Salarial",
                     href: "/auth/adiantamento_salarial_emprestimo",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
-                },
-                {
-                    label: "Autorização de Débito",
-                    href: "/auth/autorizacao_debito",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Cálculo de Margem",
                     href: "/auth/margem_consignavel",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Custo de Operação de Portabilidade",
+                    href: "/auth/rco",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Formulário DPS",
                     href: "/auth/formulario_dps",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Formulário Previsul",
                     href: "/auth/previsul",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Simulador de desconto",
                     href: "/auth/simulador_desconto",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Termo de Garantia",
                     href: "/auth/termo_garantia",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
             ],
         },
@@ -556,24 +508,24 @@ const Sidebar = () => {
             section: "Formulários",
             children: [
                 {
-                    label: "Formulários de RH",
+                    label: "Adiantamento Salarial",
                     href: "/auth/adiantamento_salarial",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
-                    label: "Auxílio Creche / Babá",
-                    href: "/auth/auxilio_creche",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
-                },
-                {
-                    label: "Bolsa de Estudo",
+                    label: "Reembolso Bolsa de Estudo",
                     href: "/auth/bolsa_estudo",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Reembolso Creche / Babá",
+                    href: "/auth/auxilio_creche",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
                     label: "Reembolso Convênio Médico",
                     href: "/auth/reembolso_convenio_medico",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
             ],
         },
@@ -584,39 +536,35 @@ const Sidebar = () => {
             section: "Formulários",
             children: [
                 {
+                    label: "Gerenciamento de Reembolso",
+                    href: "/auth/gerenciamento_reembolso_despesa",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Solicitação de Reembolso",
+                    href: "/auth/cadastro_reembolso_despesa",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+            ],
+        },
+        {
+            key: "financeiro",
+            label: "Financeiro",
+            icon: FaMoneyCheck,
+            section: "Financeiro",
+            children: [
+                {
                     label: "Cadastro de Recibo Financeiro",
                     href: "/auth/cadastro_recibo_financeiro",
                     allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
+                        AD_GROUPS.SUPORTE, AD_GROUPS.FINANCEIRO_CADASTRO
                     ],
                 },
                 {
                     label: "Recibos Financeiros",
                     href: "/auth/consulta_recibo_financeiro",
                     allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.COBRANCA,
-                    ],
-                },
-                {
-                    label: "Despesas e Viagens",
-                    href: "/auth/cadastro_reembolso_despesa",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.RH,
-                    ],
-                },
-                {
-                    label: "Gerenciamento de Despesas e Viagens",
-                    href: "/auth/gerenciamento_reembolso_despesa",
-                    allowedGroups: [
-                        AD_GROUPS.SUPORTE,
-                        AD_GROUPS.FINANCEIRO,
-                        AD_GROUPS.RH,
+                        AD_GROUPS.SUPORTE, AD_GROUPS.FINANCEIRO_CADASTRO
                     ],
                 },
             ],
@@ -628,34 +576,34 @@ const Sidebar = () => {
             section: "Pessoas",
             children: [
                 {
-                    label: "Cargos",
-                    href: "/auth/gerenciamento_cargo",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
-                },
-                {
-                    label: "Gerenciador de Funcionários",
-                    href: "/auth/gerenciamento_funcionario",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
-                },
-                {
-                    label: "Posições",
-                    href: "/auth/gerenciamento_posicao",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
-                },
-                {
-                    label: "Setores",
-                    href: "/auth/gerenciamento_setor",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
-                },
-                {
                     label: "Cadastro de Férias",
                     href: "/auth/cadastro_ferias",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
+                },
+                {
+                    label: "Cargos",
+                    href: "/auth/gerenciamento_cargo",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
                 },
                 {
                     label: "Gerenciador de Férias",
                     href: "/auth/gerenciamento_ferias",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
+                },
+                {
+                    label: "Gerenciador de Funcionários",
+                    href: "/auth/gerenciamento_funcionario",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
+                },
+                {
+                    label: "Posições",
+                    href: "/auth/gerenciamento_posicao",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
+                },
+                {
+                    label: "Setores",
+                    href: "/auth/gerenciamento_setor",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
                 },
             ],
         },
@@ -666,29 +614,24 @@ const Sidebar = () => {
             section: "Tecnologia",
             children: [
                 {
-                    label: "Migração de Contrato",
-                    href: "/auth/migracao_contrato",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI, AD_GROUPS.CADASTRO],
-                },
-                {
-                    label: "Termo de Responsabilidade TI",
-                    href: "/auth/termo_responsabilidade_uso",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
-                },
-                {
-                    label: "Tabela SISBR TI",
-                    href: "/auth/tabela_sisbr_ti",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
-                },
-                {
                     label: "Cadastro de Notebook",
                     href: "/auth/cadastro_notebook",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
+                    allowedGroups: [AD_GROUPS.SUPORTE],
                 },
                 {
                     label: "Gerenciador de Notebook",
                     href: "/auth/consulta_notebook",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TI],
+                    allowedGroups: [AD_GROUPS.SUPORTE],
+                },
+                {
+                    label: "Tabela SISBR TI",
+                    href: "/auth/tabela_sisbr_ti",
+                    allowedGroups: [AD_GROUPS.SUPORTE],
+                },
+                {
+                    label: "Termo de Responsabilidade TI",
+                    href: "/auth/termo_responsabilidade_uso",
+                    allowedGroups: [AD_GROUPS.SUPORTE],
                 },
             ],
         },
@@ -932,8 +875,8 @@ const Sidebar = () => {
                                                                             >
                                                                                 <span
                                                                                     className={`h-1.5 w-1.5 shrink-0 rounded-full ${childActive
-                                                                                            ? "bg-cyan-400"
-                                                                                            : "bg-slate-400/70"
+                                                                                        ? "bg-cyan-400"
+                                                                                        : "bg-slate-400/70"
                                                                                         }`}
                                                                                 />
                                                                                 <span className="leading-5">

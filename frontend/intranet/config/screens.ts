@@ -28,13 +28,22 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["inicio", "home", "principal", "pagina inicial"],
   },
   {
-    title: "Links Úteis",
+    title: "Telas Intranet",
     desc: "Central com acessos rápidos para as principais telas da intranet.",
     href: "/auth/links_uteis",
     badge: "novo",
     group: "Geral",
     pinned: true,
     keywords: ["atalhos", "acessos", "links", "util", "úteis", "central"],
+  },
+  {
+    title: "Links Externos",
+    desc: "Central com acessos rápidos para os links externos.",
+    href: "/auth/links_externos",
+    badge: "novo",
+    group: "Geral",
+    pinned: true,
+    keywords: ["atalhos", "acessos", "links", "util", "úteis", "central", "externo"],
   },
   {
     title: "Popup Cadastro",
@@ -44,7 +53,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.CADASTRO],
     keywords: ["popup", "aviso", "comunicado", "mensagem", "banner"],
   },
-
   {
     title: "Análise de Limite - Cadastro",
     desc: "Cadastrar análise de limite.",
@@ -61,7 +69,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.AGENCIA],
     keywords: ["analise", "análise", "limite", "consulta", "credito", "crédito"],
   },
-
   {
     title: "Aniversariantes",
     desc: "Ver aniversariantes do dia e do mês.",
@@ -108,7 +115,16 @@ export const SCREENS: ScreenItem[] = [
     group: "Ferramentas",
     pinned: true,
     allowedGroups: [GROUPS.SUPORTE, GROUPS.ESTOQUE],
-    keywords: ["estoque", "almoxerifado", "consumiveis", "chamado"],
+    keywords: ["estoque", "almoxerifado", "consumiveis", "chamado", "balanco"],
+  },
+  {
+    title: "Balanço",
+    desc: "Verifique o balanço de estoque.",
+    href: "/auth/balanco",
+    group: "Ferramentas",
+    pinned: true,
+    allowedGroups: [GROUPS.SUPORTE, GROUPS.ESTOQUE],
+    keywords: ["estoque", "almoxerifado", "consumiveis", "chamado", "balanco"],
   },
   {
     title: "Chamados de Estoque",
@@ -158,7 +174,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.CADASTRO],
     keywords: ["desimpedimento", "ficha", "formulario", "formulário", "cadastro"],
   },
-
   {
     title: "Despesas/Viagens - Solicitação",
     desc: "Solicitar reembolso de despesas e viagens.",
@@ -227,7 +242,6 @@ export const SCREENS: ScreenItem[] = [
     group: "Formulários de Cadastro",
     keywords: ["tabela", "integralizacao", "integralização", "capital", "cadastro"],
   },
-
   {
     title: "Adendo Contratual",
     desc: "Acesso ao formulário de adendo contratual.",
@@ -284,7 +298,6 @@ export const SCREENS: ScreenItem[] = [
     group: "Formulários de Empréstimos",
     keywords: ["termo", "garantia", "emprestimo", "empréstimo", "contrato"],
   },
-
   {
     title: "Adiantamento Salarial",
     desc: "Acesso ao formulário de adiantamento salarial.",
@@ -313,7 +326,6 @@ export const SCREENS: ScreenItem[] = [
     group: "Formulários do RH",
     keywords: ["reembolso", "convenio", "convênio", "medico", "médico", "rh"],
   },
-
   {
     title: "Aplicar Marca d'Água",
     desc: "Adicionar marca d'água em arquivos.",
@@ -336,7 +348,6 @@ export const SCREENS: ScreenItem[] = [
     group: "Ferramentas",
     keywords: ["juntar", "unir", "pdf", "arquivo"],
   },
-
   {
     title: "Cadastro de Contrato",
     desc: "Cadastrar contratos.",
@@ -353,7 +364,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.CONTRATOS],
     keywords: ["contrato", "consulta", "buscar contrato"],
   },
-
   {
     title: "Cadastro Convênio Odonto",
     desc: "Cadastrar convênios odontológicos.",
@@ -385,7 +395,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.CADASTRO],
     keywords: ["convenio", "convênio", "odonto", "relatorio", "relatório"],
   },
-
   {
     title: "Gerenciamento de Cargos",
     desc: "Gerenciar cargos cadastrados.",
@@ -418,7 +427,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.RH],
     keywords: ["setor", "setores", "departamento", "funcionario"],
   },
-
   {
     title: "Cadastro de Férias",
     desc: "Cadastrar férias de funcionários.",
@@ -435,7 +443,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.RH],
     keywords: ["ferias", "férias", "consulta", "gerenciamento"],
   },
-
   {
     title: "Cadastro de Notebook",
     desc: "Cadastrar notebooks.",
@@ -452,7 +459,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.TI],
     keywords: ["notebook", "equipamento", "consulta", "ti"],
   },
-
   {
     title: "Solicitação de Participação",
     desc: "Solicitar participação em ações de marketing.",
@@ -468,7 +474,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.MARKETING],
     keywords: ["marketing", "participacao", "participação", "consulta", "gerenciamento"],
   },
-
   {
     title: "Migração de Contrato",
     desc: "Migrar contratos no sistema.",
@@ -477,7 +482,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.CADASTRO],
     keywords: ["migracao", "migração", "contrato", "importacao", "importação"],
   },
-
   {
     title: "GED no App",
     desc: "Acesso ao processo GED no aplicativo.",
@@ -492,7 +496,6 @@ export const SCREENS: ScreenItem[] = [
     group: "Processos GED",
     keywords: ["senha", "nao correntista", "não correntista", "app", "sicoobnet"],
   },
-
   {
     title: "Ramal",
     desc: "Consultar ramais internos.",
@@ -509,7 +512,6 @@ export const SCREENS: ScreenItem[] = [
     group: "Ferramentas",
     keywords: ["rco", "credito", "crédito", "simulacao", "simulação"],
   },
-
   {
     title: "Cadastro Recibo Financeiro",
     desc: "Cadastrar recibos financeiros.",
@@ -526,7 +528,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.FINANCEIRO, GROUPS.COBRANCA],
     keywords: ["recibo", "financeiro", "consulta", "pagamento"],
   },
-
   {
     title: "Relação de Faturamento",
     desc: "Acesso ao relatório de faturamento.",
@@ -550,7 +551,6 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [GROUPS.SUPORTE, GROUPS.GERENCIA_DIRETORIA],
     keywords: ["producao", "produção", "meta", "macro", "relatorio", "relatório"],
   },
-
   {
     title: "Reset de Senha E-mail",
     desc: "Abrir o sistema externo para redefinição de senha do e-mail.",
@@ -559,7 +559,6 @@ export const SCREENS: ScreenItem[] = [
     pinned: true,
     keywords: ["reset", "senha", "email", "e-mail", "sicoob", "externo"],
   },
-
   {
     title: "Resgate Capital",
     desc: "Acesso ao formulário de resgate de capital.",

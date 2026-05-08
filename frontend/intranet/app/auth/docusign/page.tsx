@@ -1,25 +1,80 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { FileSearch } from "lucide-react";
+
 import BackButton from "@/components/back-button/back-button";
 import { GrDocumentMissingForm } from "@/components/docusign-form/docusign-form";
 
+import {
+  canAccess,
+  PAGE_ACCESS,
+  type AuthUserLike,
+} from "@/lib/access-control";
+
+import { buscarUsuarioLogadoGerenciamentoReembolso } from "@/services/gerenciamento_reembolso_despesa.service";
+
 export default function GrDocumentMissingPage() {
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    async function validarAcesso() {
+      try {
+        const user =
+          (await buscarUsuarioLogadoGerenciamentoReembolso()) as AuthUserLike;
+
+        setAllowed(
+          canAccess(user, PAGE_ACCESS.docusign)
+        );
+      } catch (error) {
+        console.error(error);
+        setAllowed(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    validarAcesso();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-sm text-gray-500">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="p-6">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Você não possui permissão para acessar esta tela.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 lg:p-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <BackButton />
+
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
               <FileSearch size={16} />
             </div>
+
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold text-gray-900 truncate">
                 Dashboard DocuSign
               </h1>
+
               <p className="text-sm text-gray-600 mt-1">
-                Consulte documentos, localize envelopes e abra ou baixe os PDFs com facilidade.
+                Consulte documentos, localize envelopes e abra ou baixe os PDFs
+                com facilidade.
               </p>
             </div>
           </div>
@@ -31,7 +86,8 @@ export default function GrDocumentMissingPage() {
       </div>
 
       <div className="mt-8 text-xs text-gray-500">
-        * Os arquivos são consultados na base interna e disponibilizados para abertura ou download conforme o envelope selecionado.
+        * Os arquivos são consultados na base interna e disponibilizados para
+        abertura ou download conforme o envelope selecionado.
       </div>
     </div>
   );

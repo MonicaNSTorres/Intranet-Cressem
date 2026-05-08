@@ -57,8 +57,7 @@ export function gerarPdfDemissao(data: GerarPdfDemissaoData) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.text(
-    `Demissão espontânea ${
-      data.tipoFormulario === "CREDOR" ? "credora" : "devedora"
+    `Demissão espontânea ${data.tipoFormulario === "CREDOR" ? "credora" : "devedora"
     }`,
     105,
     y,
@@ -158,10 +157,10 @@ export function gerarPdfDemissao(data: GerarPdfDemissaoData) {
       body:
         data.parcelas.length > 0
           ? data.parcelas.map((parcela) => [
-              String(parcela.numero),
-              parcela.data,
-              parcela.valor,
-            ])
+            String(parcela.numero),
+            parcela.data,
+            parcela.valor,
+          ])
           : [["-", "-", "-"]],
       theme: "grid",
       styles: { fontSize: 10 },
@@ -203,11 +202,26 @@ export function gerarPdfDemissao(data: GerarPdfDemissaoData) {
   doc.text(`Data: ${data.dataAtendimento || "-"}`, 140, y);
   y += 10;
 
-  doc.text("__________________________________", 20, y);
-  doc.text("__________________________________", 120, y);
+  const xLinhaAssociadoInicio = 20;
+  const xLinhaAssociadoFim = 90;
+  const xLinhaAtendenteInicio = 120;
+  const xLinhaAtendenteFim = 190;
+
+  const xCentroAssociado = (xLinhaAssociadoInicio + xLinhaAssociadoFim) / 2;
+  const xCentroAtendente = (xLinhaAtendenteInicio + xLinhaAtendenteFim) / 2;
+
+  doc.text("__________________________________", xLinhaAssociadoInicio, y);
+  doc.text("__________________________________", xLinhaAtendenteInicio, y);
+
   y += 6;
-  doc.text(data.nome || "Associado(a)", 45, y, { align: "center" });
-  doc.text(data.atendente || "Atendente", 145, y, { align: "center" });
+
+  doc.text(data.nome || "Associado(a)", xCentroAssociado, y, {
+    align: "center",
+  });
+
+  doc.text(data.atendente || "Atendente", xCentroAtendente, y, {
+    align: "center",
+  });
 
   doc.save(`demissao_${(data.nome || "associado").replace(/\s+/g, "_")}.pdf`);
 }

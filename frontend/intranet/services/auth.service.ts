@@ -6,6 +6,8 @@ export type LoginResponse = {
   nome_completo?: string;
   department?: string;
   physicalDeliveryOfficeName?: string;
+  email?: string;
+  ramal?: string;
   grupos?: string[];
 };
 
@@ -14,6 +16,8 @@ export type MeResponse = {
   nome_completo?: string;
   department?: string;
   physicalDeliveryOfficeName?: string;
+  email?: string;
+  ramal?: string;
   grupos?: string[];
 };
 

@@ -10,6 +10,7 @@ import {
     FaSearch,
     FaSyncAlt,
     FaWarehouse,
+    FaEdit,
 } from "react-icons/fa";
 import {
     BarChart,
@@ -31,8 +32,10 @@ import {
     importarProdutosExcelEstoque,
     listarAlertasEmailEstoque,
     registrarSaidaManualComGlpi,
+    atualizarItemEstoqueConsumiveis,
 } from "@/services/estoque_consumiveis.service";
 import Link from "next/link";
+import BackButton from "@/components/back-button/back-button";
 
 type AbaAtiva = "solicitacoes" | "estoque" | "balanco" | "alertas";
 
@@ -44,6 +47,24 @@ const UNIDADES_ESTOQUE = [
     { value: "FRASCO", label: "Frasco" },
     { value: "KG", label: "Quilo" },
     { value: "LITRO", label: "Litro" },
+];
+
+const SETORES_ESTOQUE = [
+    "Agência",
+    "Cadastro",
+    "Cobrança",
+    "Comercial",
+    "Contabilidade",
+    "Diretoria",
+    "Financeiro",
+    "Gerência",
+    "Jurídico",
+    "Marketing",
+    "RH",
+    "TI",
+    "Suporte",
+    "Auditoria",
+    "Geral",
 ];
 
 export default function EstoqueConsumiveisPage() {
@@ -98,6 +119,16 @@ export default function EstoqueConsumiveisPage() {
     const [setorSaida, setSetorSaida] = useState("");
     const [observacaoSaida, setObservacaoSaida] = useState("");
     const [salvandoSaida, setSalvandoSaida] = useState(false);
+
+    const [modalEditarProdutoAberta, setModalEditarProdutoAberta] = useState(false);
+    const [produtoEditando, setProdutoEditando] = useState<any | null>(null);
+    const [salvandoEdicaoProduto, setSalvandoEdicaoProduto] = useState(false);
+    const [produtoEdicao, setProdutoEdicao] = useState({
+        nome: "",
+        descricao: "",
+        unidade: "UNIDADE",
+        saldoMinimo: "",
+    });
 
     function abrirModalImportacao() {
         setArquivoExcel(null);
@@ -416,8 +447,8 @@ export default function EstoqueConsumiveisPage() {
     async function confirmarSaida() {
         if (!itemSaidaSelecionado) return;
 
-        if (!quantidadeSaida || !nomeSolicitanteSaida) {
-            alert("Informe quantidade e solicitante.");
+        if (!quantidadeSaida || !nomeSolicitanteSaida || !setorSaida) {
+            alert("Informe quantidade, solicitante e setor.");
             return;
         }
 
@@ -474,9 +505,53 @@ export default function EstoqueConsumiveisPage() {
         (a, b) => Number(b.TOTAL_SAIDAS || 0) - Number(a.TOTAL_SAIDAS || 0)
     )[0];
 
+    function abrirModalEditarProduto(item: any) {
+        setProdutoEditando(item);
+        setProdutoEdicao({
+            nome: item.NM_ITEM || "",
+            descricao: item.DS_ITEM || "",
+            unidade: item.DS_UNIDADE || "UNIDADE",
+            saldoMinimo: String(item.QT_SALDO_MINIMO || ""),
+        });
+        setModalEditarProdutoAberta(true);
+    }
+
+    function fecharModalEditarProduto() {
+        setModalEditarProdutoAberta(false);
+        setProdutoEditando(null);
+    }
+
+    async function confirmarEdicaoProduto() {
+        if (!produtoEditando) return;
+
+        if (!produtoEdicao.nome.trim()) {
+            alert("Informe o nome do produto.");
+            return;
+        }
+
+        try {
+            setSalvandoEdicaoProduto(true);
+
+            await atualizarItemEstoqueConsumiveis(produtoEditando.ID_ITEM, {
+                nome: produtoEdicao.nome,
+                descricao: produtoEdicao.descricao,
+                unidade: produtoEdicao.unidade,
+                saldoMinimo: Number(produtoEdicao.saldoMinimo || 0),
+            });
+
+            fecharModalEditarProduto();
+            await carregarTudo();
+        } catch (error: any) {
+            console.error(error);
+            alert(error?.response?.data?.details || "Erro ao editar produto.");
+        } finally {
+            setSalvandoEdicaoProduto(false);
+        }
+    }
 
     return (
         <div className="mx-auto w-full min-w-225 space-y-6 p-4 sm:p-6 lg:p-8">
+            <BackButton />
             <div className="relative overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-sm">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(0,174,157,0.16),_transparent_32%),radial-gradient(circle_at_bottom_left,_rgba(121,183,41,0.16),_transparent_28%)]" />
                 <div className="relative space-y-6 p-5 sm:p-6 lg:p-8">
@@ -502,7 +577,7 @@ export default function EstoqueConsumiveisPage() {
                         <div className="flex flex-wrap gap-3">
                             <button
                                 onClick={handleSincronizarGlpi}
-                                className="inline-flex items-center gap-2 rounded-2xl bg-[#00AE9D] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#00AE9D]/20 transition hover:bg-[#009688]"
+                                className="inline-flex items-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#00AE9D]/20 transition hover:bg-[#009688] cursor-pointer"
                             >
                                 <FaSyncAlt />
                                 Sincronizar GLPI
@@ -560,7 +635,7 @@ export default function EstoqueConsumiveisPage() {
                         <button
                             onClick={() => setAbaAtiva("solicitacoes")}
                             className={`rounded-full px-4 py-2 text-sm font-semibold cursor-pointer ${abaAtiva === "solicitacoes"
-                                ? "bg-[#00AE9D] text-white"
+                                ? "bg-secondary text-white"
                                 : "border border-slate-200 text-slate-600"
                                 }`}
                         >
@@ -570,7 +645,7 @@ export default function EstoqueConsumiveisPage() {
                         <button
                             onClick={() => setAbaAtiva("estoque")}
                             className={`rounded-full px-4 py-2 text-sm font-semibold cursor-pointer ${abaAtiva === "estoque"
-                                ? "bg-[#00AE9D] text-white"
+                                ? "bg-secondary text-white"
                                 : "border border-slate-200 text-slate-600"
                                 }`}
                         >
@@ -589,7 +664,7 @@ export default function EstoqueConsumiveisPage() {
 
                         <Link
                             href="/auth/balanco"
-                            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-[#00AE9D] hover:text-white"
+                            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-secondary hover:text-white"
                         >
                             Balanço Mensal
                         </Link>
@@ -597,7 +672,7 @@ export default function EstoqueConsumiveisPage() {
                         <button
                             onClick={() => setAbaAtiva("alertas")}
                             className={`rounded-full px-4 py-2 text-sm font-semibold cursor-pointer ${abaAtiva === "alertas"
-                                ? "bg-[#00AE9D] text-white"
+                                ? "bg-secondary text-white"
                                 : "border border-slate-200 text-slate-600"
                                 }`}
                         >
@@ -620,7 +695,7 @@ export default function EstoqueConsumiveisPage() {
                             <>
                                 <button
                                     onClick={abrirModalProduto}
-                                    className="inline-flex items-center gap-2 rounded-2xl bg-[#00AE9D] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#00AE9D]/20 transition hover:bg-[#009688]"
+                                    className="inline-flex items-center gap-2 rounded-2xl bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#00AE9D]/20 transition hover:bg-[#009688] cursor-pointer"
                                 >
                                     <FaPlus />
                                     Novo produto
@@ -628,7 +703,7 @@ export default function EstoqueConsumiveisPage() {
 
                                 <button
                                     onClick={abrirModalImportacao}
-                                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
                                 >
                                     Importar Excel
                                 </button>
@@ -725,7 +800,7 @@ export default function EstoqueConsumiveisPage() {
                                                                     ? abrirModalRetornoNegativo(item)
                                                                     : abrirModalBaixa(item)
                                                             }
-                                                            className={`rounded-2xl px-4 py-2 text-xs font-semibold text-white ${item.ST_SOLICITACAO === "RETORNO_NEGATIVO"
+                                                            className={`rounded-2xl px-4 py-2 text-xs font-semibold text-white cursor-pointer ${item.ST_SOLICITACAO === "RETORNO_NEGATIVO"
                                                                 ? "bg-red-600 hover:bg-red-700"
                                                                 : "bg-[#00AE9D] hover:bg-[#009688]"
                                                                 }`}
@@ -739,7 +814,7 @@ export default function EstoqueConsumiveisPage() {
 
                                                         <button
                                                             onClick={() => abrirModalRespostaManual(item)}
-                                                            className="rounded-2xl bg-amber-500 px-4 py-2 text-xs font-semibold text-white"
+                                                            className="rounded-2xl bg-amber-500 px-4 py-2 text-xs font-semibold text-white cursor-pointer"
                                                         >
                                                             Resposta manual
                                                         </button>
@@ -848,8 +923,15 @@ export default function EstoqueConsumiveisPage() {
                                                 <td className="px-4 py-3">{item.QT_SALDO_MINIMO}</td>
                                                 <td className="px-4 py-3">
                                                     <button
+                                                        onClick={() => abrirModalEditarProduto(item)}
+                                                        className="mr-2 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                                                    >
+                                                        <FaEdit />
+                                                        Editar Produto
+                                                    </button>
+                                                    <button
                                                         onClick={() => handleEntrada(item.ID_ITEM)}
-                                                        className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-semibold ${isAbaixoMinimo(item)
+                                                        className={`mr-2 inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-semibold cursor-pointer ${isAbaixoMinimo(item)
                                                             ? "bg-red-500 text-white hover:bg-red-600"
                                                             : "border border-slate-200 text-slate-700"
                                                             }`}
@@ -859,7 +941,7 @@ export default function EstoqueConsumiveisPage() {
                                                     </button>
                                                     <button
                                                         onClick={() => abrirModalSaida(item)}
-                                                        className="inline-flex items-center gap-2 rounded-2xl bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-600"
+                                                        className="inline-flex items-center gap-2 rounded-2xl bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-600 cursor-pointer"
                                                     >
                                                         Saída
                                                     </button>
@@ -1681,12 +1763,19 @@ export default function EstoqueConsumiveisPage() {
                                     <label className="mb-2 block text-sm font-semibold text-slate-700">
                                         Setor
                                     </label>
-                                    <input
+                                    <select
                                         value={setorSaida}
                                         onChange={(e) => setSetorSaida(e.target.value)}
-                                        className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                                        placeholder="Ex: Financeiro"
-                                    />
+                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+                                    >
+                                        <option value="">Selecione o setor</option>
+
+                                        {SETORES_ESTOQUE.map((setor) => (
+                                            <option key={setor} value={setor}>
+                                                {setor}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
@@ -1733,6 +1822,118 @@ export default function EstoqueConsumiveisPage() {
                                 </button>
                             </div>
 
+                        </div>
+                    </div>
+                </div>
+            )}
+            {modalEditarProdutoAberta && produtoEditando && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+                        <div className="bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#00AE9D]">
+                                        Edição de produto
+                                    </p>
+                                    <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                                        Editar produto de estoque
+                                    </h2>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Atualize os dados cadastrais do produto.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={fecharModalEditarProduto}
+                                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-5 p-6">
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Nome do produto
+                                    </label>
+                                    <input
+                                        value={produtoEdicao.nome}
+                                        onChange={(e) =>
+                                            setProdutoEdicao((prev) => ({ ...prev, nome: e.target.value }))
+                                        }
+                                        className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Unidade
+                                    </label>
+                                    <select
+                                        value={produtoEdicao.unidade}
+                                        onChange={(e) =>
+                                            setProdutoEdicao((prev) => ({ ...prev, unidade: e.target.value }))
+                                        }
+                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+                                    >
+                                        {UNIDADES_ESTOQUE.map((unidade) => (
+                                            <option key={unidade.value} value={unidade.value}>
+                                                {unidade.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Saldo mínimo
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={produtoEdicao.saldoMinimo}
+                                        onChange={(e) =>
+                                            setProdutoEdicao((prev) => ({ ...prev, saldoMinimo: e.target.value }))
+                                        }
+                                        className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                    Descrição
+                                </label>
+                                <textarea
+                                    value={produtoEdicao.descricao}
+                                    onChange={(e) =>
+                                        setProdutoEdicao((prev) => ({ ...prev, descricao: e.target.value }))
+                                    }
+                                    rows={4}
+                                    className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
+                                <button
+                                    type="button"
+                                    onClick={fecharModalEditarProduto}
+                                    className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700"
+                                >
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={confirmarEdicaoProduto}
+                                    disabled={salvandoEdicaoProduto}
+                                    className="rounded-2xl bg-[#00AE9D] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#00AE9D]/20 disabled:opacity-60"
+                                >
+                                    {salvandoEdicaoProduto ? "Salvando..." : "Salvar alterações"}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

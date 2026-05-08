@@ -177,7 +177,7 @@ export function GerenciamentoReembolsoDespesaForm() {
 
       setNomeResponsavelAD(nomeAD);
 
-      const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.FINANCEIRO);
+      const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.TODO_MUNDO);
       const usuarioEhSuporteAD = grupos.includes(AD_GROUPS.SUPORTE);
       const usuarioTemAcesso = usuarioEhFinanceiroAD || usuarioEhSuporteAD;
       const usuarioPodeVerTodos = usuarioEhFinanceiroAD || usuarioEhSuporteAD;
