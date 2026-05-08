@@ -2,12 +2,12 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaPrint, FaSave, FaSearch } from "react-icons/fa";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { salvarAnaliseLimite } from "@/services/analise_limite.service";
+import { getMeAdUser } from "@/services/auth.service";
 import {
-    formatCpfView,
     monetizarDigitacao,
     parseBRL,
     fmtBRL,
@@ -34,6 +34,33 @@ function formatDateBR(dateISO?: string | null) {
 
 function onlyDigits(value: string) {
     return String(value || "").replace(/\D/g, "");
+}
+
+function numberFromApi(value: any) {
+    if (value === null || value === undefined || value === "") return 0;
+
+    if (typeof value === "number") return value;
+
+    return parseBRL(String(value));
+}
+
+function formatCpfCnpjView(value: string) {
+    const digits = onlyDigits(value);
+
+    if (digits.length <= 11) {
+        const s = digits.slice(0, 11);
+        if (s.length <= 3) return s;
+        if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3)}`;
+        if (s.length <= 9) return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6)}`;
+        return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9)}`;
+    }
+
+    const s = digits.slice(0, 14);
+    if (s.length <= 2) return s;
+    if (s.length <= 5) return `${s.slice(0, 2)}.${s.slice(2)}`;
+    if (s.length <= 8) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5)}`;
+    if (s.length <= 12) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8)}`;
+    return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}`;
 }
 
 function isCnpj(value: string) {
@@ -203,6 +230,7 @@ export function AnaliseLimiteForm() {
     const [restricoes, setRestricoes] = useState("");
     const [quaisRestricoes, setQuaisRestricoes] = useState("");
 
+
     const [sugestaoLimite, setSugestaoLimite] = useState("");
     const [cartao, setCartao] = useState("");
     const [cartaoAtual, setCartaoAtual] = useState("");
@@ -217,10 +245,26 @@ export function AnaliseLimiteForm() {
     const [info, setInfo] = useState("");
     const [loadingSalvar, setLoadingSalvar] = useState(false);
     const [salvo, setSalvo] = useState(false);
+    const [nomeFuncionarioLogado, setNomeFuncionarioLogado] = useState("");
 
     const tipoFormulario = useMemo(() => (isCnpj(cpf) ? "PJ" : "PF"), [cpf]);
 
     const { loading, erro: erroBusca, info: infoBusca, buscar } = useAssociadoPorCpf();
+
+    useEffect(() => {
+        async function carregarUsuarioLogado() {
+            try {
+                const me = await getMeAdUser();
+                setNomeFuncionarioLogado(
+                    String(me?.nome_completo || me?.username || "").trim()
+                );
+            } catch {
+                setNomeFuncionarioLogado("");
+            }
+        }
+
+        carregarUsuarioLogado();
+    }, []);
 
     async function onBuscar() {
         try {
@@ -250,35 +294,57 @@ export function AnaliseLimiteForm() {
                     phoneMask(associado.telefone || associado.NR_TELEFONE || "")
                 );
 
-                if (associado.NR_MESES_PORTABILIDADE !== undefined) {
-                    setPortabilidade(Number(associado.NR_MESES_PORTABILIDADE) > 0 ? "1" : "0");
-                }
+                const valorIap = associado.iap ?? associado.NR_IAP;
+                const valorPortabilidade =
+                    associado.portabilidade ?? associado.NR_MESES_PORTABILIDADE;
 
-                if (associado.NR_IAP !== undefined && associado.NR_IAP !== null) {
-                    setIap(String(associado.NR_IAP));
-                }
+                const possuiCartao = associado.cartao ?? associado.NR_CARTAO;
+                const limiteCartao = numberFromApi(
+                    associado.limite_cartao ?? associado.NR_LIMITE_CARTAO
+                );
 
-                if (associado.SL_CONTA_CAPITAL !== undefined && associado.SL_CONTA_CAPITAL !== null) {
-                    setCapital(fmtBRL(Number(associado.SL_CONTA_CAPITAL || 0)));
-                }
+                const limiteCheque = numberFromApi(
+                    associado.limite_chque ??
+                    associado.limite_cheque ??
+                    associado.SL_LIMITE_CHEQUE
+                );
 
-                if (associado.SL_DEVEDOR_DIA !== undefined && associado.SL_DEVEDOR_DIA !== null) {
-                    setDivida(fmtBRL(Number(associado.SL_DEVEDOR_DIA || 0)));
+                const saldoCapital = numberFromApi(
+                    associado.saldo_capital ?? associado.SALDO_CAPITAL
+                );
+
+                setCapital(fmtBRL(saldoCapital));
+
+                if (
+                    valorIap === undefined ||
+                    valorIap === null ||
+                    String(valorIap).trim() === "" ||
+                    String(valorIap).trim() === "0"
+                ) {
+                    setIap("0");
                 } else {
-                    setDivida(fmtBRL(0));
+                    setIap(String(Number(valorIap) || 0));
                 }
 
-                if (associado.NR_CARTAO) {
-                    setCartao("0");
-                    setCartaoAtual(fmtBRL(Number(associado.NR_LIMITE_CARTAO || 0)));
+                if (
+                    valorPortabilidade !== undefined &&
+                    valorPortabilidade !== null &&
+                    valorPortabilidade !== ""
+                ) {
+                    setPortabilidade(Number(valorPortabilidade) > 0 ? "1" : "0");
+                }
+
+                if (possuiCartao !== undefined && possuiCartao !== null && possuiCartao !== "") {
+                    setCartao(Number(possuiCartao) === 1 ? "1" : "0");
+                    setCartaoAtual(fmtBRL(limiteCartao));
                 } else {
                     setCartao("0");
                     setCartaoAtual(fmtBRL(0));
                 }
 
-                if (associado.SL_LIMITE_CHEQUE !== undefined && associado.SL_LIMITE_CHEQUE !== null) {
-                    setEspecial("0");
-                    setEspecialAtual(fmtBRL(Number(associado.SL_LIMITE_CHEQUE || 0)));
+                if (limiteCheque > 0) {
+                    setEspecial("1");
+                    setEspecialAtual(fmtBRL(limiteCheque));
                 } else {
                     setEspecial("0");
                     setEspecialAtual(fmtBRL(0));
@@ -412,7 +478,7 @@ export function AnaliseLimiteForm() {
             LT_ATUAL_CH: parseBRL(especialAtual || "0"),
             LT_APROVADO_CH: parseBRL(especialAprovado || "0"),
             DT: dataEnvio,
-            NM_FUNCIONARIO: "INTRANET",
+            NM_FUNCIONARIO: nomeFuncionarioLogado || "INTRANET",
         };
 
         if (tipoFormulario === "PJ") {
@@ -477,7 +543,7 @@ export function AnaliseLimiteForm() {
 
             await gerarPdfAnaliseLimite({
                 tipoFormulario,
-                cpf: formatCpfView(cpf),
+                cpf: formatCpfCnpjView(cpf),
                 nome: nome || "",
                 celular: celular || "",
                 empresa: empresa || "",
@@ -533,7 +599,7 @@ export function AnaliseLimiteForm() {
 
             await gerarPdfAnaliseLimite({
                 tipoFormulario,
-                cpf: formatCpfView(cpf),
+                cpf: formatCpfCnpjView(cpf),
                 nome: nome || "",
                 celular: celular || "",
                 empresa: empresa || "",
@@ -624,7 +690,7 @@ export function AnaliseLimiteForm() {
 
                                 <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px_140px]">
                                     <SearchInput
-                                        value={formatCpfView(cpf)}
+                                        value={formatCpfCnpjView(cpf)}
                                         onChange={(e) => setCpf(e.target.value)}
                                         placeholder="Digite o CPF/CNPJ"
                                         className={inputBase}
@@ -1065,7 +1131,7 @@ export function AnaliseLimiteForm() {
                     </div>
 
                     <PrintSection title="Dados do Associado">
-                        <PrintLine label="CPF/CNPJ" value={formatCpfView(cpf)} />
+                        <PrintLine label="CPF/CNPJ" value={formatCpfCnpjView(cpf)} />
                         <PrintLine label="Nome" value={nome} />
                         <PrintLine label="Celular" value={celular} />
                         {tipoFormulario === "PF" && <PrintLine label="Empresa" value={empresa} />}

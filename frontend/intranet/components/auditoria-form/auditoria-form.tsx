@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FaCopy, FaSearch } from "react-icons/fa";
 import {
   buscarAssociadoAuditoria,
@@ -152,6 +152,7 @@ function CampoEditavel({
 }
 
 export function AuditoriaForm() {
+  const feedbackRef = useRef<HTMLDivElement | null>(null);
   const [form, setForm] = useState<FormState>(initialState);
   const [loadingBusca, setLoadingBusca] = useState(false);
   const [copiando, setCopiando] = useState(false);
@@ -162,6 +163,14 @@ export function AuditoriaForm() {
     () => somenteNumeros(form.cpf_cnpj),
     [form.cpf_cnpj]
   );
+
+  useEffect(() => {
+    if (!info || erro) return;
+
+    requestAnimationFrame(() => {
+      feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [info, erro]);
 
   function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((prev) => ({
@@ -314,6 +323,7 @@ export function AuditoriaForm() {
   return (
     <div className="mx-auto min-w-0 rounded-xl bg-white p-6 shadow">
       <SearchForm onSearch={preencherFormulario}>
+        <div ref={feedbackRef} />
         {erro && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {erro}

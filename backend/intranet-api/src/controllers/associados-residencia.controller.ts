@@ -42,7 +42,7 @@ export const associadoResidenciaController = {
           a.NM_CIDADE         AS CIDADE,
           a.SG_ESTADO         AS UF,
           a.NR_CEP            AS CEP
-        FROM ASSOCIADO_ANALITICO a
+        FROM DBACRESSEM.ASSOCIADO_ANALITICO a
         WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') = :cpf
           AND ROWNUM = 1
       `;

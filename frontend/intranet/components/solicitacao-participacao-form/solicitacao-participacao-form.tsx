@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FaCalendarPlus, FaSearch, FaTrash } from "react-icons/fa";
 import {
     cadastrarSolicitacaoParticipacao,
@@ -26,13 +26,13 @@ type AuditorioData = {
     QNTD_MICROFONE: string;
     SN_USO_PROJETOR: string;
     NM_APRESENTACAO: string;
-    SN_AUDIO_EXTERNO: string;
     SN_OPERADOR: string;
     SN_AO_VIVO: string;
     NM_PLATAFORMA: string;
     SN_INTERNET: string;
     DESC_JUSTIFICATIVA: string;
     OBS_AUDITORIO_SICOOB_SEDE: string;
+    SN_AUDIO_EXTERNO: string;
 };
 
 function generateId() {
@@ -76,6 +76,42 @@ function formatCpfOuCnpj(value: string) {
         .slice(0, 18);
 }
 
+const ORACLE_BYTE_BUFFER = 2;
+const ORACLE_LIMITS = {
+    NM_SOLICITANTE: 100,
+    NM_CIDADE: 30,
+    NM_FUNCIONARIO: 70,
+    DESC_SOLICITACAO: 400,
+    DESC_SERVICOS: 200,
+    DESC_VINCULO: 200,
+    DESC_RETORNO_ULTIMO_EVENTO: 300,
+    DESC_RESUMO_EVENTO: 2000,
+} as const;
+
+const utf8Encoder = new TextEncoder();
+
+function limitarTextoPorBytesOracle(value: string, limiteBanco: number) {
+    const limiteSeguro = Math.max(1, limiteBanco - ORACLE_BYTE_BUFFER);
+    let saida = "";
+    let totalBytes = 0;
+
+    for (const ch of String(value || "")) {
+        const bytesChar = utf8Encoder.encode(ch).length;
+        if (totalBytes + bytesChar > limiteSeguro) break;
+        saida += ch;
+        totalBytes += bytesChar;
+    }
+
+    return saida;
+}
+
+function normalizarOracleUpper(value: string, limiteBanco: number) {
+    return limitarTextoPorBytesOracle(
+        String(value || "").trim().toUpperCase(),
+        limiteBanco
+    );
+}
+
 export function SolicitacaoParticipacaoForm() {
     const router = useRouter();
 
@@ -86,6 +122,21 @@ export function SolicitacaoParticipacaoForm() {
     const [loading, setLoading] = useState(false);
     const [erro, setErro] = useState("");
     const [info, setInfo] = useState("");
+    const alertRef = useRef<HTMLDivElement | null>(null);
+    const subirParaAlerta = () => {
+        window.requestAnimationFrame(() => {
+            alertRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+        });
+    };
+
+    const mostrarErro = (mensagem: string) => {
+        setInfo("");
+        setErro(mensagem);
+        subirParaAlerta();
+    };
 
     const [cidades, setCidades] = useState<CidadeResponse[]>([]);
 
@@ -193,13 +244,25 @@ export function SolicitacaoParticipacaoForm() {
         }
     }, [precisaAuditorio]);
 
-    const cidadesOrdenadas = useMemo(
-        () =>
-            [...cidades].sort((a, b) =>
-                String(a?.NM_CIDADE || "").localeCompare(String(b?.NM_CIDADE || ""))
-            ),
-        [cidades]
-    );
+    useEffect(() => {
+        if ((erro || info) && alertRef.current) {
+            alertRef.current.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+        }
+    }, [erro, info]);
+
+    const cidadesOrdenadas = useMemo(() => {
+        const nomes = cidades
+            .map((item) => {
+                if (typeof item === "string") return item.trim();
+                return String(item?.NM_CIDADE || item?.nome || "").trim();
+            })
+            .filter(Boolean);
+
+        return Array.from(new Set(nomes)).sort((a, b) => a.localeCompare(b));
+    }, [cidades]);
 
     const adicionarDiaEvento = () => {
         setDias((prev) => [
@@ -247,12 +310,12 @@ export function SolicitacaoParticipacaoForm() {
 
     const validaCamposAuditorio = () => {
         if (!auditorio.QTD_ESTIMATIVA_CONVIDADOS) {
-            setErro("Preencha a estimativa de convidados.");
+            mostrarErro("Preencha a estimativa de convidados.");
             return false;
         }
 
         if (!auditorio.SN_USO_MICROFONE) {
-            setErro("Selecione o uso de microfone.");
+            mostrarErro("Selecione o uso de microfone.");
             return false;
         }
 
@@ -260,12 +323,12 @@ export function SolicitacaoParticipacaoForm() {
             auditorio.SN_USO_MICROFONE === "1" &&
             !auditorio.QNTD_MICROFONE.trim()
         ) {
-            setErro("Preencha a quantidade de microfones.");
+            mostrarErro("Preencha a quantidade de microfones.");
             return false;
         }
 
         if (!auditorio.SN_USO_PROJETOR) {
-            setErro("Selecione o uso do projetor.");
+            mostrarErro("Selecione o uso do projetor.");
             return false;
         }
 
@@ -273,32 +336,32 @@ export function SolicitacaoParticipacaoForm() {
             auditorio.SN_USO_PROJETOR === "1" &&
             !auditorio.NM_APRESENTACAO.trim()
         ) {
-            setErro("Selecione o tipo de apresentação.");
+            mostrarErro("Selecione o tipo de apresentação.");
             return false;
         }
 
         if (!auditorio.SN_AUDIO_EXTERNO) {
-            setErro("Selecione o uso de áudio externo.");
+            mostrarErro("Selecione o uso de áudio externo.");
             return false;
         }
 
         if (!auditorio.SN_OPERADOR) {
-            setErro("Selecione o operador do som/apresentação.");
+            mostrarErro("Selecione o operador do som/apresentação.");
             return false;
         }
 
         if (!auditorio.SN_AO_VIVO) {
-            setErro("Selecione se haverá transmissão ao vivo.");
+            mostrarErro("Selecione se haverá transmissão ao vivo.");
             return false;
         }
 
         if (auditorio.SN_AO_VIVO === "1" && !getPlataformaString()) {
-            setErro("Selecione ao menos uma plataforma de transmissão.");
+            mostrarErro("Selecione ao menos uma plataforma de transmissão.");
             return false;
         }
 
         if (!auditorio.SN_INTERNET) {
-            setErro("Selecione se precisa de internet dedicada.");
+            mostrarErro("Selecione se precisa de internet dedicada.");
             return false;
         }
 
@@ -306,12 +369,12 @@ export function SolicitacaoParticipacaoForm() {
             auditorio.SN_INTERNET === "1" &&
             !auditorio.DESC_JUSTIFICATIVA.trim()
         ) {
-            setErro("Preencha a justificativa da internet.");
+            mostrarErro("Preencha a justificativa da internet.");
             return false;
         }
 
         if (!auditorio.OBS_AUDITORIO_SICOOB_SEDE.trim()) {
-            setErro("Preencha as observações adicionais do auditório.");
+            mostrarErro("Preencha as observações adicionais do auditório.");
             return false;
         }
 
@@ -320,107 +383,107 @@ export function SolicitacaoParticipacaoForm() {
 
     const validarCampos = () => {
         if (!funcionario.trim()) {
-            setErro("Não foi possível identificar o funcionário logado.");
+            mostrarErro("Não foi possível identificar o funcionário logado.");
             return false;
         }
 
         if (!nomeFantasia.trim()) {
-            setErro("Preencha o Nome Fantasia.");
+            mostrarErro("Preencha o Nome Fantasia.");
             return false;
         }
 
         if (!cpfCnpj.trim()) {
-            setErro("Preencha o CPF/CNPJ.");
+            mostrarErro("Preencha o CPF/CNPJ.");
             return false;
         }
 
         const tamanhoCpfCnpj = cpfCnpj.length;
         if (tamanhoCpfCnpj !== 14 && tamanhoCpfCnpj !== 18) {
-            setErro("Preencha com o número correto de caracteres do CPF ou CNPJ.");
+            mostrarErro("Preencha com o número correto de caracteres do CPF ou CNPJ.");
             return false;
         }
 
         if (!cidade.trim()) {
-            setErro("Selecione a cidade.");
+            mostrarErro("Selecione a cidade.");
             return false;
         }
 
         if (semFinsLucrativos === "1" && !docSemFins) {
-            setErro("Anexe o comprovante de Entidade Sem Fins Lucrativos.");
+            mostrarErro("Anexe o comprovante de Entidade Sem Fins Lucrativos.");
             return false;
         }
 
         if (!dias.length) {
-            setErro("Adicione os dia(s) do evento.");
+            mostrarErro("Adicione o(s) dia(s) do evento.");
             return false;
         }
 
         for (const dia of dias) {
             if (!dia.DT_DIA || !dia.HR_INICIO || !dia.HR_FIM) {
-                setErro("Preencha todos os campos de data e hora do evento.");
+                mostrarErro("Preencha todos os campos de data e hora do evento.");
                 return false;
             }
         }
 
         if (precisaValorMonetario === "1" && !valorSolicitado.trim()) {
-            setErro("Preencha o valor desejado.");
+            mostrarErro("Preencha o valor desejado.");
             return false;
         }
 
         if (precisaInsumo === "1" && !estimativaInsumo.trim()) {
-            setErro("Preencha a estimativa de valor.");
+            mostrarErro("Preencha a estimativa de valor.");
             return false;
         }
 
         if (precisaAuditorio === "1" && !auditorioCentro && !auditorioSede) {
-            setErro("Selecione ao menos um local: Centro de Convivência ou Sede.");
+            mostrarErro("Selecione ao menos um local: Centro de Convivência ou Sede.");
             return false;
         }
 
         if (!solicitacao.trim()) {
-            setErro("Preencha a Solicitação.");
+            mostrarErro("Preencha a Solicitação.");
             return false;
         }
 
         if (!resumoEvento.trim()) {
-            setErro("Preencha o resumo do evento.");
+            mostrarErro("Preencha o resumo do evento.");
             return false;
         }
 
         if (!contaCooperativa) {
-            setErro("Selecione se possui conta na cooperativa.");
+            mostrarErro("Selecione se possui conta na cooperativa.");
             return false;
         }
 
         if (contaCooperativa === "1") {
             if (!servicos.trim()) {
-                setErro("Preencha os serviços que a solicitante possui.");
+                mostrarErro("Preencha os serviços que a solicitante possui.");
                 return false;
             }
 
             if (!saldoMedio.trim()) {
-                setErro("Preencha o saldo médio da conta corrente.");
+                mostrarErro("Preencha o saldo médio da conta corrente.");
                 return false;
             }
 
             if (!rentMaq.trim()) {
-                setErro("Preencha a rentabilidade da maquininha.");
+                mostrarErro("Preencha a rentabilidade da maquininha.");
                 return false;
             }
         }
 
         if (!vinculo.trim()) {
-            setErro("Preencha o vínculo do solicitante.");
+            mostrarErro("Preencha o vínculo do solicitante.");
             return false;
         }
 
         if (eventoAnterior === "1" && !retornoUltimoEvento.trim()) {
-            setErro("Preencha o retorno do último evento.");
+            mostrarErro("Preencha o retorno do último evento.");
             return false;
         }
 
         if (!oficio) {
-            setErro("Anexe o Ofício.");
+            mostrarErro("Anexe o Ofício.");
             return false;
         }
 
@@ -501,7 +564,10 @@ export function SolicitacaoParticipacaoForm() {
 
     const onSalvarAuditorio = () => {
         setErro("");
-        if (!validaCamposAuditorio()) return;
+        if (!validaCamposAuditorio()) {
+            subirParaAlerta();
+            return;
+        }
         setOpenAuditorioModal(false);
         setInfo("Dados do auditório sede preenchidos com sucesso.");
     };
@@ -516,11 +582,43 @@ export function SolicitacaoParticipacaoForm() {
             setLoading(true);
 
             const formData = new FormData();
+            const nmSolicitanteOracle = normalizarOracleUpper(
+                nomeFantasia,
+                ORACLE_LIMITS.NM_SOLICITANTE
+            );
+            const nmCidadeOracle = normalizarOracleUpper(
+                cidade,
+                ORACLE_LIMITS.NM_CIDADE
+            );
+            const nmFuncionarioOracle = normalizarOracleUpper(
+                funcionario,
+                ORACLE_LIMITS.NM_FUNCIONARIO
+            );
+            const descServicosOracle = normalizarOracleUpper(
+                servicos,
+                ORACLE_LIMITS.DESC_SERVICOS
+            );
+            const descVinculoOracle = normalizarOracleUpper(
+                vinculo,
+                ORACLE_LIMITS.DESC_VINCULO
+            );
+            const descRetornoOracle = normalizarOracleUpper(
+                retornoUltimoEvento,
+                ORACLE_LIMITS.DESC_RETORNO_ULTIMO_EVENTO
+            );
+            const descSolicitacaoOracle = normalizarOracleUpper(
+                solicitacao,
+                ORACLE_LIMITS.DESC_SOLICITACAO
+            );
+            const descResumoOracle = normalizarOracleUpper(
+                resumoEvento,
+                ORACLE_LIMITS.DESC_RESUMO_EVENTO
+            );
 
-            formData.append("NM_SOLICITANTE", nomeFantasia.trim().toUpperCase());
+            formData.append("NM_SOLICITANTE", nmSolicitanteOracle);
             formData.append("NR_CPF_CNPJ", onlyDigits(cpfCnpj));
-            formData.append("NM_FUNCIONARIO", funcionario.toUpperCase());
-            formData.append("NM_CIDADE", cidade.trim().toUpperCase());
+            formData.append("NM_FUNCIONARIO", nmFuncionarioOracle);
+            formData.append("NM_CIDADE", nmCidadeOracle);
             formData.append("DT_SOLICITACAO", diaSolicitacao);
             formData.append("NM_ANDAMENTO", "Pendente Gerência");
             formData.append("CD_CONTA_COOPERATIVA", contaCooperativa || "0");
@@ -528,21 +626,21 @@ export function SolicitacaoParticipacaoForm() {
                 "VL_SALDO_MEDCIOCC",
                 String(converterReaisParaNumero(saldoMedio))
             );
-            formData.append("DESC_SERVICOS", servicos.trim().toUpperCase());
-            formData.append("DESC_VINCULO", vinculo.trim().toUpperCase());
+            formData.append("DESC_SERVICOS", descServicosOracle);
+            formData.append("DESC_VINCULO", descVinculoOracle);
             formData.append(
                 "DESC_RETORNO_ULTIMO_EVENTO",
-                retornoUltimoEvento.trim().toUpperCase()
+                descRetornoOracle
             );
             formData.append(
                 "VL_RENTABILIDADE_MAQUININHA",
                 String(converterReaisParaNumero(rentMaq))
             );
 
-            formData.append("DESC_SOLICITACAO", solicitacao.trim().toUpperCase());
+            formData.append("DESC_SOLICITACAO", descSolicitacaoOracle);
             formData.append("CD_MOTORISTA", precisaMotorista);
             formData.append("CD_FUNCIONARIOS", precisaFuncionarios);
-            formData.append("DESC_RESUMO_EVENTO", resumoEvento.trim().toUpperCase());
+            formData.append("DESC_RESUMO_EVENTO", descResumoOracle);
             formData.append(
                 "VL_PATROCINIO",
                 String(converterReaisParaNumero(valorSolicitado))
@@ -603,7 +701,7 @@ export function SolicitacaoParticipacaoForm() {
             if (idPatrocinio) {
                 await dispararEmailGerencia({
                     funcionario,
-                    empresa: nomeFantasia.trim().toUpperCase(),
+                    empresa: nmSolicitanteOracle,
                     patrocinioId: idPatrocinio,
                 });
             }
@@ -631,6 +729,8 @@ export function SolicitacaoParticipacaoForm() {
                     </button>
                 </div>
 
+                <div ref={alertRef} />
+
                 {erro && (
                     <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                         {erro}
@@ -650,8 +750,16 @@ export function SolicitacaoParticipacaoForm() {
                         </label>
                         <input
                             value={nomeFantasia}
-                            onChange={(e) => setNomeFantasia(e.target.value)}
+                            onChange={(e) =>
+                                setNomeFantasia(
+                                    limitarTextoPorBytesOracle(
+                                        e.target.value,
+                                        ORACLE_LIMITS.NM_SOLICITANTE
+                                    )
+                                )
+                            }
                             className="w-full rounded border px-3 py-2"
+                            maxLength={ORACLE_LIMITS.NM_SOLICITANTE}
                         />
                     </div>
 
@@ -672,20 +780,27 @@ export function SolicitacaoParticipacaoForm() {
                             <label className="mb-1 block text-xs font-medium text-gray-600">
                                 Cidade destino
                             </label>
-                            <input
-                                list="cidades-solicitacao"
-                                value={cidade}
-                                onChange={(e) => setCidade(e.target.value)}
-                                className="w-full rounded border px-3 py-2"
-                                placeholder="Selecione ou digite uma cidade"
-                            />
-                            <datalist id="cidades-solicitacao">
-                                {cidadesOrdenadas.map((item) => (
-                                    <option key={item.ID_CIDADES} value={item.NM_CIDADE} />
-                                ))}
-                            </datalist>
-                        </div>
+                        <select
+                            value={cidade}
+                            onChange={(e) =>
+                                setCidade(
+                                    limitarTextoPorBytesOracle(
+                                        e.target.value,
+                                        ORACLE_LIMITS.NM_CIDADE
+                                    )
+                                )
+                            }
+                            className="w-full rounded border px-3 py-2"
+                        >
+                            <option value="">Selecione uma cidade</option>
+                            {cidadesOrdenadas.map((item, index) => (
+                                <option key={`${item}-${index}`} value={item}>
+                                    {item}
+                                </option>
+                            ))}
+                        </select>
                     </div>
+                </div>
 
                     <div>
                         <label className="mb-2 block text-xs font-medium text-gray-600">
@@ -997,9 +1112,17 @@ export function SolicitacaoParticipacaoForm() {
                         </label>
                         <textarea
                             value={solicitacao}
-                            onChange={(e) => setSolicitacao(e.target.value)}
+                            onChange={(e) =>
+                                setSolicitacao(
+                                    limitarTextoPorBytesOracle(
+                                        e.target.value,
+                                        ORACLE_LIMITS.DESC_SOLICITACAO
+                                    )
+                                )
+                            }
                             className="w-full rounded border px-3 py-2"
                             rows={5}
+                            maxLength={ORACLE_LIMITS.DESC_SOLICITACAO}
                             placeholder="Detalhe sua solicitação de patrocínio, incluindo evento, datas, valores, contrapartidas e demais informações."
                         />
                     </div>
@@ -1010,9 +1133,17 @@ export function SolicitacaoParticipacaoForm() {
                         </label>
                         <textarea
                             value={resumoEvento}
-                            onChange={(e) => setResumoEvento(e.target.value)}
+                            onChange={(e) =>
+                                setResumoEvento(
+                                    limitarTextoPorBytesOracle(
+                                        e.target.value,
+                                        ORACLE_LIMITS.DESC_RESUMO_EVENTO
+                                    )
+                                )
+                            }
                             className="w-full rounded border px-3 py-2"
                             rows={6}
+                            maxLength={ORACLE_LIMITS.DESC_RESUMO_EVENTO}
                             placeholder="Informe um resumo claro do evento e seu objetivo."
                         />
                     </div>
@@ -1020,16 +1151,16 @@ export function SolicitacaoParticipacaoForm() {
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
                         <div>
                             <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Conta na Cooperativa
+                                Conta na Cooperativa?
                             </label>
                             <select
                                 value={contaCooperativa}
                                 onChange={(e) => setContaCooperativa(e.target.value)}
                                 className="w-full rounded border px-3 py-2"
                             >
-                                <option value=""></option>
-                                <option value="1">Sim</option>
-                                <option value="0">Não</option>
+                                <option value="">Selecione</option>
+                                <option value="1">SIM</option>
+                                <option value="0">NÃO</option>
                             </select>
                         </div>
 
@@ -1039,9 +1170,17 @@ export function SolicitacaoParticipacaoForm() {
                             </label>
                             <textarea
                                 value={vinculo}
-                                onChange={(e) => setVinculo(e.target.value)}
+                                onChange={(e) =>
+                                    setVinculo(
+                                        limitarTextoPorBytesOracle(
+                                            e.target.value,
+                                            ORACLE_LIMITS.DESC_VINCULO
+                                        )
+                                    )
+                                }
                                 className="w-full rounded border px-3 py-2"
                                 rows={2}
+                                maxLength={ORACLE_LIMITS.DESC_VINCULO}
                             />
                         </div>
                     </div>
@@ -1054,16 +1193,24 @@ export function SolicitacaoParticipacaoForm() {
                                 </label>
                                 <textarea
                                     value={servicos}
-                                    onChange={(e) => setServicos(e.target.value)}
+                                    onChange={(e) =>
+                                        setServicos(
+                                            limitarTextoPorBytesOracle(
+                                                e.target.value,
+                                                ORACLE_LIMITS.DESC_SERVICOS
+                                            )
+                                        )
+                                    }
                                     className="w-full rounded border px-3 py-2"
                                     rows={2}
+                                    maxLength={ORACLE_LIMITS.DESC_SERVICOS}
                                 />
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-gray-600">
-                                        Sal. Med. C/C
+                                        Sal. Méd. C/C
                                     </label>
                                     <input
                                         value={saldoMedio}
@@ -1076,7 +1223,7 @@ export function SolicitacaoParticipacaoForm() {
 
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-gray-600">
-                                        Rent. Maq.
+                                        Rent. Máq.
                                     </label>
                                     <input
                                         value={rentMaq}
@@ -1121,9 +1268,17 @@ export function SolicitacaoParticipacaoForm() {
                             </label>
                             <textarea
                                 value={retornoUltimoEvento}
-                                onChange={(e) => setRetornoUltimoEvento(e.target.value)}
+                                onChange={(e) =>
+                                    setRetornoUltimoEvento(
+                                        limitarTextoPorBytesOracle(
+                                            e.target.value,
+                                            ORACLE_LIMITS.DESC_RETORNO_ULTIMO_EVENTO
+                                        )
+                                    )
+                                }
                                 className="w-full rounded border px-3 py-2"
                                 rows={5}
+                                maxLength={ORACLE_LIMITS.DESC_RETORNO_ULTIMO_EVENTO}
                             />
                         </div>
                     )}
@@ -1216,7 +1371,7 @@ export function SolicitacaoParticipacaoForm() {
 
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-gray-600">
-                                        Uso de microfone?
+                                        USO DE MICROFONE?
                                     </label>
                                     <select
                                         value={auditorio.SN_USO_MICROFONE}
@@ -1225,9 +1380,9 @@ export function SolicitacaoParticipacaoForm() {
                                         }
                                         className="w-full rounded border px-3 py-2"
                                     >
-                                        <option value=""></option>
-                                        <option value="1">Sim</option>
-                                        <option value="0">Não</option>
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
                                     </select>
                                 </div>
 
@@ -1250,7 +1405,7 @@ export function SolicitacaoParticipacaoForm() {
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-gray-600">
-                                        Uso de projeção? (Datashow/Tela)
+                                        USO DE PROJEÇÃO? (DATASHOW/TELA)
                                     </label>
                                     <select
                                         value={auditorio.SN_USO_PROJETOR}
@@ -1259,16 +1414,16 @@ export function SolicitacaoParticipacaoForm() {
                                         }
                                         className="w-full rounded border px-3 py-2"
                                     >
-                                        <option value=""></option>
-                                        <option value="1">Sim</option>
-                                        <option value="0">Não</option>
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
                                     </select>
                                 </div>
 
                                 {auditorio.SN_USO_PROJETOR === "1" && (
                                     <div>
                                         <label className="mb-1 block text-xs font-medium text-gray-600">
-                                            Apresentação via
+                                            APRESENTAÇÃO VIA
                                         </label>
                                         <select
                                             value={auditorio.NM_APRESENTACAO}
@@ -1277,12 +1432,12 @@ export function SolicitacaoParticipacaoForm() {
                                             }
                                             className="w-full rounded border px-3 py-2"
                                         >
-                                            <option value=""></option>
-                                            <option value="POSSUI NOTEBOOK PRÓPRIO">
-                                                Notebook próprio
+                                            <option value="">Selecione</option>
+                                            <option value="POSSUI NOTEBOOK PROPRIO">
+                                                NOTEBOOK PRÓPRIO
                                             </option>
                                             <option value="PRECISA DE NOTEBOOK DO TI">
-                                                Precisa de Notebook do TI
+                                                PRECISA DE NOTEBOOK DO TI
                                             </option>
                                         </select>
                                     </div>
@@ -1292,7 +1447,7 @@ export function SolicitacaoParticipacaoForm() {
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-gray-600">
-                                        Uso de áudio externo
+                                        USO DE ÁUDIO EXTERNO
                                     </label>
                                     <select
                                         value={auditorio.SN_AUDIO_EXTERNO}
@@ -1301,15 +1456,15 @@ export function SolicitacaoParticipacaoForm() {
                                         }
                                         className="w-full rounded border px-3 py-2"
                                     >
-                                        <option value=""></option>
-                                        <option value="1">Sim</option>
-                                        <option value="0">Não</option>
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
                                     </select>
                                 </div>
 
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-gray-600">
-                                        Tem operador do som/apresentação?
+                                        TEM OPERADOR DO SOM/APRESENTAÇÃO?
                                     </label>
                                     <select
                                         value={auditorio.SN_OPERADOR}
@@ -1318,9 +1473,9 @@ export function SolicitacaoParticipacaoForm() {
                                         }
                                         className="w-full rounded border px-3 py-2"
                                     >
-                                        <option value=""></option>
-                                        <option value="1">Sim</option>
-                                        <option value="0">Não</option>
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
                                     </select>
                                 </div>
                             </div>
@@ -1328,7 +1483,7 @@ export function SolicitacaoParticipacaoForm() {
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-gray-600">
-                                        Haverá transmissão ao vivo?
+                                        HAVERÁ TRANSMISSÃO AO VIVO?
                                     </label>
                                     <select
                                         value={auditorio.SN_AO_VIVO}
@@ -1337,9 +1492,9 @@ export function SolicitacaoParticipacaoForm() {
                                         }
                                         className="w-full rounded border px-3 py-2"
                                     >
-                                        <option value=""></option>
-                                        <option value="1">Sim</option>
-                                        <option value="0">Não</option>
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
                                     </select>
                                 </div>
 
@@ -1387,7 +1542,7 @@ export function SolicitacaoParticipacaoForm() {
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-gray-600">
-                                        Internet dedicada?
+                                        INTERNET DEDICADA?
                                     </label>
                                     <select
                                         value={auditorio.SN_INTERNET}
@@ -1396,9 +1551,9 @@ export function SolicitacaoParticipacaoForm() {
                                         }
                                         className="w-full rounded border px-3 py-2"
                                     >
-                                        <option value=""></option>
-                                        <option value="1">Sim</option>
-                                        <option value="0">Não</option>
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
                                     </select>
                                 </div>
 
@@ -1451,3 +1606,8 @@ export function SolicitacaoParticipacaoForm() {
         </>
     );
 }
+
+
+
+
+

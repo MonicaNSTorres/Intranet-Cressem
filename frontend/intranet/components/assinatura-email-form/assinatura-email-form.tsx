@@ -17,6 +17,8 @@ const CERT_OPTIONS: Array<{ value: CertValue; label: string }> = [
 
 const TELEFONE_PADRAO = "(12) 3904-9555";
 const SITE_PADRAO = "sicoobcressem.com.br";
+const FONT_SEMIBOLD = "SicoobSansCndSemiBoldExact";
+const FONT_MEDIUM = "SicoobSansCndMediumExact";
 //const ENDERECO_PADRAO = "Rua Henrique Dias, 1000 - Vila Progresso,\nSão José dos Campos -SP, 12215-260";
 
 function getCertImage(cert: CertValue) {
@@ -50,7 +52,7 @@ export function AssinaturaEmailForm() {
 
     const ENDERECO_PADRAO = getEnderecoPorPosto(office);
 
-    const assinaturaRef = useRef<HTMLDivElement | null>(null);
+    const assinaturaDownloadRef = useRef<HTMLDivElement | null>(null);
 
     function formatarPrimeiroUltimoNome(nomeCompleto: string) {
         if (!nomeCompleto) return "";
@@ -83,7 +85,7 @@ export function AssinaturaEmailForm() {
                 const data = await response.json();
 
                 if (data?.nome_completo) {
-                    setNome(formatarPrimeiroUltimoNome(data.nome_completo));
+                    setNome(capitalizarFrase(formatarPrimeiroUltimoNome(data.nome_completo)));
                 }
 
                 if (data?.physicalDeliveryOfficeName) {
@@ -91,7 +93,7 @@ export function AssinaturaEmailForm() {
                 }
 
                 if (data?.department) {
-                    setFuncao(data.department);
+                    setFuncao(capitalizarFrase(data.department));
                 }
             } catch (error) {
                 console.error("Erro ao buscar usuário logado:", error);
@@ -105,8 +107,8 @@ export function AssinaturaEmailForm() {
 
     const dados = useMemo(
         () => ({
-            nome: nome.trim() || "Nome Sobrenome",
-            funcao: funcao.trim() || "Setor não informado",
+            nome: capitalizarFrase(nome.trim()) || "Nome Sobrenome",
+            funcao: capitalizarFrase(funcao.trim()) || "Setor n�o informado",
             telefone: TELEFONE_PADRAO,
             site: SITE_PADRAO,
             endereco: ENDERECO_PADRAO,
@@ -126,18 +128,35 @@ export function AssinaturaEmailForm() {
     }
 
     async function handleBaixarImagem() {
-        if (!assinaturaRef.current) return;
+        if (!assinaturaDownloadRef.current) return;
 
         try {
             setBaixando(true);
+            await document.fonts.ready;
+            await Promise.all([
+                document.fonts.load(`400 24px ${FONT_SEMIBOLD}`),
+                document.fonts.load(`400 18px ${FONT_MEDIUM}`),
+                document.fonts.load(`400 13px ${FONT_MEDIUM}`),
+            ]);
 
-            const canvas = await html2canvas(assinaturaRef.current, {
+            const canvas = await html2canvas(assinaturaDownloadRef.current, {
                 backgroundColor: null,
-                scale: 2,
+                scale: 3,
                 useCORS: true,
             });
 
-            const url = canvas.toDataURL("image/png");
+            const finalCanvas = document.createElement("canvas");
+            finalCanvas.width = 495;
+            finalCanvas.height = 165;
+            const ctx = finalCanvas.getContext("2d");
+
+            if (ctx) {
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = "high";
+                ctx.drawImage(canvas, 0, 0, finalCanvas.width, finalCanvas.height);
+            }
+
+            const url = finalCanvas.toDataURL("image/png");
 
             const link = document.createElement("a");
             link.href = url;
@@ -153,9 +172,27 @@ export function AssinaturaEmailForm() {
 
     return (
         <div className="min-w-225 mx-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_1.1fr]">
+            <style jsx global>{`
+                @font-face {
+                    font-family: "${FONT_MEDIUM}";
+                    src: url("/assinatura-email/SicoobSansCnd-Medium.ttf") format("truetype");
+                    font-style: normal;
+                    font-weight: 400;
+                    font-display: swap;
+                }
+
+                @font-face {
+                    font-family: "${FONT_SEMIBOLD}";
+                    src: url("/assinatura-email/SicoobSansCnd-SemiBold.ttf") format("truetype");
+                    font-style: normal;
+                    font-weight: 400;
+                    font-display: swap;
+                }
+            `}</style>
+
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
                 <div>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[1.2fr_0.6fr_0.6fr_auto] md:items-end">
+                    <div className="space-y-4">
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Nome</label>
                             <div className="overflow-hidden rounded-xl border border-gray-200">
@@ -173,57 +210,59 @@ export function AssinaturaEmailForm() {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Certificação 1</label>
-                            <div className="overflow-hidden rounded-xl border border-gray-200">
-                                <div className="grid grid-cols-[74px_1fr]">
-                                    <div className="flex items-center border-r border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700">
-                                        Cert.:
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Certificação 1</label>
+                                <div className="overflow-hidden rounded-xl border border-gray-200">
+                                    <div className="grid grid-cols-[74px_1fr]">
+                                        <div className="flex items-center border-r border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700">
+                                            Cert.:
+                                        </div>
+                                        <select
+                                            value={cert1}
+                                            onChange={(e) => setCert1(e.target.value as CertValue)}
+                                            className="w-full bg-white px-4 py-3 text-sm text-gray-900 outline-none"
+                                        >
+                                            {CERT_OPTIONS.map((option) => (
+                                                <option key={`cert1-${option.label}`} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
-                                    <select
-                                        value={cert1}
-                                        onChange={(e) => setCert1(e.target.value as CertValue)}
-                                        className="w-full bg-white px-4 py-3 text-sm text-gray-900 outline-none"
-                                    >
-                                        {CERT_OPTIONS.map((option) => (
-                                            <option key={`cert1-${option.label}`} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
                                 </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Certificação 2</label>
-                            <div className="overflow-hidden rounded-xl border border-gray-200">
-                                <div className="grid grid-cols-[74px_1fr]">
-                                    <div className="flex items-center border-r border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700">
-                                        Cert.:
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Certificação 2</label>
+                                <div className="overflow-hidden rounded-xl border border-gray-200">
+                                    <div className="grid grid-cols-[74px_1fr]">
+                                        <div className="flex items-center border-r border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700">
+                                            Cert.:
+                                        </div>
+                                        <select
+                                            value={cert2}
+                                            onChange={(e) => setCert2(e.target.value as CertValue)}
+                                            className="w-full bg-white px-4 py-3 text-sm text-gray-900 outline-none"
+                                        >
+                                            {CERT_OPTIONS.map((option) => (
+                                                <option key={`cert2-${option.label}`} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
-                                    <select
-                                        value={cert2}
-                                        onChange={(e) => setCert2(e.target.value as CertValue)}
-                                        className="w-full bg-white px-4 py-3 text-sm text-gray-900 outline-none"
-                                    >
-                                        {CERT_OPTIONS.map((option) => (
-                                            <option key={`cert2-${option.label}`} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="flex md:justify-end">
-                            <button
-                                onClick={handleGerar}
-                                className="inline-flex items-center justify-center rounded-xl bg-secondary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
-                            >
-                                Gerar
-                            </button>
+                            <div className="flex md:justify-end">
+                                <button
+                                    onClick={handleGerar}
+                                    className="inline-flex items-center justify-center rounded-xl bg-secondary px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
+                                >
+                                    Gerar
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -277,17 +316,29 @@ export function AssinaturaEmailForm() {
                         </div>
 
                         <div className="mt-4 rounded-2xl border border-dashed border-gray-300 bg-third p-4">
-                            <div className="mx-auto max-w-205">
-                                <div ref={assinaturaRef}>
-                                    <AssinaturaPreview
-                                        nome={dados.nome}
-                                        funcao={dados.funcao}
-                                        telefone={dados.telefone}
-                                        site={dados.site}
-                                        endereco={dados.endereco}
-                                        cert1Img={dados.cert1Img}
-                                        cert2Img={dados.cert2Img}
-                                    />
+                            <div className="mx-auto w-full max-w-[420px] overflow-hidden">
+                                <div
+                                    style={{
+                                        width: 420,
+                                        height: 140,
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            transform: "scale(0.7)",
+                                            transformOrigin: "top left",
+                                        }}
+                                    >
+                                        <AssinaturaPreview
+                                            nome={dados.nome}
+                                            funcao={dados.funcao}
+                                            telefone={dados.telefone}
+                                            site={dados.site}
+                                            endereco={dados.endereco}
+                                            cert1Img={dados.cert1Img}
+                                            cert2Img={dados.cert2Img}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -296,6 +347,23 @@ export function AssinaturaEmailForm() {
                             * Para ficar igual ao modelo, use arquivos com fundo transparente e boa resolução.
                         </p>
                     </div>
+                </div>
+            </div>
+
+            <div
+                aria-hidden
+                className="pointer-events-none fixed -left-[9999px] -top-[9999px] opacity-0"
+            >
+                <div ref={assinaturaDownloadRef}>
+                    <AssinaturaPreview
+                        nome={dados.nome}
+                        funcao={dados.funcao}
+                        telefone={dados.telefone}
+                        site={dados.site}
+                        endereco={dados.endereco}
+                        cert1Img={dados.cert1Img}
+                        cert2Img={dados.cert2Img}
+                    />
                 </div>
             </div>
         </div>
@@ -335,7 +403,7 @@ function AssinaturaPreview({
                 width: 600,
                 height: 200,
                 borderRadius: 18,
-                fontFamily: "Arial, Helvetica, sans-serif",
+                fontFamily: `${FONT_MEDIUM}, Arial, Helvetica, sans-serif`,
             }}
         >
             <div
@@ -382,11 +450,11 @@ function AssinaturaPreview({
                         position: "absolute",
                         left: 10,
                         top: 24,
-                        //fontFamily: "SicoobSansSemiBold, Arial, sans-serif",
+                        fontFamily: `${FONT_SEMIBOLD}, Arial, Helvetica, sans-serif`,
                         color: "#003641",
                         fontSize: 24,
                         lineHeight: "24px",
-                        fontWeight: 700,
+                        fontWeight: 400,
                     }}
                 >
                     {nome}
@@ -397,11 +465,11 @@ function AssinaturaPreview({
                         position: "absolute",
                         left: 10,
                         top: 52,
-                        //fontFamily: "SicoobSansMedium, Arial, sans-serif",
+                        fontFamily: `${FONT_MEDIUM}, Arial, Helvetica, sans-serif`,
                         color: "#BED730",
                         fontSize: 18,
                         lineHeight: "18px",
-                        fontWeight: 500,
+                        fontWeight: 400,
                     }}
                 >
                     {funcao}
@@ -580,11 +648,11 @@ function ContatoLinha({
 
             <div
                 style={{
-                    //fontFamily: "SicoobSansMedium, Arial, sans-serif",
+                    fontFamily: `${FONT_MEDIUM}, Arial, Helvetica, sans-serif`,
                     color: "#003641",
                     fontSize: 13,
                     lineHeight: multiline ? "15px" : "13px",
-                    fontWeight: 600,
+                    fontWeight: 400,
                     whiteSpace: multiline ? "pre-line" : "nowrap",
                 }}
             >
@@ -593,3 +661,12 @@ function ContatoLinha({
         </div>
     );
 }
+
+function capitalizarFrase(frase: string) {
+    return String(frase || "")
+        .split(" ")
+        .filter(Boolean)
+        .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+        .join(" ");
+}
+

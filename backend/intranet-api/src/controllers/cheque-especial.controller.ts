@@ -73,7 +73,8 @@ export const chequeEspecialController = {
       connection = await oracledb.getConnection();
 
       const termoBusca = `%${nome.toUpperCase()}%`;
-      const termoDigitos = `%${onlyDigits(nome)}%`;
+      const digitosBusca = onlyDigits(nome);
+      const termoDigitos = digitosBusca ? `%${digitosBusca}%` : null;
 
       const resultCount = await connection.execute(
         `
@@ -83,8 +84,8 @@ export const chequeEspecialController = {
             :nome = '%%'
             OR UPPER(a.NM_ASSOCIADO) LIKE :nome
             OR UPPER(a.NM_ALTERACAO) LIKE :nome
-            OR TO_CHAR(a.NR_CONTA_CORRENTE) LIKE :nomeNumerico
-            OR REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico
+            OR (:nomeNumerico IS NOT NULL AND TO_CHAR(a.NR_CONTA_CORRENTE) LIKE :nomeNumerico)
+            OR (:cpfNumerico IS NOT NULL AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico)
           )
         `,
         {
@@ -123,8 +124,8 @@ export const chequeEspecialController = {
               :nome = '%%'
               OR UPPER(a.NM_ASSOCIADO) LIKE :nome
               OR UPPER(a.NM_ALTERACAO) LIKE :nome
-              OR TO_CHAR(a.NR_CONTA_CORRENTE) LIKE :nomeNumerico
-              OR REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico
+              OR (:nomeNumerico IS NOT NULL AND TO_CHAR(a.NR_CONTA_CORRENTE) LIKE :nomeNumerico)
+              OR (:cpfNumerico IS NOT NULL AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico)
             )
           )
           WHERE RN > :offset

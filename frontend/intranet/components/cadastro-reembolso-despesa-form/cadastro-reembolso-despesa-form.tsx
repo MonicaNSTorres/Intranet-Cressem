@@ -12,7 +12,6 @@ import {
   carregarCidadesReembolso,
   carregarTiposDespesaReembolso,
   editarSolicitacaoReembolso,
-  enviarEmailInformativoFinanceiroReembolso,
   type SolicitacaoReembolsoPayload,
   type SolicitacaoReembolsoResponse,
 } from "@/services/cadastro_reembolso_despesa.service";
@@ -273,11 +272,15 @@ export function CadastroReembolsoDespesaForm() {
       if (!response?.found) {
         alert("CPF não encontrado.");
         setNome("");
+        setNumeroConta("");
         return;
       }
 
       setCpf(response.cpf || onlyDigits(cpf));
       setNome(response.nome || "");
+      setNumeroConta(
+        String(response.conta_corrente || response.nr_conta_corrente || "").trim()
+      );
     } catch (error: any) {
       console.error(error);
       alert(error?.message || "Não foi possível buscar o CPF.");
@@ -482,7 +485,8 @@ export function CadastroReembolsoDespesaForm() {
         TP_DESPESA: item.tipo,
         DESC_DESPESA: item.descricao,
         VALOR: parseBRL(item.valor),
-        COMPROVANTE: comprovanteDataUrl,
+        // Em edição, mantém o path existente quando o usuário não troca o arquivo.
+        COMPROVANTE: comprovanteDataUrl || item.comprovantePath || null,
         COMPROVANTE_NOME: item.comprovanteNome || null,
       });
     }
@@ -512,21 +516,11 @@ export function CadastroReembolsoDespesaForm() {
       const payload = await montarPayload();
 
       if (modoTela === "edicao" && requestId) {
-        const response = await editarSolicitacaoReembolso(payload);
-
-        await enviarEmailInformativoFinanceiroReembolso(
-          payload.NM_FUNCIONARIO,
-          response.ID_SOLICITACAO_REEMBOLSO_DESPESA
-        );
+        await editarSolicitacaoReembolso(payload);
 
         alert("Solicitação atualizada com sucesso.");
       } else {
-        const response = await cadastrarSolicitacaoReembolso(payload);
-
-        await enviarEmailInformativoFinanceiroReembolso(
-          payload.NM_FUNCIONARIO,
-          response.ID_SOLICITACAO_REEMBOLSO_DESPESA
-        );
+        await cadastrarSolicitacaoReembolso(payload);
 
         alert("Solicitação cadastrada com sucesso.");
       }
@@ -584,7 +578,7 @@ export function CadastroReembolsoDespesaForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Ida</label>
+            <label className="mb-1 block text-xs font-medium text-gray-600">Data de ida</label>
             <input
               type="date"
               value={ida}
@@ -594,7 +588,7 @@ export function CadastroReembolsoDespesaForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Volta</label>
+            <label className="mb-1 block text-xs font-medium text-gray-600">Data de volta</label>
             <input
               type="date"
               value={volta}
@@ -604,7 +598,7 @@ export function CadastroReembolsoDespesaForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Número Banco</label>
+            <label className="mb-1 block text-xs font-medium text-gray-600">Número do banco</label>
             <input
               value={numeroBanco}
               onChange={(e) => setNumeroBanco(e.target.value)}
@@ -624,7 +618,7 @@ export function CadastroReembolsoDespesaForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Número Conta</label>
+            <label className="mb-1 block text-xs font-medium text-gray-600">Número da conta</label>
             <input
               value={numeroConta}
               onChange={(e) => setNumeroConta(e.target.value)}
@@ -671,7 +665,7 @@ export function CadastroReembolsoDespesaForm() {
               className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary"
             >
               <FaPlus size={12} />
-              Adicionar Despesa
+              Adicionar despesa
             </button>
           </div>
 
@@ -753,7 +747,7 @@ export function CadastroReembolsoDespesaForm() {
             <div />
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-600">
-                Total de Despesas
+                Total de despesas
               </label>
               <input
                 readOnly
@@ -774,8 +768,8 @@ export function CadastroReembolsoDespesaForm() {
             {saving
               ? "Salvando..."
               : modoTela === "edicao"
-                ? "Atualizar Solicitação"
-                : "Enviar Solicitação"}
+                ? "Atualizar solicitação"
+                : "Enviar solicitação"}
           </button>
         </div>
       </div>
@@ -897,7 +891,7 @@ export function CadastroReembolsoDespesaForm() {
                 className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary"
               >
                 <FaSave size={12} />
-                Salvar Despesa
+                Salvar despesa
               </button>
             </div>
           </div>
@@ -906,3 +900,4 @@ export function CadastroReembolsoDespesaForm() {
     </>
   );
 }
+

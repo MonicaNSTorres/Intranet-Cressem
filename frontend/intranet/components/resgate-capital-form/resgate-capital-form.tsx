@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -33,6 +33,8 @@ import {
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
+import { gerarPdfResgateCapital } from "@/lib/pdf/gerarPdfResgateCapital";
+import { getMeAdUser } from "@/services/auth.service";
 
 type EmprestimoItem = {
   id: string;
@@ -100,6 +102,28 @@ function capitalizeWords(value?: string | null) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+const LIMITS = {
+  NR_CPF_CNPJ: 14,
+  NM_CLIENTE: 100,
+  CD_MATRICULA: 30,
+  NM_EMPRESA: 150,
+  DESC_MOTIVO: 200,
+  NM_AUTORIZADO: 50,
+  NM_ATENDENTE: 100,
+  NM_CIDADE: 30,
+  DESC_TIPO_EMPRESTIMO: 60,
+  NR_CONTRATO_EMPRESTIMO: 15,
+  NR_CARTAO: 16,
+  NR_CONTA: 20,
+  CD_BANCO: 4,
+  CD_AGENCIA: 7,
+  CD_CONTA_CORRENTE_DEPOSITO: 20,
+};
+
+function limitText(value: string, max: number) {
+  return String(value || "").slice(0, max);
+}
+
 export function ResgateCapitalForm() {
   const [cpf, setCpf] = useState("");
   const [nome, setNome] = useState("");
@@ -145,11 +169,26 @@ export function ResgateCapitalForm() {
   const [loadingSalvar, setLoadingSalvar] = useState(false);
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
+  const [nomeAtendente, setNomeAtendente] = useState("ATENDENTE");
 
   const { loading, erro: erroBusca, info: infoBusca, buscar } = useAssociadoPorCpf();
 
   useEffect(() => {
     carregarDadosIniciais();
+  }, []);
+
+  useEffect(() => {
+    async function carregarAtendenteLogado() {
+      try {
+        const me = await getMeAdUser();
+        const nome = String(me?.nome_completo || me?.username || "").trim();
+        if (nome) setNomeAtendente(nome);
+      } catch {
+        // Mantém fallback "ATENDENTE"
+      }
+    }
+
+    carregarAtendenteLogado();
   }, []);
 
   async function carregarDadosIniciais() {
@@ -229,9 +268,19 @@ export function ResgateCapitalForm() {
       const r = await buscar(cpf);
 
       if (r.found) {
-        setNome(r.data.nome || "");
-        setMatricula(r.data.matricula || "");
-        setEmpresa(r.data.empresa || "");
+        setNome(limitText(r.data.nome || "", LIMITS.NM_CLIENTE));
+        setMatricula(limitText(r.data.matricula || "", LIMITS.CD_MATRICULA));
+        setEmpresa(limitText(r.data.empresa || "", LIMITS.NM_EMPRESA));
+
+        const saldoRaw: any = (r.data as any).saldo_capital;
+        const saldoNumerico =
+          typeof saldoRaw === "number"
+            ? saldoRaw
+            : Number.isFinite(Number(saldoRaw))
+              ? Number(saldoRaw)
+              : parseBRL(String(saldoRaw || ""));
+
+        setSaldoCapitalAtual(fmtBRL(saldoNumerico));
         setInfo("Associado carregado com sucesso.");
 
         await carregarEmprestimosAutomaticos();
@@ -246,9 +295,21 @@ export function ResgateCapitalForm() {
     try {
       const lista = await buscarEmprestimosPorCpf(cpf);
 
-      if (!lista || lista.length === 0) return;
+      const listaValida = (lista || []).filter((item: EmprestimoAssociadoItem) => {
+        const tipo = String(item.DESC_TIPO || "").trim();
+        const contrato = String(item.NR_CONTRATO || "").trim();
+        const saldo = Number(item.SALDODEVEDORDIA || 0);
 
-      const mapeados: EmprestimoItem[] = lista.map((item: EmprestimoAssociadoItem) => ({
+        return tipo !== "" || contrato !== "" || saldo > 0;
+      });
+
+      if (listaValida.length === 0) {
+        setRadioEmprestimo("Nao");
+        setEmprestimos([buildEmprestimo()]);
+        return;
+      }
+
+      const mapeados: EmprestimoItem[] = listaValida.map((item: EmprestimoAssociadoItem) => ({
         id: uid(),
         tipo: item.DESC_TIPO || "",
         contrato: item.NR_CONTRATO || "",
@@ -303,8 +364,16 @@ export function ResgateCapitalForm() {
     field: keyof EmprestimoItem,
     value: string
   ) {
+    let nextValue = value;
+    if (field === "tipo") {
+      nextValue = limitText(nextValue, LIMITS.DESC_TIPO_EMPRESTIMO);
+    }
+    if (field === "contrato") {
+      nextValue = limitText(nextValue, LIMITS.NR_CONTRATO_EMPRESTIMO);
+    }
+
     setEmprestimos((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+      prev.map((item) => (item.id === id ? { ...item, [field]: nextValue } : item))
     );
   }
 
@@ -378,7 +447,7 @@ export function ResgateCapitalForm() {
     let soma = 0;
 
     for (let i = 0; i < quantidade; i++) {
-      let data = addMonthsSafe(dataPrimeiraParcela, i);
+      const data = addMonthsSafe(dataPrimeiraParcela, i);
 
       const ehDiaUtil = await validarDataUtil(data);
       if (!ehDiaUtil) {
@@ -439,8 +508,28 @@ export function ResgateCapitalForm() {
       return false;
     }
 
+    if (nome.trim().length > LIMITS.NM_CLIENTE) {
+      setErro(`Nome do associado deve ter no máximo ${LIMITS.NM_CLIENTE} caracteres.`);
+      return false;
+    }
+
+    if (matricula.trim().length > LIMITS.CD_MATRICULA) {
+      setErro(`Matrícula deve ter no máximo ${LIMITS.CD_MATRICULA} caracteres.`);
+      return false;
+    }
+
+    if (empresa.trim().length > LIMITS.NM_EMPRESA) {
+      setErro(`Empresa deve ter no máximo ${LIMITS.NM_EMPRESA} caracteres.`);
+      return false;
+    }
+
+    if (onlyDigits(cpf).length > LIMITS.NR_CPF_CNPJ) {
+      setErro(`CPF/CNPJ deve ter no máximo ${LIMITS.NR_CPF_CNPJ} dígitos.`);
+      return false;
+    }
+
     if (!saldoCapitalAtual || parseBRL(saldoCapitalAtual) <= 0) {
-      setErro("Preencha o saldo capital atual.");
+      setErro("Preencha o saldo de capital atual.");
       return false;
     }
 
@@ -454,9 +543,40 @@ export function ResgateCapitalForm() {
       return false;
     }
 
+    if (secMotivo.trim().length > LIMITS.DESC_MOTIVO) {
+      setErro(`Motivo deve ter no máximo ${LIMITS.DESC_MOTIVO} caracteres.`);
+      return false;
+    }
+
+    if (secAutorizado.trim().length > LIMITS.NM_AUTORIZADO) {
+      setErro(`Autorizado por deve ter no máximo ${LIMITS.NM_AUTORIZADO} caracteres.`);
+      return false;
+    }
+
     if (!secCidade) {
       setErro("Selecione a cidade do atendimento.");
       return false;
+    }
+
+    if (secCidade.trim().length > LIMITS.NM_CIDADE) {
+      setErro(`Cidade do atendimento deve ter no máximo ${LIMITS.NM_CIDADE} caracteres.`);
+      return false;
+    }
+
+    if (nomeAtendente.trim().length > LIMITS.NM_ATENDENTE) {
+      setErro(`Nome do atendente deve ter no máximo ${LIMITS.NM_ATENDENTE} caracteres.`);
+      return false;
+    }
+
+    for (const item of emprestimos) {
+      if (item.tipo.trim().length > LIMITS.DESC_TIPO_EMPRESTIMO) {
+        setErro(`Tipo de empréstimo deve ter no máximo ${LIMITS.DESC_TIPO_EMPRESTIMO} caracteres.`);
+        return false;
+      }
+      if (item.contrato.trim().length > LIMITS.NR_CONTRATO_EMPRESTIMO) {
+        setErro(`Contrato deve ter no máximo ${LIMITS.NR_CONTRATO_EMPRESTIMO} caracteres.`);
+        return false;
+      }
     }
 
     if (totalResgateCapital >= parseBRL(saldoCapitalAtual)) {
@@ -471,9 +591,17 @@ export function ResgateCapitalForm() {
         setErro("Preencha o banco.");
         return false;
       }
+      if (banco.trim().length > LIMITS.CD_BANCO) {
+        setErro(`Banco deve ter no máximo ${LIMITS.CD_BANCO} caracteres.`);
+        return false;
+      }
 
       if (!agencia.trim()) {
         setErro("Preencha a agência.");
+        return false;
+      }
+      if (agencia.trim().length > LIMITS.CD_AGENCIA) {
+        setErro(`Agência deve ter no máximo ${LIMITS.CD_AGENCIA} caracteres.`);
         return false;
       }
 
@@ -481,9 +609,21 @@ export function ResgateCapitalForm() {
         setErro("Preencha a conta corrente.");
         return false;
       }
+      if (conta.trim().length > LIMITS.CD_CONTA_CORRENTE_DEPOSITO) {
+        setErro(`Conta corrente deve ter no máximo ${LIMITS.CD_CONTA_CORRENTE_DEPOSITO} caracteres.`);
+        return false;
+      }
 
       if (!digito.trim()) {
         setErro("Preencha o dígito.");
+        return false;
+      }
+
+      const contaComDigito = `${conta.trim()}-${digito.trim()}`;
+      if (contaComDigito.length > LIMITS.CD_CONTA_CORRENTE_DEPOSITO) {
+        setErro(
+          `Conta corrente + dígito deve ter no máximo ${LIMITS.CD_CONTA_CORRENTE_DEPOSITO} caracteres.`
+        );
         return false;
       }
 
@@ -510,19 +650,19 @@ export function ResgateCapitalForm() {
 
       const resgate = await criarResgate({
         ID_CLIENTE: idCliente,
-        NR_CPF_CNPJ: onlyDigits(cpf),
-        NM_CLIENTE: nome,
-        CD_MATRICULA: matricula || null,
-        NM_EMPRESA: empresa || null,
-        DESC_MOTIVO: secMotivo,
-        NM_AUTORIZADO: secAutorizado,
+        NR_CPF_CNPJ: onlyDigits(cpf).slice(0, LIMITS.NR_CPF_CNPJ),
+        NM_CLIENTE: limitText(nome, LIMITS.NM_CLIENTE),
+        CD_MATRICULA: limitText(matricula, LIMITS.CD_MATRICULA) || null,
+        NM_EMPRESA: limitText(empresa, LIMITS.NM_EMPRESA) || null,
+        DESC_MOTIVO: limitText(secMotivo, LIMITS.DESC_MOTIVO),
+        NM_AUTORIZADO: limitText(secAutorizado, LIMITS.NM_AUTORIZADO),
         VL_CAPITAL_ATUAL: parseBRL(saldoCapitalAtual),
         VL_CAPITAL_AMORTIZACAO: totalResgateCapital,
         VL_SALDO_RESTANTE: capitalRestante,
         DT_CARENCIA: "2000-01-01",
         DT_RESGATE_PARCIAL_CAPITAL: diaAtendimento,
-        NM_ATENDENTE: "ATENDENTE",
-        NM_CIDADE: secCidade,
+        NM_ATENDENTE: limitText(nomeAtendente, LIMITS.NM_ATENDENTE),
+        NM_CIDADE: limitText(secCidade, LIMITS.NM_CIDADE),
       });
 
       const idResgate = resgate.ID_RESGATE_PARCIAL_CAPITAL;
@@ -538,8 +678,8 @@ export function ResgateCapitalForm() {
 
           await criarEmprestimo({
             ID_RESGATE: idResgate,
-            DESC_TIPO: item.tipo,
-            NR_CONTRATO: item.contrato,
+            DESC_TIPO: limitText(item.tipo, LIMITS.DESC_TIPO_EMPRESTIMO),
+            NR_CONTRATO: limitText(item.contrato, LIMITS.NR_CONTRATO_EMPRESTIMO),
             VL_SALDO_DEVEDOR: saldo,
             VL_SALDO_AMORTIZADO: amortizacao,
           });
@@ -548,7 +688,7 @@ export function ResgateCapitalForm() {
 
       if (radioConta === "Sim" && numeroContaCorrente.trim()) {
         await criarContaCorrente({
-          NR_CONTA: numeroContaCorrente,
+          NR_CONTA: limitText(numeroContaCorrente, LIMITS.NR_CONTA),
           VL_SALDO_DEVEDOR: parseBRL(saldoDevedorConta),
           VL_SALDO_AMORTIZADO: parseBRL(amortizacaoConta),
           ID_RESGATE: idResgate,
@@ -557,7 +697,7 @@ export function ResgateCapitalForm() {
 
       if (radioConta === "Sim" && numeroCartao.trim()) {
         await criarCartaoCredito({
-          NR_CARTAO: numeroCartao,
+          NR_CARTAO: onlyDigits(numeroCartao).slice(0, LIMITS.NR_CARTAO),
           VL_SALDO_DEVEDOR: parseBRL(saldoCartao),
           VL_SALDO_AMORTIZADO: parseBRL(amortizacaoCartao),
           ID_RESGATE: idResgate,
@@ -567,10 +707,14 @@ export function ResgateCapitalForm() {
       let idContaDeposito: number | null = null;
 
       if (parseBRL(saldoCreditadoConta) > 0) {
+        const contaComDigito = `${conta.trim()}-${digito.trim()}`;
         const contaDeposito = await criarContaDeposito({
-          CD_BANCO: banco,
-          CD_AGENCIA: agencia,
-          CD_CONTA_CORRENTE: `${conta}-${digito}`,
+          CD_BANCO: limitText(banco, LIMITS.CD_BANCO),
+          CD_AGENCIA: limitText(agencia, LIMITS.CD_AGENCIA),
+          CD_CONTA_CORRENTE: limitText(
+            contaComDigito,
+            LIMITS.CD_CONTA_CORRENTE_DEPOSITO
+          ),
         });
 
         idContaDeposito = contaDeposito.ID_CONTA_DEPOSITO_RESGATE;
@@ -583,17 +727,60 @@ export function ResgateCapitalForm() {
             DT_PAGAMENTO: null,
             SN_PAGO: 0,
             VL_PARCELA_RESGATE: parseBRL(parcela.valor),
-            NM_ATENDENTE: "ATENDENTE",
+            NM_ATENDENTE: nomeAtendente,
             ID_RESGATE: idResgate,
             ID_CONTA_DEPOSITO: idContaDeposito,
           });
         }
       }
 
-      setInfo("Resgate salvo com sucesso. Preparando impressão...");
-      setTimeout(() => {
-        window.print();
-      }, 300);
+      await gerarPdfResgateCapital(
+        {
+          cpfCnpj: formatCpfView(cpf),
+          nome,
+          matricula,
+          empresa,
+          motivo: secMotivo,
+          autorizadoPor: secAutorizado,
+          saldoCapitalAtual: parseBRL(saldoCapitalAtual),
+          totalResgateCapital,
+          saldoCapitalRestante: capitalRestante,
+          emprestimos: emprestimos.map((item) => ({
+            tipo: item.tipo,
+            contrato: item.contrato,
+            saldoDevedor: parseBRL(item.saldoDevedor),
+            amortizacao: parseBRL(item.amortizacao),
+          })),
+          contaCorrenteNumero: numeroContaCorrente,
+          contaCorrenteSaldo: parseBRL(saldoDevedorConta),
+          contaCorrenteAmortizacao: parseBRL(amortizacaoConta),
+          cartaoNumero: numeroCartao,
+          cartaoSaldo: parseBRL(saldoCartao),
+          cartaoAmortizacao: parseBRL(amortizacaoCartao),
+          saldoCreditadoConta: parseBRL(saldoCreditadoConta),
+          banco,
+          agencia,
+          conta,
+          digito,
+          valorPrimeiraParcela: parseBRL(valorPrimeiraParcela),
+          dataPrimeiraParcela,
+          parcelas: parcelas.map((item) => ({
+            numero: item.numero,
+            data: item.data,
+            valor: parseBRL(item.valor),
+          })),
+          totalParcelado,
+          cidadeAtendimento: secCidade,
+          dataAtendimento: diaAtendimento,
+          atendente: nomeAtendente,
+        },
+        {
+          acao: "print",
+          nomeArquivo: `resgate_capital_${onlyDigits(cpf) || "associado"}.pdf`,
+        }
+      );
+
+      setInfo("Resgate salvo com sucesso. Impressão preparada.");
     } catch (e: any) {
       console.error(e);
       setErro(
@@ -646,7 +833,7 @@ export function ResgateCapitalForm() {
               className="inline-flex w-full items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto cursor-pointer disabled:opacity-60"
             >
               <FaPrint />
-              {loadingSalvar ? "Salvando..." : "Salvar e Imprimir"}
+              {loadingSalvar ? "Salvando..." : "Salvar e imprimir"}
             </button>
           </div>
         </div>
@@ -673,7 +860,8 @@ export function ResgateCapitalForm() {
           </label>
           <input
             value={nome}
-            onChange={(e) => setNome(e.target.value)}
+            onChange={(e) => setNome(limitText(e.target.value, LIMITS.NM_CLIENTE))}
+            maxLength={LIMITS.NM_CLIENTE}
             className="w-full rounded border px-3 py-2"
           />
         </div>
@@ -685,7 +873,10 @@ export function ResgateCapitalForm() {
             </label>
             <input
               value={matricula}
-              onChange={(e) => setMatricula(e.target.value)}
+              onChange={(e) =>
+                setMatricula(limitText(e.target.value, LIMITS.CD_MATRICULA))
+              }
+              maxLength={LIMITS.CD_MATRICULA}
               className="w-full rounded border px-3 py-2"
             />
           </div>
@@ -698,7 +889,8 @@ export function ResgateCapitalForm() {
             </label>
             <input
               value={empresa}
-              onChange={(e) => setEmpresa(e.target.value)}
+              onChange={(e) => setEmpresa(limitText(e.target.value, LIMITS.NM_EMPRESA))}
+              maxLength={LIMITS.NM_EMPRESA}
               className="w-full rounded border px-3 py-2"
             />
           </div>
@@ -708,7 +900,7 @@ export function ResgateCapitalForm() {
       <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-600">
-            Saldo capital atual
+            Saldo de capital atual
           </label>
           <input
             value={saldoCapitalAtual}
@@ -730,7 +922,7 @@ export function ResgateCapitalForm() {
             <option value=""></option>
             {motivos.map((item) => (
               <option key={item.ID_MOTIVO_RESGATE || item.NM_MOTIVO} value={item.NM_MOTIVO}>
-                {capitalizeWords(item.NM_MOTIVO)}
+                {String(item.NM_MOTIVO).toUpperCase()}
               </option>
             ))}
           </select>
@@ -751,7 +943,7 @@ export function ResgateCapitalForm() {
                 key={item.ID_AUTORIZACAO_RESGATE || item.NM_AUTORIZADO}
                 value={item.NM_AUTORIZADO}
               >
-                {capitalizeWords(item.NM_AUTORIZADO)}
+                {String(item.NM_AUTORIZADO).toUpperCase()}
               </option>
             ))}
           </select>
@@ -819,7 +1011,7 @@ export function ResgateCapitalForm() {
                       Saldo devedor
                     </th>
                     <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Amortização capital
+                      Amortização de capital
                     </th>
                   </tr>
                 </thead>
@@ -833,6 +1025,7 @@ export function ResgateCapitalForm() {
                           onChange={(e) =>
                             updateEmprestimo(item.id, "tipo", e.target.value)
                           }
+                          maxLength={LIMITS.DESC_TIPO_EMPRESTIMO}
                           className="w-full rounded border px-3 py-2"
                         />
                       </td>
@@ -843,6 +1036,7 @@ export function ResgateCapitalForm() {
                           onChange={(e) =>
                             updateEmprestimo(item.id, "contrato", e.target.value)
                           }
+                          maxLength={LIMITS.NR_CONTRATO_EMPRESTIMO}
                           className="w-full rounded border px-3 py-2"
                         />
                       </td>
@@ -894,7 +1088,7 @@ export function ResgateCapitalForm() {
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Total da amortização capital
+                  Total da amortização de capital
                 </label>
                 <input
                   readOnly
@@ -936,11 +1130,14 @@ export function ResgateCapitalForm() {
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-600">
-                N. C. Corrente
+                Nº C. Corrente
               </label>
               <input
                 value={numeroContaCorrente}
-                onChange={(e) => setNumeroContaCorrente(e.target.value)}
+                onChange={(e) =>
+                  setNumeroContaCorrente(limitText(e.target.value, LIMITS.NR_CONTA))
+                }
+                maxLength={LIMITS.NR_CONTA}
                 className="w-full rounded border px-3 py-2"
               />
             </div>
@@ -973,7 +1170,11 @@ export function ResgateCapitalForm() {
               </label>
               <input
                 value={numeroCartao}
-                onChange={(e) => setNumeroCartao(e.target.value)}
+                onChange={(e) =>
+                  setNumeroCartao(onlyDigits(e.target.value).slice(0, LIMITS.NR_CARTAO))
+                }
+                inputMode="numeric"
+                maxLength={LIMITS.NR_CARTAO}
                 className="w-full rounded border px-3 py-2"
               />
             </div>
@@ -1022,7 +1223,7 @@ export function ResgateCapitalForm() {
 
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">
-              Total do resgate parcial do capital
+              Total do resgate parcial de capital
             </label>
             <input
               readOnly
@@ -1033,7 +1234,7 @@ export function ResgateCapitalForm() {
 
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">
-              Saldo de Capital Restante
+              Saldo de capital restante
             </label>
             <input
               readOnly
@@ -1046,11 +1247,12 @@ export function ResgateCapitalForm() {
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">
-              Banco Nº
+              Banco nº
             </label>
             <input
               value={banco}
-              onChange={(e) => setBanco(e.target.value)}
+              onChange={(e) => setBanco(limitText(e.target.value, LIMITS.CD_BANCO))}
+              maxLength={LIMITS.CD_BANCO}
               className="w-full rounded border px-3 py-2"
             />
           </div>
@@ -1061,7 +1263,8 @@ export function ResgateCapitalForm() {
             </label>
             <input
               value={agencia}
-              onChange={(e) => setAgencia(e.target.value)}
+              onChange={(e) => setAgencia(limitText(e.target.value, LIMITS.CD_AGENCIA))}
+              maxLength={LIMITS.CD_AGENCIA}
               className="w-full rounded border px-3 py-2"
             />
           </div>
@@ -1072,7 +1275,10 @@ export function ResgateCapitalForm() {
             </label>
             <input
               value={conta}
-              onChange={(e) => setConta(e.target.value)}
+              onChange={(e) =>
+                setConta(limitText(e.target.value, LIMITS.CD_CONTA_CORRENTE_DEPOSITO))
+              }
+              maxLength={LIMITS.CD_CONTA_CORRENTE_DEPOSITO}
               className="w-full rounded border px-3 py-2"
             />
           </div>
@@ -1083,7 +1289,8 @@ export function ResgateCapitalForm() {
             </label>
             <input
               value={digito}
-              onChange={(e) => setDigito(e.target.value)}
+              onChange={(e) => setDigito(limitText(e.target.value, 5))}
+              maxLength={5}
               className="w-full rounded border px-3 py-2"
             />
           </div>
@@ -1213,7 +1420,7 @@ export function ResgateCapitalForm() {
             <option value=""></option>
             {cidades.map((cidade) => (
               <option key={cidade.ID_CIDADES} value={cidade.NM_CIDADE}>
-                {capitalizeWords(cidade.NM_CIDADE)}
+                {String(cidade.NM_CIDADE).toUpperCase()}
               </option>
             ))}
           </select>
@@ -1234,3 +1441,4 @@ export function ResgateCapitalForm() {
     </div>
   );
 }
+

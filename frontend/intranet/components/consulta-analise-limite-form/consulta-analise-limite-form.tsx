@@ -19,6 +19,7 @@ import {
   listarAnalisesLimite,
   buscarAnaliseLimitePorId,
 } from "@/services/analise_limite.service";
+import { gerarPdfAnaliseLimite } from "@/lib/pdf/gerarPdfAnaliseLimite";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -138,6 +139,62 @@ function onlyDigits(value: string) {
 
 function isPJ(doc?: string) {
   return onlyDigits(doc || "").length === 14;
+}
+
+function formatCpfCnpjView(value?: string) {
+  const digits = onlyDigits(value || "");
+
+  if (digits.length <= 11) {
+    const s = digits.slice(0, 11);
+    if (s.length <= 3) return s;
+    if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3)}`;
+    if (s.length <= 9) return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6)}`;
+    return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9)}`;
+  }
+
+  const s = digits.slice(0, 14);
+  if (s.length <= 2) return s;
+  if (s.length <= 5) return `${s.slice(0, 2)}.${s.slice(2)}`;
+  if (s.length <= 8) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5)}`;
+  if (s.length <= 12) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8)}`;
+  return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}`;
+}
+
+function toFlag(value: any): "1" | "0" {
+  if (
+    value === true ||
+    value === 1 ||
+    value === "1" ||
+    value === "S" ||
+    value === "SIM" ||
+    value === "Sim"
+  ) {
+    return "1";
+  }
+
+  return "0";
+}
+
+function toNumberValue(value: any): number {
+  if (value === null || value === undefined || value === "") return 0;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+
+  const normalized = String(value).replace(/[^\d,.-]/g, "").replace(/\s/g, "");
+  const comma = normalized.includes(",");
+  const dot = normalized.includes(".");
+
+  if (comma && dot) {
+    const n = Number(normalized.replace(/\./g, "").replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  if (comma) {
+    const n = Number(normalized.replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function buildPagination(current: number, total: number) {
@@ -401,213 +458,63 @@ export function ConsultaAnaliseLimiteForm() {
     }
   }
 
-  function gerarHtmlImpressao(analise: AnaliseLimite) {
-    const ehPJ = isPJ(analise.NR_CPF_CNPJ_ASSOCIADO);
-    const mostrarDataPagamento = !!analise.CESSAO_CREDITO;
+  async function imprimiAnalise(analise: AnaliseLimite) {
+    try {
+      const detalhada = await buscarAnaliseLimitePorId(analise.ID_ANALISE).catch(
+        () => analise
+      );
 
-    return `
-      <html>
-        <head>
-          <title>Impressão - Análise de Limite</title>
-          <style>
-            * { box-sizing: border-box; }
-            body {
-              font-family: Arial, Helvetica, sans-serif;
-              color: #1f2937;
-              padding: 32px;
-              font-size: 12px;
-            }
-            h1 {
-              text-align: center;
-              color: #14532d;
-              margin-bottom: 24px;
-            }
-            .section {
-              border: 1px solid #d1d5db;
-              margin-bottom: 18px;
-              border-radius: 8px;
-              overflow: hidden;
-            }
-            .section-header {
-              background: #166534;
-              color: white;
-              padding: 10px 14px;
-              font-weight: bold;
-            }
-            .section-body {
-              padding: 14px;
-            }
-            .grid {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 10px 18px;
-            }
-            .full { grid-column: 1 / -1; }
-            .signatures {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 24px;
-              margin-top: 40px;
-            }
-            .signature {
-              text-align: center;
-            }
-            .line {
-              border-top: 1px solid #111827;
-              margin-bottom: 8px;
-              height: 36px;
-            }
-            .footer-date {
-              text-align: right;
-              margin-top: 24px;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Relatório de Análise de Limite</h1>
+      const ehPJ = isPJ(detalhada.NR_CPF_CNPJ_ASSOCIADO);
 
-          <div class="section">
-            <div class="section-header">Dados do Associado</div>
-            <div class="section-body grid">
-              <div><strong>CPF/CNPJ:</strong> ${analise.NR_CPF_CNPJ_ASSOCIADO || ""}</div>
-              <div class="full"><strong>Nome:</strong> ${analise.NM_ASSOCIADO || ""}</div>
-              <div><strong>Celular:</strong> ${analise.NR_CELULAR || ""}</div>
-              ${
-                !ehPJ
-                  ? `<div class="full"><strong>Empresa:</strong> ${analise.NM_EMPRESA || ""}</div>`
-                  : ""
-              }
-            </div>
-          </div>
+      await gerarPdfAnaliseLimite(
+        {
+          tipoFormulario: ehPJ ? "PJ" : "PF",
+          cpf: formatCpfCnpjView(detalhada.NR_CPF_CNPJ_ASSOCIADO || ""),
+          nome: String(detalhada.NM_ASSOCIADO || ""),
+          celular: String(detalhada.NR_CELULAR || ""),
+          empresa: String(detalhada.NM_EMPRESA || ""),
 
-          <div class="section">
-            <div class="section-header">Informações Bancárias e Salariais</div>
-            <div class="section-body grid">
-              <div><strong>Conta Corrente:</strong> ${analise.NR_CONTA_CORRENTE || ""}</div>
-              <div><strong>${ehPJ ? "Faturamento Mensal" : "Salário Bruto"}:</strong> ${
-                ehPJ
-                  ? formatMoney(analise.VL_FATURAMENTO_MENSAL)
-                  : formatMoney(analise.SL_BRUTO)
-              }</div>
-              <div><strong>${ehPJ ? "Faturamento Anual" : "Salário Líquido"}:</strong> ${
-                ehPJ
-                  ? formatMoney(analise.VL_FATURAMENTO_ANUAL)
-                  : formatMoney(analise.SL_LIQUIDO)
-              }</div>
+          contaCorrente: String(detalhada.NR_CONTA_CORRENTE || ""),
+          salarioBruto: ehPJ
+            ? toNumberValue(detalhada.VL_FATURAMENTO_MENSAL)
+            : toNumberValue(detalhada.SL_BRUTO),
+          salarioLiquido: ehPJ
+            ? toNumberValue(detalhada.VL_FATURAMENTO_ANUAL)
+            : toNumberValue(detalhada.SL_LIQUIDO),
+          portabilidade: toFlag(detalhada.PORTABILIDADE),
+          efetivo: toFlag(detalhada.FUNCIONARIO_EFETIVO),
+          cessaoCredito: toFlag(detalhada.CESSAO_CREDITO),
+          dataPagamento: String(detalhada.DT_PAGAMENTO || ""),
+          carteira: String(detalhada.NV_CARTEIRA || ""),
+          iap: String(detalhada.NR_IAP ?? ""),
 
-              ${
-                !ehPJ
-                  ? `<div><strong>Portabilidade:</strong> ${boolToSimNao(
-                      analise.PORTABILIDADE
-                    )}</div>
-                     <div><strong>Funcionário Efetivo:</strong> ${boolToSimNao(
-                       analise.FUNCIONARIO_EFETIVO
-                     )}</div>`
-                  : ""
-              }
+          ocorrenciaCRM: toFlag(detalhada.OCORRENCIA_CRM),
+          obsCRM: String(detalhada.OBS_CRM || ""),
 
-              <div><strong>Cessão de Crédito:</strong> ${boolToSimNao(
-                analise.CESSAO_CREDITO
-              )}</div>
+          risco: String(detalhada.RISCO || ""),
+          pd: String(detalhada.PD || ""),
+          crl: toNumberValue(detalhada.NR_CRL),
+          capital: toNumberValue(detalhada.CAPITAL),
+          divida: toNumberValue(detalhada.DIVIDA),
+          restricoes: toFlag(detalhada.RESTRICAO),
+          quaisRestricoes: String(detalhada.DESC_RESTRICAO || ""),
 
-              ${
-                mostrarDataPagamento
-                  ? `<div><strong>Data Pagamento:</strong> ${formatDateBR(
-                      analise.DT_PAGAMENTO
-                    )}</div>`
-                  : ""
-              }
+          sugestaoLimite: toNumberValue(detalhada.SG_LIMITE),
+          cartao: toFlag(detalhada.CARTAO),
+          cartaoAtual: toNumberValue(detalhada.LT_ATUAL_CARTAO),
+          cartaoAprovado: toNumberValue(detalhada.LT_APROVADO_CARTAO),
+          especial: toFlag(detalhada.CHEQUE_ESPECIAL),
+          especialAtual: toNumberValue(detalhada.LT_ATUAL_CH),
+          especialAprovado: toNumberValue(detalhada.LT_APROVADO_CH),
 
-              <div><strong>Nível Carteira:</strong> ${analise.NV_CARTEIRA || ""}</div>
-              <div><strong>Números IAP:</strong> ${analise.NR_IAP || ""}</div>
-            </div>
-          </div>
-
-          <div class="section">
-            <div class="section-header">Status CRM e Observações</div>
-            <div class="section-body grid">
-              <div><strong>Ocorrência CRM:</strong> ${boolToSimNao(
-                analise.OCORRENCIA_CRM
-              )}</div>
-              <div class="full"><strong>Observação:</strong> ${analise.OBS_CRM || ""}</div>
-            </div>
-          </div>
-
-          <div class="section">
-            <div class="section-header">Indicadores de Risco / Financeiros</div>
-            <div class="section-body grid">
-              <div><strong>Risco:</strong> ${analise.RISCO || ""}</div>
-              <div><strong>PD:</strong> ${analise.PD || ""}</div>
-              <div><strong>CRL:</strong> ${formatMoney(analise.NR_CRL)}</div>
-              <div><strong>Capital:</strong> ${formatMoney(analise.CAPITAL)}</div>
-              <div><strong>Dívida:</strong> ${formatMoney(analise.DIVIDA)}</div>
-              <div><strong>Restrições:</strong> ${boolToSimNao(
-                analise.RESTRICAO
-              )}</div>
-              <div class="full"><strong>Quais:</strong> ${analise.DESC_RESTRICAO || ""}</div>
-            </div>
-          </div>
-
-          <div class="section">
-            <div class="section-header">Sugestão de Limite e Aprovações</div>
-            <div class="section-body grid">
-              <div class="full"><strong>Sugestão de Limite:</strong> ${formatMoney(
-                analise.SG_LIMITE
-              )}</div>
-              <div><strong>Cartão:</strong> ${boolToSimNao(analise.CARTAO)}</div>
-              <div><strong>Limite Atual Cartão:</strong> ${formatMoney(
-                analise.LT_ATUAL_CARTAO
-              )}</div>
-              <div><strong>Limite Aprovado Cartão:</strong> ${formatMoney(
-                analise.LT_APROVADO_CARTAO
-              )}</div>
-              <div><strong>Cheque Especial:</strong> ${boolToSimNao(
-                analise.CHEQUE_ESPECIAL
-              )}</div>
-              <div><strong>Limite Atual Especial:</strong> ${formatMoney(
-                analise.LT_ATUAL_CH
-              )}</div>
-              <div><strong>Limite Aprovado Especial:</strong> ${formatMoney(
-                analise.LT_APROVADO_CH
-              )}</div>
-            </div>
-          </div>
-
-          <div class="signatures">
-            <div class="signature">
-              <div class="line"></div>
-              <small>Assinatura Colaborador</small>
-            </div>
-            <div class="signature">
-              <div class="line"></div>
-              <small>Assinatura Gerência</small>
-            </div>
-            <div class="signature">
-              <div class="line"></div>
-              <small>Assinatura Diretoria</small>
-            </div>
-          </div>
-
-          <div class="footer-date">
-            <small>Data Análise: ${formatDateBR(analise.DT)}</small>
-          </div>
-        </body>
-      </html>
-    `;
-  }
-
-  function imprimiAnalise(analise: AnaliseLimite) {
-    const win = window.open("", "_blank", "width=1000,height=800");
-    if (!win) return;
-
-    win.document.open();
-    win.document.write(gerarHtmlImpressao(analise));
-    win.document.close();
-    win.focus();
-
-    setTimeout(() => {
-      win.print();
-    }, 400);
+          dataEnvio: String(detalhada.DT || "").slice(0, 10),
+        },
+        { acao: "print" }
+      );
+    } catch (error) {
+      console.error("Erro ao imprimir análise:", error);
+      alert("Não foi possível imprimir a análise.");
+    }
   }
 
   useEffect(() => {

@@ -72,7 +72,7 @@ export async function gerarPdfAuxilioCreche(o: PdfOpts) {
   doc.setFont("helvetica", "bold");
   doc.text(toUpper(o.nome), nameX, y);
 
-  const matricLabel = "Matric:";
+  const matricLabel = "Matrícula:";
   const matricLabelW = doc.getTextWidth(matricLabel);
   const matricValue = toUpper(o.matricula || "");
   const matricValueW = doc.getTextWidth(matricValue);

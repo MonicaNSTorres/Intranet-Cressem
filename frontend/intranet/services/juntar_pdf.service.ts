@@ -14,12 +14,30 @@ export async function juntarEComprimirPdfs(files: File[]) {
     formData.append("files", file);
   });
 
-  const response = await api.post("/v1/juntar-pdf", formData, {
-    responseType: "blob",
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  try {
+    const response = await api.post("/v1/juntar-pdf", formData, {
+      responseType: "blob",
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
-  return response.data;
+    return response.data;
+  } catch (error: any) {
+    const data = error?.response?.data;
+
+    if (data instanceof Blob) {
+      try {
+        const text = await data.text();
+        const parsed = JSON.parse(text);
+        const msg =
+          parsed?.error || parsed?.details || "Erro ao processar os PDFs.";
+        throw new Error(msg);
+      } catch {
+        throw new Error("Erro ao processar os PDFs.");
+      }
+    }
+
+    throw error;
+  }
 }

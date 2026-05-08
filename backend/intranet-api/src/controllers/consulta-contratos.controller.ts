@@ -75,28 +75,33 @@ export const consultaContratosController = {
       const total_pages = Math.max(Math.ceil(total_items / limit), 1);
 
       const sql = `
-        SELECT *
-        FROM (
-          SELECT
-            c.ID_CONTRATOS_EMPRESAS,
-            c.NR_CNPJ,
-            c.NM_EMPRESA,
-            c.NM_CIDADE,
-            c.NM_TIPO_CONTRATO,
-            c.NM_SISTEMA_CONSIG,
-            TO_CHAR(c.DT_INICIO, 'YYYY-MM-DD') AS DT_INICIO,
-            TO_CHAR(c.DT_FIM, 'YYYY-MM-DD') AS DT_FIM,
-            c.SN_ATIVO,
-            c.CD_CONTA_CAPITAL,
-            c.NM_TIPO_TEMPO_CONTRATO,
-            c.OBS_CONTRATO,
-            ROW_NUMBER() OVER (ORDER BY c.ID_CONTRATOS_EMPRESAS DESC) AS RN
-          FROM DBACRESSEM.CONTRATOS_EMPRESAS c
-          ${where}
-        )
-        WHERE RN > :offset
-          AND RN <= (:offset + :limit)
-      `;
+  SELECT *
+  FROM (
+    SELECT
+      c.ID_CONTRATOS_EMPRESAS,
+      c.NR_CNPJ,
+      c.NM_EMPRESA,
+      c.NM_CIDADE,
+      c.NM_TIPO_CONTRATO,
+      c.NM_SISTEMA_CONSIG,
+      TO_CHAR(c.DT_INICIO, 'YYYY-MM-DD') AS DT_INICIO,
+      TO_CHAR(c.DT_FIM, 'YYYY-MM-DD') AS DT_FIM,
+      c.SN_ATIVO,
+      c.CD_CONTA_CAPITAL,
+      c.NM_TIPO_TEMPO_CONTRATO,
+      c.OBS_CONTRATO,
+      ROW_NUMBER() OVER (
+        ORDER BY 
+          c.DT_INICIO DESC NULLS LAST,
+          UPPER(c.NM_EMPRESA) ASC
+      ) AS RN
+    FROM DBACRESSEM.CONTRATOS_EMPRESAS c
+    ${where}
+  )
+  WHERE RN > :offset
+    AND RN <= (:offset + :limit)
+  ORDER BY RN
+`;
 
       const result = await oracleExecute(
         sql,

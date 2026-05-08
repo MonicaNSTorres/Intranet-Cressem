@@ -12,23 +12,23 @@ import { SearchButton } from "@/components/ui/search-button";
 const EMPRESAS_CANCELAMENTO = ["IPSM", "PMSJC", "URBAM"] as const;
 
 const EMPRESAS_RETORNO = [
-  "Prefeitura-SJCampos",
-  "Câmara-SJCampos",
-  "Urbam",
-  "Cressem",
-  "Ipsm",
-  "Fundhas",
+  "PREFEITURA-SJCAMPOS",
+  "CÂMARA-SJCAMPOS",
+  "URBAM",
+  "CRESSEM",
+  "IPSM",
+  "FUNDHAS",
   "FCCR",
-  "Sindicato",
-  "Estado",
-  "Assem",
-  "Prefeitura-Campos do Jordão",
-  "Prefeitura-llhabela",
-  "Instituto-llhabela",
-  "Câmara-Jacareí",
-  "Prefeitura-Jacareí",
-  "Prefeitura-Santo Antonio",
-  "Próvisão",
+  "SINDICATO",
+  "ESTADO",
+  "ASSEM",
+  "PREFEITURA-CAMPOS DO JORDÃO",
+  "PREFEITURA-LLHABELA",
+  "INSTITUTO-LLHABELA",
+  "CÂMARA-JACAREÍ",
+  "PREFEITURA-JACAREÍ",
+  "PREFEITURA-SANTO ANTONIO",
+  "PRÓVISÃO"
 ] as const;
 
 const MOTIVOS_RETORNO = [
@@ -180,7 +180,7 @@ export function AdiantamentoSalarialEmprestimoForm() {
           </div>
         )}
 
-        {(isRetorno || isUrbam) && (
+        {(isUrbam) && (
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Solicita

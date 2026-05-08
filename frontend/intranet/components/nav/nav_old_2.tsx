@@ -474,7 +474,7 @@ const Sidebar = () => {
                                     "/auth/capital",
                                     "/auth/declaracao_residencia",
                                     "/auth/ficha_desimpedimento",
-                                    "/auth/procuracao_ortugante",
+                                    "/auth/procuracao_outorgante",
                                     "/auth/renuncia_procurador",
                                     "/auth/tabela_integralizacao",
                                 ])
@@ -522,12 +522,12 @@ const Sidebar = () => {
 
                                 <li>
                                     <Link
-                                        href="/auth/procuracao_ortugante"
+                                        href="/auth/procuracao_outorgante"
                                         onClick={closeSidebar}
-                                        className={subItemClass("/auth/procuracao_ortugante")}
+                                        className={subItemClass("/auth/procuracao_outorgante")}
                                     >
                                         <span className="text-base"><Circle size={14} /></span>
-                                        <span>Procuração Ortugante PF/PJ</span>
+                                        <span>Procuração Outorgante PF/PJ</span>
                                     </Link>
                                 </li>
 

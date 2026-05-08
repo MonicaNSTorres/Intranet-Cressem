@@ -44,6 +44,10 @@ export type CidadeOption = {
   NM_CIDADE: string;
 };
 
+export type ContaCorrenteItem = {
+  NR_CONTA_CORRENTE: string;
+};
+
 export async function buscarAssociadoAutorizacaoDebito(
   cpf: string
 ): Promise<AssociadoAutorizacaoDebitoResponse | null> {
@@ -52,6 +56,18 @@ export async function buscarAssociadoAutorizacaoDebito(
 
   return await getJson<AssociadoAutorizacaoDebitoResponse>(
     `/v1/associados/buscar-por-cpf?cpf=${clean}`
+  );
+}
+
+export async function buscarContaCorrenteAutorizacaoDebito(
+  cpf: string
+): Promise<ContaCorrenteItem[]> {
+  const clean = onlyDigits(cpf);
+
+  if (!clean) return [];
+
+  return await getJson<ContaCorrenteItem[]>(
+    `/v1/autorizacao-debito?cpf=${clean}`
   );
 }
 

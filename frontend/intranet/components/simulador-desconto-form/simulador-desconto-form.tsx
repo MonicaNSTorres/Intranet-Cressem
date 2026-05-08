@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatCpfView,
   fmtBRL,
@@ -11,6 +11,7 @@ import {
   hojeBR,
 } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
+import { FaTimes } from "react-icons/fa";
 import {
   buscarAssociadoAnaliticoSimulador,
   buscarTaxaParcelaPorNumero,
@@ -23,6 +24,7 @@ import {
   listarOutrosProdutos,
   listarPortabilidadeSalario,
   listarTaxaParcela,
+  listarTaxaTrabalhador,
   listarTempoRegime,
   salvarSimulacaoDesconto,
   type AnosAssociadoOption,
@@ -33,6 +35,7 @@ import {
   type OutrosProdutosOption,
   type PortabilidadeSalarioOption,
   type TaxaParcelaOption,
+  type TaxaTrabalhadorOption,
   type TempoRegimeOption,
 } from "@/services/simulador_desconto.service";
 import { gerarPdfSimuladorDesconto } from "@/lib/pdf/gerarPdfSimuladorDesconto";
@@ -48,6 +51,12 @@ type DynamicCheckboxItem = {
   value: number;
 };
 
+type ParcelaTaxaItem = {
+  id: string;
+  nrParcela: string;
+  taxa: number;
+};
+
 function sumChecked(items: DynamicCheckboxItem[], checkedMap: Record<string, boolean>) {
   return items.reduce((acc, item) => acc + (checkedMap[item.id] ? item.value : 0), 0);
 }
@@ -56,120 +65,139 @@ function normalizeLabel(text: string) {
   return String(text || "").trim();
 }
 
-function capitalizeText(text: string) {
-  if (!text) return "";
-  const minusculas = [
-    "e",
-    "ou",
-    "de",
-    "do",
-    "da",
-    "dos",
-    "das",
-    "a",
-    "o",
-    "as",
-    "os",
-    "com",
-    "em",
-    "no",
-    "na",
-    "nos",
-    "nas",
-    "há",
-  ];
-  const siglas = ["R$", "RDC", "CPF", "CNPJ", "IAP", "SICOOB"];
-
-  return text
-    .toLowerCase()
-    .split(" ")
-    .map((palavra, index) => {
-      const upper = palavra.toUpperCase();
-      if (siglas.includes(upper)) return upper;
-      if (index !== 0 && minusculas.includes(palavra)) return palavra;
-      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
-    })
-    .join(" ");
+function upperText(text?: string | null) {
+  return String(text || "").toUpperCase();
 }
 
-function mapAnosAssociadoToDesconto(
+function pickAnosAssociadoIdFromAnos(
   anos: number,
   tabela: AnosAssociadoOption[]
 ) {
-  if (!tabela.length) return 0;
+  if (!tabela.length) return "";
 
-  const itemExato = tabela.find((item) => Number(item.ID_ANOS_ASSOCIADO) === anos);
-  if (itemExato) return Number(itemExato.VL_ANOS_ASSOCIADO || 0);
+  const parseFaixa = (label: string) => {
+    const txt = normalizeLabel(label).toUpperCase();
+
+    const ateMatch = txt.match(/AT[EÉ]\s*(\d+)/);
+    if (ateMatch) {
+      const max = Number(ateMatch[1]);
+      if (Number.isFinite(max)) return { min: 0, max };
+    }
+
+    const entreMatch = txt.match(/(?:DE\s*)?(\d+)\s*A\s*(\d+)/);
+    if (entreMatch) {
+      const min = Number(entreMatch[1]);
+      const max = Number(entreMatch[2]);
+      if (Number.isFinite(min) && Number.isFinite(max)) return { min, max };
+    }
+
+    const maisDeMatch = txt.match(/MAIS\s*DE\s*(\d+)/);
+    if (maisDeMatch) {
+      const min = Number(maisDeMatch[1]);
+      if (Number.isFinite(min)) return { min: min + 0.0001, max: Number.POSITIVE_INFINITY };
+    }
+
+    return null;
+  };
+
+  const porFaixa = tabela.find((item) => {
+    const faixa = parseFaixa(String(item.DESC_ANOS_ASSOCIADO || ""));
+    if (!faixa) return false;
+    return anos >= faixa.min && anos <= faixa.max;
+  });
+  if (porFaixa) return String(porFaixa.ID_ANOS_ASSOCIADO);
+
+  const exato = tabela.find((item) => Number(item.ID_ANOS_ASSOCIADO) === anos);
+  if (exato) return String(exato.ID_ANOS_ASSOCIADO);
 
   const ordenado = [...tabela].sort(
     (a, b) => Number(a.ID_ANOS_ASSOCIADO) - Number(b.ID_ANOS_ASSOCIADO)
   );
-
   const ultimoValido = ordenado
     .filter((item) => Number(item.ID_ANOS_ASSOCIADO) <= anos)
     .at(-1);
 
-  return Number(ultimoValido?.VL_ANOS_ASSOCIADO || 0);
+  return String(ultimoValido?.ID_ANOS_ASSOCIADO || "");
 }
 
-function mapAnosCorrentistaToDesconto(
+function pickAnosCorrentistaIdFromAnos(
   anos: number,
   tabela: AnosCorrentistaOption[]
 ) {
-  if (!tabela.length) return 0;
+  if (!tabela.length) return "";
 
-  const itemExato = tabela.find(
+  const parseFaixa = (label: string) => {
+    const txt = normalizeLabel(label).toUpperCase();
+
+    const ateMatch = txt.match(/AT[EÉ]\s*(\d+)/);
+    if (ateMatch) {
+      const max = Number(ateMatch[1]);
+      if (Number.isFinite(max)) return { min: 0, max };
+    }
+
+    const entreMatch = txt.match(/(?:DE\s*)?(\d+)\s*A\s*(\d+)/);
+    if (entreMatch) {
+      const min = Number(entreMatch[1]);
+      const max = Number(entreMatch[2]);
+      if (Number.isFinite(min) && Number.isFinite(max)) return { min, max };
+    }
+
+    const maisDeMatch = txt.match(/MAIS\s*DE\s*(\d+)/);
+    if (maisDeMatch) {
+      const min = Number(maisDeMatch[1]);
+      if (Number.isFinite(min)) return { min: min + 0.0001, max: Number.POSITIVE_INFINITY };
+    }
+
+    return null;
+  };
+
+  const porFaixa = tabela.find((item) => {
+    const faixa = parseFaixa(String(item.DESC_CORRENTISTA || ""));
+    if (!faixa) return false;
+    return anos >= faixa.min && anos <= faixa.max;
+  });
+  if (porFaixa) return String(porFaixa.ID_ANOS_CORRENTISTA);
+
+  const exato = tabela.find(
     (item) => Number(item.ID_ANOS_CORRENTISTA) === anos
   );
-  if (itemExato) return Number(itemExato.VL_CORRENTISTA || 0);
+  if (exato) return String(exato.ID_ANOS_CORRENTISTA);
 
   const ordenado = [...tabela].sort(
     (a, b) => Number(a.ID_ANOS_CORRENTISTA) - Number(b.ID_ANOS_CORRENTISTA)
   );
-
   const ultimoValido = ordenado
     .filter((item) => Number(item.ID_ANOS_CORRENTISTA) <= anos)
     .at(-1);
 
-  return Number(ultimoValido?.VL_CORRENTISTA || 0);
+  return String(ultimoValido?.ID_ANOS_CORRENTISTA || "");
 }
 
-function mapPortabilidadeToInfo(
+function pickPortabilidadeIdFromMeses(
   meses: number,
   tabela: PortabilidadeSalarioOption[]
 ) {
-  if (!tabela.length || !meses || meses <= 0) {
-    return {
-      label: "Sem Portabilidade Salário",
-      desconto: 0,
-    };
-  }
+  if (!tabela.length) return "";
 
   const ordenada = [...tabela].sort(
     (a, b) =>
       Number(a.ID_PORTABILIDADE_SALARIO) - Number(b.ID_PORTABILIDADE_SALARIO)
   );
 
-  if (meses <= 6) {
-    const item = ordenada[0];
-    return {
-      label: item?.DESC_PORTABILIDADE_SALARIO || "Portabilidade Salário",
-      desconto: Number(item?.VL_PORTABILIDADE_SALARIO || 0),
-    };
+  if (!meses || meses <= 0) {
+    const semPortabilidade = ordenada.find((item) =>
+      normalizeLabel(item.DESC_PORTABILIDADE_SALARIO)
+        .toUpperCase()
+        .includes("SEM PORTABILIDADE")
+    );
+    return String(semPortabilidade?.ID_PORTABILIDADE_SALARIO || "");
   }
 
-  const item = ordenada.at(-1);
-  return {
-    label:
-      item?.DESC_PORTABILIDADE_SALARIO ||
-      "Portabilidade Salário há mais de 6 meses",
-    desconto: Number(item?.VL_PORTABILIDADE_SALARIO || 0),
-  };
-}
+  if (meses <= 6) {
+    return String(ordenada[0]?.ID_PORTABILIDADE_SALARIO || "");
+  }
 
-function toShortRiskCode(item?: ClassificacaoRiscoOption | null) {
-  if (!item) return "";
-  return String(item.VL_CLASSIFICACAO_RISCO ?? "").slice(0, 2);
+  return String(ordenada.at(-1)?.ID_PORTABILIDADE_SALARIO || "");
 }
 
 export function SimuladorDescontoForm() {
@@ -178,7 +206,9 @@ export function SimuladorDescontoForm() {
 
   const [anosAssociado, setAnosAssociado] = useState(0);
   const [anosCorrentista, setAnosCorrentista] = useState(0);
-  const [mesesPortabilidade, setMesesPortabilidade] = useState(0);
+  const [selectedAnosAssociadoId, setSelectedAnosAssociadoId] = useState("");
+  const [selectedAnosCorrentistaId, setSelectedAnosCorrentistaId] = useState("");
+  const [selectedPortabilidadeId, setSelectedPortabilidadeId] = useState("");
 
   const [tipoEmprestimo, setTipoEmprestimo] = useState<TipoEmprestimo>("");
   const [valorEmprestimo, setValorEmprestimo] = useState("");
@@ -198,7 +228,7 @@ export function SimuladorDescontoForm() {
   const [outrasGarantiasTexto, setOutrasGarantiasTexto] = useState("");
 
   const [cidadeAtendimento, setCidadeAtendimento] = useState("");
-  const [dataAtendimento, setDataAtendimento] = useState(hojeBR());
+  const [dataAtendimento] = useState(hojeBR());
   const [atendente, setAtendente] = useState("");
 
   const [erroLocal, setErroLocal] = useState("");
@@ -215,9 +245,11 @@ export function SimuladorDescontoForm() {
   const [outrosProdutosOptions, setOutrosProdutosOptions] = useState<OutrosProdutosOption[]>([]);
   const [portabilidadeOptions, setPortabilidadeOptions] = useState<PortabilidadeSalarioOption[]>([]);
   const [taxaParcelaOptions, setTaxaParcelaOptions] = useState<TaxaParcelaOption[]>([]);
+  const [taxaTrabalhadorOptions, setTaxaTrabalhadorOptions] = useState<TaxaTrabalhadorOption[]>([]);
   const [tempoRegimeOptions, setTempoRegimeOptions] = useState<TempoRegimeOption[]>([]);
 
   const { loading, erro, info, buscar } = useAssociadoPorCpf();
+  const alertaRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     async function carregarTabelas() {
@@ -233,6 +265,7 @@ export function SimuladorDescontoForm() {
           produtos,
           portabilidades,
           taxasParcela,
+          taxasTrabalhador,
           tempos,
         ] = await Promise.all([
           listarAnosAssociado(),
@@ -243,6 +276,7 @@ export function SimuladorDescontoForm() {
           listarOutrosProdutos(),
           listarPortabilidadeSalario(),
           listarTaxaParcela(),
+          listarTaxaTrabalhador(),
           listarTempoRegime(),
         ]);
 
@@ -254,6 +288,7 @@ export function SimuladorDescontoForm() {
         setOutrosProdutosOptions(produtos || []);
         setPortabilidadeOptions(portabilidades || []);
         setTaxaParcelaOptions(taxasParcela || []);
+        setTaxaTrabalhadorOptions(taxasTrabalhador || []);
         setTempoRegimeOptions(tempos || []);
       } catch (e: any) {
         setErroLocal(e?.message || "Erro ao carregar dados auxiliares do simulador.");
@@ -283,9 +318,78 @@ export function SimuladorDescontoForm() {
     carregarUsuarioLogado();
   }, []);
 
+  useEffect(() => {
+    if (!(erro || erroLocal)) return;
+    requestAnimationFrame(() => {
+      alertaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [erro, erroLocal]);
+
+  useEffect(() => {
+    if (!anosAssociadoOptions.length) return;
+    if (anosAssociado <= 0) return;
+    if (selectedAnosAssociadoId) return;
+
+    const id = pickAnosAssociadoIdFromAnos(anosAssociado, anosAssociadoOptions);
+    if (id) setSelectedAnosAssociadoId(id);
+  }, [anosAssociado, anosAssociadoOptions, selectedAnosAssociadoId]);
+
+  useEffect(() => {
+    if (!anosCorrentistaOptions.length) return;
+    if (anosCorrentista <= 0) return;
+    if (selectedAnosCorrentistaId) return;
+
+    const id = pickAnosCorrentistaIdFromAnos(
+      anosCorrentista,
+      anosCorrentistaOptions
+    );
+    if (id) setSelectedAnosCorrentistaId(id);
+  }, [anosCorrentista, anosCorrentistaOptions, selectedAnosCorrentistaId]);
+
   function resetResultados() {
     setProcessado(false);
     setInfoLocal("");
+  }
+
+  function limparFormulario() {
+    setCpf("");
+    setNome("");
+
+    setAnosAssociado(0);
+    setAnosCorrentista(0);
+    setSelectedAnosAssociadoId("");
+    setSelectedAnosCorrentistaId("");
+    setSelectedPortabilidadeId("");
+
+    setTipoEmprestimo("");
+    setValorEmprestimo("");
+    setValorDivida("");
+    setValorCapital("");
+    setClassificacaoRisco("");
+    setQuantidadeParcelas("");
+    setTaxaBrutaInput("");
+
+    setCheckCorrentista({});
+    setCheckTempo({});
+    setCheckProdutos({});
+
+    setSeguro(false);
+    setAvalista(false);
+    setOutrosGarantias(false);
+    setOutrasGarantiasTexto("");
+
+    setCidadeAtendimento("");
+
+    setErroLocal("");
+    setInfoLocal("");
+    setProcessado(false);
+    setLoadingComplementar(false);
+  }
+
+  function subirParaAlerta() {
+    requestAnimationFrame(() => {
+      alertaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   const correntistaItems = useMemo<DynamicCheckboxItem[]>(
@@ -297,6 +401,16 @@ export function SimuladorDescontoForm() {
       })),
     [correntistaOptions]
   );
+
+  const correntistaItemsOrdenados = useMemo<DynamicCheckboxItem[]>(() => {
+    return [...correntistaItems].sort((a, b) => {
+      const aIap = upperText(a.label).includes("IAP");
+      const bIap = upperText(b.label).includes("IAP");
+      if (aIap && !bIap) return 1;
+      if (!aIap && bIap) return -1;
+      return 0;
+    });
+  }, [correntistaItems]);
 
   const tempoRegimeItems = useMemo<DynamicCheckboxItem[]>(
     () =>
@@ -325,22 +439,43 @@ export function SimuladorDescontoForm() {
   const valorDividaNum = useMemo(() => parseBRL(valorDivida), [valorDivida]);
   const valorCapitalNum = useMemo(() => parseBRL(valorCapital), [valorCapital]);
 
-  const valorAnosAssociado = useMemo(
-    () => mapAnosAssociadoToDesconto(anosAssociado, anosAssociadoOptions),
-    [anosAssociado, anosAssociadoOptions]
+  const anosAssociadoSelecionado = useMemo(
+    () =>
+      anosAssociadoOptions.find(
+        (item) => String(item.ID_ANOS_ASSOCIADO) === selectedAnosAssociadoId
+      ) || null,
+    [anosAssociadoOptions, selectedAnosAssociadoId]
   );
 
-  const valorAnosCorrentista = useMemo(
-    () => mapAnosCorrentistaToDesconto(anosCorrentista, anosCorrentistaOptions),
-    [anosCorrentista, anosCorrentistaOptions]
+  const anosCorrentistaSelecionado = useMemo(
+    () =>
+      anosCorrentistaOptions.find(
+        (item) => String(item.ID_ANOS_CORRENTISTA) === selectedAnosCorrentistaId
+      ) || null,
+    [anosCorrentistaOptions, selectedAnosCorrentistaId]
   );
 
-  const portabilidadeInfo = useMemo(
-    () => mapPortabilidadeToInfo(mesesPortabilidade, portabilidadeOptions),
-    [mesesPortabilidade, portabilidadeOptions]
+  const portabilidadeSelecionada = useMemo(
+    () =>
+      portabilidadeOptions.find(
+        (item) =>
+          String(item.ID_PORTABILIDADE_SALARIO) === selectedPortabilidadeId
+      ) || null,
+    [portabilidadeOptions, selectedPortabilidadeId]
   );
 
-  const valorPortabilidade = portabilidadeInfo.desconto;
+  const valorAnosAssociado = Number(
+    anosAssociadoSelecionado?.VL_ANOS_ASSOCIADO || 0
+  );
+  const valorAnosCorrentista = Number(
+    anosCorrentistaSelecionado?.VL_CORRENTISTA || 0
+  );
+  const valorPortabilidade = Number(
+    portabilidadeSelecionada?.VL_PORTABILIDADE_SALARIO || 0
+  );
+  const portabilidadeLabel =
+    portabilidadeSelecionada?.DESC_PORTABILIDADE_SALARIO ||
+    "Sem Portabilidade Salário";
 
   const valorCorrentista = useMemo(
     () => sumChecked(correntistaItems, checkCorrentista),
@@ -357,8 +492,23 @@ export function SimuladorDescontoForm() {
     [outrosProdutosItems, checkProdutos]
   );
 
+  const parcelasComTaxa = useMemo<ParcelaTaxaItem[]>(() => {
+    if (tipoEmprestimo === "trabalhador") {
+      return taxaTrabalhadorOptions.map((item) => ({
+        id: `trabalhador_${item.ID_TAXA}`,
+        nrParcela: String(item.NR_PARCELA || "").trim(),
+        taxa: Number(item.TX_PARCELA || 0),
+      }));
+    }
+
+    return taxaParcelaOptions.map((item) => ({
+      id: `consignado_${item.ID_TAXA_PARCELA_SIMULADOR}`,
+      nrParcela: String(item.NR_PARCELA || "").trim(),
+      taxa: Number(item.PERC_TAXA_PARCELA || 0),
+    }));
+  }, [tipoEmprestimo, taxaParcelaOptions, taxaTrabalhadorOptions]);
+
   const descontoPrevioPercent = useMemo(() => {
-    if (!valorEmprestimoNum || !valorCapitalNum) return 0;
     const base = valorDividaNum + valorEmprestimoNum;
     if (base <= 0) return 0;
     const desc = ((valorCapitalNum - base) / base) * 100;
@@ -450,6 +600,7 @@ export function SimuladorDescontoForm() {
   useEffect(() => {
     async function preencherTaxaParcela() {
       if (tipoEmprestimo === "pessoal") {
+        setQuantidadeParcelas("");
         setTaxaBrutaInput("");
         return;
       }
@@ -457,18 +608,21 @@ export function SimuladorDescontoForm() {
       if (!quantidadeParcelas.trim()) return;
 
       try {
-        const taxaLocal = taxaParcelaOptions.find(
-          (item) => String(item.NR_PARCELA).trim() === String(quantidadeParcelas).trim()
+        const taxaLocal = parcelasComTaxa.find(
+          (item) =>
+            String(item.nrParcela).trim() === String(quantidadeParcelas).trim()
         );
 
         if (taxaLocal) {
-          setTaxaBrutaInput(String(Number(taxaLocal.PERC_TAXA_PARCELA || 0).toFixed(2)));
+          setTaxaBrutaInput(String(Number(taxaLocal.taxa || 0).toFixed(2)));
           return;
         }
 
-        const taxaApi = await buscarTaxaParcelaPorNumero(quantidadeParcelas);
-        if (taxaApi?.PERC_TAXA_PARCELA !== undefined && taxaApi?.PERC_TAXA_PARCELA !== null) {
-          setTaxaBrutaInput(String(Number(taxaApi.PERC_TAXA_PARCELA).toFixed(2)));
+        if (tipoEmprestimo === "consignado") {
+          const taxaApi = await buscarTaxaParcelaPorNumero(quantidadeParcelas);
+          if (taxaApi?.PERC_TAXA_PARCELA !== undefined && taxaApi?.PERC_TAXA_PARCELA !== null) {
+            setTaxaBrutaInput(String(Number(taxaApi.PERC_TAXA_PARCELA).toFixed(2)));
+          }
         }
       } catch {
         // silencioso
@@ -476,7 +630,7 @@ export function SimuladorDescontoForm() {
     }
 
     preencherTaxaParcela();
-  }, [quantidadeParcelas, tipoEmprestimo, taxaParcelaOptions]);
+  }, [quantidadeParcelas, tipoEmprestimo, parcelasComTaxa]);
 
   async function onBuscar() {
     setErroLocal("");
@@ -498,11 +652,23 @@ export function SimuladorDescontoForm() {
       if (dados) {
         setNome(dados.NM_CLIENTE || r.data?.nome || "");
         setValorCapital(fmtBRL(Number(dados.SL_CONTA_CAPITAL || 0)));
-        setValorDivida(fmtBRL(Number(dados.SL_DEVEDOR_DIA || 0)));
+        setValorDivida(fmtBRL(Number(0)));
         setCidadeAtendimento(dados.NM_CIDADE || "");
-        setAnosAssociado(Number(dados.NR_ANO_ASSOCIADO || 0));
-        setAnosCorrentista(Number(dados.NR_ANO_CORRENTISTA || 0));
-        setMesesPortabilidade(Number(dados.NR_MESES_PORTABILIDADE || 0));
+        const anosAssoc = Number(dados.NR_ANO_ASSOCIADO || 0);
+        const anosCorr = Number(dados.NR_ANO_CORRENTISTA || 0);
+        const mesesPort = Number(dados.NR_MESES_PORTABILIDADE || 0);
+
+        setAnosAssociado(anosAssoc);
+        setAnosCorrentista(anosCorr);
+        setSelectedAnosAssociadoId(
+          pickAnosAssociadoIdFromAnos(anosAssoc, anosAssociadoOptions)
+        );
+        setSelectedAnosCorrentistaId(
+          pickAnosCorrentistaIdFromAnos(anosCorr, anosCorrentistaOptions)
+        );
+        setSelectedPortabilidadeId(
+          pickPortabilidadeIdFromMeses(mesesPort, portabilidadeOptions)
+        );
 
         const nextCorrentista: Record<string, boolean> = {};
         correntistaOptions.forEach((item) => {
@@ -558,8 +724,11 @@ export function SimuladorDescontoForm() {
 
   function validar() {
     if (loadingTabelas) return "Aguarde o carregamento das tabelas auxiliares.";
-    if (!cpf.trim()) return "CPF do associado não preenchido.";
+    if (!cpf.trim()) return "CPF/CNPJ do associado nao preenchido.";
     if (!nome.trim()) return "Nome do associado não preenchido.";
+    if (!selectedAnosAssociadoId) return "Anos de associação não selecionado.";
+    if (!selectedAnosCorrentistaId) return "Anos de correntista não selecionado.";
+    if (!selectedPortabilidadeId) return "Portabilidade salário não selecionada.";
     if (!tipoEmprestimo) return "Tipo de empréstimo não selecionado.";
     if (!valorEmprestimo.trim()) return "Valor solicitado não preenchido.";
     if (!valorDivida.trim()) return "Valor da dívida não preenchido.";
@@ -593,6 +762,7 @@ export function SimuladorDescontoForm() {
     const erroValidacao = validar();
     if (erroValidacao) {
       setErroLocal(erroValidacao);
+      subirParaAlerta();
       return;
     }
 
@@ -608,7 +778,7 @@ export function SimuladorDescontoForm() {
         tipoEmprestimo === "pessoal" ? "" : quantidadeParcelas.toUpperCase(),
       NR_TAXA_FINAL:
         tipoEmprestimo === "pessoal" ? "0" : taxaFinal.toFixed(3),
-      NM_CLASSIFICACAO_RISCO: toShortRiskCode(riscoSelecionado),
+      NM_CLASSIFICACAO_RISCO: riscoLabel,
       SN_SEGURO: seguro ? "SIM" : "NAO",
       SN_AVALISTA: avalista ? "SIM" : "NAO",
       SN_OUTRAS_GARANTIAS:
@@ -634,6 +804,7 @@ export function SimuladorDescontoForm() {
     const erroValidacao = validar();
     if (erroValidacao) {
       setErroLocal(erroValidacao);
+      subirParaAlerta();
       return;
     }
 
@@ -641,37 +812,38 @@ export function SimuladorDescontoForm() {
       nome,
       cpf: formatCpfView(cpf),
       anosAssociacao: {
-        label: `${anosAssociado} ano(s)`,
+        label:
+          anosAssociadoSelecionado?.DESC_ANOS_ASSOCIADO ||
+          "Anos de associação",
         desconto: valorAnosAssociado,
       },
       correntistaSelects: [
         {
-          label: `${anosCorrentista} ano(s) de correntista`,
+          label:
+            anosCorrentistaSelecionado?.DESC_CORRENTISTA ||
+            "Anos de correntista",
           desconto: valorAnosCorrentista,
         },
         {
-          label: portabilidadeInfo.label,
+          label: portabilidadeLabel,
           desconto: valorPortabilidade,
         },
       ],
       regime: tempoRegimeItems
-        .filter((item) => checkTempo[item.id])
         .map((item) => ({
           label: item.label,
-          desconto: item.value,
+          desconto: checkTempo[item.id] ? item.value : 0,
         })),
       outrosProdutos: [
         ...outrosProdutosItems
-          .filter((item) => checkProdutos[item.id])
           .map((item) => ({
             label: item.label,
-            desconto: item.value,
+            desconto: checkProdutos[item.id] ? item.value : 0,
           })),
         ...correntistaItems
-          .filter((item) => checkCorrentista[item.id])
           .map((item) => ({
             label: item.label,
-            desconto: item.value,
+            desconto: checkCorrentista[item.id] ? item.value : 0,
           })),
       ],
       tipoEmprestimo,
@@ -699,12 +871,11 @@ export function SimuladorDescontoForm() {
   return (
     <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
       <SearchForm onSearch={onBuscar}>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            CPF do associado
-          </label>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[280px_1fr_auto_auto]">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              CPF/CNPJ do associado
+            </label>
             <SearchInput
               value={formatCpfView(cpf)}
               onChange={(e) => {
@@ -716,275 +887,194 @@ export function SimuladorDescontoForm() {
               inputMode="numeric"
               maxLength={18}
             />
-            <SearchButton loading={loading || loadingComplementar} label="Pesquisar" />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Nome do associado
+            </label>
+            <input
+              value={nome}
+              onChange={(e) => {
+                setNome(e.target.value);
+                resetResultados();
+              }}
+              className="w-full rounded border px-3 py-2"
+            />
+          </div>
+
+          <div className="md:self-end">
+            <SearchButton
+              loading={loading || loadingComplementar}
+              label="Pesquisar"
+            />
+          </div>
+
+          <div className="md:self-end">
+            <button
+              type="button"
+              onClick={limparFormulario}
+              className="inline-flex items-center justify-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <FaTimes />
+              Limpar
+            </button>
           </div>
 
           {(erro || erroLocal) && (
-            <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div
+              ref={alertaRef}
+              className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 md:col-span-4"
+            >
               {erroLocal || erro}
             </div>
           )}
 
           {(info || infoLocal) && !(erro || erroLocal) && (
-            <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+            <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 md:col-span-4">
               {infoLocal || info}
             </div>
           )}
         </div>
       </SearchForm>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Nome do associado
-          </label>
-          <input
-            value={nome}
-            onChange={(e) => {
-              setNome(e.target.value);
-              resetResultados();
-            }}
-            className="w-full rounded border px-3 py-2"
-          />
+      <div className="mt-6 rounded border p-4">
+        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+          Anos de associacao ininterruptos
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_130px]">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Anos de associacao
+            </label>
+            <select
+              value={selectedAnosAssociadoId}
+              onChange={(e) => {
+                setSelectedAnosAssociadoId(e.target.value);
+                resetResultados();
+              }}
+              className="w-full rounded border px-3 py-2"
+            >
+              <option value="">Selecione</option>
+              {anosAssociadoOptions.map((item) => (
+                <option
+                  key={item.ID_ANOS_ASSOCIADO}
+                  value={item.ID_ANOS_ASSOCIADO}
+                >
+                  {upperText(item.DESC_ANOS_ASSOCIADO)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Desconto associacao
+            </label>
+            <input
+              readOnly
+              value={valorAnosAssociado.toFixed(2)}
+              className="w-full rounded border bg-gray-50 px-3 py-2 text-right font-medium tabular-nums"
+            />
+          </div>
         </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Tipo de empréstimo
-          </label>
-          <select
-            value={tipoEmprestimo}
-            onChange={(e) => {
-              setTipoEmprestimo(e.target.value as TipoEmprestimo);
-              resetResultados();
-            }}
-            className="w-full rounded border px-3 py-2"
-          >
-            <option value="">Selecione</option>
-            <option value="trabalhador">Crédito Trabalhador</option>
-            <option value="consignado">Consignado</option>
-            <option value="pessoal">Pessoal</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Anos de associação
-          </label>
-          <input
-            readOnly
-            value={anosAssociado ? `${anosAssociado} ano(s)` : ""}
-            className="w-full rounded border bg-gray-50 px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Anos de correntista Sicoob
-          </label>
-          <input
-            readOnly
-            value={
-              anosCorrentista || anosCorrentista === 0
-                ? `${anosCorrentista} ano(s)`
-                : ""
-            }
-            className="w-full rounded border bg-gray-50 px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Portabilidade salário
-          </label>
-          <input
-            readOnly
-            value={portabilidadeInfo.label}
-            className="w-full rounded border bg-gray-50 px-3 py-2"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Valor solicitado
-          </label>
-          <input
-            value={valorEmprestimo}
-            onChange={(e) => {
-              setValorEmprestimo(monetizarDigitacao(e.target.value));
-              resetResultados();
-            }}
-            className="w-full rounded border px-3 py-2 text-right"
-            placeholder="R$ 0,00"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Dívida
-          </label>
-          <input
-            value={valorDivida}
-            onChange={(e) => {
-              setValorDivida(monetizarDigitacao(e.target.value));
-              resetResultados();
-            }}
-            className="w-full rounded border px-3 py-2 text-right"
-            placeholder="R$ 0,00"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Capital
-          </label>
-          <input
-            value={valorCapital}
-            onChange={(e) => {
-              setValorCapital(monetizarDigitacao(e.target.value));
-              resetResultados();
-            }}
-            className="w-full rounded border px-3 py-2 text-right"
-            placeholder="R$ 0,00"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-4">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Desconto associação
-          </label>
-          <input
-            readOnly
-            value={valorAnosAssociado.toFixed(2)}
-            className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Desconto correntista
-          </label>
-          <input
-            readOnly
-            value={valorAnosCorrentista.toFixed(2)}
-            className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Desconto portabilidade
-          </label>
-          <input
-            readOnly
-            value={valorPortabilidade.toFixed(2)}
-            className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Desconto sobre solicitação %
-          </label>
-          <input
-            readOnly
-            value={descontoPrevioTotal.toFixed(2)}
-            className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Classificação do risco
-          </label>
-          <select
-            value={classificacaoRisco}
-            onChange={(e) => {
-              setClassificacaoRisco(e.target.value);
-              resetResultados();
-            }}
-            className="w-full rounded border px-3 py-2"
-          >
-            <option value="">Selecione</option>
-            {riscoOptions.map((item) => (
-              <option
-                key={item.ID_CLASSIFICACAO_RISCO}
-                value={item.ID_CLASSIFICACAO_RISCO}
-              >
-                {item.DESC_CLASSIFICACAO}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {tipoEmprestimo !== "pessoal" && (
-          <>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Quantidade de parcelas
-              </label>
-              <select
-                value={quantidadeParcelas}
-                onChange={(e) => {
-                  setQuantidadeParcelas(e.target.value);
-                  resetResultados();
-                }}
-                className="w-full rounded border px-3 py-2"
-              >
-                <option value="">Selecione</option>
-                {taxaParcelaOptions.map((item) => (
-                  <option
-                    key={item.ID_TAXA_PARCELA_SIMULADOR}
-                    value={item.NR_PARCELA}
-                  >
-                    {item.NR_PARCELA}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Taxa bruta %
-              </label>
-              <input
-                value={taxaBrutaInput}
-                onChange={(e) => {
-                  setTaxaBrutaInput(e.target.value);
-                  resetResultados();
-                }}
-                className="w-full rounded border px-3 py-2 text-right"
-                placeholder="Ex: 2,49"
-              />
-            </div>
-          </>
-        )}
       </div>
 
       <div className="mt-6 rounded border p-4">
         <h3 className="mb-3 text-sm font-semibold text-gray-800">
           Correntista Sicoob e outros produtos
         </h3>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {correntistaItems.map((item) => (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_130px]">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Anos de correntista Sicoob
+            </label>
+            <select
+              value={selectedAnosCorrentistaId}
+              onChange={(e) => {
+                setSelectedAnosCorrentistaId(e.target.value);
+                resetResultados();
+              }}
+              className="w-full rounded border px-3 py-2"
+            >
+              <option value="">Selecione</option>
+              {anosCorrentistaOptions.map((item) => (
+                <option
+                  key={item.ID_ANOS_CORRENTISTA}
+                  value={item.ID_ANOS_CORRENTISTA}
+                >
+                  {upperText(item.DESC_CORRENTISTA)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Desconto correntista
+            </label>
+            <input
+              readOnly
+              value={valorAnosCorrentista.toFixed(2)}
+              className="w-full rounded border bg-gray-50 px-3 py-2 text-right font-medium tabular-nums"
+            />
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[1fr_130px]">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Portabilidade salario
+            </label>
+            <select
+              value={selectedPortabilidadeId}
+              onChange={(e) => {
+                setSelectedPortabilidadeId(e.target.value);
+                resetResultados();
+              }}
+              className="w-full rounded border px-3 py-2"
+            >
+              <option value="">Selecione</option>
+              {portabilidadeOptions.map((item) => (
+                <option
+                  key={item.ID_PORTABILIDADE_SALARIO}
+                  value={item.ID_PORTABILIDADE_SALARIO}
+                >
+                  {upperText(item.DESC_PORTABILIDADE_SALARIO)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Desconto portabilidade
+            </label>
+            <input
+              readOnly
+              value={valorPortabilidade.toFixed(2)}
+              className="w-full rounded border bg-gray-50 px-3 py-2 text-right font-medium tabular-nums"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+          {correntistaItemsOrdenados.map((item) => (
             <label
               key={item.id}
               className="flex items-center justify-between rounded border px-3 py-2 text-sm text-gray-700"
             >
-              <span>{capitalizeText(item.label)}</span>
-              <input
-                type="checkbox"
-                checked={!!checkCorrentista[item.id]}
-                onChange={() => toggleMapValue(item.id, setCheckCorrentista)}
-              />
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={!!checkCorrentista[item.id]}
+                  onChange={() => toggleMapValue(item.id, setCheckCorrentista)}
+                />
+                <span className="uppercase">{upperText(item.label)}</span>
+              </div>
+              <span className="min-w-[3rem] text-right font-medium tabular-nums text-gray-600">
+                {checkCorrentista[item.id] ? item.value.toFixed(2) : ""}
+              </span>
             </label>
           ))}
         </div>
@@ -1000,12 +1090,17 @@ export function SimuladorDescontoForm() {
               key={item.id}
               className="flex items-center justify-between rounded border px-3 py-2 text-sm text-gray-700"
             >
-              <span>{capitalizeText(item.label)}</span>
-              <input
-                type="checkbox"
-                checked={!!checkTempo[item.id]}
-                onChange={() => toggleMapValue(item.id, setCheckTempo)}
-              />
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={!!checkTempo[item.id]}
+                  onChange={() => toggleMapValue(item.id, setCheckTempo)}
+                />
+                <span className="uppercase">{upperText(item.label)}</span>
+              </div>
+              <span className="min-w-[3rem] text-right font-medium tabular-nums text-gray-600">
+                {checkTempo[item.id] ? item.value.toFixed(2) : ""}
+              </span>
             </label>
           ))}
         </div>
@@ -1021,22 +1116,192 @@ export function SimuladorDescontoForm() {
               key={item.id}
               className="flex items-center justify-between rounded border px-3 py-2 text-sm text-gray-700"
             >
-              <span>{capitalizeText(item.label)}</span>
-              <input
-                type="checkbox"
-                checked={!!checkProdutos[item.id]}
-                onChange={() => toggleMapValue(item.id, setCheckProdutos)}
-              />
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={!!checkProdutos[item.id]}
+                  onChange={() => toggleMapValue(item.id, setCheckProdutos)}
+                />
+                <span className="uppercase">{upperText(item.label)}</span>
+              </div>
+              <span className="min-w-[3rem] text-right font-medium tabular-nums text-gray-600">
+                {checkProdutos[item.id] ? item.value.toFixed(2) : ""}
+              </span>
             </label>
           ))}
         </div>
       </div>
 
       <div className="mt-6 rounded border p-4">
+        <h3 className="mb-3 text-sm font-semibold text-gray-800">Emprestimo</h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Tipo de emprestimo
+            </label>
+            <select
+              value={tipoEmprestimo}
+              onChange={(e) => {
+                setTipoEmprestimo(e.target.value as TipoEmprestimo);
+                setQuantidadeParcelas("");
+                setTaxaBrutaInput("");
+                resetResultados();
+              }}
+              className="w-full rounded border px-3 py-2"
+            >
+              <option value="">Selecione</option>
+              <option value="trabalhador">CREDITO TRABALHADOR</option>
+              <option value="consignado">CONSIGNADO</option>
+              <option value="pessoal">PESSOAL</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Valor solicitado
+            </label>
+            <input
+              value={valorEmprestimo}
+              onChange={(e) => {
+                setValorEmprestimo(monetizarDigitacao(e.target.value));
+                resetResultados();
+              }}
+              className="w-full rounded border px-3 py-2 text-right"
+              placeholder="R$ 0,00"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded border p-4">
+        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+          Dados sobre conta
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Divida
+            </label>
+            <input
+              value={valorDivida}
+              onChange={(e) => {
+                setValorDivida(monetizarDigitacao(e.target.value));
+                resetResultados();
+              }}
+              className="w-full rounded border px-3 py-2 text-right"
+              placeholder="R$ 0,00"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Capital
+            </label>
+            <input
+              value={valorCapital}
+              onChange={(e) => {
+                setValorCapital(monetizarDigitacao(e.target.value));
+                resetResultados();
+              }}
+              className="w-full rounded border px-3 py-2 text-right"
+              placeholder="R$ 0,00"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Desconto sobre solicitacao %
+            </label>
+            <input
+              readOnly
+              value={descontoPrevioTotal.toFixed(2)}
+              className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded border p-4">
+        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+          Classificacao do risco para desconto
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Classificacao do risco
+            </label>
+            <select
+              value={classificacaoRisco}
+              onChange={(e) => {
+                setClassificacaoRisco(e.target.value);
+                resetResultados();
+              }}
+              className="w-full rounded border px-3 py-2"
+            >
+              <option value="">Selecione</option>
+              {riscoOptions.map((item) => (
+                <option
+                  key={item.ID_CLASSIFICACAO_RISCO}
+                  value={item.ID_CLASSIFICACAO_RISCO}
+                >
+                  {item.DESC_CLASSIFICACAO}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {tipoEmprestimo !== "pessoal" && (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Quantidade de parcelas
+                </label>
+                <select
+                  value={quantidadeParcelas}
+                  onChange={(e) => {
+                    setQuantidadeParcelas(e.target.value);
+                    resetResultados();
+                  }}
+                  className="w-full rounded border px-3 py-2"
+                >
+                  <option value="">Selecione</option>
+                  {parcelasComTaxa.map((item) => (
+                    <option key={item.id} value={item.nrParcela}>
+                      {item.nrParcela}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Taxa bruta %
+                </label>
+                <input
+                  value={taxaBrutaInput}
+                  onChange={(e) => {
+                    setTaxaBrutaInput(e.target.value);
+                    resetResultados();
+                  }}
+                  className="w-full rounded border px-3 py-2 text-right"
+                  placeholder="Ex: 2,49"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="mt-4 rounded border bg-gray-50 p-4 text-sm text-gray-700">
+          <p>
+            <strong>Classificacao aplicada:</strong> {classificacaoDescricao || "-"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded border p-4">
         <h3 className="mb-3 text-sm font-semibold text-gray-800">Garantias</h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <label className="flex items-center justify-between rounded border px-3 py-2 text-sm text-gray-700">
-            <span>Seguro</span>
+          <label className="flex items-center gap-3 rounded border px-3 py-2 text-sm text-gray-700">
             <input
               type="checkbox"
               checked={seguro}
@@ -1045,10 +1310,10 @@ export function SimuladorDescontoForm() {
                 resetResultados();
               }}
             />
+            <span className="uppercase">SEGURO</span>
           </label>
 
-          <label className="flex items-center justify-between rounded border px-3 py-2 text-sm text-gray-700">
-            <span>Avalista</span>
+          <label className="flex items-center gap-3 rounded border px-3 py-2 text-sm text-gray-700">
             <input
               type="checkbox"
               checked={avalista}
@@ -1057,10 +1322,10 @@ export function SimuladorDescontoForm() {
                 resetResultados();
               }}
             />
+            <span className="uppercase">AVALISTA</span>
           </label>
 
-          <label className="flex items-center justify-between rounded border px-3 py-2 text-sm text-gray-700">
-            <span>Outros</span>
+          <label className="flex items-center gap-3 rounded border px-3 py-2 text-sm text-gray-700">
             <input
               type="checkbox"
               checked={outrosGarantias}
@@ -1069,6 +1334,7 @@ export function SimuladorDescontoForm() {
                 resetResultados();
               }}
             />
+            <span className="uppercase">OUTROS</span>
           </label>
         </div>
 
@@ -1087,28 +1353,45 @@ export function SimuladorDescontoForm() {
         )}
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Cidade do atendimento
-          </label>
-          <input
-            list="cidades-simulador"
-            value={cidadeAtendimento}
-            onChange={(e) => {
-              setCidadeAtendimento(e.target.value);
-              resetResultados();
-            }}
-            className="w-full rounded border px-3 py-2"
-          />
-          <datalist id="cidades-simulador">
-            {cidadesOptions.map((item) => (
-              <option key={item.ID_CIDADES} value={item.NM_CIDADE} />
-            ))}
-          </datalist>
+      <div className="mt-6 rounded border p-4">
+        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+          Dados do atendimento
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Cidade do atendimento
+            </label>
+            <select
+              value={cidadeAtendimento}
+              onChange={(e) => {
+                setCidadeAtendimento(e.target.value);
+                resetResultados();
+              }}
+              className="w-full rounded border px-3 py-2"
+            >
+              <option value="">Selecione</option>
+              {cidadesOptions.map((item) => (
+                <option key={item.ID_CIDADES} value={item.NM_CIDADE}>
+                  {upperText(item.NM_CIDADE)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Dia do atendimento
+            </label>
+            <input
+              readOnly
+              value={dataAtendimento}
+              className="w-full rounded border bg-gray-50 px-3 py-2"
+            />
+          </div>
         </div>
 
-        <div>
+        <div className="mt-3">
           <label className="mb-1 block text-xs font-medium text-gray-600">
             Nome do atendente
           </label>
@@ -1123,31 +1406,46 @@ export function SimuladorDescontoForm() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-4">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Data do atendimento
-          </label>
-          <input
-            value={dataAtendimento}
-            onChange={(e) => setDataAtendimento(e.target.value)}
-            className="w-full rounded border px-3 py-2"
-          />
-        </div>
+      {processado && (
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+          {(tipoEmprestimo === "consignado" || tipoEmprestimo === "trabalhador") && (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Taxa bruta %
+                </label>
+                <input
+                  readOnly
+                  value={taxaBruta ? taxaBruta.toFixed(2) : ""}
+                  className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+                />
+              </div>
 
-        {(tipoEmprestimo === "consignado" || tipoEmprestimo === "trabalhador") && (
-          <>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Taxa bruta %
-              </label>
-              <input
-                readOnly
-                value={taxaBruta ? taxaBruta.toFixed(2) : ""}
-                className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-              />
-            </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Desconto total %
+                </label>
+                <input
+                  readOnly
+                  value={descontoTotal.toFixed(3)}
+                  className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+                />
+              </div>
 
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Taxa final %
+                </label>
+                <input
+                  readOnly
+                  value={taxaFinal.toFixed(3)}
+                  className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+                />
+              </div>
+            </>
+          )}
+
+          {tipoEmprestimo === "pessoal" && (
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-600">
                 Desconto total %
@@ -1158,42 +1456,9 @@ export function SimuladorDescontoForm() {
                 className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
               />
             </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Taxa final %
-              </label>
-              <input
-                readOnly
-                value={taxaFinal.toFixed(3)}
-                className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-              />
-            </div>
-          </>
-        )}
-
-        {tipoEmprestimo === "pessoal" && (
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Desconto total %
-            </label>
-            <input
-              readOnly
-              value={descontoTotal.toFixed(3)}
-              className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="mt-6 rounded border bg-gray-50 p-4 text-sm text-gray-700">
-        <p>
-          <strong>Classificação aplicada:</strong> {classificacaoDescricao || "-"}
-        </p>
-        <p className="mt-1">
-          <strong>Soma dos descontos parciais:</strong> {descontoTotalBruto.toFixed(3)}
-        </p>
-      </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 flex items-center justify-end gap-3 border-t pt-5">
         <button

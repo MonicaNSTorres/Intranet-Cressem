@@ -1,0 +1,412 @@
+  async editar(req: Request, res: Response) {
+    let connection: oracledb.Connection | undefined;
+
+    try {
+      const idSolicitacao = Number(req.body.ID_SOLICITACAO_REEMBOLSO_DESPESA);
+
+      if (!Number.isFinite(idSolicitacao) || idSolicitacao <= 0) {
+        return res.status(400).json({
+          error: "ID_SOLICITACAO_REEMBOLSO_DESPESA invÃƒÂ¡lido.",
+        });
+      }
+
+      const erroValidacao = validarCamposPrincipais(req.body);
+      if (erroValidacao) {
+        return res.status(400).json({ error: erroValidacao });
+      }
+
+      const despesas = parseJsonIfNeeded<any[]>(req.body.DESPESAS, []);
+      const pool = await getOraclePool();
+      connection = await pool.getConnection();
+
+      const despesasAntigas = await connection.execute(
+        `
+          SELECT COMPROVANTE
+          FROM DBACRESSEM.DESPESA_SOLICITADA
+          WHERE ID_SOLICITACAO = :id
+        `,
+        { id: idSolicitacao },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      const updateSolicitacaoSql = `
+        UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+           SET NM_FUNCIONARIO      = :NM_FUNCIONARIO,
+               NR_CPF_FUNCIONARIO  = :NR_CPF_FUNCIONARIO,
+               DT_IDA              = TO_DATE(:DT_IDA, 'YYYY-MM-DD'),
+               DT_VOLTA            = TO_DATE(:DT_VOLTA, 'YYYY-MM-DD'),
+               DESC_JTF_EVENTO     = :DESC_JTF_EVENTO,
+               NM_CIDADE           = :NM_CIDADE,
+               NR_BANCO            = :NR_BANCO,
+               CD_AGENCIA          = :CD_AGENCIA,
+               NR_CONTA            = :NR_CONTA,
+               DESC_ANDAMENTO      = :DESC_ANDAMENTO
+         WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :ID_SOLICITACAO_REEMBOLSO_DESPESA
+      `;
+
+      const resultUpdate = await connection.execute(updateSolicitacaoSql, {
+        NM_FUNCIONARIO: String(req.body.NM_FUNCIONARIO || "").toUpperCase(),
+        NR_CPF_FUNCIONARIO: onlyDigits(req.body.NR_CPF_FUNCIONARIO),
+        DT_IDA: req.body.DT_IDA,
+        DT_VOLTA: req.body.DT_VOLTA,
+        DESC_JTF_EVENTO: req.body.DESC_JTF_EVENTO,
+        NM_CIDADE: req.body.NM_CIDADE,
+        NR_BANCO: req.body.NR_BANCO,
+        CD_AGENCIA: req.body.CD_AGENCIA,
+        NR_CONTA: req.body.NR_CONTA,
+        DESC_ANDAMENTO: req.body.DESC_ANDAMENTO || "Pendente Financeiro",
+        ID_SOLICITACAO_REEMBOLSO_DESPESA: idSolicitacao,
+      });
+
+      if (!resultUpdate.rowsAffected) {
+        await connection.rollback();
+        return res.status(404).json({
+          error: "SolicitaÃƒÂ§ÃƒÂ£o nÃƒÂ£o encontrada para ediÃƒÂ§ÃƒÂ£o.",
+        });
+      }
+
+      await connection.execute(
+        `
+          DELETE FROM DBACRESSEM.DESPESA_SOLICITADA
+          WHERE ID_SOLICITACAO = :id
+        `,
+        { id: idSolicitacao }
+      );
+
+      const linhasAntigas = (despesasAntigas.rows || []) as any[];
+      for (const row of linhasAntigas) {
+        await removeFileIfExists(row.COMPROVANTE);
+      }
+
+      const insertDespesaSql = `
+        INSERT INTO DBACRESSEM.DESPESA_SOLICITADA (
+          ID_DESPESA_SOLICITADA,
+          ID_SOLICITACAO,
+          TP_DESPESA,
+          DESC_DESPESA,
+          VALOR,
+          COMPROVANTE
+        ) VALUES (
+          :ID_DESPESA_SOLICITADA,
+          :ID_SOLICITACAO,
+          :TP_DESPESA,
+          :DESC_DESPESA,
+          :VALOR,
+          :COMPROVANTE
+        )
+      `;
+
+      let nextDespesaId = await getNextDespesaId(connection);
+
+      for (let i = 0; i < despesas.length; i++) {
+        const despesa = despesas[i];
+
+        const comprovantePath = await salvarComprovante(
+          despesa?.COMPROVANTE || null,
+          despesa?.COMPROVANTE_NOME || null,
+          idSolicitacao,
+          i + 1,
+          req.body.NM_FUNCIONARIO
+        );
+
+        await connection.execute(insertDespesaSql, {
+          ID_DESPESA_SOLICITADA: nextDespesaId,
+          ID_SOLICITACAO: idSolicitacao,
+          TP_DESPESA: despesa?.TP_DESPESA || "",
+          DESC_DESPESA: despesa?.DESC_DESPESA || "",
+          VALOR: toNumber(despesa?.VALOR, 0),
+          COMPROVANTE: comprovantePath,
+        });
+
+        nextDespesaId += 1;
+      }
+
+      await connection.commit();
+
+      return res.json({
+        success: true,
+        message: "Solicitação atualizada com sucesso.",
+        ID_SOLICITACAO_REEMBOLSO_DESPESA: idSolicitacao,
+      });
+} catch (err: any) {
+      console.error("editar reembolso despesa erro:", err);
+
+      if (connection) {
+        try {
+          await connection.rollback();
+        } catch { }
+      }
+
+      return res.status(500).json({
+        error: "Falha ao atualizar solicitaÃƒÂ§ÃƒÂ£o de reembolso.",
+        details: String(err?.message || err),
+      });
+    } finally {
+      if (connection) {
+        try {
+          await connection.close();
+        } catch { }
+      }
+    }
+  },
+
+  async decidir(req: Request, res: Response) {
+    let connection: oracledb.Connection | undefined;
+
+    try {
+      const idSolicitacao = Number(req.params.id);
+      const nomeResponsavel = decodeURIComponent(
+        String(req.params.nomeResponsavel || "")
+      ).trim();
+      const acao = String(req.body?.acao || "").trim().toLowerCase();
+      const parecer = String(req.body?.parecer || "").trim();
+
+      if (!Number.isFinite(idSolicitacao) || idSolicitacao <= 0) {
+        return res.status(400).json({ error: "ID da solicitaÃƒÂ§ÃƒÂ£o invÃƒÂ¡lido." });
+      }
+
+      if (!nomeResponsavel) {
+        return res.status(400).json({ error: "Nome do responsÃƒÂ¡vel nÃƒÂ£o informado." });
+      }
+
+      if (!acao || !["aprovar", "reprovar", "devolver"].includes(acao)) {
+        return res.status(400).json({
+          error: "AÃƒÂ§ÃƒÂ£o invÃƒÂ¡lida. Use aprovar, reprovar ou devolver.",
+        });
+      }
+
+      if (!parecer) {
+        return res.status(400).json({ error: "Parecer nÃƒÂ£o informado." });
+      }
+
+      const pool = await getOraclePool();
+      connection = await pool.getConnection();
+
+      const resultAtual = await connection.execute(
+        `
+        SELECT
+          ID_SOLICITACAO_REEMBOLSO_DESPESA,
+          DESC_ANDAMENTO,
+          NM_FUNCIONARIO,
+          ID_SOLICITANTE,
+          ID_APROV_GERENCIA,
+          ID_APROV_GERENCIA_SUP,
+          ID_APROV_DIRETORIA
+        FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+        WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+      `,
+        { id: idSolicitacao },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      if (!resultAtual.rows?.length) {
+        return res.status(404).json({ error: "SolicitaÃƒÂ§ÃƒÂ£o nÃƒÂ£o encontrada." });
+      }
+
+      const atual: any = resultAtual.rows[0];
+      const andamentoAtual = String(atual.DESC_ANDAMENTO || "");
+      const nomeSolicitante = String(atual.NM_FUNCIONARIO || "");
+      let idSolicitante = Number(atual.ID_SOLICITANTE || 0);
+      let idAprovGerencia = Number(atual.ID_APROV_GERENCIA || 0);
+      let idAprovGerenciaSup = Number(atual.ID_APROV_GERENCIA_SUP || 0);
+      let idAprovDiretoria = Number(atual.ID_APROV_DIRETORIA || 0);
+
+      if (!idSolicitante || !idAprovDiretoria) {
+        const aprovadores = await derivarAprovadoresPorEscala(connection, nomeSolicitante);
+        idSolicitante = idSolicitante || Number(aprovadores.idSolicitante || 0);
+        idAprovGerencia =
+          idAprovGerencia || Number(aprovadores.idAprovGerencia || 0);
+        idAprovGerenciaSup =
+          idAprovGerenciaSup || Number(aprovadores.idAprovGerenciaSup || 0);
+        idAprovDiretoria =
+          idAprovDiretoria || Number(aprovadores.idAprovDiretoria || 0);
+
+        await connection.execute(
+          `
+            UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+               SET ID_SOLICITANTE = NVL(ID_SOLICITANTE, :ID_SOLICITANTE),
+                   ID_APROV_GERENCIA = NVL(ID_APROV_GERENCIA, :ID_APROV_GERENCIA),
+                   ID_APROV_GERENCIA_SUP = NVL(ID_APROV_GERENCIA_SUP, :ID_APROV_GERENCIA_SUP),
+                   ID_APROV_DIRETORIA = NVL(ID_APROV_DIRETORIA, :ID_APROV_DIRETORIA)
+             WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+          `,
+          {
+            id: idSolicitacao,
+            ID_SOLICITANTE: aprovadores.idSolicitante || null,
+            ID_APROV_GERENCIA: aprovadores.idAprovGerencia || null,
+            ID_APROV_GERENCIA_SUP: aprovadores.idAprovGerenciaSup || null,
+            ID_APROV_DIRETORIA: aprovadores.idAprovDiretoria || null,
+          }
+        );
+      }
+
+      let sql = "";
+      let binds: Record<string, any> = {
+        id: idSolicitacao,
+        parecer,
+        nomeResponsavel,
+      };
+      let novoAndamento = andamentoAtual;
+
+      if (andamentoAtual === "Pendente Financeiro") {
+        if (acao === "aprovar") {
+          const proximoAndamento = await resolverProximoAndamentoPorHierarquia(
+            connection,
+            nomeSolicitante,
+            "Pendente Financeiro",
+            {
+              idAprovGerencia,
+              idAprovGerenciaSup,
+              idAprovDiretoria,
+            }
+          );
+
+          sql = `
+          UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+             SET DESC_PRC_FINANCEIRO = :parecer,
+                 NM_FNC_FINANCEIRO = :nomeResponsavel,
+                 DESC_ANDAMENTO = :proximoAndamento
+          WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+        `;
+          binds.proximoAndamento = proximoAndamento;
+          novoAndamento = proximoAndamento;
+        } else if (acao === "devolver") {
+          sql = `
+          UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+             SET DESC_PRC_FINANCEIRO = :parecer,
+                 NM_FNC_FINANCEIRO = :nomeResponsavel,
+                 DESC_ANDAMENTO = 'Pendente Funcionario'
+           WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+        `;
+          novoAndamento = "Pendente Funcionario";
+        } else {
+          return res.status(400).json({
+            error: "AÃƒÂ§ÃƒÂ£o invÃƒÂ¡lida para Pendente Financeiro. Use aprovar ou devolver.",
+          });
+        }
+      } else if (andamentoAtual === "Pendente Gerencia") {
+        if (acao === "aprovar") {
+          const proximoAndamento = await resolverProximoAndamentoPorHierarquia(
+            connection,
+            nomeSolicitante,
+            "Pendente Gerencia",
+            {
+              idAprovGerencia,
+              idAprovGerenciaSup,
+              idAprovDiretoria,
+            }
+          );
+
+          sql = `
+          UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+             SET DESC_PRC_GERENCIA = :parecer,
+                 NM_FNC_GERENCIA = :nomeResponsavel,
+                 DESC_ANDAMENTO = :proximoAndamento
+          WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+        `;
+          binds.proximoAndamento = proximoAndamento;
+          novoAndamento = proximoAndamento;
+        } else if (acao === "reprovar") {
+          sql = `
+          UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+             SET DESC_PRC_GERENCIA = :parecer,
+                 NM_FNC_GERENCIA = :nomeResponsavel,
+                 DESC_ANDAMENTO = 'Reprovado'
+           WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+        `;
+          novoAndamento = "Reprovado";
+        } else {
+          return res.status(400).json({
+            error: "AÃƒÂ§ÃƒÂ£o invÃƒÂ¡lida para Pendente Gerencia. Use aprovar ou reprovar.",
+          });
+        }
+      } else if (andamentoAtual === "Pendente Gerencia Superior") {
+        if (acao === "aprovar") {
+          sql = `
+          UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+             SET DESC_PRC_GERENCIA_SUP = :parecer,
+                 NM_FNC_GERENCIA_SUP = :nomeResponsavel,
+                 DESC_ANDAMENTO = 'Pendente Diretoria'
+           WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+        `;
+          novoAndamento = "Pendente Diretoria";
+        } else if (acao === "reprovar") {
+          sql = `
+          UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+             SET DESC_PRC_GERENCIA_SUP = :parecer,
+                 NM_FNC_GERENCIA_SUP = :nomeResponsavel,
+                 DESC_ANDAMENTO = 'Reprovado'
+           WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+        `;
+          novoAndamento = "Reprovado";
+        } else {
+          return res.status(400).json({
+            error: "AÃƒÂ§ÃƒÂ£o invÃƒÂ¡lida para Pendente Gerencia Superior. Use aprovar ou reprovar.",
+          });
+        }
+      } else if (andamentoAtual === "Pendente Diretoria") {
+        if (acao === "aprovar") {
+          sql = `
+          UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+             SET DESC_PRC_DIRETORIA = :parecer,
+                 NM_FNC_DIRETORIA = :nomeResponsavel,
+                 DESC_ANDAMENTO = 'Aprovado'
+           WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+        `;
+          novoAndamento = "Aprovado";
+        } else if (acao === "reprovar") {
+          sql = `
+          UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+             SET DESC_PRC_DIRETORIA = :parecer,
+                 NM_FNC_DIRETORIA = :nomeResponsavel,
+                 DESC_ANDAMENTO = 'Reprovado'
+           WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+        `;
+          novoAndamento = "Reprovado";
+        } else {
+          return res.status(400).json({
+            error: "AÃƒÂ§ÃƒÂ£o invÃƒÂ¡lida para Pendente Diretoria. Use aprovar ou reprovar.",
+          });
+        }
+      } else {
+        return res.status(400).json({
+          error: `NÃƒÂ£o ÃƒÂ© possÃƒÂ­vel decidir uma solicitaÃƒÂ§ÃƒÂ£o com status "${andamentoAtual}".`,
+        });
+      }
+
+      const resultUpdate = await connection.execute(sql, binds);
+
+      if (!resultUpdate.rowsAffected) {
+        await connection.rollback();
+        return res.status(404).json({ error: "SolicitaÃƒÂ§ÃƒÂ£o nÃƒÂ£o encontrada para atualizaÃƒÂ§ÃƒÂ£o." });
+      }
+
+      await connection.commit();
+
+      return res.json({
+        success: true,
+        message: "Solicitação concluída com sucesso.",
+        id: idSolicitacao,
+      });
+} catch (err: any) {
+      console.error("concluir reembolso despesa erro:", err);
+
+      if (connection) {
+        try {
+          await connection.rollback();
+        } catch { }
+      }
+
+      return res.status(500).json({
+        error: "Falha ao concluir solicitaÃƒÂ§ÃƒÂ£o de reembolso.",
+        details: String(err?.message || err),
+      });
+    } finally {
+      if (connection) {
+        try {
+          await connection.close();
+        } catch { }
+      }
+    }
+  },
+

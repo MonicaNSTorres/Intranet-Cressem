@@ -99,7 +99,7 @@ export function PrevisulForm() {
     const [dataPrimeiraParcelaEmprestimo, setDataPrimeiraParcelaEmprestimo] = useState("");
     const [valorMensalSeguro, setValorMensalSeguro] = useState("");
     const [valorTotalSeguro, setValorTotalSeguro] = useState("");
-    const [taxaJuros] = useState("0,8%");
+    const [taxaJuros] = useState("0,1%");
     const [dataPrimeiraParcelaSeguro, setDataPrimeiraParcelaSeguro] = useState("");
     const [dataUltimaParcelaSeguro, setDataUltimaParcelaSeguro] = useState("");
     const [cidadeAtendimento, setCidadeAtendimento] = useState("");

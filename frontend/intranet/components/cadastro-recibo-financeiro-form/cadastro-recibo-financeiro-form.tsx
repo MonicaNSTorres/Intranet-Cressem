@@ -17,6 +17,7 @@ import {
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
+import { gerarPdfReciboFinanceiro } from "@/lib/pdf/gerarPdfReciboFinanceiro";
 import {
     buscarAssociadoReciboPorCpfCnpj,
     buscarReciboFinanceiroPorId,
@@ -245,6 +246,10 @@ export function CadastroReciboFinanceiroForm() {
     const reciboId = searchParams.get("id");
 
     const modoEdicao = !!reciboId;
+    const [idReciboSalvo, setIdReciboSalvo] = useState<number | null>(
+        reciboId ? Number(reciboId) : null
+    );
+    const [reciboFoiSalvo, setReciboFoiSalvo] = useState<boolean>(!!reciboId);
 
     const [loadingInicial, setLoadingInicial] = useState(true);
     const [loadingSalvar, setLoadingSalvar] = useState(false);
@@ -617,10 +622,21 @@ export function CadastroReciboFinanceiroForm() {
             if (modoEdicao && reciboId) {
                 await editarReciboFinanceiro(Number(reciboId), payload);
                 setInfo("Solicitação atualizada com sucesso.");
+                setReciboFoiSalvo(true);
+                setIdReciboSalvo(Number(reciboId));
                 return;
             }
 
-            await cadastrarReciboFinanceiro(payload);
+            const created = await cadastrarReciboFinanceiro(payload);
+            const novoId = Number(created?.ID_RECIBO_CRM || 0);
+
+            if (Number.isFinite(novoId) && novoId > 0) {
+                setIdReciboSalvo(novoId);
+                setReciboFoiSalvo(true);
+                router.replace(`/auth/cadastro_recibo_financeiro?id=${novoId}`);
+            } else {
+                setReciboFoiSalvo(true);
+            }
             setInfo("Solicitação cadastrada com sucesso.");
         } catch (error: any) {
             console.error(error);
@@ -633,8 +649,55 @@ export function CadastroReciboFinanceiroForm() {
         }
     }
 
-    function imprimirRecibo() {
-        window.print();
+    async function imprimirRecibo() {
+        try {
+            setErro("");
+            setInfo("");
+
+            const msgCampos = validaCamposRecibo();
+            if (msgCampos) {
+                setErro(msgCampos);
+                return;
+            }
+
+            if (parcelas.length === 0) {
+                setErro("Cadastre ao menos uma parcela para imprimir o recibo.");
+                return;
+            }
+
+            if (pagamentos.length === 0) {
+                setErro("Cadastre ao menos uma forma de pagamento para imprimir o recibo.");
+                return;
+            }
+
+            const msgTotais = validaTotais();
+            if (msgTotais) {
+                setErro(msgTotais);
+                return;
+            }
+
+            const payload = buildPayload();
+            const idReciboParaPdf =
+                idReciboSalvo ?? (reciboId ? Number(reciboId) : undefined);
+
+            await gerarPdfReciboFinanceiro(
+                {
+                    ID_RECIBO_CRM: idReciboParaPdf,
+                    ...payload,
+                },
+                {
+                    acao: "print",
+                    nomeArquivo: `recibo_financeiro_${(payload.NM_ASSOCIADO || "associado")
+                        .replace(/\s+/g, "_")
+                        .replace(/[^\w\-_.]/g, "")}_${String(
+                            idReciboParaPdf || "novo"
+                        )}.pdf`,
+                }
+            );
+        } catch (error) {
+            console.error(error);
+            setErro("Nao foi possivel gerar o PDF do recibo.");
+        }
     }
 
     if (loadingInicial) {
@@ -791,36 +854,12 @@ export function CadastroReciboFinanceiroForm() {
                                 </Field>
                             </div>
 
-                            <div className="md:col-span-3">
-                                <Field label="Parcelas">
-                                    <button
-                                        type="button"
-                                        onClick={abrirModalParcelaNova}
-                                        className={`${buttonPrimary} w-full`}
-                                    >
-                                        <FaPlus />
-                                        Cadastrar Parcelas
-                                    </button>
-                                </Field>
-                            </div>
-
-                            <div className="md:col-span-3">
-                                <Field label="Pagamentos">
-                                    <button
-                                        type="button"
-                                        onClick={abrirModalPagamentoNovo}
-                                        className={`${buttonPrimary} w-full`}
-                                    >
-                                        <FaPlus />
-                                        Cadastrar Pagamentos
-                                    </button>
-                                </Field>
-                            </div>
                         </div>
                     </div>
                 </SearchForm>
 
                 <Section title="Parcelas e Valores">
+
                     <div className="overflow-x-auto">
                         <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl">
                             <thead>
@@ -888,14 +927,27 @@ export function CadastroReciboFinanceiroForm() {
                         </table>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <div>
+                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-12 md:items-end">
+                        <div className="md:col-span-2">
                             <Field label="Total parcelas">
                                 <input
                                     readOnly
                                     value={formatMoneyBR(totalParcelas)}
                                     className={`${inputBase} bg-slate-50`}
                                 />
+                            </Field>
+                        </div>
+
+                        <div className="md:col-span-3">
+                            <Field label="Parcelas">
+                                <button
+                                    type="button"
+                                    onClick={abrirModalParcelaNova}
+                                    className={`${buttonPrimary} w-full`}
+                                >
+                                    <FaPlus />
+                                    Cadastrar Parcelas
+                                </button>
                             </Field>
                         </div>
                     </div>
@@ -960,7 +1012,7 @@ export function CadastroReciboFinanceiroForm() {
                     </div>
 
                     <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-12">
-                        <div className="md:col-span-4">
+                        <div className="md:col-span-2">
                             <Field label="Total pagamento">
                                 <input
                                     readOnly
@@ -970,7 +1022,20 @@ export function CadastroReciboFinanceiroForm() {
                             </Field>
                         </div>
 
-                        <div className="md:col-span-8">
+                        <div className="md:col-span-3">
+                            <Field label="Pagamentos">
+                                <button
+                                    type="button"
+                                    onClick={abrirModalPagamentoNovo}
+                                    className={`${buttonPrimary} w-full`}
+                                >
+                                    <FaPlus />
+                                    Cadastrar Pagamentos
+                                </button>
+                            </Field>
+                        </div>
+
+                        <div className="md:col-span-5">
                             <div className="flex flex-col gap-3 pt-5.5 sm:flex-row sm:justify-end">
                                 <button
                                     type="button"
@@ -986,14 +1051,16 @@ export function CadastroReciboFinanceiroForm() {
                                             : "Cadastrar"}
                                 </button>
 
-                                <button
-                                    type="button"
-                                    onClick={imprimirRecibo}
-                                    className={buttonSecondary}
-                                >
-                                    <FaPrint />
-                                    Imprimir Recibo
-                                </button>
+                                {reciboFoiSalvo && (
+                                    <button
+                                        type="button"
+                                        onClick={imprimirRecibo}
+                                        className={buttonSecondary}
+                                    >
+                                        <FaPrint />
+                                        Imprimir Recibo
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1213,3 +1280,4 @@ export function CadastroReciboFinanceiroForm() {
         </>
     );
 }
+

@@ -202,3 +202,9 @@ export async function criarParcela(payload: CriarParcelaPayload) {
   const response = await api.post("/v1/resgate-capital/parcela", payload);
   return response.data;
 }
+
+export async function buscarFuncionarioUnicoPorCpf(cpf: string) {
+  const clean = onlyDigits(cpf);
+  const { data } = await api.get(`/v1/funcionarios_sicoob_cressem_unico/cpf/${clean}`);
+  return data;
+}

@@ -157,6 +157,10 @@ export function ConsultaContratosForm() {
 
   const [modalEdicaoAberta, setModalEdicaoAberta] = useState(false);
   const [contratoEdicaoId, setContratoEdicaoId] = useState<number | null>(null);
+  const [statusEdicaoModal, setStatusEdicaoModal] = useState<{
+    tipo: "sucesso" | "erro";
+    mensagem: string;
+  } | null>(null);
 
   const limit = 10;
 
@@ -247,17 +251,36 @@ export function ConsultaContratosForm() {
 
   function abrirEdicao(id: number) {
     setContratoEdicaoId(id);
+    setStatusEdicaoModal(null);
     setModalEdicaoAberta(true);
   }
 
   function fecharModalEdicao() {
     setModalEdicaoAberta(false);
     setContratoEdicaoId(null);
+    setStatusEdicaoModal(null);
   }
 
   async function handleSalvouEdicao() {
-    await buscar(currentPage);
-    fecharModalEdicao();
+    try {
+      await buscar(currentPage);
+      setStatusEdicaoModal({
+        tipo: "sucesso",
+        mensagem: "Edição salva com sucesso.",
+      });
+    } catch {
+      setStatusEdicaoModal({
+        tipo: "erro",
+        mensagem: "Edição salva, mas não foi possível atualizar a lista agora.",
+      });
+    }
+  }
+
+  function handleResultadoEdicao(ok: boolean, mensagem: string) {
+    setStatusEdicaoModal({
+      tipo: ok ? "sucesso" : "erro",
+      mensagem,
+    });
   }
 
   useEffect(() => {
@@ -531,6 +554,17 @@ export function ConsultaContratosForm() {
                 <p className="text-sm text-slate-500">
                   Atualize os dados do contrato sem sair da consulta.
                 </p>
+                {statusEdicaoModal ? (
+                  <div
+                    className={`mt-3 rounded-xl border px-3 py-2 text-xs font-semibold ${
+                      statusEdicaoModal.tipo === "sucesso"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-red-200 bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {statusEdicaoModal.mensagem}
+                  </div>
+                ) : null}
               </div>
 
               <button
@@ -549,6 +583,7 @@ export function ConsultaContratosForm() {
                 isModal
                 onClose={fecharModalEdicao}
                 onSaved={handleSalvouEdicao}
+                onResult={handleResultadoEdicao}
               />
             </div>
           </div>

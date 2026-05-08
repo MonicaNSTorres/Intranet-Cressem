@@ -16,6 +16,20 @@ function toUpperTrim(v: any) {
   return String(v || "").trim().toUpperCase();
 }
 
+async function proximoIdTabela(
+  tabela: string,
+  colunaId: string
+): Promise<number> {
+  const result = await oracleExecute(
+    `SELECT NVL(MAX(${colunaId}), 0) + 1 AS NEXT_ID FROM DBACRESSEM.${tabela}`,
+    {},
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  const row: any = result.rows?.[0];
+  return Number(row?.NEXT_ID || 1);
+}
+
 export const resgateCapitalController = {
   async buscarMotivos(req: Request, res: Response) {
     try {
@@ -277,6 +291,11 @@ export const resgateCapitalController = {
         return res.status(400).json({ error: "NM_AUTORIZADO é obrigatório." });
       }
 
+      const nextIdResgate = await proximoIdTabela(
+        "RESGATE_PARCIAL_CAPITAL",
+        "ID_RESGATE_PARCIAL_CAPITAL"
+      );
+
       const sql = `
         INSERT INTO DBACRESSEM.RESGATE_PARCIAL_CAPITAL (
           ID_RESGATE_PARCIAL_CAPITAL,
@@ -295,7 +314,7 @@ export const resgateCapitalController = {
           NM_ATENDENTE,
           NM_CIDADE
         ) VALUES (
-          SEQ_RESGATE_PARCIAL_CAPITAL.NEXTVAL,
+          :ID_RESGATE_PARCIAL_CAPITAL,
           :ID_CLIENTE,
           :NR_CPF_CNPJ,
           :NM_CLIENTE,
@@ -311,10 +330,10 @@ export const resgateCapitalController = {
           :NM_ATENDENTE,
           :NM_CIDADE
         )
-        RETURNING ID_RESGATE_PARCIAL_CAPITAL INTO :ID_RESGATE_PARCIAL_CAPITAL
       `;
 
       const binds = {
+        ID_RESGATE_PARCIAL_CAPITAL: nextIdResgate,
         ID_CLIENTE: ID_CLIENTE || null,
         NR_CPF_CNPJ: onlyDigits(NR_CPF_CNPJ),
         NM_CLIENTE: String(NM_CLIENTE || "").trim(),
@@ -329,21 +348,13 @@ export const resgateCapitalController = {
         DT_RESGATE_PARCIAL_CAPITAL: DT_RESGATE_PARCIAL_CAPITAL,
         NM_ATENDENTE: String(NM_ATENDENTE || "").trim(),
         NM_CIDADE: toUpperTrim(NM_CIDADE),
-        ID_RESGATE_PARCIAL_CAPITAL: {
-          dir: oracledb.BIND_OUT,
-          type: oracledb.NUMBER,
-        },
       };
 
-      const result = await oracleExecute(sql, binds, { autoCommit: true } as any);
-
-      const outId =
-        (result.outBinds as any)?.ID_RESGATE_PARCIAL_CAPITAL?.[0] ||
-        (result.outBinds as any)?.ID_RESGATE_PARCIAL_CAPITAL;
+      await oracleExecute(sql, binds, { autoCommit: true } as any);
 
       return res.status(201).json({
         success: true,
-        ID_RESGATE_PARCIAL_CAPITAL: outId,
+        ID_RESGATE_PARCIAL_CAPITAL: nextIdResgate,
       });
     } catch (err: any) {
       console.error("criarResgate erro:", err);
@@ -368,6 +379,11 @@ export const resgateCapitalController = {
         return res.status(400).json({ error: "ID_RESGATE é obrigatório." });
       }
 
+      const nextIdEmprestimo = await proximoIdTabela(
+        "EMPRESTIMO_RESGATE",
+        "ID_EMPRESTIMO_RESGATE"
+      );
+
       const sql = `
         INSERT INTO DBACRESSEM.EMPRESTIMO_RESGATE (
           ID_EMPRESTIMO_RESGATE,
@@ -377,7 +393,7 @@ export const resgateCapitalController = {
           VL_SALDO_DEVEDOR,
           VL_SALDO_AMORTIZADO
         ) VALUES (
-          SEQ_EMPRESTIMO_RESGATE.NEXTVAL,
+          :ID_EMPRESTIMO_RESGATE,
           :ID_RESGATE,
           :DESC_TIPO,
           :NR_CONTRATO,
@@ -389,6 +405,7 @@ export const resgateCapitalController = {
       await oracleExecute(
         sql,
         {
+          ID_EMPRESTIMO_RESGATE: nextIdEmprestimo,
           ID_RESGATE,
           DESC_TIPO: String(DESC_TIPO || "").trim(),
           NR_CONTRATO: String(NR_CONTRATO || "").trim(),
@@ -417,6 +434,11 @@ export const resgateCapitalController = {
         return res.status(400).json({ error: "ID_RESGATE é obrigatório." });
       }
 
+      const nextIdContaCorrente = await proximoIdTabela(
+        "CONTA_CORRENTE_RESGATE",
+        "ID_CONTA_CORRENTE_RESGATE"
+      );
+
       const sql = `
         INSERT INTO DBACRESSEM.CONTA_CORRENTE_RESGATE (
           ID_CONTA_CORRENTE_RESGATE,
@@ -425,7 +447,7 @@ export const resgateCapitalController = {
           VL_SALDO_AMORTIZADO,
           ID_RESGATE
         ) VALUES (
-          SEQ_CONTA_CORRENTE_RESGATE.NEXTVAL,
+          :ID_CONTA_CORRENTE_RESGATE,
           :NR_CONTA,
           :VL_SALDO_DEVEDOR,
           :VL_SALDO_AMORTIZADO,
@@ -436,6 +458,7 @@ export const resgateCapitalController = {
       await oracleExecute(
         sql,
         {
+          ID_CONTA_CORRENTE_RESGATE: nextIdContaCorrente,
           NR_CONTA: String(NR_CONTA || "").trim(),
           VL_SALDO_DEVEDOR: toNumber(VL_SALDO_DEVEDOR),
           VL_SALDO_AMORTIZADO: toNumber(VL_SALDO_AMORTIZADO),
@@ -463,6 +486,11 @@ export const resgateCapitalController = {
         return res.status(400).json({ error: "ID_RESGATE é obrigatório." });
       }
 
+      const nextIdCartao = await proximoIdTabela(
+        "CARTAO_CREDITO_RESGATE",
+        "ID_CARTAO_CREDITO_RESGATE"
+      );
+
       const sql = `
         INSERT INTO DBACRESSEM.CARTAO_CREDITO_RESGATE (
           ID_CARTAO_CREDITO_RESGATE,
@@ -471,7 +499,7 @@ export const resgateCapitalController = {
           VL_SALDO_AMORTIZADO,
           ID_RESGATE
         ) VALUES (
-          SEQ_CARTAO_CREDITO_RESGATE.NEXTVAL,
+          :ID_CARTAO_CREDITO_RESGATE,
           :NR_CARTAO,
           :VL_SALDO_DEVEDOR,
           :VL_SALDO_AMORTIZADO,
@@ -482,6 +510,7 @@ export const resgateCapitalController = {
       await oracleExecute(
         sql,
         {
+          ID_CARTAO_CREDITO_RESGATE: nextIdCartao,
           NR_CARTAO: onlyDigits(NR_CARTAO),
           VL_SALDO_DEVEDOR: toNumber(VL_SALDO_DEVEDOR),
           VL_SALDO_AMORTIZADO: toNumber(VL_SALDO_AMORTIZADO),
@@ -510,6 +539,11 @@ export const resgateCapitalController = {
         });
       }
 
+      const nextIdContaDeposito = await proximoIdTabela(
+        "CONTA_DEPOSITO_RESGATE",
+        "ID_CONTA_DEPOSITO_RESGATE"
+      );
+
       const sql = `
         INSERT INTO DBACRESSEM.CONTA_DEPOSITO_RESGATE (
           ID_CONTA_DEPOSITO_RESGATE,
@@ -517,35 +551,27 @@ export const resgateCapitalController = {
           CD_AGENCIA,
           CD_CONTA_CORRENTE
         ) VALUES (
-          SEQ_CONTA_DEPOSITO_RESGATE.NEXTVAL,
+          :ID_CONTA_DEPOSITO_RESGATE,
           :CD_BANCO,
           :CD_AGENCIA,
           :CD_CONTA_CORRENTE
         )
-        RETURNING ID_CONTA_DEPOSITO_RESGATE INTO :ID_CONTA_DEPOSITO_RESGATE
       `;
 
-      const result = await oracleExecute(
+      await oracleExecute(
         sql,
         {
+          ID_CONTA_DEPOSITO_RESGATE: nextIdContaDeposito,
           CD_BANCO: String(CD_BANCO || "").trim(),
           CD_AGENCIA: String(CD_AGENCIA || "").trim(),
           CD_CONTA_CORRENTE: String(CD_CONTA_CORRENTE || "").trim(),
-          ID_CONTA_DEPOSITO_RESGATE: {
-            dir: oracledb.BIND_OUT,
-            type: oracledb.NUMBER,
-          },
         },
         { autoCommit: true } as any
       );
 
-      const outId =
-        (result.outBinds as any)?.ID_CONTA_DEPOSITO_RESGATE?.[0] ||
-        (result.outBinds as any)?.ID_CONTA_DEPOSITO_RESGATE;
-
       return res.status(201).json({
         success: true,
-        ID_CONTA_DEPOSITO_RESGATE: outId,
+        ID_CONTA_DEPOSITO_RESGATE: nextIdContaDeposito,
       });
     } catch (err: any) {
       console.error("criarContaDeposito erro:", err);
@@ -580,6 +606,11 @@ export const resgateCapitalController = {
         return res.status(400).json({ error: "ID_CONTA_DEPOSITO é obrigatório." });
       }
 
+      const nextIdParcela = await proximoIdTabela(
+        "PARCELA_RESGATE",
+        "ID_PARCELA_RESGATE"
+      );
+
       const sql = `
         INSERT INTO DBACRESSEM.PARCELA_RESGATE (
           ID_PARCELA_RESGATE,
@@ -591,7 +622,7 @@ export const resgateCapitalController = {
           ID_RESGATE,
           ID_CONTA_DEPOSITO
         ) VALUES (
-          SEQ_PARCELA_RESGATE.NEXTVAL,
+          :ID_PARCELA_RESGATE,
           TO_DATE(:DT_PARCELA, 'YYYY-MM-DD'),
           CASE
             WHEN :DT_PAGAMENTO IS NULL THEN NULL
@@ -608,6 +639,7 @@ export const resgateCapitalController = {
       await oracleExecute(
         sql,
         {
+          ID_PARCELA_RESGATE: nextIdParcela,
           DT_PARCELA,
           DT_PAGAMENTO: DT_PAGAMENTO || null,
           SN_PAGO: SN_PAGO ?? 0,

@@ -1,13 +1,16 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { gerarPdfRenunciaProcurador } from "@/lib/pdf/gerarPdfRenunciaProcurador";
 import { formatCpfView, hojeBR } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
+import {
+    buscarCidadesResgate
+} from "@/services/resgate_capital.service";
 
 const hojePartsBR = () => {
     const h = hojeBR(); // dd/mm/aaaa
@@ -47,6 +50,8 @@ export function RenunciaProcuradorForm() {
     // Data/local
     const { dia: d0, mes: m0, ano: a0 } = useMemo(hojePartsBR, []);
     const [cidade, setCidade] = useState("São José dos Campos");
+    const [cidades, setCidades] = useState<{ value: string; label: string }[]>([]);
+
     const [dia, setDia] = useState(d0);
     const [mes, setMes] = useState(m0);
     const [ano, setAno] = useState(a0);
@@ -79,6 +84,28 @@ export function RenunciaProcuradorForm() {
             ano,
         });
     };
+
+    useEffect(() => {
+        async function carregarCidades() {
+            try {
+                const lista = await buscarCidadesResgate(); // retorna [{ ID_CIDADES, ID_UF, NM_CIDADE }]
+                const opcoes = (lista || [])
+                    .map((c) => {
+                        const nome = String(c.NM_CIDADE || "").trim();
+                        return { value: nome, label: nome };
+                    })
+                    .filter((c) => c.value.length > 0);
+
+                setCidades(opcoes);
+            } catch (e) {
+                console.error("Erro ao carregar cidades:", e);
+                setCidades([]);
+            }
+        }
+
+        carregarCidades();
+    }, []);
+
 
     return (
         <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
@@ -114,8 +141,8 @@ export function RenunciaProcuradorForm() {
                 </div>
             </SearchForm>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="md:col-span-2">
                     <label className="block text-xs font-medium text-gray-600 mb-1">
                         Procurador(a) renunciante — Nome completo
                     </label>
@@ -154,8 +181,8 @@ export function RenunciaProcuradorForm() {
                 </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="md:col-span-2">
                     <label className="block text-xs font-medium text-gray-600 mb-1">
                         Outorgante — Nome/Razão Social
                     </label>
@@ -193,16 +220,24 @@ export function RenunciaProcuradorForm() {
             </div>
 
             <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div className="md:col-span-2">
+                <div className="md:col-span-1">
                     <label className="block text-xs font-medium text-gray-600 mb-1">
                         Cidade
                     </label>
-                    <input
+                    <select
                         value={cidade}
                         onChange={(e) => setCidade(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
-                    />
+                        className="w-full border px-3 py-2 rounded bg-white"
+                    >
+                        <option value="">Selecione</option>
+                        {cidades.map((c) => (
+                            <option key={c.value} value={c.value}>
+                                {c.label}
+                            </option>
+                        ))}
+                    </select>
                 </div>
+
 
                 <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">

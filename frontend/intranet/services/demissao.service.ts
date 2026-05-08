@@ -8,6 +8,12 @@ export type DemissaoAssociadoResponse = {
   SL_CONTA_CAPITAL?: number;
 };
 
+export type CidadeResgateItem = {
+  ID_CIDADES: number;
+  ID_UF: number;
+  NM_CIDADE: string;
+};
+
 export type MotivoDemissaoOption = {
   value: string;
   label: string;
@@ -34,14 +40,22 @@ export async function buscarAssociadoDemissaoPorCpf(
   return response.data || null;
 }
 
-export async function buscarMotivosDemissao(): Promise<MotivoDemissaoOption[]> {
-  const response = await api.get("/v1/demissao/motivos");
-  return response.data || [];
+export async function buscarMotivosDemissao(): Promise<{ value: string; label: string }[]> {
+  const response = await api.get("/v1/demissao/motivo-demissao");
+  const lista = Array.isArray(response.data) ? response.data : [];
+
+  return lista.map((c: { NM_MOTIVO?: string }) => {
+    const nome = String(c.NM_MOTIVO || "").trim();
+    return { value: nome, label: nome };
+  }).filter((c) => c.value.length > 0);
 }
 
-export async function buscarCidadesDemissao(): Promise<
-  { value: string; label: string }[]
-> {
-  const response = await api.get("/v1/demissao/cidades");
-  return response.data || [];
+export async function buscarCidadesDemissao(): Promise<{ value: string; label: string }[]> {
+  const response = await api.get("/v1/cidade");
+  const lista = Array.isArray(response.data) ? response.data : [];
+
+  return lista.map((c: { NM_CIDADE?: string }) => {
+    const nome = String(c.NM_CIDADE || "").trim();
+    return { value: nome, label: nome };
+  }).filter((c) => c.value.length > 0);
 }

@@ -21,12 +21,6 @@ import {
 
 type ModalModo = "cadastrar" | "editar";
 
-function capitalizeWords(value?: string | null) {
-  return String(value || "")
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
 export function GerenciamentoSetorForm() {
   const [busca, setBusca] = useState("");
   const [setores, setSetores] = useState<SetorItem[]>([]);
@@ -390,11 +384,11 @@ export function GerenciamentoSetorForm() {
                     setores.map((setor) => (
                       <tr key={setor.ID_SETOR} className="hover:bg-slate-50">
                         <td className="px-4 py-3">
-                          {capitalizeWords(setor.NM_SETOR)}
+                          {String(setor.NM_SETOR).toUpperCase()}
                         </td>
                         <td className="px-4 py-3">{setor.NR_RAMAL || ""}</td>
                         <td className="px-4 py-3">
-                          {capitalizeWords(setor.NM_ENDERECO)}
+                          {String(setor.NM_ENDERECO).toUpperCase()}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <button

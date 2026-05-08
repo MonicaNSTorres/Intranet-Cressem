@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+﻿import { Request, Response } from "express";
 import oracledb from "oracledb";
 import path from "path";
 import fs from "fs/promises";
@@ -39,7 +39,7 @@ function ensurePdf(file?: UploadedFile | null) {
         file.name.toLowerCase().endsWith(".pdf");
 
     if (!isPdf) {
-        throw new Error("Apenas arquivos PDF são permitidos.");
+        throw new Error("Apenas arquivos PDF sÃ£o permitidos.");
     }
 }
 
@@ -113,10 +113,10 @@ function getSmbConfig() {
     const password = String(process.env.SMB_PASSWORD || "");
     const domain = String(process.env.SMB_DOMAIN || "").trim();
 
-    if (!server) throw new Error("SMB_SERVER não configurado.");
-    if (!share) throw new Error("SMB_SHARE não configurado.");
-    if (!user) throw new Error("SMB_USER não configurado.");
-    if (!password) throw new Error("SMB_PASSWORD não configurado.");
+    if (!server) throw new Error("SMB_SERVER nÃ£o configurado.");
+    if (!share) throw new Error("SMB_SHARE nÃ£o configurado.");
+    if (!user) throw new Error("SMB_USER nÃ£o configurado.");
+    if (!password) throw new Error("SMB_PASSWORD nÃ£o configurado.");
 
     return { server, share, user, password, domain };
 }
@@ -168,7 +168,7 @@ async function conectarShareWindows() {
         }
 
         if (
-            mensagem.toLowerCase().includes("comando concluído com êxito") ||
+            mensagem.toLowerCase().includes("comando concluÃ­do com Ãªxito") ||
             mensagem.includes("85")
         ) {
             return;
@@ -303,7 +303,12 @@ async function buscarTipoFuncionarioPorNome(nome: string) {
 
     let tipo = "funcionario";
 
-    if (nomeUpper === "JANAINA GABRIELA") {
+    const nomesConselho = [
+        "JANAINA GABRIELA",
+        "ISABELI LOHANA CARVALHO MARTINS",
+    ];
+
+    if (nomesConselho.includes(nomeUpper)) {
         tipo = "conselho";
     } else if (nivelUpper === "DIRETORIA") {
         tipo = "diretoria";
@@ -358,43 +363,43 @@ export const patrocinioController = {
             const auditorio = parseAuditorio(body.AUDITORIO);
 
             if (!toNullableString(body.NM_SOLICITANTE)) {
-                return res.status(400).json({ error: "NM_SOLICITANTE é obrigatório." });
+                return res.status(400).json({ error: "NM_SOLICITANTE Ã© obrigatÃ³rio." });
             }
 
             if (!toNullableString(body.NR_CPF_CNPJ)) {
-                return res.status(400).json({ error: "NR_CPF_CNPJ é obrigatório." });
+                return res.status(400).json({ error: "NR_CPF_CNPJ Ã© obrigatÃ³rio." });
             }
 
             if (!toNullableString(body.NM_FUNCIONARIO)) {
-                return res.status(400).json({ error: "NM_FUNCIONARIO é obrigatório." });
+                return res.status(400).json({ error: "NM_FUNCIONARIO Ã© obrigatÃ³rio." });
             }
 
             if (!toNullableString(body.NM_CIDADE)) {
-                return res.status(400).json({ error: "NM_CIDADE é obrigatório." });
+                return res.status(400).json({ error: "NM_CIDADE Ã© obrigatÃ³rio." });
             }
 
             if (!toNullableString(body.DT_SOLICITACAO)) {
-                return res.status(400).json({ error: "DT_SOLICITACAO é obrigatório." });
+                return res.status(400).json({ error: "DT_SOLICITACAO Ã© obrigatÃ³rio." });
             }
 
             if (!toNullableString(body.DESC_SOLICITACAO)) {
                 return res.status(400).json({
-                    error: "DESC_SOLICITACAO é obrigatório.",
+                    error: "DESC_SOLICITACAO Ã© obrigatÃ³rio.",
                 });
             }
 
             if (!toNullableString(body.DESC_RESUMO_EVENTO)) {
                 return res.status(400).json({
-                    error: "DESC_RESUMO_EVENTO é obrigatório.",
+                    error: "DESC_RESUMO_EVENTO Ã© obrigatÃ³rio.",
                 });
             }
 
             if (!dias.length) {
-                return res.status(400).json({ error: "DIAS é obrigatório." });
+                return res.status(400).json({ error: "DIAS Ã© obrigatÃ³rio." });
             }
 
             if (!oficioFile) {
-                return res.status(400).json({ error: "DIR_OFICIO é obrigatório." });
+                return res.status(400).json({ error: "DIR_OFICIO Ã© obrigatÃ³rio." });
             }
 
             const nomePastaSolicitante =
@@ -487,7 +492,7 @@ export const patrocinioController = {
                     NM_CIDADE: toNullableString(body.NM_CIDADE),
                     DT_SOLICITACAO: String(body.DT_SOLICITACAO),
                     NM_ANDAMENTO:
-                        toNullableString(body.NM_ANDAMENTO) || "Pendente Gerência",
+                        toNullableString(body.NM_ANDAMENTO) || "Pendente Gerencia",
                     CD_CONTA_COOPERATIVA: toNullableNumber(body.CD_CONTA_COOPERATIVA),
                     VL_SALDO_MEDCIOCC: toNullableNumber(body.VL_SALDO_MEDCIOCC),
                     DESC_SERVICOS: toNullableString(body.DESC_SERVICOS),
@@ -619,7 +624,7 @@ export const patrocinioController = {
             await conn.commit();
 
             return res.status(201).json({
-                message: "Solicitação cadastrada com sucesso.",
+                message: "SolicitaÃ§Ã£o cadastrada com sucesso.",
                 ID_PATROCINIO: idPatrocinio,
                 DIR_OFICIO: oficioPath,
                 DIR_DOC_SEM_FINS_LUCRATIVO: semFinsPath,
@@ -635,7 +640,7 @@ export const patrocinioController = {
 
             console.error("patrocinioController.cadastrar erro:", err);
             return res.status(500).json({
-                error: "Falha ao cadastrar solicitação de participação.",
+                error: "Falha ao cadastrar solicitaÃ§Ã£o de participaÃ§Ã£o.",
                 details: String(err?.message || err),
             });
         } finally {
@@ -662,34 +667,34 @@ export const patrocinioController = {
             let wherePerfil = "1 = 1";
             const bindsBase: Record<string, any> = {
                 pesquisa: `%${pesquisa || ""}%`,
-                nome,
             };
+
+            if (funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria") {
+                bindsBase.nome = nome;
+            }
 
             if (funcionario.TIPO === "funcionario") {
                 wherePerfil = "UPPER(p.NM_FUNCIONARIO) = UPPER(:nome)";
             } else if (funcionario.TIPO === "gerencia") {
                 wherePerfil = `
           (
-            UPPER(p.NM_GERENCIA) = UPPER(:nome)
-            OR UPPER(p.NM_FUNCIONARIO) = UPPER(:nome)
-            OR p.NM_ANDAMENTO = 'Pendente Gerência'
+            UPPER(p.NM_FUNCIONARIO) IN (
+              SELECT UPPER(f.NM_FUNCIONARIO)
+              FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+              WHERE UPPER(f.NM_FUNCIONARIO) = UPPER(:nome)
+                 OR f.CD_GERENCIA = (
+                   SELECT fg.ID_FUNCIONARIO
+                   FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
+                   WHERE UPPER(fg.NM_FUNCIONARIO) = UPPER(:nome)
+                     AND ROWNUM = 1
+                 )
+            )
           )
         `;
             } else if (funcionario.TIPO === "diretoria") {
-                wherePerfil = `
-          (
-            UPPER(p.NM_DIRETORIA) = UPPER(:nome)
-            OR p.NM_ANDAMENTO = 'Pendente Diretoria'
-          )
-        `;
+                wherePerfil = "1 = 1";
             } else if (funcionario.TIPO === "conselho") {
-                wherePerfil = `
-          (
-            p.NM_ANDAMENTO = 'Pendente Conselho'
-            OR p.NM_ANDAMENTO = 'Aprovado'
-            OR p.NM_ANDAMENTO = 'Reprovado'
-          )
-        `;
+                wherePerfil = "1 = 1";
             }
 
             const wherePesquisa = `
@@ -752,7 +757,12 @@ export const patrocinioController = {
             p.DESC_PARECER_ESCRITO_CONSELHO,
             p.NM_GERENTE_EVENTO,
             p.NM_SUGESTAO_PARTICIPANTES,
-            ROW_NUMBER() OVER (ORDER BY p.ID_PATROCINIO DESC) AS RN
+            ROW_NUMBER() OVER (
+              ORDER BY
+                p.DT_SOLICITACAO DESC,
+                UPPER(TRIM(p.NM_SOLICITANTE)) ASC,
+                p.ID_PATROCINIO DESC
+            ) AS RN
           FROM DBACRESSEM.PATROCINIO p
           WHERE ${wherePerfil}
             AND ${wherePesquisa}
@@ -787,13 +797,12 @@ export const patrocinioController = {
             });
         }
     },
-
     async buscarPorId(req: Request, res: Response) {
         try {
             const id = Number(req.params.id || 0);
 
             if (!id) {
-                return res.status(400).json({ error: "ID inválido." });
+                return res.status(400).json({ error: "ID invÃ¡lido." });
             }
 
             const result = await oracleExecute(
@@ -845,7 +854,7 @@ export const patrocinioController = {
             const row: any = result.rows?.[0];
 
             if (!row) {
-                return res.status(404).json({ error: "Solicitação não encontrada." });
+                return res.status(404).json({ error: "SolicitaÃ§Ã£o nÃ£o encontrada." });
             }
 
             row.DIAS = await buscarDiasPatrocinio(id);
@@ -854,7 +863,7 @@ export const patrocinioController = {
         } catch (err: any) {
             console.error("patrocinioController.buscarPorId erro:", err);
             return res.status(500).json({
-                error: "Falha ao buscar solicitação.",
+                error: "Falha ao buscar solicitaÃ§Ã£o.",
                 details: String(err?.message || err),
             });
         }
@@ -865,7 +874,7 @@ export const patrocinioController = {
             const id = Number(req.params.id || 0);
 
             if (!id) {
-                return res.status(400).json({ error: "ID inválido." });
+                return res.status(400).json({ error: "ID invÃ¡lido." });
             }
 
             const body = req.body || {};
@@ -914,17 +923,17 @@ export const patrocinioController = {
             );
 
             if (!result.rowsAffected) {
-                return res.status(404).json({ error: "Solicitação não encontrada." });
+                return res.status(404).json({ error: "SolicitaÃ§Ã£o nÃ£o encontrada." });
             }
 
             return res.json({
-                message: "Solicitação atualizada com sucesso.",
+                message: "SolicitaÃ§Ã£o atualizada com sucesso.",
                 ID_PATROCINIO: id,
             });
         } catch (err: any) {
             console.error("patrocinioController.editar erro:", err);
             return res.status(500).json({
-                error: "Falha ao atualizar solicitação.",
+                error: "Falha ao atualizar solicitaÃ§Ã£o.",
                 details: String(err?.message || err),
             });
         }
@@ -936,7 +945,7 @@ export const patrocinioController = {
 
             if (!caminho) {
                 return res.status(400).json({
-                    error: "Caminho do arquivo não informado.",
+                    error: "Caminho do arquivo nÃ£o informado.",
                 });
             }
 
@@ -983,7 +992,7 @@ export const patrocinioController = {
                 "Nome Fantasia",
                 "CPF/CNPJ",
                 "Cidade",
-                "Funcionário",
+                "FuncionÃ¡rio",
                 "Dia",
                 "Status",
             ];
@@ -1015,9 +1024,10 @@ export const patrocinioController = {
         } catch (err: any) {
             console.error("patrocinioController.downloadCsv erro:", err);
             return res.status(500).json({
-                error: "Falha ao gerar relatório CSV.",
+                error: "Falha ao gerar relatÃ³rio CSV.",
                 details: String(err?.message || err),
             });
         }
     },
 };
+

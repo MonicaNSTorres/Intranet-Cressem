@@ -112,16 +112,27 @@ async function converterPdfParaPdfA(
     outputPdfPath: string,
     tempDir: string
 ) {
-    const iccProfile = process.env.GS_ICC_PROFILE;
+    const iccEnv = process.env.GS_ICC_PROFILE;
+    const gsLibDir = process.env.GS_LIB_DIR;
+    const iccCandidates = [
+        iccEnv,
+        gsLibDir ? path.resolve(gsLibDir, "../iccprofiles/default_rgb.icc") : undefined,
+        gsLibDir ? path.resolve(gsLibDir, "../iccprofiles/srgb.icc") : undefined,
+        "C:/Program Files/gs/gs10.07.0/iccprofiles/default_rgb.icc",
+        "C:/Program Files/gs/gs10.07.0/iccprofiles/srgb.icc",
+        "C:/Program Files (x86)/gs/gs10.07.0/iccprofiles/default_rgb.icc",
+        "C:/Program Files (x86)/gs/gs10.07.0/iccprofiles/srgb.icc",
+    ].filter(Boolean) as string[];
+
+    const iccProfile = iccCandidates.find((iccPath) => fs.existsSync(iccPath));
 
     if (!iccProfile) {
+        const hint = iccEnv
+            ? `Perfil ICC n�o encontrado em: ${iccEnv}`
+            : "Vari�vel GS_ICC_PROFILE n�o configurada";
         throw new Error(
-            "Variável GS_ICC_PROFILE não configurada. Informe o caminho completo de um perfil ICC, por exemplo sRGB.icc."
+            `${hint}. Configure GS_ICC_PROFILE para um arquivo v�lido, por exemplo: C:/Program Files/gs/gs10.07.0/iccprofiles/default_rgb.icc`
         );
-    }
-
-    if (!fs.existsSync(iccProfile)) {
-        throw new Error(`Perfil ICC não encontrado em: ${iccProfile}`);
     }
 
     const pdfaDefPath = await criarPdfaDefTemporario(tempDir, iccProfile);

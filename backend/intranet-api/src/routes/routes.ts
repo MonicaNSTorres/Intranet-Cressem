@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { associadoController } from "../controllers/associado.controller";
 import { associadoResidenciaController } from "../controllers/associados-residencia.controller";
 import { kpiController } from "../controllers/kpiController";
@@ -42,7 +42,9 @@ import { consultaContratosController } from "../controllers/consulta-contratos.c
 import { contratosEmpresasController } from "../controllers/contratos-empresas.controller";
 import { funcionariosSimplesController } from "../controllers/funcionarios-simples.controller";
 import { emailContratoController } from "../controllers/email-contrato.controller";
+import { rhContatoController } from "../controllers/rh-contato.controller";
 import { reciboCrmController } from "../controllers/recibo-crm.controller";
+import { autorizacaoDebitoController } from "../controllers/autorizacao-debito.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 import {
   criarPopupAviso,
@@ -142,7 +144,7 @@ routes.get(
   bolsaEstudoController.listarCidades
 );
 
-//reembolso convênio médico
+//reembolso convÃªnio mÃ©dico
 routes.get(
   "/v1/reembolso-convenio-medico/funcionario/nome/:nome",
   reembolsoConvenioMedicoController.buscarFuncionarioPorNome
@@ -169,7 +171,7 @@ routes.get(
   auditoriaController.buscarAuditoria
 );
 
-//antecipação de capital
+//antecipaÃ§Ã£o de capital
 routes.get(
   "/v1/antecipacao-capital/associado/:cpf",
   antecipacaoCapitalController.buscarAssociado
@@ -198,6 +200,11 @@ routes.post(
 routes.get(
   "/v1/demissao/associado/:cpf",
   demissaoController.buscarAssociado
+);
+
+routes.get(
+  "/v1/demissao/motivo-demissao",
+  demissaoController.listarMotivoDemissao
 );
 
 //simulador de descontos
@@ -276,15 +283,41 @@ const upload = multer({
   },
 });
 
+function singleUploadOrJson(fieldName: string) {
+  return (req: any, res: any, next: any) => {
+    upload.single(fieldName)(req, res, (err: any) => {
+      if (err) {
+        return res.status(400).json({
+          error: "Falha no upload do arquivo.",
+          details: String(err?.message || err),
+        });
+      }
+
+      next();
+    });
+  };
+}
+
 routes.post(
   "/v1/marca_dagua",
-  upload.single("file"),
+  singleUploadOrJson("file"),
   marcaDaguaController.aplicarMarcaDagua
 );
 
 routes.post(
   "/v1/converter-arquivos",
-  upload.array("files"),
+  (req: any, res: any, next: any) => {
+    upload.array("files")(req, res, (err: any) => {
+      if (err) {
+        return res.status(400).json({
+          error: "Falha no upload dos arquivos.",
+          details: String(err?.message || err),
+        });
+      }
+
+      next();
+    });
+  },
   conversorArquivosController.converter
 );
 
@@ -564,7 +597,7 @@ routes.post(
   analiseLimiteController.downloadAssinatura
 );
 
-// convênio odonto
+// convÃªnio odonto
 routes.get("/v1/fator_ajuste", convenioOdontoController.listarFatorAjuste);
 routes.get("/v1/parentesco", convenioOdontoController.listarParentesco);
 
@@ -638,7 +671,7 @@ routes.get(
   convenioOdontoController.downloadCsvTitular
 );
 
-// fator ajuste / gestão valor convênio
+// fator ajuste / gestÃ£o valor convÃªnio
 routes.get("/v1/fator_ajuste", fatorAjusteController.listar);
 
 routes.get(
@@ -656,7 +689,7 @@ routes.put(
   fatorAjusteController.editar
 );
 
-// relatórios convênio odonto
+// relatÃ³rios convÃªnio odonto
 routes.get(
   "/v1/download_pessoas_odontologicas",
   relatorioConvenioOdontoController.downloadContratantes
@@ -754,6 +787,21 @@ routes.delete(
   emailContratoController.remover
 );
 
+routes.get(
+  "/v1/rh_contato_contrato_lista/:id",
+  rhContatoController.listarPorContrato
+);
+
+routes.post(
+  "/v1/rh_contato/lote",
+  rhContatoController.criarLote
+);
+
+routes.put(
+  "/v1/rh_contato/lote/:id",
+  rhContatoController.editarLote
+);
+
 routes.post("/v1/recibo_crm", reciboCrmController.criar);
 routes.put("/v1/recibo_crm/:id", reciboCrmController.editar);
 routes.get("/v1/recibo_crm/:id", reciboCrmController.buscarPorId);
@@ -801,6 +849,11 @@ routes.put(
 
 routes.put(
   "/v1/solicitacao_reembolso_despesa/:id/concluir",
+  solicitacaoReembolsoDespesaController.concluir
+);
+
+routes.put(
+  "/v1/solicitacao_reembolso_despesa_final/:id",
   solicitacaoReembolsoDespesaController.concluir
 );
 
@@ -924,4 +977,11 @@ routes.post(
     estoqueConsumiveisController.registrarSaidaManualComGlpi
 );
 
+
+routes.get(
+    "/v1/autorizacao-debito",
+    autorizacaoDebitoController.listarContaCorrente
+);
+
 export { routes };
+

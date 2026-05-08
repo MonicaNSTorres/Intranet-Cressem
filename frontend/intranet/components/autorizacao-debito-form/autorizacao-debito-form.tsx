@@ -6,6 +6,7 @@ import { formatCpfView, fmtBRL, monetizarDigitacao, onlyDigits, parseBRL } from 
 import {
   buscarAssociadoAutorizacaoDebito,
   listarCidadesAutorizacaoDebito,
+  buscarContaCorrenteAutorizacaoDebito,
   type CidadeOption,
 } from "@/services/autorizacao_debito.service";
 import { gerarPdfAutorizacaoDebito } from "@/lib/pdf/gerarPdfAutorizacaoDebito";
@@ -36,7 +37,7 @@ export function AutorizacaoDebitoForm() {
   const [cpf, setCpf] = useState("");
   const [nome, setNome] = useState("");
   const [contaAssociado, setContaAssociado] = useState("");
-
+  const [contasCorrentes, setContasCorrentes] = useState<string[]>([]);
   const [contaCorrente, setContaCorrente] = useState("");
   const [cartao, setCartao] = useState("");
   const [dividaConsolidada, setDividaConsolidada] = useState("");
@@ -91,6 +92,8 @@ export function AutorizacaoDebitoForm() {
   const onBuscar = async () => {
     setErro("");
     setInfo("");
+    setContaAssociado("");
+    setContasCorrentes([]);
 
     const clean = onlyDigits(cpf);
 
@@ -110,6 +113,19 @@ export function AutorizacaoDebitoForm() {
       }
 
       setNome(associado.nome || "");
+
+      const contas = await buscarContaCorrenteAutorizacaoDebito(clean);
+
+      const listaContas = (contas || [])
+        .map((item: any) => String(item.NR_CONTA_CORRENTE || "").trim())
+        .filter(Boolean);
+
+      setContasCorrentes(listaContas);
+
+      if (listaContas.length === 1) {
+        setContaAssociado(listaContas[0]);
+      }
+
       setInfo("Dados do associado carregados com sucesso.");
     } catch (e: any) {
       setErro(e?.message || "Não foi possível buscar o associado.");
@@ -244,12 +260,26 @@ export function AutorizacaoDebitoForm() {
           <label className="mb-1 block text-xs font-medium text-gray-600">
             Conta
           </label>
-          <input
+
+          <select
             value={contaAssociado}
             onChange={(e) => setContaAssociado(e.target.value)}
             className="w-full rounded border px-3 py-2"
-          />
+          >
+            <option value="">
+              {contasCorrentes.length > 0
+                ? "Selecione a conta"
+                : "Pesquise o CPF"}
+            </option>
+
+            {contasCorrentes.map((conta) => (
+              <option key={conta} value={conta}>
+                {conta}
+              </option>
+            ))}
+          </select>
         </div>
+
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">

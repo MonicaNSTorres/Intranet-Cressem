@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import BackButton from "@/components/back-button/back-button";
 import { FaPhone } from "react-icons/fa";
 import { buscarRamais } from "@/services/ramais.service";
+import BadgeCampoPendente from "@/components/badge-campo-pendente/badge-campo-pendente";
+
 
 type RamalRow = {
     ID: number | string;
@@ -27,7 +29,12 @@ function isMissing(value: string | number | null | undefined) {
         v === "-" ||
         v === "--" ||
         v === "null" ||
-        v === "undefined"
+        v === "undefined" ||
+        v === "0" ||
+        v === "sem e-mail" ||
+        v === "sem email" ||
+        v === "s/ email" ||
+        v === "teste_login"
     );
 }
 
@@ -60,9 +67,24 @@ export default function RamaisPage() {
                     sortOrder,
                 });
 
-                setRows(Array.isArray(data.data) ? data.data : []);
-            } catch (e: any) {
-                setError(String(e?.message || "Erro ao carregar"));
+                const dataRows = Array.isArray(data.data) ? data.data : [];
+
+                const filtrados = dataRows.filter((r) => {
+                    const semRamal = isMissing(r.RAMAL);
+                    const semLogin = isMissing(r.LOGIN);
+
+                    // considera "sem e-mail" quando está vazio OU inválido fora do domínio corporativo
+                    const semEmail = isMissing(r.EMAIL) || !isEmailCorporativoValido(r.EMAIL);
+
+                    return !(semRamal && semEmail && semLogin);
+                });
+
+
+                setRows(filtrados);
+
+            } catch (e: unknown) {
+                const message = e instanceof Error ? e.message : "Erro ao carregar";
+                setError(message);
                 setRows([]);
             } finally {
                 setLoading(false);
@@ -79,6 +101,22 @@ export default function RamaisPage() {
     ]);
 
     const total = useMemo(() => rows.length, [rows]);
+
+
+    function normalizeEmail(value: string | number | null | undefined) {
+        return normalizeField(value).toLowerCase();
+    }
+
+    function isEmailCorporativoValido(value: string | number | null | undefined) {
+        const email = normalizeEmail(value);
+
+        if (isMissing(email)) return false;
+
+        // formato básico + domínio obrigatório
+        const emailRegex = /^[a-z0-9._%+-]+@sicoob\.com\.br$/i;
+        return emailRegex.test(email);
+    }
+
 
     function limparFiltros() {
         setQ("");
@@ -335,7 +373,7 @@ export default function RamaisPage() {
                                                 <th className="px-4 py-4">Nome</th>
                                                 <th className="px-4 py-4">Departamento</th>
                                                 <th className="px-4 py-4">E-mail</th>
-                                                <th className="px-4 py-4">Login</th>
+                                                <th className="px-4 py-4">Login SISBR</th>
                                             </tr>
                                         </thead>
 
@@ -345,7 +383,7 @@ export default function RamaisPage() {
                                                 const nomeValue = normalizeField(r.NOME);
                                                 const departamentoValue = normalizeField(r.DEPARTAMENTO);
                                                 const emailValue = normalizeField(r.EMAIL);
-                                                const loginValue = normalizeField(r.LOGIN);
+                                                const loginValue = normalizeField(r.LOGIN).toUpperCase();
 
                                                 return (
                                                     <tr
@@ -353,10 +391,12 @@ export default function RamaisPage() {
                                                         className={`border-t border-gray-100 transition hover:bg-[#F8FCF8] ${index % 2 === 0 ? "bg-white" : "bg-[#FCFDFC]"
                                                             }`}
                                                     >
-                                                        <td className="px-4 py-4 align-middle">
-                                                            <div className="inline-flex items-center rounded-full bg-secondary/10 px-3 py-1 text-sm font-semibold text-secondary">
-                                                                {isMissing(r.RAMAL) ? "Sem ramal" : ramalValue}
-                                                            </div>
+                                                        <td className="px-4 py-4 align-middle text-gray-700">
+                                                            <BadgeCampoPendente
+                                                                missing={isMissing(r.RAMAL)}
+                                                                missingLabel="Sem ramal"
+                                                                value={ramalValue}
+                                                            />
                                                         </td>
 
                                                         <td className="px-4 py-4 align-middle">
@@ -366,21 +406,21 @@ export default function RamaisPage() {
                                                         </td>
 
                                                         <td className="px-4 py-4 align-middle text-gray-700">
-                                                            {isMissing(r.DEPARTAMENTO) ? (
-                                                                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500">
-                                                                    Sem departamento
-                                                                </span>
-                                                            ) : (
-                                                                <span className="rounded-full bg-[#EEF7EE] px-3 py-1 text-xs font-medium text-[#4D6B4D]">
-                                                                    {departamentoValue}
-                                                                </span>
-                                                            )}
+                                                            <BadgeCampoPendente
+                                                                missing={isMissing(r.DEPARTAMENTO)}
+                                                                missingLabel="Sem departamento"
+                                                                value={departamentoValue}
+                                                            />
                                                         </td>
 
                                                         <td className="px-4 py-4 align-middle text-gray-700">
                                                             {isMissing(r.EMAIL) ? (
                                                                 <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-500">
                                                                     Sem e-mail
+                                                                </span>
+                                                            ) : !isEmailCorporativoValido(r.EMAIL) ? (
+                                                                <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-500">
+                                                                    E-mail inválido
                                                                 </span>
                                                             ) : (
                                                                 <a
@@ -393,13 +433,13 @@ export default function RamaisPage() {
                                                         </td>
 
                                                         <td className="px-4 py-4 align-middle text-gray-700">
-                                                            {isMissing(r.LOGIN) ? (
-                                                                <span className="text-gray-400">Sem login</span>
-                                                            ) : (
-                                                                <span className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
-                                                                    {loginValue}
-                                                                </span>
-                                                            )}
+
+                                                            <BadgeCampoPendente
+                                                                missing={isMissing(r.LOGIN)}
+                                                                missingLabel="Sem login"
+                                                                value={loginValue}
+                                                            />
+
                                                         </td>
                                                     </tr>
                                                 );

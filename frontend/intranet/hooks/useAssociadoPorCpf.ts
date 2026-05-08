@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
-import { cpf as cpfValidator } from "cpf-cnpj-validator";
+import { cpf as cpfValidator, cnpj as cnpjValidator } from "cpf-cnpj-validator";
 import { buscarFuncionarioPorCpf } from "@/services/associado.service";
 import { onlyDigits } from "@/utils/br";
 
@@ -20,6 +20,17 @@ export type AssociadoData = {
   cep?: string;
   empresa?: string;
   endereco?: string;
+  telefone?: string;
+  email?: string;
+  documento?: string;
+  orgao?: string;
+  iap?: string;
+  portabilidade?: string;
+  cartao?: string;
+  limite_chque?: string;
+  limite_cartao?: string;
+  saldo_capital?: string;
+
 };
 
 type BuscarResult =
@@ -37,8 +48,11 @@ export function useAssociadoPorCpf() {
 
     const clean = onlyDigits(cpf);
 
-    if (clean.length !== 11 || !cpfValidator.isValid(clean)) {
-      setErro("CPF inválido. Digite os 11 números.");
+    const isCpf = clean.length === 11 && cpfValidator.isValid(clean);
+    const isCnpj = clean.length === 14 && cnpjValidator.isValid(clean);
+
+    if (!isCpf && !isCnpj) {
+      setErro("CPF/CNPJ inválido. Digite 11 números (CPF) ou 14 números (CNPJ).");
       return { found: false, data: null };
     }
 
@@ -49,7 +63,7 @@ export function useAssociadoPorCpf() {
 
       if (!data?.found) {
         setInfo(
-          "Nenhum associado encontrado para este CPF. Você pode preencher os campos manualmente."
+          "Nenhum associado encontrado para este CPF/CNPJ. Você pode preencher os campos manualmente."
         );
         return { found: false, data: null };
       }
@@ -72,13 +86,22 @@ export function useAssociadoPorCpf() {
         cidade: data.cidade || "",
         uf: data.uf || "",
         cep: data.cep || "",
-
         empresa: data.empresa || "",
+        telefone: data.telefone || "",
+        email: data.email || "",
+        documento: data.documento || "",
+        orgao: data.orgao || "",
+        iap: data.iap || "",
+        portabilidade: data.portabilidade || "",
+        cartao: data.cartao || "",
+        limite_chque: data.limite_chque || "",
+        limite_cartao: data.limite_cartao || "",
+        saldo_capital: data.saldo_capital || ""
       };
 
       return { found: true, data: mapped };
     } catch (e: any) {
-      setErro(e?.message || "Erro ao consultar o CPF.");
+      setErro(e?.message || "Erro ao consultar o CPF/CNPJ.");
       return { found: false, data: null };
     } finally {
       setLoading(false);

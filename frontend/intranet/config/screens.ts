@@ -207,11 +207,11 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["declaracao", "declaração", "residencia", "residência", "comprovante"],
   },
   {
-    title: "Procuração Ortugante PF/PJ",
+    title: "Procuração Outorgante PF/PJ",
     desc: "Acesso ao formulário de procuração outorgante PF/PJ.",
-    href: "/auth/procuracao_ortugante",
+    href: "/auth/procuracao_outorgante",
     group: "Formulários de Cadastro",
-    keywords: ["procuracao", "procuração", "outorgante", "ortugante", "pf", "pj"],
+    keywords: ["procuracao", "procuração", "outorgante", "outorgante", "pf", "pj"],
   },
   {
     title: "Renúncia de Procurador",

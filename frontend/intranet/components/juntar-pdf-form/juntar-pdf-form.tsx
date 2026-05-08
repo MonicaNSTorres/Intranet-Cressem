@@ -40,6 +40,11 @@ function truncateFileName(name: string, max = 42) {
 }
 
 export function JuntarPdfForm() {
+    const MAX_FILE_SIZE_MB = 50;
+    const MAX_TOTAL_SIZE_MB = 120;
+    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+    const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024;
+
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -79,6 +84,8 @@ export function JuntarPdfForm() {
 
     function handleFilesChange(event: React.ChangeEvent<HTMLInputElement>) {
         const files = Array.from(event.target.files || []);
+        const currentTotal = selectedFiles.reduce((acc, file) => acc + file.size, 0);
+        const incomingTotal = files.reduce((acc, file) => acc + file.size, 0);
 
         for (const file of files) {
             const fileExtension = file.name.split(".").pop()?.toLowerCase();
@@ -102,6 +109,26 @@ export function JuntarPdfForm() {
                 event.target.value = "";
                 return;
             }
+
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                openAlert(
+                    "Arquivo muito grande",
+                    `O arquivo "${file.name}" excede ${MAX_FILE_SIZE_MB} MB.`,
+                    "warning"
+                );
+                event.target.value = "";
+                return;
+            }
+        }
+
+        if (currentTotal + incomingTotal > MAX_TOTAL_SIZE_BYTES) {
+            openAlert(
+                "Tamanho total excedido",
+                `O total dos arquivos deve ser no máximo ${MAX_TOTAL_SIZE_MB} MB.`,
+                "warning"
+            );
+            event.target.value = "";
+            return;
         }
 
         setSelectedFiles((prev) => {
@@ -193,9 +220,17 @@ export function JuntarPdfForm() {
             );
         } catch (error) {
             console.error("Erro ao processar PDFs:", error);
+
+            const backendMessage =
+                (error as any)?.response?.data?.error ||
+                (error as any)?.response?.data?.details ||
+                (error as any)?.message ||
+                "";
+
             openAlert(
                 "Erro ao processar",
-                "Não foi possível juntar os PDFs agora. Tente novamente em instantes.",
+                backendMessage ||
+                    "Não foi possível juntar os PDFs agora. Tente novamente em instantes.",
                 "error"
             );
         } finally {
@@ -575,3 +610,5 @@ export function JuntarPdfForm() {
         </>
     );
 }
+
+

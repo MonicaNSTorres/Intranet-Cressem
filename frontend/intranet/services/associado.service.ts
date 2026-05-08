@@ -3,22 +3,35 @@ import { onlyDigits } from "@/utils/br";
 export type BuscarPorCpfResponse =
   | { found: false }
   | {
-      found: true;
-      nome: string;
-      matricula: string;
-      nascimento?: string;
-      cpf?: string;
-      rg?: string;
-      rua?: string;
-      numero?: string;
-      complemento?: string;
-      bairro?: string;
-      cidade?: string;
-      uf?: string;
-      cep?: string;
-      empresa?: string;
-      endereco?: string;
-    };
+    found: true;
+    nome: string;
+    matricula: string;
+    nascimento?: string;
+    cpf?: string;
+    rg?: string;
+    rua?: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+    cep?: string;
+    empresa?: string;
+    endereco?: string;
+    telefone?: string;
+    email?: string;
+    documento?: string;
+    orgao?: string;
+    iap?: string;
+    portabilidade?: string;
+    cartao?: string;
+    limite_chque?: string;
+    limite_cartao?: string;
+    saldo_capital?: string;
+    conta_corrente?: string;
+    nr_conta_corrente?: string;
+
+  };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 

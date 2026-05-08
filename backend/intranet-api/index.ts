@@ -9,10 +9,12 @@ import { createServer } from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import fileUpload from "express-fileupload";
+import os from "os";
 import { initOraclePool, closeOraclePool } from "./src/config/oracle.pool";
 import { estoqueConsumiveisService } from "./src/services/estoque_consumiveis.service";
 
 const app = express();
+const MAX_PDF_UPLOAD_MB = Number(process.env.MAX_PDF_UPLOAD_MB || 50);
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -38,14 +40,27 @@ app.use(cookieParser());
 
 app.use("/bucket", express.static(path.join(__dirname, "src/bucket")));
 
-app.use(
-  fileUpload({
-    limits: { fileSize: 20 * 1024 * 1024 },
-    abortOnLimit: true,
-    useTempFiles: false,
-    createParentPath: true,
-  })
-);
+const fileUploadMiddleware = fileUpload({
+  limits: { fileSize: MAX_PDF_UPLOAD_MB * 1024 * 1024 },
+  abortOnLimit: false,
+  useTempFiles: true,
+  tempFileDir: path.join(os.tmpdir(), "intranet-upload"),
+  createParentPath: true,
+});
+
+const multerManagedPaths = new Set([
+  "/v1/marca_dagua",
+  "/v1/converter-arquivos",
+  "/v1/estoque-consumiveis/importar-excel",
+]);
+
+app.use((req, res, next) => {
+  if (multerManagedPaths.has(req.path)) {
+    return next();
+  }
+
+  return fileUploadMiddleware(req as any, res as any, next as any);
+});
 
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));

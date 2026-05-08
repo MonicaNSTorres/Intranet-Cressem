@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   FaArrowRight,
@@ -18,16 +18,20 @@ import {
   buscarContratoPorId,
   buscarEmailsDoContratoSeparados,
   buscarFuncionarioPorEmail,
+  cadastrarContatosContratoLote,
   cadastrarContratoEmpresa,
   carregarCidadesContrato,
   carregarEmailsFuncionarios,
   carregarSistemasConsignados,
   carregarTiposContrato,
   criarEmailContrato,
+  editarContatosContratoLote,
   editarContratoEmpresa,
+  listarContatosContratoPorContrato,
   listarEmailContratoPorContrato,
   listarEmailContratoPorFuncionario,
   removerEmailContrato,
+  type ContatoContratoPayload,
   type ContratoEmpresaPayload,
 } from "@/services/cadastro_contratos.service";
 
@@ -43,6 +47,31 @@ function formatCnpj(value: string) {
     .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
     .replace(/\.(\d{3})(\d)/, ".$1/$2")
     .replace(/(\d{4})(\d)/, "$1-$2");
+}
+
+function phoneMask(value: string) {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+type ContatoEmpresaForm = {
+  NM_RESPONSAVEL: string;
+  NR_TELEFONE: string;
+  DESC_EMAIL: string;
+};
+
+function contatoVazio(): ContatoEmpresaForm {
+  return {
+    NM_RESPONSAVEL: "",
+    NR_TELEFONE: "",
+    DESC_EMAIL: "",
+  };
 }
 
 const inputBase =
@@ -168,6 +197,7 @@ type CadastroContratoFormProps = {
   isModal?: boolean;
   onClose?: () => void;
   onSaved?: () => void | Promise<void>;
+  onResult?: (ok: boolean, message: string) => void;
 };
 
 export function CadastroContratoForm({
@@ -175,6 +205,7 @@ export function CadastroContratoForm({
   isModal = false,
   onClose,
   onSaved,
+  onResult,
 }: CadastroContratoFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -195,6 +226,9 @@ export function CadastroContratoForm({
   const [tipoContrato, setTipoContrato] = useState("");
   const [emailDigitado, setEmailDigitado] = useState("");
   const [listaEmail, setListaEmail] = useState("");
+  const [contatosEmpresa, setContatosEmpresa] = useState<ContatoEmpresaForm[]>([
+    contatoVazio(),
+  ]);
   const [observacao, setObservacao] = useState("");
   const [sistema, setSistema] = useState("");
   const [dataInicio, setDataInicio] = useState("");
@@ -208,6 +242,7 @@ export function CadastroContratoForm({
 
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
+  const alertaRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     async function loadInicial() {
@@ -245,6 +280,29 @@ export function CadastroContratoForm({
           setObservacao(contrato.OBS_CONTRATO || "");
           setListaEmail(emailsContrato || "");
           setAtivo(Number(contrato.SN_ATIVO || 0) === 1);
+
+          try {
+            const contatos = await listarContatosContratoPorContrato(
+              Number(contratoId)
+            );
+
+            const contatosFormatados = (contatos || [])
+              .map((item) => ({
+                NM_RESPONSAVEL: String(item?.NM_RESPONSAVEL || "").trim(),
+                NR_TELEFONE: phoneMask(String(item?.NR_TELEFONE || "").trim()),
+                DESC_EMAIL: String(item?.DESC_EMAIL || "").trim(),
+              }))
+              .filter(
+                (item) =>
+                  item.NM_RESPONSAVEL || item.NR_TELEFONE || item.DESC_EMAIL
+              );
+
+            setContatosEmpresa(
+              contatosFormatados.length ? contatosFormatados : [contatoVazio()]
+            );
+          } catch {
+            setContatosEmpresa([contatoVazio()]);
+          }
         }
       } catch (error: any) {
         console.error(error);
@@ -259,6 +317,15 @@ export function CadastroContratoForm({
 
     loadInicial();
   }, [modoEdicao, contratoId]);
+
+  useEffect(() => {
+    if (!erro && !info) return;
+
+    alertaRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, [erro, info]);
 
   const mostrarDataFinal = useMemo(
     () => tipoTempoContrato === "DETERMINADO",
@@ -309,6 +376,49 @@ export function CadastroContratoForm({
     }
   }
 
+  function adicionarContatoEmpresa() {
+    setContatosEmpresa((prev) => {
+      if (prev.length >= 4) return prev;
+      return [...prev, contatoVazio()];
+    });
+  }
+
+  function removerContatoEmpresa(index: number) {
+    setContatosEmpresa((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  function atualizarContatoEmpresa(
+    index: number,
+    campo: keyof ContatoEmpresaForm,
+    valor: string
+  ) {
+    setContatosEmpresa((prev) =>
+      prev.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              [campo]: campo === "NR_TELEFONE" ? phoneMask(valor) : valor,
+            }
+          : item
+      )
+    );
+  }
+
+  function normalizarContatosEmpresa(): ContatoContratoPayload[] {
+    return contatosEmpresa
+      .map((item) => ({
+        NM_RESPONSAVEL: String(item.NM_RESPONSAVEL || "").trim().toUpperCase(),
+        NR_TELEFONE: onlyDigits(item.NR_TELEFONE || ""),
+        DESC_EMAIL: String(item.DESC_EMAIL || "").trim().toUpperCase(),
+      }))
+      .filter(
+        (item) => item.NM_RESPONSAVEL || item.NR_TELEFONE || item.DESC_EMAIL
+      );
+  }
+
   function limparCampos() {
     setRazaoSocial("");
     setCnpj("");
@@ -319,6 +429,7 @@ export function CadastroContratoForm({
     setTipoContrato("");
     setEmailDigitado("");
     setListaEmail("");
+    setContatosEmpresa([contatoVazio()]);
     setObservacao("");
     setSistema("");
     setDataInicio("");
@@ -335,6 +446,16 @@ export function CadastroContratoForm({
     if (!tipoContrato.trim()) return "Selecione o tipo de contrato.";
     if (!listaEmail.trim()) {
       return "Selecione pelo menos um e-mail para notificação.";
+    }
+    const contatos = normalizarContatosEmpresa();
+    if (!contatos.length) {
+      return "Adicione pelo menos um contato da empresa.";
+    }
+    if (!contatos[0]?.NM_RESPONSAVEL) {
+      return "Preencha o responsável do Contato 1.";
+    }
+    if (!contatos[0]?.DESC_EMAIL) {
+      return "Preencha o e-mail do Contato 1.";
     }
     if (!dataInicio) return "Preencha a data de início do contrato.";
 
@@ -433,6 +554,16 @@ export function CadastroContratoForm({
     }
   }
 
+  async function salvarContatosEmpresaContrato(idContrato: number) {
+    const contatos = normalizarContatosEmpresa();
+    await cadastrarContatosContratoLote(idContrato, contatos);
+  }
+
+  async function editarContatosEmpresaContrato(idContrato: number) {
+    const contatos = normalizarContatosEmpresa();
+    await editarContatosContratoLote(idContrato, contatos);
+  }
+
   async function salvar() {
     try {
       setErro("");
@@ -441,6 +572,7 @@ export function CadastroContratoForm({
       const msg = validaCampos();
       if (msg) {
         setErro(msg);
+        onResult?.(false, msg);
         return;
       }
 
@@ -456,7 +588,18 @@ export function CadastroContratoForm({
 
         await editarEmailContrato(idContrato);
 
-        setInfo("Contrato alterado com sucesso.");
+        let avisoContato = "";
+        try {
+          await editarContatosEmpresaContrato(idContrato);
+        } catch (error) {
+          console.error("Erro ao atualizar contatos da empresa:", error);
+          avisoContato =
+            " Contrato alterado, mas não foi possível atualizar os contatos da empresa.";
+        }
+
+        const mensagemSucesso = `Contrato alterado com sucesso.${avisoContato}`;
+        setInfo(mensagemSucesso);
+        onResult?.(true, mensagemSucesso);
 
         if (isModal && onSaved) {
           await onSaved();
@@ -470,20 +613,37 @@ export function CadastroContratoForm({
 
       if (idContrato) {
         await salvarEmailContrato(idContrato);
-      }
 
-      limparCampos();
-      setInfo("Contrato cadastrado com sucesso.");
+        let avisoContato = "";
+        try {
+          await salvarContatosEmpresaContrato(idContrato);
+        } catch (error) {
+          console.error("Erro ao salvar contatos da empresa:", error);
+          avisoContato =
+            " Contrato cadastrado, mas não foi possível salvar os contatos da empresa.";
+        }
+
+        limparCampos();
+        const mensagemSucesso = `Contrato cadastrado com sucesso.${avisoContato}`;
+        setInfo(mensagemSucesso);
+        onResult?.(true, mensagemSucesso);
+      } else {
+        limparCampos();
+        const mensagemSucesso = "Contrato cadastrado com sucesso.";
+        setInfo(mensagemSucesso);
+        onResult?.(true, mensagemSucesso);
+      }
 
       if (isModal && onSaved) {
         await onSaved();
       }
     } catch (error: any) {
       console.error(error);
-      setErro(
+      const mensagemErro =
         error?.response?.data?.error ||
-          `Não foi possível ${modoEdicao ? "alterar" : "cadastrar"} o contrato.`
-      );
+        `Não foi possível ${modoEdicao ? "alterar" : "cadastrar"} o contrato.`;
+      setErro(mensagemErro);
+      onResult?.(false, mensagemErro);
     } finally {
       setLoadingSalvar(false);
     }
@@ -540,7 +700,7 @@ export function CadastroContratoForm({
         </div>
 
         {(erro || info) && (
-          <div className="mb-5">
+          <div ref={alertaRef} className="mb-5">
             {erro ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
                 {erro}
@@ -737,6 +897,100 @@ export function CadastroContratoForm({
                 placeholder="Nenhum e-mail adicionado"
               />
             </Field>
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Contatos da Empresa"
+        subtitle="Cadastre os responsáveis da empresa para contato sobre o contrato."
+      >
+        <div className="space-y-4">
+          {contatosEmpresa.map((contato, index) => (
+            <div
+              key={`contato-empresa-${index}`}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-700">
+                  Contato {index + 1}
+                </p>
+
+                {index > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => removerContatoEmpresa(index)}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                  >
+                    <FaTrash size={12} />
+                    Remover
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                <div className="md:col-span-5">
+                  <Field label="Responsável">
+                    <input
+                      value={contato.NM_RESPONSAVEL}
+                      onChange={(e) =>
+                        atualizarContatoEmpresa(
+                          index,
+                          "NM_RESPONSAVEL",
+                          e.target.value
+                        )
+                      }
+                      className={inputBase}
+                      placeholder="Nome do responsável"
+                    />
+                  </Field>
+                </div>
+
+                <div className="md:col-span-3">
+                  <Field label="Telefone">
+                    <input
+                      value={contato.NR_TELEFONE}
+                      onChange={(e) =>
+                        atualizarContatoEmpresa(
+                          index,
+                          "NR_TELEFONE",
+                          e.target.value
+                        )
+                      }
+                      className={inputBase}
+                      maxLength={15}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </Field>
+                </div>
+
+                <div className="md:col-span-4">
+                  <Field label="E-mail">
+                    <input
+                      type="email"
+                      value={contato.DESC_EMAIL}
+                      onChange={(e) =>
+                        atualizarContatoEmpresa(index, "DESC_EMAIL", e.target.value)
+                      }
+                      className={inputBase}
+                      placeholder="email@empresa.com.br"
+                    />
+                  </Field>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div>
+            <button
+              type="button"
+              onClick={adicionarContatoEmpresa}
+              disabled={contatosEmpresa.length >= 4}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-third disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <FaPlus />
+              Adicionar Contato
+            </button>
           </div>
         </div>
       </Section>

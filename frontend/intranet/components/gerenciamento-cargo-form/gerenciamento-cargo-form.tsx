@@ -32,12 +32,6 @@ const NIVEIS = [
   { value: "MENORAPRENDIZ", label: "Menor Aprendiz" },
 ];
 
-function capitalizeWords(value?: string | null) {
-  return String(value || "")
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
 export function GerenciamentoCargoForm() {
   const [busca, setBusca] = useState("");
   const [cargos, setCargos] = useState<CargoItem[]>([]);
@@ -429,14 +423,14 @@ export function GerenciamentoCargoForm() {
                       return (
                         <tr key={cargo.ID_CARGO} className="hover:bg-slate-50">
                           <td className="px-4 py-3">
-                            {capitalizeWords(cargo.NM_CARGO)}
+                            {String(cargo.NM_CARGO).toUpperCase()}
                           </td>
                           <td className="px-4 py-3">{codigo}</td>
                           <td className="px-4 py-3">
-                            {capitalizeWords(posicao)}
+                            {String(posicao).toUpperCase()}
                           </td>
                           <td className="px-4 py-3">
-                            {capitalizeWords(cargo.NM_NIVEL)}
+                            {String(cargo.NM_NIVEL).toUpperCase()}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button
@@ -635,7 +629,7 @@ export function GerenciamentoCargoForm() {
                   <option value=""></option>
                   {posicoes.map((posicao) => (
                     <option key={posicao.ID_POSICAO} value={posicao.ID_POSICAO}>
-                      {posicao.CD_SICOOB}, {capitalizeWords(posicao.NM_POSICAO)}
+                      {posicao.CD_SICOOB}, {String(posicao.NM_POSICAO).toUpperCase()}
                     </option>
                   ))}
                 </select>

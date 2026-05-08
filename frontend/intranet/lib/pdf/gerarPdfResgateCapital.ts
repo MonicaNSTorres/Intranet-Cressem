@@ -1,535 +1,648 @@
-export type EmprestimoPrint = {
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import jsPDF from "jspdf";
+
+export type ResgateEmprestimoPdfItem = {
   tipo: string;
   contrato: string;
   saldoDevedor: number;
-  saldoAmortizado: number;
+  amortizacao: number;
 };
 
-export type ParcelaPrint = {
-  dataParcela: string;
+export type ResgateParcelaPdfItem = {
+  numero: number;
+  data: string;
   valor: number;
 };
 
 export type GerarPdfResgateCapitalData = {
-  nome: string;
   cpfCnpj: string;
+  nome: string;
   matricula?: string;
   empresa?: string;
-  cidade?: string;
-  atendente: string;
-  dataResgate: string;
   motivo?: string;
-  autorizado?: string;
-  capitalAtual: number;
-  totalAmortizacao: number;
-  saldoRestante: number;
-  contaCorrente?: {
-    numero?: string;
-    saldoDevedor: number;
-    amortizado: number;
-  };
-  cartao?: {
-    numero?: string;
-    saldoDevedor: number;
-    amortizado: number;
-  };
-  emprestimos: EmprestimoPrint[];
-  deposito?: {
-    banco?: string;
-    agencia?: string;
-    contaCorrente?: string;
-    parcelas: ParcelaPrint[];
-  };
+  autorizadoPor?: string;
+
+  saldoCapitalAtual: number;
+  totalResgateCapital: number;
+  saldoCapitalRestante: number;
+
+  emprestimos: ResgateEmprestimoPdfItem[];
+
+  contaCorrenteNumero?: string;
+  contaCorrenteSaldo?: number;
+  contaCorrenteAmortizacao?: number;
+
+  cartaoNumero?: string;
+  cartaoSaldo?: number;
+  cartaoAmortizacao?: number;
+
+  saldoCreditadoConta?: number;
+  banco?: string;
+  agencia?: string;
+  conta?: string;
+  digito?: string;
+
+  valorPrimeiraParcela?: number;
+  dataPrimeiraParcela?: string;
+  parcelas: ResgateParcelaPdfItem[];
+  totalParcelado?: number;
+
+  cidadeAtendimento?: string;
+  dataAtendimento?: string;
+  atendente?: string;
 };
 
-function escapeHtml(value: string) {
-  return String(value || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+type GerarPdfResgateCapitalOptions = {
+  acao?: "download" | "print";
+  nomeArquivo?: string;
+};
+
+type FieldBox = {
+  label: string;
+  value: string;
+  width: number;
+  alignRight?: boolean;
+  maxLines?: number;
+};
+
+type Cursor = { y: number };
+
+const COLORS = {
+  green: { r: 121, g: 183, b: 41 },
+  dark: { r: 0, g: 54, b: 65 },
+  light: { r: 242, g: 248, b: 235 },
+  border: { r: 210, g: 220, b: 210 },
+};
+
+export async function gerarPdfResgateCapital(
+  data: GerarPdfResgateCapitalData,
+  options: GerarPdfResgateCapitalOptions = {}
+) {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 28;
+  const contentW = pageW - margin * 2;
+
+  const cursor: Cursor = { y: 22 };
+
+  try {
+    const logo = await loadImageDataURL("/sicoob-cressem-logo.png");
+    const maxW = 135;
+    const maxH = 42;
+    const scale = Math.min(maxW / logo.width, maxH / logo.height);
+    const w = logo.width * scale;
+    const h = logo.height * scale;
+
+    doc.addImage(logo.dataUrl, "PNG", margin, cursor.y, w, h);
+    cursor.y += h + 8;
+  } catch {
+    cursor.y += 20;
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("RESGATE PARCIAL DE CAPITAL", pageW / 2, cursor.y, {
+    align: "center",
+  });
+  cursor.y += 20;
+
+  sectionHeader(doc, cursor, pageH, margin, contentW, "Dados do associado");
+
+  fieldsRow(doc, cursor, pageH, margin, contentW, [
+    { label: "CPF/CNPJ", value: data.cpfCnpj, width: contentW * 0.34 },
+    { label: "Nome", value: data.nome, width: contentW * 0.66 },
+  ]);
+
+  fieldsRow(doc, cursor, pageH, margin, contentW, [
+    { label: "Matrícula", value: data.matricula || "", width: contentW * 0.33 },
+    { label: "Empresa", value: data.empresa || "", width: contentW * 0.67 },
+  ]);
+
+  fieldsRow(doc, cursor, pageH, margin, contentW, [
+    { label: "Motivo", value: data.motivo || "", width: contentW * 0.5 },
+    { label: "Autorizado por", value: data.autorizadoPor || "", width: contentW * 0.5 },
+  ]);
+
+  fieldsRow(doc, cursor, pageH, margin, contentW, [
+    {
+      label: "Saldo capital atual",
+      value: fmtBRL(data.saldoCapitalAtual),
+      width: contentW / 3,
+    },
+    {
+      label: "Total do resgate",
+      value: fmtBRL(data.totalResgateCapital),
+      width: contentW / 3,
+    },
+    {
+      label: "Saldo de capital restante",
+      value: fmtBRL(data.saldoCapitalRestante),
+      width: contentW / 3,
+    },
+  ]);
+
+  const emprestimosValidos = (data.emprestimos || []).filter(
+    (item) =>
+      safeText(item.tipo) ||
+      safeText(item.contrato) ||
+      Number(item.saldoDevedor || 0) > 0 ||
+      Number(item.amortizacao || 0) > 0
+  );
+
+  if (emprestimosValidos.length > 0) {
+    sectionHeader(doc, cursor, pageH, margin, contentW, "Amortização de empréstimo(s)");
+
+    drawTable(
+      doc,
+      cursor,
+      pageH,
+      margin,
+      contentW,
+      ["Tipo", "Contrato", "Saldo devedor", "Amortização"],
+      emprestimosValidos.map((item) => [
+        safeText(item.tipo) || "-",
+        safeText(item.contrato) || "-",
+        fmtBRL(item.saldoDevedor),
+        fmtBRL(item.amortizacao),
+      ]),
+      [0.28, 0.24, 0.24, 0.24],
+      [false, false, false, false]
+    );
+  }
+
+  const temDebitoConta =
+    safeText(data.contaCorrenteNumero) ||
+    Number(data.contaCorrenteSaldo || 0) > 0 ||
+    Number(data.contaCorrenteAmortizacao || 0) > 0;
+
+  const temDebitoCartao =
+    safeText(data.cartaoNumero) ||
+    Number(data.cartaoSaldo || 0) > 0 ||
+    Number(data.cartaoAmortizacao || 0) > 0;
+
+  if (temDebitoConta || temDebitoCartao) {
+    sectionHeader(doc, cursor, pageH, margin, contentW, "Amortização de débito(s) em conta");
+
+    const rows: string[][] = [];
+
+    if (temDebitoConta) {
+      rows.push([
+        `Conta Corrente ${safeText(data.contaCorrenteNumero) || "-"}`,
+        fmtBRL(data.contaCorrenteSaldo),
+        fmtBRL(data.contaCorrenteAmortizacao),
+      ]);
+    }
+
+    if (temDebitoCartao) {
+      rows.push([
+        `Cartão ${safeText(data.cartaoNumero) || "-"}`,
+        fmtBRL(data.cartaoSaldo),
+        fmtBRL(data.cartaoAmortizacao),
+      ]);
+    }
+
+    drawTable(
+      doc,
+      cursor,
+      pageH,
+      margin,
+      contentW,
+      ["Número", "Saldo devedor", "Amortização"],
+      rows,
+      [0.42, 0.29, 0.29],
+      [false, false, false]
+    );
+  }
+
+  if (Number(data.saldoCreditadoConta || 0) > 0) {
+    sectionHeader(doc, cursor, pageH, margin, contentW, "Saldo a ser creditado em conta");
+
+    fieldsRow(doc, cursor, pageH, margin, contentW, [
+      { label: "Banco", value: data.banco || "", width: contentW * 0.25 },
+      { label: "Agência", value: data.agencia || "", width: contentW * 0.25 },
+      { label: "Conta", value: data.conta || "", width: contentW * 0.25 },
+      { label: "Dígito", value: data.digito || "", width: contentW * 0.25 },
+    ]);
+
+    fieldsRow(doc, cursor, pageH, margin, contentW, [
+      {
+        label: "Saldo creditado",
+        value: fmtBRL(data.saldoCreditadoConta),
+        width: contentW,
+      },
+    ]);
+  }
+
+  const parcelasValidas = (data.parcelas || []).filter(
+    (p) => Number(p.valor || 0) > 0 || safeText(p.data)
+  );
+
+  if (parcelasValidas.length > 0) {
+    sectionHeader(doc, cursor, pageH, margin, contentW, "Devolução parcelada");
+
+    fieldsRow(doc, cursor, pageH, margin, contentW, [
+      {
+        label: "Valor da 1ª parcela",
+        value: fmtBRL(data.valorPrimeiraParcela || parcelasValidas[0]?.valor || 0),
+        width: contentW * 0.5,
+      },
+      {
+        label: "Data da 1ª parcela",
+        value: formatDateBR(data.dataPrimeiraParcela || parcelasValidas[0]?.data || ""),
+        width: contentW * 0.5,
+      },
+    ]);
+
+    drawTable(
+      doc,
+      cursor,
+      pageH,
+      margin,
+      contentW,
+      ["Parcela", "Data", "Valor"],
+      parcelasValidas.map((item, idx) => [
+        `Parcela ${item.numero || idx + 1}`,
+        formatDateBR(item.data),
+        fmtBRL(item.valor),
+      ]),
+      [0.32, 0.34, 0.34],
+      [false, false, false]
+    );
+
+    fieldsRow(doc, cursor, pageH, margin, contentW, [
+      {
+        label: "Total da devolução parcelada",
+        value: fmtBRL(data.totalParcelado ?? parcelasValidas.reduce((acc, p) => acc + Number(p.valor || 0), 0)),
+        width: contentW,
+      },
+    ]);
+  }
+
+  sectionHeader(doc, cursor, pageH, margin, contentW, "Dados do atendimento e assinaturas");
+
+  fieldsRow(doc, cursor, pageH, margin, contentW, [
+    { label: "Cidade", value: (data.cidadeAtendimento || "").toUpperCase(), width: contentW * 0.4 },
+    { label: "Data", value: formatDateBR(data.dataAtendimento || ""), width: contentW * 0.3 },
+    { label: "Atendente", value: data.atendente || "", width: contentW * 0.3 },
+  ]);
+
+  ensureSpace(doc, cursor, pageH, margin, 95);
+  const sigY = Math.min(cursor.y + 34, pageH - 56);
+  drawSignatures(
+    doc,
+    margin,
+    sigY,
+    contentW,
+    (data.nome || "ASSOCIADO(A)").toUpperCase(),
+    (data.atendente || "ATENDENTE").toUpperCase()
+  );
+
+  const nomeArquivo =
+    options.nomeArquivo || `resgate_capital_${sanitize(data.nome || "associado")}.pdf`;
+  const acao = options.acao || "download";
+
+  if (acao === "print") {
+    await printPdf(doc, nomeArquivo);
+    return;
+  }
+
+  doc.save(nomeArquivo);
 }
 
-function safe(v?: string) {
-  return (v || "").trim();
+function ensureSpace(doc: jsPDF, cursor: Cursor, pageH: number, margin: number, needed: number) {
+  if (cursor.y + needed <= pageH - margin) return;
+  doc.addPage();
+  cursor.y = margin;
 }
 
-function onlyDigits(v: string) {
-  return (v || "").replace(/\D/g, "");
+function sectionHeader(
+  doc: jsPDF,
+  cursor: Cursor,
+  pageH: number,
+  x: number,
+  w: number,
+  title: string
+) {
+  ensureSpace(doc, cursor, pageH, x, 22);
+
+  doc.setFillColor(COLORS.light.r, COLORS.light.g, COLORS.light.b);
+  doc.setDrawColor(COLORS.green.r, COLORS.green.g, COLORS.green.b);
+  doc.setLineWidth(0.55);
+  doc.rect(x, cursor.y, w, 16, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.8);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.text(title.toUpperCase(), x + 6, cursor.y + 11);
+  doc.setTextColor(0, 0, 0);
+
+  cursor.y += 18;
 }
 
-function isCnpj(v: string) {
-  return onlyDigits(v).length === 14;
+function fieldsRow(
+  doc: jsPDF,
+  cursor: Cursor,
+  pageH: number,
+  x: number,
+  totalW: number,
+  fields: FieldBox[]
+) {
+  ensureSpace(doc, cursor, pageH, x, 24);
+
+  const h = 22;
+  let cursorX = x;
+
+  fields.forEach((field, idx) => {
+    const w = idx === fields.length - 1 ? x + totalW - cursorX : field.width;
+
+    drawFieldBox(doc, {
+      x: cursorX,
+      y: cursor.y,
+      w,
+      h,
+      label: field.label,
+      value: field.value,
+      alignRight: field.alignRight,
+      maxLines: field.maxLines ?? 1,
+    });
+
+    cursorX += w;
+  });
+
+  cursor.y += h;
 }
 
-function fmtBRL(n: number) {
-  return (Number.isFinite(n) ? n : 0).toLocaleString("pt-BR", {
+function drawFieldBox(
+  doc: jsPDF,
+  opts: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    label: string;
+    value: string;
+    alignRight?: boolean;
+    maxLines?: number;
+  }
+) {
+  doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+  doc.setFillColor(255, 255, 255);
+  doc.setLineWidth(0.45);
+  doc.rect(opts.x, opts.y, opts.w, opts.h, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.1);
+  doc.setTextColor(90, 110, 95);
+  if (opts.label.trim()) {
+    doc.text(opts.label.toUpperCase(), opts.x + 4, opts.y + 7.2);
+  }
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.8);
+  doc.setTextColor(15, 23, 42);
+
+  const lines = splitWithEllipsis(
+    doc,
+    safeText(opts.value, ""),
+    opts.w - 8,
+    opts.maxLines || 1
+  );
+
+  if (opts.alignRight && lines.length === 1) {
+    doc.text(lines[0], opts.x + opts.w - 4, opts.y + 17, { align: "right" });
+  } else {
+    doc.text(lines, opts.x + 4, opts.y + 17);
+  }
+
+  doc.setTextColor(0, 0, 0);
+}
+
+function drawTable(
+  doc: jsPDF,
+  cursor: Cursor,
+  pageH: number,
+  x: number,
+  totalW: number,
+  headers: string[],
+  rows: string[][],
+  widthRatios: number[],
+  alignRight: boolean[]
+) {
+  const rowH = 20;
+  const widths = widthRatios.map((r) => totalW * r);
+
+  const drawOneRow = (cells: string[], isHeader: boolean) => {
+    ensureSpace(doc, cursor, pageH, x, rowH + 2);
+
+    let cx = x;
+    cells.forEach((cell, idx) => {
+      const w = idx === cells.length - 1 ? x + totalW - cx : widths[idx];
+
+      doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+      doc.setFillColor(isHeader ? 248 : 255, isHeader ? 250 : 255, isHeader ? 248 : 255);
+      doc.rect(cx, cursor.y, w, rowH, "FD");
+
+      doc.setFont("helvetica", isHeader ? "bold" : "normal");
+      doc.setFontSize(7.6);
+      doc.setTextColor(isHeader ? 55 : 15, isHeader ? 75 : 23, isHeader ? 95 : 42);
+
+      const text = fitText(doc, safeText(cell, "-"), w - 8, false);
+      const right = !isHeader && alignRight[idx];
+
+      if (right) {
+        doc.text(text, cx + w - 4, cursor.y + 13, { align: "right" });
+      } else {
+        doc.text(text, cx + 4, cursor.y + 13);
+      }
+
+      cx += w;
+    });
+
+    doc.setTextColor(0, 0, 0);
+    cursor.y += rowH;
+  };
+
+  drawOneRow(headers, true);
+
+  rows.forEach((row) => drawOneRow(row, false));
+}
+
+function splitWithEllipsis(doc: jsPDF, value: string, width: number, maxLines: number) {
+  const raw = doc.splitTextToSize(value || "", Math.max(width, 20)) as string[];
+  if (raw.length <= maxLines) return raw.length ? raw : [""];
+
+  const clipped = raw.slice(0, maxLines);
+  clipped[maxLines - 1] = fitText(doc, clipped[maxLines - 1], width, true);
+  return clipped;
+}
+
+function fitText(doc: jsPDF, text: string, maxWidth: number, withEllipsis = false) {
+  const suffix = withEllipsis ? "…" : "";
+  let t = String(text || "").trim();
+
+  while (t.length > 0 && doc.getTextWidth(t + suffix) > maxWidth) {
+    t = t.slice(0, -1);
+  }
+
+  return t + suffix;
+}
+
+function drawSignatures(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  nomeAssociado: string,
+  nomeAtendente: string
+) {
+  const gap = 30;
+  const colW = (w - gap) / 2;
+
+  // Linha superior: associado e atendente
+  drawSignature(doc, x, y, colW, nomeAssociado);
+  drawSignature(doc, x + colW + gap, y, colW, nomeAtendente);
+
+  // Linha inferior: validação abaixo do associado
+  drawSignature(doc, x, y + 40, colW, "Validação");
+}
+
+function drawSignature(doc: jsPDF, x: number, y: number, w: number, label: string) {
+  doc.setDrawColor(100, 116, 139);
+  doc.setLineWidth(0.7);
+  doc.line(x, y, x + w, y);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.6);
+  doc.setTextColor(30, 41, 59);
+  const labelFit = fitText(doc, safeText(label), w - 8, false);
+  doc.text(labelFit, x + w / 2, y + 12, { align: "center" });
+  doc.setTextColor(0, 0, 0);
+}
+
+function fmtBRL(value?: number | null) {
+  const n = Number(value || 0);
+  return n.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2,
   });
 }
 
-function formatDateToBr(iso: string) {
-  if (!iso || iso.length < 10) return "";
-  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+function formatDateBR(dateISO?: string | null) {
+  if (!dateISO) return "";
+  const val = String(dateISO).slice(0, 10);
+  const [y, m, d] = val.split("-");
+  if (!y || !m || !d) return String(dateISO);
+  return `${d}/${m}/${y}`;
 }
 
-function renderEmprestimosRows(emprestimos: EmprestimoPrint[]) {
-  const rows = emprestimos
-    .filter((e) => safe(e.tipo) || safe(e.contrato) || e.saldoDevedor > 0 || e.saldoAmortizado > 0)
-    .map(
-      (e) => `
-        <tr>
-          <td>${escapeHtml(safe(e.tipo))}</td>
-          <td>${escapeHtml(safe(e.contrato))}</td>
-          <td class="money">${escapeHtml(fmtBRL(e.saldoDevedor))}</td>
-          <td class="money">${escapeHtml(fmtBRL(e.saldoAmortizado))}</td>
-        </tr>
-      `
-    )
-    .join("");
-
-  if (rows) return rows;
-  return '<tr><td colspan="4" class="empty">-</td></tr>';
+function safeText(v?: string | null, fallback = "-") {
+  const s = String(v || "").trim();
+  return s || fallback;
 }
 
-function renderDebitosRows(data: GerarPdfResgateCapitalData) {
-  const rows: string[] = [];
+function sanitize(s: string) {
+  return s.replace(/\s+/g, "_").replace(/[^\w\-_.]/g, "");
+}
 
-  if (data.contaCorrente && (safe(data.contaCorrente.numero) || data.contaCorrente.saldoDevedor > 0 || data.contaCorrente.amortizado > 0)) {
-    rows.push(`
-      <tr>
-        <td><strong>Conta Corrente:</strong> ${escapeHtml(safe(data.contaCorrente.numero) || "-")}</td>
-        <td class="money">${escapeHtml(fmtBRL(data.contaCorrente.saldoDevedor))}</td>
-        <td class="money">${escapeHtml(fmtBRL(data.contaCorrente.amortizado))}</td>
-      </tr>
-    `);
+async function loadImageDataURL(url: string) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("Logo não encontrado");
+
+  const b = await r.blob();
+
+  const dataUrl = await new Promise<string>((resolve) => {
+    const fr = new FileReader();
+    fr.onloadend = () => resolve(fr.result as string);
+    fr.readAsDataURL(b);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+
+  return {
+    dataUrl,
+    width: img.width,
+    height: img.height,
+  };
+}
+
+async function printPdf(doc: jsPDF, nomeArquivo: string) {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    doc.save(nomeArquivo);
+    return;
   }
 
-  if (data.cartao && (safe(data.cartao.numero) || data.cartao.saldoDevedor > 0 || data.cartao.amortizado > 0)) {
-    rows.push(`
-      <tr>
-        <td><strong>Cartao:</strong> ${escapeHtml(safe(data.cartao.numero) || "-")}</td>
-        <td class="money">${escapeHtml(fmtBRL(data.cartao.saldoDevedor))}</td>
-        <td class="money">${escapeHtml(fmtBRL(data.cartao.amortizado))}</td>
-      </tr>
-    `);
-  }
+  const blob = doc.output("blob");
+  const blobUrl = window.URL.createObjectURL(blob);
 
-  if (!rows.length) {
-    rows.push('<tr><td colspan="3" class="empty">-</td></tr>');
-  }
+  await new Promise<void>((resolve) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "1px";
+    iframe.style.height = "1px";
+    iframe.style.opacity = "0";
+    iframe.style.border = "0";
+    iframe.style.pointerEvents = "none";
 
-  return rows.join("");
-}
+    let done = false;
+    let fallbackTimer: number | undefined;
 
-function renderParcelasRows(parcelas: ParcelaPrint[]) {
-  const rows = parcelas
-    .filter((p) => p.dataParcela || p.valor > 0)
-    .map(
-      (p, i) => `
-        <tr>
-          <td>Parcela ${i + 1}</td>
-          <td>${escapeHtml(formatDateToBr(p.dataParcela))}</td>
-          <td class="money">${escapeHtml(fmtBRL(p.valor))}</td>
-        </tr>
-      `
-    )
-    .join("");
-
-  if (rows) return rows;
-  return '<tr><td colspan="3" class="empty">-</td></tr>';
-}
-
-export function gerarPdfResgateCapital(data: GerarPdfResgateCapitalData) {
-  const parcelas = data.deposito?.parcelas || [];
-  const primeiraParcela = parcelas[0];
-  const totalDebitoSaldo = (data.contaCorrente?.saldoDevedor || 0) + (data.cartao?.saldoDevedor || 0);
-  const totalDebitoAmort = (data.contaCorrente?.amortizado || 0) + (data.cartao?.amortizado || 0);
-  const totalEmprestimoSaldo = data.emprestimos.reduce((acc, e) => acc + (e.saldoDevedor || 0), 0);
-  const totalEmprestimoAmort = data.emprestimos.reduce((acc, e) => acc + (e.saldoAmortizado || 0), 0);
-  const totalParcelado = parcelas.reduce((acc, p) => acc + (p.valor || 0), 0);
-  const hasEmprestimos = data.emprestimos.some(
-    (e) => safe(e.tipo) || safe(e.contrato) || e.saldoDevedor > 0 || e.saldoAmortizado > 0
-  );
-  const hasConta =
-    !!data.contaCorrente &&
-    (safe(data.contaCorrente.numero) || data.contaCorrente.saldoDevedor > 0 || data.contaCorrente.amortizado > 0);
-  const hasCartao =
-    !!data.cartao &&
-    (safe(data.cartao.numero) || data.cartao.saldoDevedor > 0 || data.cartao.amortizado > 0);
-  const hasDebitos = hasConta || hasCartao;
-  const hasParcelas = parcelas.some((p) => p.dataParcela || p.valor > 0);
-  const hasDeposito =
-    !!data.deposito &&
-    (safe(data.deposito.banco) || safe(data.deposito.agencia) || safe(data.deposito.contaCorrente) || hasParcelas || totalParcelado > 0);
-  const nomeUpper = safe(data.nome).toUpperCase();
-  const atendenteUpper = safe(data.atendente).toUpperCase();
-  const hideMatriculaEmpresa = isCnpj(data.cpfCnpj);
-
-  const html = `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resgate parcial de capital</title>
-  <style>
-    @page {
-      size: A4 portrait;
-      margin: 15mm 10mm;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      color: #000;
-      background: #fff;
-      font-size: 11pt;
-      line-height: 1.25;
-      margin: 0;
-      padding: 0;
-    }
-
-    #recibo {
-      display: block;
-      width: 100%;
-      margin: 0;
-      padding: 0;
-    }
-
-    .table-kv {
-      table-layout: fixed;
-    }
-
-    .table-kv td {
-      width: 50%;
-    }
-
-    .dados-recibo .table-print {
-      table-layout: fixed;
-    }
-
-    .dados-recibo .table-print td {
-      width: 50%;
-    }
-
-    .section {
-      page-break-inside: avoid;
-      break-inside: avoid;
-      margin-bottom: 0.8rem;
-    }
-
-    .table-print {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 0.5rem;
-    }
-
-    .table-print th,
-    .table-print td {
-      border: 1px solid #a5d6a7;
-      padding: 0.3rem 0.5rem;
-      font-size: 11pt;
-      vertical-align: top;
-      word-wrap: break-word;
-    }
-
-    h1 {
-      text-align: center;
-      font-size: 22pt;
-      margin: 0.3rem 0;
-    }
-
-    h2 {
-      text-align: center;
-      font-size: 15pt;
-      margin: 0.3rem 0;
-      font-weight: 600;
-    }
-
-    .header-recibo {
-      display: block;
-      margin: 0 auto 0.5rem;
-    }
-
-    .logo-wrap {
-      text-align: center;
-      margin: 0 0 0.5rem 0;
-      padding: 0;
-      line-height: 1;
-    }
-
-    .logo-print {
-      display: inline-block;
-      height: 68px;
-      max-height: 68px;
-      width: auto;
-      max-width: 300px;
-      object-fit: contain;
-      vertical-align: middle;
-    }
-
-    .assinaturas-table td {
-      border: none;
-      padding-top: 2rem;
-      text-align: center;
-      font-size: 11pt;
-      width: 50%;
-    }
-
-    .totals {
-      font-weight: bold;
-    }
-
-    .totals-right {
-      text-align: right;
-    }
-
-    .totals-center {
-      text-align: center !important;
-    }
-
-    .tr-total-center td {
-      text-align: center !important;
-    }
-
-    .money {
-      text-align: right;
-    }
-
-    .empty {
-      text-align: center;
-      color: #6b7280;
-    }
-
-    @media print {
-      body {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+    const finalize = () => {
+      if (done) return;
+      done = true;
+      if (fallbackTimer) {
+        window.clearTimeout(fallbackTimer);
       }
-    }
-  </style>
-</head>
-<body>
-  <div id="recibo">
-    <div class="section logo-wrap">
-      <img src="${window.location.origin}/sicoob-cressem-logo.png" alt="Sicoob" class="logo-print" />
-    </div>
+      try {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      } catch {}
+      window.URL.revokeObjectURL(blobUrl);
+      resolve();
+    };
 
-    <div class="section header-recibo">
-      <h1>Resgate parcial de capital</h1>
-    </div>
+    iframe.onload = () => {
+      const frameWindow = iframe.contentWindow;
+      if (!frameWindow) {
+        finalize();
+        return;
+      }
 
-    <div class="section dados-recibo">
-      <table class="table-print">
-        <tr>
-          <td><strong>Nome:</strong> ${escapeHtml(safe(data.nome))}</td>
-          <td><strong>CPF/CNPJ:</strong> ${escapeHtml(safe(data.cpfCnpj))}</td>
-        </tr>
-        ${
-          hideMatriculaEmpresa
-            ? ""
-            : `<tr>
-                <td><strong>Matricula:</strong> ${escapeHtml(safe(data.matricula) || "-")}</td>
-                <td><strong>Empresa:</strong> ${escapeHtml(safe(data.empresa) || "-")}</td>
-              </tr>`
+      const onAfterPrint = () => {
+        finalize();
+      };
+
+      try {
+        frameWindow.addEventListener("afterprint", onAfterPrint, { once: true });
+      } catch {
+        // ignore
+      }
+
+      // Fallback de segurança: alguns navegadores não disparam afterprint corretamente.
+      fallbackTimer = window.setTimeout(() => {
+        finalize();
+      }, 120000);
+
+      setTimeout(() => {
+        try {
+          frameWindow.focus();
+          frameWindow.print();
+        } catch {
+          finalize();
         }
-        <tr>
-          <td><strong>Saldo capital atual:</strong> ${escapeHtml(fmtBRL(data.capitalAtual))}</td>
-          <td><strong>Motivo:</strong> ${escapeHtml(safe(data.motivo) || "-")}</td>
-        </tr>
-        <tr>
-          <td colspan="2"><strong>Autorizado por:</strong> ${escapeHtml(safe(data.autorizado) || "-")}</td>
-        </tr>
-      </table>
-    </div>
+      }, 250);
+    };
 
-    ${hasEmprestimos ? `<div class="section parcelas">
-      <h2>Emprestimos</h2>
-      <table class="table-print">
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>Contrato</th>
-            <th>Saldo Devedor</th>
-            <th>Amortizacao</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${renderEmprestimosRows(data.emprestimos)}
-        </tbody>
-        <tfoot>
-          <tr class="tr-total-center">
-            <td colspan="2" class="totals totals-right">TOTAL:</td>
-            <td class="totals totals-center">${escapeHtml(fmtBRL(totalEmprestimoSaldo))}</td>
-            <td class="totals totals-center">${escapeHtml(fmtBRL(totalEmprestimoAmort))}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>` : ""}
-
-    ${hasDebitos ? `<div class="section parcelas">
-      <h2>Amortizacao de debitos em conta</h2>
-      <table class="table-print">
-        <thead>
-          <tr>
-            <th>Numero</th>
-            <th>Saldo Devedor</th>
-            <th>Amortizacao</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${renderDebitosRows(data)}
-        </tbody>
-        <tfoot>
-          <tr class="tr-total-center">
-            <td class="totals totals-right">TOTAL:</td>
-            <td class="totals totals-center">${escapeHtml(fmtBRL(totalDebitoSaldo))}</td>
-            <td class="totals totals-center">${escapeHtml(fmtBRL(totalDebitoAmort))}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>` : ""}
-
-    ${hasDeposito ? `<div class="section pagamentos">
-      <h2>Dados bancarios</h2>
-      <table class="table-print table-kv">
-        <tr>
-          <td><strong>Nr Banco:</strong> ${escapeHtml(safe(data.deposito?.banco) || "-")}</td>
-          <td><strong>Agencia:</strong> ${escapeHtml(safe(data.deposito?.agencia) || "-")}</td>
-        </tr>
-        <tr>
-          <td><strong>C/C:</strong> ${escapeHtml(safe(data.deposito?.contaCorrente) || "-")}</td>
-          <td><strong>Digito:</strong> -</td>
-        </tr>
-        <tr>
-          <td><strong>Saldo a ser creditado:</strong> ${escapeHtml(fmtBRL(totalParcelado))}</td>
-          <td><strong>Total do resgate:</strong> ${escapeHtml(fmtBRL(data.totalAmortizacao))}</td>
-        </tr>
-        <tr>
-          <td colspan="2"><strong>Saldo de Capital Restante:</strong> ${escapeHtml(fmtBRL(data.saldoRestante))}</td>
-        </tr>
-      </table>
-    </div>` : ""}
-
-    ${hasParcelas ? `<div class="section pagamentos">
-      <h2>Devolucao parcelada</h2>
-      <table class="table-print">
-        <tr>
-          <td><strong>Valor da 1 parcela:</strong> ${escapeHtml(fmtBRL(primeiraParcela?.valor || 0))}</td>
-          <td><strong>Data da 1 parcela:</strong> ${escapeHtml(formatDateToBr(primeiraParcela?.dataParcela || ""))}</td>
-        </tr>
-      </table>
-    </div>` : ""}
-
-    ${hasParcelas ? `<div class="section parcelas">
-      <h2>Parcelas e Valores</h2>
-      <table class="table-print">
-        <thead>
-          <tr>
-            <th>Parcela</th>
-            <th>Data</th>
-            <th>Valor</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${renderParcelasRows(parcelas)}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="2" class="totals totals-right">Total da devolucao parcelada:</td>
-            <td class="totals totals-center">${escapeHtml(fmtBRL(totalParcelado))}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>` : ""}
-
-    <div class="section pagamentos">
-      <h2>Dados do atendimento</h2>
-      <table class="table-print">
-        <tbody>
-          <tr>
-            <td><strong>Cidade:</strong> ${escapeHtml(safe(data.cidade).toUpperCase() || "-")}</td>
-            <td><strong>Data:</strong> ${escapeHtml(formatDateToBr(data.dataResgate))}</td>
-            <td><strong>Atendente:</strong> ${escapeHtml(safe(data.atendente))}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="section assinaturas">
-      <table class="table-print assinaturas-table">
-        <tr>
-          <td>_________________________________<br />${escapeHtml(nomeUpper || "ASSOCIADO(A)")}</td>
-          <td>_________________________________<br />${escapeHtml(atendenteUpper || "ATENDENTE")}</td>
-        </tr>
-        <tr id="trValidacao">
-          <td>_________________________________<br />Validacao</td>
-          <td></td>
-        </tr>
-      </table>
-    </div>
-  </div>
-
-</body>
-</html>
-  `;
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("aria-hidden", "true");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  iframe.style.visibility = "hidden";
-
-  document.body.appendChild(iframe);
-
-  const cleanup = () => {
-    setTimeout(() => {
-      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-    }, 300);
-  };
-
-  let printed = false;
-  const doPrint = () => {
-    if (printed) return;
-    printed = true;
-    const printWin = iframe.contentWindow;
-    if (!printWin) {
-      cleanup();
-      throw new Error("Nao foi possivel iniciar a impressao.");
-    }
-    printWin.onafterprint = cleanup;
-    printWin.focus();
-    printWin.print();
-    setTimeout(cleanup, 2000);
-  };
-
-  const doc = iframe.contentDocument || iframe.contentWindow?.document;
-  if (!doc) {
-    cleanup();
-    throw new Error("Nao foi possivel montar o documento para impressao.");
-  }
-
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  iframe.onload = () => {
-    setTimeout(doPrint, 120);
-  };
-
-  setTimeout(() => {
-    if (iframe.contentDocument?.readyState === "complete") {
-      doPrint();
-    }
-  }, 200);
+    iframe.src = blobUrl;
+    document.body.appendChild(iframe);
+  });
 }

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import jsPDF from "jspdf";
 
@@ -41,264 +41,258 @@ type Opts = {
   dataEnvio: string;
 };
 
-const PAGE = {
-  marginX: 32,
-  marginTop: 50,
-  marginBottom: 40,
+type GerarPdfAnaliseLimiteOptions = {
+  acao?: "download" | "print";
+  nomeArquivo?: string;
 };
 
-export async function gerarPdfAnaliseLimite(o: Opts) {
+const COLORS = {
+  green: { r: 121, g: 183, b: 41 },
+  dark: { r: 0, g: 54, b: 65 },
+  light: { r: 242, g: 248, b: 235 },
+  border: { r: 210, g: 220, b: 210 },
+};
+
+export async function gerarPdfAnaliseLimite(
+  o: Opts,
+  options: GerarPdfAnaliseLimiteOptions = {}
+) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
-  const contentX = PAGE.marginX;
-  const contentW = pageW - PAGE.marginX * 2;
+  const margin = 28;
+  const contentW = pageW - margin * 2;
 
-  const frameY = PAGE.marginTop + 10;
-  const frameH = pageH - frameY - PAGE.marginBottom;
-
-  let y = PAGE.marginTop;
+  let y = 22;
 
   try {
-    const logo = await toDataURL("/sicoob-cressem-logo.png");
-    const w = 110;
-    const h = (w * 300) / 500;
-    doc.addImage(logo, "PNG", contentX + 8, y - 18, w, h);
-  } catch {}
+    const logo = await loadImageDataURL("/sicoob-cressem-logo.png");
+    const maxW = 135;
+    const maxH = 42;
+    const scale = Math.min(maxW / logo.width, maxH / logo.height);
+    const w = logo.width * scale;
+    const h = logo.height * scale;
 
-  doc.setDrawColor(80, 80, 80);
-  doc.setLineWidth(0.8);
-  doc.rect(contentX, frameY, contentW, frameH);
-
-  const titleY = frameY + 26;
+    doc.addImage(logo.dataUrl, "PNG", margin, y, w, h);
+    y += h + 8;
+  } catch {
+    y += 20;
+  }
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("ANÁLISE CONCESSÃO DE NOVOS LIMITES", pageW / 2, titleY, {
+  doc.setFontSize(11);
+  doc.text("ANÁLISE DE CONCESSÃO DE NOVOS LIMITES", pageW / 2, y, {
     align: "center",
   });
 
-  doc.line(contentX, frameY + 48, contentX + contentW, frameY + 48);
+  y += 16;
 
-  y = frameY + 76;
+  y += 8;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(`Data da análise: ${formatDateBR(o.dataEnvio)}`, contentX + contentW - 6, y, {
-    align: "right",
-  });
-
+  drawSectionHeader(doc, "Dados do associado", margin, y, contentW);
   y += 18;
 
-  y = drawSection(doc, {
-    y,
-    x: contentX + 10,
-    w: contentW - 20,
-    title: "DADOS DO ASSOCIADO",
-    rows: [
-      [{ label: "CPF/CNPJ", value: o.cpf, full: true }],
-      [{ label: "Nome", value: o.nome, full: true }],
-      [{ label: "Celular", value: o.celular, full: true }],
-      ...(o.tipoFormulario === "PF"
-        ? [[{ label: "Empresa", value: o.empresa || "", full: true }]]
-        : []),
-    ],
-  });
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "CPF/CNPJ", value: o.cpf, width: contentW * 0.34 },
+    { label: "Nome", value: o.nome, width: contentW * 0.66 },
+  ]);
 
-  y = drawSection(doc, {
-    y,
-    x: contentX + 10,
-    w: contentW - 20,
-    title: "INFORMAÇÕES BANCÁRIAS E SALARIAIS",
-    rows: [
-      [
-        { label: "Conta Corrente", value: o.contaCorrente },
-        {
-          label: o.tipoFormulario === "PJ" ? "Faturamento Mensal" : "Salário Bruto",
-          value: fmtBRL(o.salarioBruto),
-        },
-      ],
-      [
-        {
-          label: o.tipoFormulario === "PJ" ? "Faturamento Anual" : "Salário Líquido",
-          value: fmtBRL(o.salarioLiquido),
-        },
-        ...(o.tipoFormulario === "PF"
-          ? [{ label: "Portabilidade", value: yesNoText(o.portabilidade) }]
-          : [{ label: "", value: "" }]),
-      ],
-      ...(o.tipoFormulario === "PF"
-        ? [
-            [
-              { label: "Funcionário Efetivo", value: yesNoText(o.efetivo) },
-              { label: "Cessão de Crédito", value: yesNoText(o.cessaoCredito) },
-            ],
-          ]
-        : [
-            [
-              { label: "Cessão de Crédito", value: yesNoText(o.cessaoCredito) },
-              { label: "Nível Carteira", value: o.carteira },
-            ],
-          ]),
-      [
-        ...(o.cessaoCredito === "1"
-          ? [{ label: "Data Pagamento", value: formatDateBR(o.dataPagamento || "") }]
-          : [{ label: "", value: "" }]),
-        { label: "Nível Carteira", value: o.tipoFormulario === "PF" ? o.carteira : "" },
-      ],
-      [{ label: "Números IAP", value: o.iap, full: true }],
-    ],
-  });
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Celular", value: o.celular, width: contentW * 0.34 },
+    {
+      label: o.tipoFormulario === "PF" ? "Empresa" : "Tipo",
+      value: o.tipoFormulario === "PF" ? o.empresa || "" : "Pessoa Jurídica",
+      width: contentW * 0.66,
+    },
+  ]);
 
-  y = drawSection(doc, {
-    y,
-    x: contentX + 10,
-    w: contentW - 20,
-    title: "STATUS CRM E OBSERVAÇÕES",
-    rows: [
-      [{ label: "Ocorrência CRM", value: yesNoText(o.ocorrenciaCRM), full: true }],
-      [{ label: "Observação", value: o.obsCRM || "", full: true }],
-    ],
-  });
+  y += 4;
 
-  y = drawSection(doc, {
-    y,
-    x: contentX + 10,
-    w: contentW - 20,
-    title: "INDICADORES DE RISCO / FINANCEIROS",
-    rows: [
-      [
-        { label: "Risco", value: o.risco },
-        { label: "PD", value: o.pd },
-      ],
-      [
-        { label: "CRL", value: fmtBRL(o.crl) },
-        { label: "Capital", value: fmtBRL(o.capital) },
-      ],
-      [
-        { label: "Dívida", value: fmtBRL(o.divida) },
-        { label: "Restrições", value: yesNoText(o.restricoes) },
-      ],
-      [{ label: "Quais", value: o.quaisRestricoes || "", full: true }],
-    ],
-  });
+  drawSectionHeader(doc, "Informações bancárias e salariais", margin, y, contentW);
+  y += 18;
 
-  y = drawSection(doc, {
-    y,
-    x: contentX + 10,
-    w: contentW - 20,
-    title: "SUGESTÃO DE LIMITE E APROVAÇÕES",
-    rows: [
-      [
-        { label: "Sugestão de Limite", value: fmtBRL(o.sugestaoLimite) },
-        { label: "Cartão", value: yesNoText(o.cartao) },
-      ],
-      [
-        { label: "Limite Cartão Atual", value: fmtBRL(o.cartaoAtual) },
-        { label: "Limite Cartão Aprovado", value: fmtBRL(o.cartaoAprovado) },
-      ],
-      [
-        { label: "Cheque Especial", value: yesNoText(o.especial) },
-        { label: "Limite Especial Atual", value: fmtBRL(o.especialAtual) },
-      ],
-      [{ label: "Limite Especial Aprovado", value: fmtBRL(o.especialAprovado), full: true }],
-    ],
-  });
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Conta Corrente", value: o.contaCorrente, width: contentW * 0.5 },
+    {
+      label: o.tipoFormulario === "PJ" ? "Faturamento Mensal" : "Salário Bruto",
+      value: fmtBRL(o.salarioBruto),
+      width: contentW * 0.5,
+    },
+  ]);
 
-  const sigY = pageH - 70;
-  drawSignatures(doc, contentX + 10, sigY, contentW - 20);
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    {
+      label: o.tipoFormulario === "PJ" ? "Faturamento Anual" : "Salário Líquido",
+      value: fmtBRL(o.salarioLiquido),
+      width: contentW * 0.5,
+    },
+    {
+      label: o.tipoFormulario === "PF" ? "Portabilidade" : "Cessão de Crédito",
+      value: o.tipoFormulario === "PF" ? yesNoText(o.portabilidade) : yesNoText(o.cessaoCredito),
+      width: contentW * 0.5,
+    },
+  ]);
 
-  doc.save(`analise_limite_${sanitize(o.nome || "associado")}.pdf`);
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    {
+      label: o.tipoFormulario === "PF" ? "Funcionário Efetivo" : "Nível Carteira",
+      value: o.tipoFormulario === "PF" ? yesNoText(o.efetivo) : o.carteira,
+      width: contentW * 0.5,
+    },
+    {
+      label: o.tipoFormulario === "PF" ? "Cessão de Crédito" : "Números IAP",
+      value: o.tipoFormulario === "PF" ? yesNoText(o.cessaoCredito) : o.iap,
+      width: contentW * 0.5,
+    },
+  ]);
+
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    {
+      label: "Data Pagamento",
+      value: o.cessaoCredito === "1" ? formatDateBR(o.dataPagamento || "") : "",
+      width: contentW * 0.5,
+    },
+    {
+      label: o.tipoFormulario === "PF" ? "Nível Carteira" : "Números IAP",
+      value: o.tipoFormulario === "PF" ? o.carteira : o.iap,
+      width: contentW * 0.5,
+    },
+  ]);
+
+  if (o.tipoFormulario === "PF") {
+    y = drawFieldsRow(doc, y, margin, contentW, [
+      { label: "Números IAP", value: o.iap, width: contentW },
+    ]);
+  }
+
+  y += 4;
+
+  drawSectionHeader(doc, "Status CRM e observações", margin, y, contentW);
+  y += 18;
+
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Ocorrência CRM", value: yesNoText(o.ocorrenciaCRM), width: contentW * 0.32 },
+    { label: "Observação", value: o.obsCRM || "", width: contentW * 0.68, maxLines: 1 },
+  ]);
+
+  y += 4;
+
+  drawSectionHeader(doc, "Indicadores de risco / financeiros", margin, y, contentW);
+  y += 18;
+
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Risco", value: o.risco, width: contentW * 0.5 },
+    { label: "PD", value: o.pd, width: contentW * 0.5 },
+  ]);
+
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "CRL", value: fmtBRL(o.crl), width: contentW * 0.5 },
+    { label: "Capital", value: fmtBRL(o.capital), width: contentW * 0.5 },
+  ]);
+
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Dívida", value: fmtBRL(o.divida), width: contentW * 0.5 },
+    { label: "Restrições", value: yesNoText(o.restricoes), width: contentW * 0.5 },
+  ]);
+
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Quais", value: o.quaisRestricoes || "", width: contentW },
+  ]);
+
+  y += 4;
+
+  drawSectionHeader(doc, "Sugestão de limite e aprovações", margin, y, contentW);
+  y += 18;
+
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Sugestão de Limite", value: fmtBRL(o.sugestaoLimite), width: contentW * 0.5 },
+    { label: "Cartão", value: yesNoText(o.cartao), width: contentW * 0.5 },
+  ]);
+
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Limite Cartão Atual", value: fmtBRL(o.cartaoAtual), width: contentW * 0.5 },
+    { label: "Limite Cartão Aprovado", value: fmtBRL(o.cartaoAprovado), width: contentW * 0.5 },
+  ]);
+
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Cheque Especial", value: yesNoText(o.especial), width: contentW * 0.5 },
+    { label: "Limite Especial Atual", value: fmtBRL(o.especialAtual), width: contentW * 0.5 },
+  ]);
+
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Limite Especial Aprovado", value: fmtBRL(o.especialAprovado), width: contentW },
+  ]);
+
+  y += 6;
+
+  drawSectionHeader(doc, "Data da análise e assinaturas", margin, y, contentW);
+  y += 18;
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Data", value: formatDateBR(o.dataEnvio), width: contentW },
+  ]);
+
+  const sigY = Math.min(y + 44, pageH - 56);
+  drawSignatures(doc, margin, sigY, contentW);
+
+  const nomeArquivo =
+    options.nomeArquivo || `analise_limite_${sanitize(o.nome || "associado")}.pdf`;
+  const acao = options.acao || "download";
+
+  if (acao === "print") {
+    await printPdf(doc, nomeArquivo);
+    return;
+  }
+
+  doc.save(nomeArquivo);
 }
 
-type Cell = {
+type FieldBox = {
   label: string;
   value: string;
-  full?: boolean;
+  width: number;
+  alignRight?: boolean;
+  maxLines?: number;
 };
 
-function drawSection(
-  doc: jsPDF,
-  opts: {
-    y: number;
-    x: number;
-    w: number;
-    title: string;
-    rows: Cell[][];
-  }
-) {
-  let y = opts.y;
-
-  doc.setFillColor(0, 128, 68);
-  doc.rect(opts.x, y, opts.w, 20, "F");
+function drawSectionHeader(doc: jsPDF, title: string, x: number, y: number, w: number) {
+  doc.setFillColor(COLORS.light.r, COLORS.light.g, COLORS.light.b);
+  doc.setDrawColor(COLORS.green.r, COLORS.green.g, COLORS.green.b);
+  doc.setLineWidth(0.55);
+  doc.rect(x, y, w, 16, "FD");
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(255, 255, 255);
-  doc.text(opts.title, opts.x + 8, y + 13);
+  doc.setFontSize(7.8);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.text(title.toUpperCase(), x + 6, y + 11);
   doc.setTextColor(0, 0, 0);
-
-  y += 12;
-
-  for (const row of opts.rows) {
-    y += 14;
-
-    if (row.length === 1 || row[0].full) {
-      const h = drawFieldBox(doc, {
-        x: opts.x,
-        y,
-        w: opts.w,
-        label: row[0].label,
-        value: row[0].value,
-      });
-      y += h + 6;
-      continue;
-    }
-
-    const gap = 12;
-    const colW = (opts.w - gap) / 2;
-
-    const leftH = measureFieldBox(doc, colW, row[0].label, row[0].value);
-    const rightH = measureFieldBox(doc, colW, row[1].label, row[1].value);
-    const rowH = Math.max(leftH, rightH, 24);
-
-    drawFieldBox(doc, {
-      x: opts.x,
-      y,
-      w: colW,
-      h: rowH,
-      label: row[0].label,
-      value: row[0].value,
-    });
-
-    drawFieldBox(doc, {
-      x: opts.x + colW + gap,
-      y,
-      w: colW,
-      h: rowH,
-      label: row[1].label,
-      value: row[1].value,
-    });
-
-    y += rowH + 6;
-  }
-
-  return y + 4;
 }
 
-function measureFieldBox(doc: jsPDF, w: number, label: string, value: string) {
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  const labelText = label ? `${label}: ` : "";
-  const labelWidth = doc.getTextWidth(labelText);
+function drawFieldsRow(doc: jsPDF, y: number, x: number, totalW: number, fields: FieldBox[]) {
+  const h = 22;
+  let cursorX = x;
 
-  doc.setFont("helvetica", "normal");
-  const lines = doc.splitTextToSize(value || "", Math.max(w - labelWidth - 18, 60));
-  const linesCount = Math.max(lines.length, 1);
+  fields.forEach((field, idx) => {
+    const w = idx === fields.length - 1
+      ? x + totalW - cursorX
+      : field.width;
 
-  return Math.max(22, 10 + linesCount * 12);
+    drawFieldBox(doc, {
+      x: cursorX,
+      y,
+      w,
+      h,
+      label: field.label,
+      value: field.value,
+      alignRight: field.alignRight,
+      maxLines: field.maxLines ?? 1,
+    });
+
+    cursorX += w;
+  });
+
+  return y + h;
 }
 
 function drawFieldBox(
@@ -307,54 +301,83 @@ function drawFieldBox(
     x: number;
     y: number;
     w: number;
+    h: number;
     label: string;
     value: string;
-    h?: number;
+    alignRight?: boolean;
+    maxLines?: number;
   }
 ) {
-  const h = opts.h ?? measureFieldBox(doc, opts.w, opts.label, opts.value);
-
-  doc.setDrawColor(190, 190, 190);
-  doc.setLineWidth(0.5);
-  doc.rect(opts.x, opts.y, opts.w, h);
+  doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+  doc.setFillColor(255, 255, 255);
+  doc.setLineWidth(0.45);
+  doc.rect(opts.x, opts.y, opts.w, opts.h, "FD");
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-
-  const labelText = opts.label ? `${opts.label}: ` : "";
-  const labelWidth = doc.getTextWidth(labelText);
-
-  if (labelText) {
-    doc.text(labelText, opts.x + 6, opts.y + 14);
+  doc.setFontSize(6.1);
+  doc.setTextColor(90, 110, 95);
+  if (opts.label.trim()) {
+    doc.text(opts.label.toUpperCase(), opts.x + 4, opts.y + 7.2);
   }
 
   doc.setFont("helvetica", "normal");
-  const lines = doc.splitTextToSize(
-    opts.value || "",
-    Math.max(opts.w - labelWidth - 18, 60)
-  );
+  doc.setFontSize(7.8);
+  doc.setTextColor(15, 23, 42);
 
-  doc.text(lines, opts.x + 6 + labelWidth, opts.y + 14);
+  const lines = splitWithEllipsis(doc, safeText(opts.value), opts.w - 8, opts.maxLines || 1);
 
-  return h;
+  if (opts.alignRight && lines.length === 1) {
+    doc.text(lines[0], opts.x + opts.w - 4, opts.y + 17, { align: "right" });
+  } else {
+    doc.text(lines, opts.x + 4, opts.y + 17);
+  }
+
+  doc.setTextColor(0, 0, 0);
+}
+
+function splitWithEllipsis(doc: jsPDF, value: string, width: number, maxLines: number) {
+  const raw = doc.splitTextToSize(value || "", Math.max(width, 20)) as string[];
+  if (raw.length <= maxLines) return raw.length ? raw : [""];
+
+  const clipped = raw.slice(0, maxLines);
+  clipped[maxLines - 1] = fitText(doc, clipped[maxLines - 1], width, true);
+  return clipped;
+}
+
+function fitText(doc: jsPDF, text: string, maxWidth: number, withEllipsis = false) {
+  const suffix = withEllipsis ? "…" : "";
+  let t = String(text || "").trim();
+
+  while (t.length > 0 && doc.getTextWidth(t + suffix) > maxWidth) {
+    t = t.slice(0, -1);
+  }
+
+  return t + suffix;
 }
 
 function drawSignatures(doc: jsPDF, x: number, y: number, w: number) {
-  const colGap = 24;
-  const colW = (w - colGap * 2) / 3;
+  const gap = 24;
+  const colW = (w - gap * 2) / 3;
 
   drawSignature(doc, x, y, colW, "Assinatura Colaborador");
-  drawSignature(doc, x + colW + colGap, y, colW, "Assinatura Gerência");
-  drawSignature(doc, x + (colW + colGap) * 2, y, colW, "Assinatura Diretoria");
+  drawSignature(doc, x + colW + gap, y, colW, "Assinatura Gerência");
+  drawSignature(doc, x + (colW + gap) * 2, y, colW, "Assinatura Diretoria");
 }
 
 function drawSignature(doc: jsPDF, x: number, y: number, w: number, label: string) {
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.8);
+  doc.setDrawColor(100, 116, 139);
+  doc.setLineWidth(0.7);
   doc.line(x, y, x + w, y);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.6);
+  doc.setTextColor(30, 41, 59);
   doc.text(label, x + w / 2, y + 12, { align: "center" });
+  doc.setTextColor(0, 0, 0);
+}
+
+function safeText(v?: string | null) {
+  return String(v || "-").trim() || "-";
 }
 
 function fmtBRL(value?: number | null) {
@@ -383,13 +406,78 @@ function sanitize(s: string) {
   return s.replace(/\s+/g, "_").replace(/[^\w\-_.]/g, "");
 }
 
-async function toDataURL(url: string) {
+async function loadImageDataURL(url: string) {
   const r = await fetch(url);
-  if (!r.ok) throw new Error("Logo não encontrado: " + url);
+  if (!r.ok) throw new Error("Logo não encontrado");
+
   const b = await r.blob();
-  return await new Promise<string>((resolve) => {
+
+  const dataUrl = await new Promise<string>((resolve) => {
     const fr = new FileReader();
     fr.onloadend = () => resolve(fr.result as string);
     fr.readAsDataURL(b);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+
+  return {
+    dataUrl,
+    width: img.width,
+    height: img.height,
+  };
+}
+
+async function printPdf(doc: jsPDF, nomeArquivo: string) {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    doc.save(nomeArquivo);
+    return;
+  }
+
+  const blob = doc.output("blob");
+  const blobUrl = window.URL.createObjectURL(blob);
+
+  await new Promise<void>((resolve) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.opacity = "0";
+    iframe.style.border = "0";
+
+    const cleanup = () => {
+      try {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      } catch {}
+      window.URL.revokeObjectURL(blobUrl);
+    };
+
+    iframe.onload = () => {
+      const frameWindow = iframe.contentWindow;
+      if (!frameWindow) {
+        cleanup();
+        resolve();
+        return;
+      }
+
+      setTimeout(() => {
+        frameWindow.focus();
+        frameWindow.print();
+
+        setTimeout(() => {
+          cleanup();
+          resolve();
+        }, 1500);
+      }, 120);
+    };
+
+    iframe.src = blobUrl;
+    document.body.appendChild(iframe);
   });
 }

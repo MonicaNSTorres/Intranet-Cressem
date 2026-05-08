@@ -10,6 +10,18 @@ function getMailList(envName: string) {
     .filter(Boolean);
 }
 
+function getReembolsoDebugEmail() {
+  return String(process.env.REEMBOLSO_DEBUG_EMAIL || "")
+    .trim()
+    .toLowerCase();
+}
+
+function aplicarDebugDestinatarios(destinatarios: string[]) {
+  const debugEmail = getReembolsoDebugEmail();
+  if (!debugEmail) return destinatarios;
+  return [debugEmail];
+}
+
 export const emailInformativoFinanceiroController = {
   async enviar(req: Request, res: Response) {
     try {
@@ -53,7 +65,11 @@ export const emailInformativoFinanceiroController = {
 
       const row: any = result.rows[0];
 
-      const destinatarios = getMailList("MAIL_TO");
+      const destinatariosBase = Array.from(new Set([
+        ...getMailList("REEMBOLSO_FINANCEIRO_EMAIL"),
+        ...getMailList("FINANCEIRO_EMAIL"),
+      ].filter(Boolean)));
+      const destinatarios = aplicarDebugDestinatarios(destinatariosBase);
 
       if (!destinatarios.length) {
         return res.status(500).json({

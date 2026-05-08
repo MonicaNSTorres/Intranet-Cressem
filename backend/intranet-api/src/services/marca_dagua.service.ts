@@ -14,7 +14,7 @@ export async function aplicarMarcaDaguaPdf(
 
   const angle = -45;      // rotacao
   const xPct = 0.5;       // centro horizontal
-  const yPct = 0.6;       // centro vertical
+  const yPct = 0.5;       // centro vertical
   const scale = 1.0;      // tamanho relativo
   const opacity = 0.15;   // transparencia
 
@@ -37,8 +37,14 @@ export async function aplicarMarcaDaguaPdf(
     const xCenter = pageWidth * xPct;
     const yCenter = pageHeight * yPct;
 
-    const x = xCenter - drawW / 2;
-    const y = yCenter - drawH / 2;
+    // Em pdf-lib, a rotacao ocorre em torno do canto inferior esquerdo da imagem.
+    // Ajustamos x/y para que o centro visual (ja rotacionado) fique no centro da pagina.
+    const rad = (angle * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    const x = xCenter - (drawW * cos - drawH * sin) / 2;
+    const y = yCenter - (drawW * sin + drawH * cos) / 2;
 
     page.drawImage(image, {
       x,

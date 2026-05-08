@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 
 const API_BASE =
@@ -75,11 +75,18 @@ export async function buscarSolicitacoesReembolsoPaginado(params: {
   cpf?: string;
   cidade?: string;
   status?: string;
+  verTodos?: boolean;
   page: number;
   limit: number;
 }) {
+  const { verTodos, ...rest } = params;
+  const queryParams = {
+    ...rest,
+    ver_todos: verTodos ? "1" : "0",
+  };
+
   const { data } = await api.get("/v1/solicitacao_reembolso_despesa_paginado", {
-    params,
+    params: queryParams,
   });
   return data;
 }
@@ -103,7 +110,7 @@ export async function decidirSolicitacaoReembolso(params: {
 }
 
 export async function concluirSolicitacaoReembolso(id: number | string) {
-  const { data } = await api.put(`/v1/solicitacao_reembolso_despesa_final/${id}`);
+  const { data } = await api.put(`/v1/solicitacao_reembolso_despesa/${id}/concluir`);
   return data;
 }
 
@@ -128,3 +135,4 @@ export async function baixarComprovanteGerenciamentoReembolso(oficio: string) {
   );
   return data;
 }
+

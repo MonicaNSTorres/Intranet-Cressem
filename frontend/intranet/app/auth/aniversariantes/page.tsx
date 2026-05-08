@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import BackButton from "@/components/back-button/back-button";
 import { buscarAniversariantesPorMes } from "@/services/aniversariante.service";
 import { MESES_BR } from "@/constants/date";
+import BadgeCampoPendente from "@/components/badge-campo-pendente/badge-campo-pendente";
 
 type Aniversariante = {
     nome: string;
@@ -13,6 +14,19 @@ type Aniversariante = {
     ramal: string;
     dia?: number;
 };
+
+
+const NOMES_OCULTOS = [
+    "EXTERNO",
+    "SALA TI",
+].map((n) => n.toUpperCase());
+
+
+function deveOcultarNome(nome: string) {
+    const normalizado = String(nome || "").trim().toUpperCase();
+    return NOMES_OCULTOS.includes(normalizado);
+}
+
 
 function pad2(n: number) {
     return String(n).padStart(2, "0");
@@ -93,15 +107,19 @@ export default function AniversariantesPage() {
 
     const filtrados = useMemo(() => {
         const q = busca.trim().toLowerCase();
-        if (!q) return items;
 
-        return items.filter((p) => {
+        const base = items.filter((p) => !deveOcultarNome(p.nome));
+
+        if (!q) return base;
+
+        return base.filter((p) => {
             const nome = (p.nome || "").toLowerCase();
             const setor = (p.setor || "").toLowerCase();
             const ramal = (p.ramal || "").toLowerCase();
             return nome.includes(q) || setor.includes(q) || ramal.includes(q);
         });
     }, [items, busca]);
+
 
     const mesLabel = useMemo(
         () => MESES_BR.find((m) => m.value === mes)?.label ?? `Mês ${mes}`,
@@ -202,39 +220,50 @@ export default function AniversariantesPage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {filtrados.map((p, idx) => (
-                                    <div
-                                        key={`${p.nome}-${p.ramal}-${idx}`}
-                                        className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50/50 p-3"
-                                    >
-                                        <div className="h-11 w-11 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-semibold">
-                                            {initialsFromName(p.nome)}
-                                        </div>
+                                {filtrados.map((p, idx) => {
 
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-sm font-semibold text-gray-900 truncate">
-                                                    {p.nome}
-                                                </p>
-                                                {typeof p.dia === "number" && (
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/10 text-primary border border-primary/20">
-                                                        Dia {pad2(p.dia)}
-                                                    </span>
-                                                )}
+                                    const ramal = String(p.ramal || "").trim();
+                                    const semRamal = !ramal || ramal === "0";
+
+                                    return (
+
+                                        <div
+                                            key={`${p.nome}-${p.ramal}-${idx}`}
+                                            className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50/50 p-3">
+
+                                            <div className="h-11 w-11 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-semibold">
+                                                {initialsFromName(p.nome)}
                                             </div>
-                                            <p className="text-xs text-gray-600 truncate">
-                                                {p.setor || "—"}
-                                            </p>
-                                        </div>
 
-                                        <div className="text-right">
-                                            <p className="text-[10px] text-gray-500">Ramal</p>
-                                            <p className="text-sm font-semibold text-gray-900">
-                                                {p.ramal || "—"}
-                                            </p>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-semibold text-gray-900 truncate">{p.nome}</p>
+
+                                                </div>
+                                                <p className="text-xs text-gray-600 truncate">
+                                                    {p.setor || "—"}
+                                                </p>
+                                            </div>
+
+                                            <div className="w-[220px] shrink-0 flex flex-col items-end gap-2">
+                                                <span className="inline-flex w-[100px] justify-center rounded-full bg-secondary px-3 py-1 text-sm font-bold text-white leading-none">
+                                                    Dia {typeof p.dia === "number" ? pad2(p.dia) : "--"}
+                                                </span>
+
+                                                <span
+                                                    className={`inline-flex w-[100px] justify-center rounded-full px-3 py-1 text-sm font-semibold leading-none ${semRamal
+                                                            ? "bg-red-50 text-red-500"
+                                                            : "bg-[#EEF7EE] text-[#4D6B4D]"
+                                                        }`}
+                                                >
+                                                    {semRamal ? "Sem ramal" : `Ramal ${ramal}`}
+                                                </span>
+
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                }
+                                )}
                             </div>
                         )}
                     </div>
@@ -266,7 +295,7 @@ export default function AniversariantesPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 

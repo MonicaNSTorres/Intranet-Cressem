@@ -125,14 +125,14 @@ export function ChequeEspecialForm() {
     }, []);
 
     useEffect(() => {
-        if (!debouncedQ.trim()) {
-            setRows([]);
-            setPaginaAtual(1);
-            setTotalPages(1);
+        const termo = String(debouncedQ || "").trim();
+
+        if (!termo) {
+            carregarRegistros(1, 15, " ");
             return;
         }
 
-        carregarRegistros(1, 15, debouncedQ);
+        carregarRegistros(1, 15, termo);
     }, [debouncedQ]);
 
     async function carregarUsuarioLogado() {
@@ -185,8 +185,10 @@ export function ChequeEspecialForm() {
             setError(null);
             setInfo(null);
 
+            const termoNormalizado = String(termoBusca ?? q ?? "").trim();
+
             const response = await buscarChequeEspecialPaginado({
-                nome: termoBusca ?? q ?? " ",
+                nome: termoNormalizado || " ",
                 page,
                 limit,
             });
@@ -567,10 +569,19 @@ export function ChequeEspecialForm() {
                                             </td>*/}
 
                                             <td className="px-3 py-3 text-center">
-                                                <span className="text-sm font-semibold text-red-600">
-                                                    {Number(item.SN_FEITO ?? 0) === 0 ? "Pendente" : "Concluído"}
-                                                </span>
-                                            </td>
+    <button
+        type="button"
+        onClick={() => marcarComoConcluido(item)}
+        disabled={concluido}
+        className={`inline-flex rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition ${
+            pendente
+                ? "cursor-pointer bg-amber-500 hover:bg-amber-600"
+                : "cursor-not-allowed bg-emerald-600 opacity-90"
+        }`}
+    >
+        {pendente ? "Pendente" : "Concluído"}
+    </button>
+</td>
                                         </tr>
                                     );
                                 })}

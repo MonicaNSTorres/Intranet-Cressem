@@ -40,6 +40,7 @@ export const AD_GROUPS = {
 } as const;
 
 const ALL_AD_GROUPS = Object.values(AD_GROUPS);
+const EMPTY_GROUPS: string[] = [];
 
 type MenuChild = {
     label: string;
@@ -103,7 +104,7 @@ const Sidebar = () => {
 
     const userGroups = Array.isArray(usuarioLogado?.grupos)
         ? usuarioLogado.grupos
-        : [];
+        : EMPTY_GROUPS;
 
     const isActive = (path: string) =>
         pathname === path || (path !== "/auth/home" && pathname?.startsWith(path));
@@ -409,8 +410,8 @@ const Sidebar = () => {
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
                 },
                 {
-                    label: "Procuração Ortugante PF/PJ",
-                    href: "/auth/procuracao_ortugante",
+                    label: "Procuração Outorgante PF/PJ",
+                    href: "/auth/procuracao_outorgante",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
                 },
                 {
@@ -712,7 +713,13 @@ const Sidebar = () => {
 
         setOpenGroups((prev) => {
             const merged = new Set([...prev, ...activeGroups]);
-            return Array.from(merged);
+            const next = Array.from(merged);
+
+            if (next.length === prev.length && next.every((value, index) => value === prev[index])) {
+                return prev;
+            }
+
+            return next;
         });
     }, [pathname, visibleMenuGroups]);
 

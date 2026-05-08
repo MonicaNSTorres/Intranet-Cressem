@@ -1,10 +1,11 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export type CidadeResponse = {
-  ID_CIDADES: number;
-  ID_UF: number;
-  NM_CIDADE: string;
-};
+  ID_CIDADES?: number;
+  ID_UF?: number;
+  NM_CIDADE?: string;
+  nome?: string;
+} | string;
 
 export async function listarCidades(): Promise<CidadeResponse[]> {
   if (!API_URL) {

@@ -55,5 +55,29 @@ export const demissaoController = {
         details: error.message,
       });
     }
+  },
+
+  async listarMotivoDemissao(_req: Request, res: Response) {
+    try {
+      const sql = `
+      SELECT *
+      FROM DBACRESSEM.MOTIVO_DEMISSAO
+      ORDER BY NM_MOTIVO
+    `;
+
+      const result = await oracleExecute(sql, {}, {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      });
+
+      return res.json(result.rows || []);
+    } catch (err: any) {
+      console.error("demissaoController.listar erro:", err);
+      return res.status(500).json({
+        error: "Falha ao listar motivo demissão.",
+        details: String(err?.message || err),
+      });
+    }
   }
+
+
 };

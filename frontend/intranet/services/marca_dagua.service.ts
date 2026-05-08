@@ -1,8 +1,8 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+﻿const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function getApiUrl() {
   if (!API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
+    throw new Error("NEXT_PUBLIC_API_URL nao definido no .env do front");
   }
 
   return API_URL;
@@ -27,15 +27,22 @@ export async function aplicarMarcaDagua(file: File) {
     try {
       const blob = await res.blob();
       const text = await blob.text();
-      if (text) mensagem = text;
+
+      if (text) {
+        try {
+          const parsed = JSON.parse(text);
+          mensagem = parsed?.error || parsed?.details || text;
+        } catch {
+          mensagem = text;
+        }
+      }
     } catch {
-      // mantém mensagem padrão
+      // mantem mensagem padrao
     }
 
     throw new Error(mensagem);
   }
 
   const blob = await res.blob();
-
   return blob;
 }

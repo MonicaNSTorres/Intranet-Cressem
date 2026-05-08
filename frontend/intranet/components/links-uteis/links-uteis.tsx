@@ -314,8 +314,8 @@ const links: LinkItem[] = [
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
             },
             {
-                title: "Procuração Ortugante PF/PJ",
-                href: "/auth/procuracao_ortugante",
+                title: "Procuração Outorgante PF/PJ",
+                href: "/auth/procuracao_outorgante",
             },
             {
                 title: "Renúncia de Procurador",

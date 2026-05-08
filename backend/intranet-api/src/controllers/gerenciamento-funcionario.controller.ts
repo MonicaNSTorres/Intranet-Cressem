@@ -320,7 +320,12 @@ export const gerenciamentoFuncionarioController = {
 
             let tipo = "funcionario";
 
-            if (nomeUpper === "JANAINA GABRIELA") {
+            const nomesConselho = [
+                "JANAINA GABRIELA",
+                "ISABELI LOHANA CARVALHO MARTINS",
+            ];
+
+            if (nomesConselho.includes(nomeUpper)) {
                 tipo = "conselho";
             } else if (nivelUpper === "DIRETORIA") {
                 tipo = "diretoria";

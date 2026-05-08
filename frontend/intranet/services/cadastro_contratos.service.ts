@@ -61,6 +61,20 @@ export type EmailContratoItem = {
   };
 };
 
+export type ContatoContratoPayload = {
+  NM_RESPONSAVEL: string;
+  NR_TELEFONE: string;
+  DESC_EMAIL: string;
+};
+
+export type ContatoContratoItem = {
+  ID_RH_CONTATO?: number;
+  ID_CONTRATO?: number;
+  NM_RESPONSAVEL?: string;
+  NR_TELEFONE?: string;
+  DESC_EMAIL?: string;
+};
+
 export async function cadastrarContratoEmpresa(
   payload: ContratoEmpresaPayload
 ) {
@@ -146,6 +160,35 @@ export async function buscarEmailsDoContratoSeparados(idContrato: number) {
     .map((item) => String(item?.FUNCIONARIO?.EMAIL || "").trim())
     .filter(Boolean)
     .join("/");
+}
+
+export async function listarContatosContratoPorContrato(idContrato: number) {
+  const { data } = await api.get<ContatoContratoItem[]>(
+    `/v1/rh_contato_contrato_lista/${idContrato}`
+  );
+  return data || [];
+}
+
+export async function cadastrarContatosContratoLote(
+  idContrato: number,
+  contatos: ContatoContratoPayload[]
+) {
+  const { data } = await api.post("/v1/rh_contato/lote", {
+    ID_CONTRATO: idContrato,
+    CONTATOS: contatos,
+  });
+  return data;
+}
+
+export async function editarContatosContratoLote(
+  idContrato: number,
+  contatos: ContatoContratoPayload[]
+) {
+  const { data } = await api.put(`/v1/rh_contato/lote/${idContrato}`, {
+    ID_CONTRATO: idContrato,
+    CONTATOS: contatos,
+  });
+  return data;
 }
 
 export type ContratoEmpresaItem = {

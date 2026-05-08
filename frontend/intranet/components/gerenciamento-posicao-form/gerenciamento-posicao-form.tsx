@@ -21,12 +21,6 @@ import {
 
 type ModalModo = "cadastrar" | "editar";
 
-function capitalizeWords(value?: string | null) {
-  return String(value || "")
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
 export function GerenciamentoPosicaoForm() {
   const [busca, setBusca] = useState("");
   const [posicoes, setPosicoes] = useState<PosicaoItem[]>([]);
@@ -408,10 +402,10 @@ export function GerenciamentoPosicaoForm() {
                       <tr key={posicao.ID_POSICAO} className="hover:bg-slate-50">
                         <td className="px-4 py-3">{posicao.CD_SICOOB}</td>
                         <td className="px-4 py-3">
-                          {capitalizeWords(posicao.DESC_ATUACAO)}
+                          {String(posicao.DESC_ATUACAO).toUpperCase()}
                         </td>
                         <td className="px-4 py-3">
-                          {capitalizeWords(posicao.NM_POSICAO)}
+                          {String(posicao.NM_POSICAO).toUpperCase()}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <button

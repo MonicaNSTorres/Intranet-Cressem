@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   baixarArquivoPatrocinio,
@@ -22,6 +22,14 @@ function capitalizeWords(value: string) {
   return String(value || "")
     .toLowerCase()
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizeText(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .trim();
 }
 
 function primeiroUltimoNome(nomeCompleto: string) {
@@ -99,6 +107,9 @@ export function GerenciamentoParticipacaoForm() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [selected, setSelected] = useState<PatrocinioItem | null>(null);
+  const [modalErro, setModalErro] = useState("");
+  const [modalInfo, setModalInfo] = useState("");
+  const modalScrollRef = useRef<HTMLDivElement | null>(null);
 
   const [inputGerencia, setInputGerencia] = useState("");
   const [inputParecerGerenciaEscrito, setInputParecerGerenciaEscrito] = useState("");
@@ -113,7 +124,10 @@ export function GerenciamentoParticipacaoForm() {
     async function init() {
       try {
         const me = await getMeAdUser();
-        const nome = me?.nome_completo || "";
+        const nome = String(me?.nome_completo || "").trim();
+        if (!nome) {
+          throw new Error("Usuário logado sem nome completo.");
+        }
         setNomeResponsavel(nome);
 
         if (nome) {
@@ -150,13 +164,14 @@ export function GerenciamentoParticipacaoForm() {
       const calc = { ...totaisIniciais };
 
       response.items.forEach((patrocinio) => {
+        const status = normalizeText(patrocinio.NM_ANDAMENTO || "");
         calc.total += 1;
 
-        if (patrocinio.NM_ANDAMENTO === "Pendente Gerência") calc.gerencia += 1;
-        else if (patrocinio.NM_ANDAMENTO === "Pendente Diretoria") calc.diretoria += 1;
-        else if (patrocinio.NM_ANDAMENTO === "Pendente Conselho") calc.conselho += 1;
-        else if (patrocinio.NM_ANDAMENTO === "Aprovado") calc.aprovados += 1;
-        else if (patrocinio.NM_ANDAMENTO === "Reprovado") calc.reprovados += 1;
+        if (status === "PENDENTE GERENCIA") calc.gerencia += 1;
+        else if (status === "PENDENTE DIRETORIA") calc.diretoria += 1;
+        else if (status === "PENDENTE CONSELHO") calc.conselho += 1;
+        else if (status === "APROVADO") calc.aprovados += 1;
+        else if (status === "REPROVADO") calc.reprovados += 1;
       });
 
       setTotais(calc);
@@ -208,14 +223,22 @@ export function GerenciamentoParticipacaoForm() {
   async function abrirAndamento(item: PatrocinioItem) {
     try {
       setErro("");
+      setModalErro("");
+      setModalInfo("");
       const completo = await buscarPatrocinioPorId(item.ID_PATROCINIO);
 
       setSelected(completo);
-      setInputGerencia(completo.NM_GERENCIA || "");
+      setInputGerencia(
+        completo.NM_GERENCIA ||
+          (funcionarioTipo?.TIPO === "gerencia" ? funcionarioTipo.NM_FUNCIONARIO : "")
+      );
       setInputParecerGerenciaEscrito(completo.DESC_PARECER_GERENCIA || "");
       setInputResponsavelEvento(completo.NM_GERENTE_EVENTO || "");
       setInputSugestao(completo.NM_SUGESTAO_PARTICIPANTES || "");
-      setInputDiretoria(completo.NM_DIRETORIA || "");
+      setInputDiretoria(
+        completo.NM_DIRETORIA ||
+          (funcionarioTipo?.TIPO === "diretoria" ? funcionarioTipo.NM_FUNCIONARIO : "")
+      );
       setInputParecerDiretoria(completo.DESC_PARECER_ESCRITO_DIRETORIA || "");
       setInputConselho(completo.DESC_PARECER_ESCRITO_CONSELHO || "");
       setInputConselhoFinal(completo.NM_PARECER_CONSELHO || "");
@@ -226,41 +249,63 @@ export function GerenciamentoParticipacaoForm() {
   }
 
   function validaCampos() {
-    if (!inputResponsavelEvento.trim()) {
-      setErro("Indique o funcionário responsável pelo evento.");
+    if (!podeEditar) {
+      setModalErro("Você só pode editar esta solicitação na etapa do seu perfil.");
       return false;
     }
 
-    if (!inputSugestao.trim()) {
-      setErro("Dê sugestões de participantes para o evento.");
-      return false;
+    if (funcionarioTipo?.TIPO === "gerencia") {
+      if (!inputParecerGerenciaEscrito.trim()) {
+        setModalErro("Preencha o campo Parecer Gerência.");
+        return false;
+      }
+
+      if (!inputResponsavelEvento.trim()) {
+        setModalErro("Preencha o campo Responsável Evento.");
+        return false;
+      }
+
+      if (!inputSugestao.trim()) {
+        setModalErro("Preencha o campo Sugestões de Participantes.");
+        return false;
+      }
     }
 
-    if (funcionarioTipo?.TIPO === "gerencia" && !inputParecerGerenciaEscrito.trim()) {
-      setErro("Dê seu parecer de Gerência.");
-      return false;
-    }
+    if (funcionarioTipo?.TIPO === "diretoria") {
+      if (!inputParecerDiretoria.trim()) {
+        setModalErro("Preencha o campo Parecer Diretoria.");
+        return false;
+      }
 
-    if (funcionarioTipo?.TIPO === "diretoria" && !inputParecerDiretoria.trim()) {
-      setErro("Dê seu parecer de Diretoria.");
-      return false;
+      if (!inputResponsavelEvento.trim()) {
+        setModalErro("Preencha o campo Responsável Evento.");
+        return false;
+      }
+
+      if (!inputSugestao.trim()) {
+        setModalErro("Preencha o campo Sugestões de Participantes.");
+        return false;
+      }
     }
 
     if (funcionarioTipo?.TIPO === "conselho") {
       if (!inputConselho.trim()) {
-        setErro("Dê seu parecer de Conselho.");
+        setModalErro("Preencha o campo Parecer Conselho.");
         return false;
       }
 
-      if (!inputConselhoFinal.trim()) {
-        setErro("Selecione a decisão final.");
+      const decisaoFinal = normalizeText(inputConselhoFinal || "");
+      const decisaoValida =
+        decisaoFinal === "APROVADO" || decisaoFinal === "REPROVADO";
+
+      if (!decisaoValida) {
+        setModalErro("Selecione a decisão final.");
         return false;
       }
     }
 
     return true;
   }
-
   async function salvarParecer() {
     if (!selected || !funcionarioTipo) return;
     if (!validaCampos()) return;
@@ -269,6 +314,8 @@ export function GerenciamentoParticipacaoForm() {
       setLoading(true);
       setErro("");
       setInfo("");
+      setModalErro("");
+      setModalInfo("");
 
       const existente = await buscarPatrocinioPorId(selected.ID_PATROCINIO);
 
@@ -334,10 +381,19 @@ export function GerenciamentoParticipacaoForm() {
       }
 
       setInfo("Solicitação atualizada com sucesso.");
-      setModalOpen(false);
+      setModalInfo("Solicitação atualizada com sucesso.");
+      setSelected((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...data,
+              NM_ANDAMENTO: status1 || prev.NM_ANDAMENTO,
+            }
+          : prev
+      );
       await buscarLista(paginaAtual);
     } catch (err: any) {
-      setErro(err?.message || "Não foi possível atualizar a solicitação.");
+      setModalErro(err?.message || "Não foi possível atualizar a solicitação.");
     } finally {
       setLoading(false);
     }
@@ -391,13 +447,54 @@ export function GerenciamentoParticipacaoForm() {
   const selectedVinculo = selected?.DESC_VINCULO || "Não preenchido.";
   const selectedServicos = selected?.DESC_SERVICOS || "Não preenchido.";
 
+  const statusPermitidoPerfil = useMemo(() => {
+    if (!funcionarioTipo) return "";
+    if (funcionarioTipo.TIPO === "gerencia") return "PENDENTE GERENCIA";
+    if (funcionarioTipo.TIPO === "diretoria") return "PENDENTE DIRETORIA";
+    if (funcionarioTipo.TIPO === "conselho") return "PENDENTE CONSELHO";
+    return "";
+  }, [funcionarioTipo]);
+
   const podeEditar = useMemo(() => {
     if (!selected || !funcionarioTipo) return false;
-    if (selected.NM_ANDAMENTO === "Aprovado" || selected.NM_ANDAMENTO === "Reprovado") {
-      return false;
+    const statusAtual = normalizeText(selected.NM_ANDAMENTO || "");
+    if (statusAtual === "APROVADO" || statusAtual === "REPROVADO") return false;
+    if (!statusPermitidoPerfil) return false;
+    return statusAtual === statusPermitidoPerfil;
+  }, [selected, funcionarioTipo, statusPermitidoPerfil]);
+
+  const mensagemBloqueioPerfil = useMemo(() => {
+    if (!funcionarioTipo || !selected) return "";
+    const statusAtual = normalizeText(selected.NM_ANDAMENTO || "");
+    if (statusAtual === "APROVADO" || statusAtual === "REPROVADO") {
+      return "Solicitação finalizada. Edição bloqueada.";
     }
-    return true;
-  }, [selected, funcionarioTipo]);
+    if (statusPermitidoPerfil && statusAtual !== statusPermitidoPerfil) {
+      const statusPermitidoPerfilVisual = statusPermitidoPerfil
+        .replace("GERENCIA", "GERÊNCIA")
+        .replace("DIRETORIA", "DIRETORIA")
+        .replace("CONSELHO", "CONSELHO");
+      return `Edição bloqueada para seu perfil. Você só pode editar quando estiver em "${statusPermitidoPerfilVisual}".`;
+    }
+    return "";
+  }, [
+    funcionarioTipo,
+    selected,
+    statusPermitidoPerfil,
+  ]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    if (!modalErro && !modalInfo && !mensagemBloqueioPerfil) return;
+
+    const timer = window.setTimeout(() => {
+      const el = modalScrollRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }, 40);
+
+    return () => window.clearTimeout(timer);
+  }, [modalOpen, modalErro, modalInfo, mensagemBloqueioPerfil]);
 
   return (
     <>
@@ -460,7 +557,7 @@ export function GerenciamentoParticipacaoForm() {
                       Cidade
                     </th>
                     <th className="bg-gray-50 border-b px-3 py-3 text-left text-xs font-semibold text-gray-600">
-                      Funcionário
+                      Funcionario
                     </th>
                     <th className="bg-gray-50 border-b px-3 py-3 text-left text-xs font-semibold text-gray-600">
                       Dia
@@ -469,7 +566,7 @@ export function GerenciamentoParticipacaoForm() {
                       Status
                     </th>
                     <th className="bg-gray-50 border-b px-3 py-3 text-center text-xs font-semibold text-gray-600">
-                      Ação
+                      Acao
                     </th>
                   </tr>
                 </thead>
@@ -477,22 +574,24 @@ export function GerenciamentoParticipacaoForm() {
                   {items.map((patrocinio) => (
                     <tr key={patrocinio.ID_PATROCINIO}>
                       <td className="border-b px-3 py-3 text-sm text-gray-700">
-                        {capitalizeWords(patrocinio.NM_SOLICITANTE)}
+                        {String(patrocinio.NM_SOLICITANTE || "").toUpperCase()}
                       </td>
                       <td className="border-b px-3 py-3 text-sm text-gray-700">
                         {formatarCPFouCNPJ(patrocinio.NR_CPF_CNPJ)}
                       </td>
                       <td className="border-b px-3 py-3 text-sm text-gray-700">
-                        {capitalizeWords(patrocinio.NM_CIDADE)}
+                        {String(patrocinio.NM_CIDADE || "").toUpperCase()}
                       </td>
                       <td className="border-b px-3 py-3 text-sm text-gray-700">
-                        {primeiroUltimoNome(capitalizeWords(patrocinio.NM_FUNCIONARIO))}
+                        {primeiroUltimoNome(
+                          String(patrocinio.NM_FUNCIONARIO || "").toUpperCase()
+                        )}
                       </td>
                       <td className="border-b px-3 py-3 text-sm text-gray-700">
                         {formatarDataBR(patrocinio.DT_SOLICITACAO)}
                       </td>
                       <td className="border-b px-3 py-3 text-sm text-gray-700">
-                        {capitalizeWords(patrocinio.NM_ANDAMENTO)}
+                        {String(patrocinio.NM_ANDAMENTO || "").toUpperCase()}
                       </td>
                       <td className="border-b px-3 py-3 text-center">
                         <button
@@ -578,13 +677,20 @@ export function GerenciamentoParticipacaoForm() {
 
       {modalOpen && selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+          <div
+            ref={modalScrollRef}
+            className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+          >
             <div className="sticky top-0 flex items-center justify-between border-b bg-white px-6 py-4">
               <h2 className="text-lg font-semibold text-gray-900">
                 Análise de Patrocínio - {capitalizeWords(selected.NM_SOLICITANTE)}
               </h2>
               <button
-                onClick={() => setModalOpen(false)}
+                onClick={() => {
+                  setModalErro("");
+                  setModalInfo("");
+                  setModalOpen(false);
+                }}
                 className="rounded bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
               >
                 Fechar
@@ -707,27 +813,51 @@ export function GerenciamentoParticipacaoForm() {
                   disabled={!(funcionarioTipo?.TIPO === "conselho" && podeEditar)}
                   className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
                 >
-                  <option value=""></option>
-                  <option value="Aprovado">Aprovado</option>
-                  <option value="Reprovado">Reprovado</option>
+                  <option value="">Selecione</option>
+                  <option value="Aprovado">APROVADO</option>
+                  <option value="Reprovado">REPROVADO</option>
                 </select>
               </div>
             </div>
 
-            <div className="sticky bottom-0 flex justify-end gap-3 border-t bg-white px-6 py-4">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="rounded bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
-              >
-                Close
-              </button>
-              <button
-                onClick={salvarParecer}
-                disabled={!podeEditar || loading}
-                className="rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Salvar
-              </button>
+            <div className="sticky bottom-0 flex items-end justify-between gap-3 border-t bg-white px-6 py-4">
+              <div className="flex-1 space-y-2 pr-2">
+                {modalErro && (
+                  <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {modalErro}
+                  </div>
+                )}
+                {modalInfo && (
+                  <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                    {modalInfo}
+                  </div>
+                )}
+                {mensagemBloqueioPerfil && (
+                  <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    {mensagemBloqueioPerfil}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex shrink-0 gap-3">
+                <button
+                  onClick={() => {
+                    setModalErro("");
+                    setModalInfo("");
+                    setModalOpen(false);
+                  }}
+                  className="rounded bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
+                >
+                  Fechar
+                </button>
+                <button
+                  onClick={salvarParecer}
+                  disabled={!podeEditar || loading}
+                  className="rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Salvar
+                </button>
+              </div>
             </div>
           </div>
         </div>

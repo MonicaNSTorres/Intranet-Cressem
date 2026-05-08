@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useState } from "react";
@@ -19,8 +19,12 @@ export function AuxilioCrecheForm() {
   const [descritivo, setDescritivo] = useState("");
   const [valorPago, setValorPago] = useState("");
   const [dataEntrega, setDataEntrega] = useState(hojeBR());
+  const [erroFormulario, setErroFormulario] = useState("");
 
-  const totalReembolsar = useMemo(() => AUXILIO_CRECHE_TETO, []);
+  const totalReembolsar = useMemo(() => {
+    const valorPagoNum = parseBRL(valorPago);
+    return valorPagoNum <= AUXILIO_CRECHE_TETO ? valorPagoNum : AUXILIO_CRECHE_TETO;
+  }, [valorPago]);
   const { loading, erro, info, buscar } = useAssociadoPorCpf();
 
   const onBuscar = async () => {
@@ -31,7 +35,34 @@ export function AuxilioCrecheForm() {
     }
   };
 
+  const validarCampos = () => {
+    if (!nome.trim()) return "Preencha o nome do empregado(a).";
+    if (!matricula.trim()) return "Preencha a matrícula.";
+    if (!instituicao.trim()) return "Preencha a creche/instituição.";
+    if (!descritivo.trim()) return "Preencha o descritivo.";
+    if (!valorPago.trim()) return "Preencha o valor total pago.";
+    if (!dataEntrega.trim()) return "Preencha a data de entrega.";
+
+    const valorPagoNum = parseBRL(valorPago);
+
+    if (valorPagoNum <= 0) {
+      return "O valor total pago deve ser maior que zero.";
+    }
+
+    return null;
+  };
+
+
   const gerar = async () => {
+    const erroValidacao = validarCampos();
+
+    if (erroValidacao) {
+      setErroFormulario(erroValidacao);
+      return;
+    }
+
+    setErroFormulario("");
+
     const valorPagoNum = parseBRL(valorPago);
 
     await gerarPdfAuxilioCreche({
@@ -41,10 +72,17 @@ export function AuxilioCrecheForm() {
       descritivo,
       valorPago: valorPagoNum,
       valorFixo: AUXILIO_CRECHE_TETO,
-      totalReembolsar: AUXILIO_CRECHE_TETO,
+      totalReembolsar,
       dataEntrega,
     });
   };
+
+  const mensagem = erroFormulario || erro || info;
+
+  const classeMensagem =
+    erroFormulario || erro
+      ? "mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3"
+      : "mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3";
 
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
@@ -66,15 +104,9 @@ export function AuxilioCrecheForm() {
             <SearchButton loading={loading} label="Pesquisar" />
           </div>
 
-          {erro && (
-            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-              {erro}
-            </div>
-          )}
-
-          {info && (
-            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-              {info}
+          {mensagem && (
+            <div className={classeMensagem}>
+              {mensagem}
             </div>
           )}
         </div>
@@ -168,6 +200,7 @@ export function AuxilioCrecheForm() {
 
       <div className="pt-5 border-t mt-6 flex items-center justify-end">
         <button
+          type="button"
           onClick={gerar}
           className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
         >
@@ -177,3 +210,4 @@ export function AuxilioCrecheForm() {
     </div>
   );
 }
+

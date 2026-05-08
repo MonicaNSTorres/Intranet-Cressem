@@ -1,13 +1,14 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { formatCpfView, hojeBR } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { gerarPdfFormularioDps } from "@/lib/pdf/gerarPdfFormularioDps";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
+import { buscarCidadesResgate } from "@/services/resgate_capital.service";
 
 type EstadoCivil =
   | ""
@@ -101,6 +102,12 @@ function toBrFromIso(value?: string) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function toDateInput(value?: string | null) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
+}
+
+
 export function FormularioDpsForm() {
   const [cpf, setCpf] = useState("");
   const [nome, setNome] = useState("");
@@ -112,6 +119,7 @@ export function FormularioDpsForm() {
   const [telefone, setTelefone] = useState("");
   const [rua, setRua] = useState("");
   const [bairro, setBairro] = useState("");
+  const [cidadesAtendimento, setCidadesAtendimento] = useState<{ value: string; label: string }[]>([]);
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
   const [cep, setCep] = useState("");
@@ -128,15 +136,32 @@ export function FormularioDpsForm() {
   const onBuscar = async () => {
     const r = await buscar(cpf);
 
+    console.log("RETORNO BUSCA ASSOCIADO:", r);
+
     if (r.found) {
-      setNome(r.data.nome || "");
-      setDocumento(r.data.rg || "");
-      setRua(r.data.rua || r.data.endereco || "");
-      setBairro(r.data.bairro || "");
-      setCidade(r.data.cidade || "");
-      setEstado(r.data.uf || "");
-      setCep(formatCep(r.data.cep || ""));
-      setEmail("");
+      const data = r.data as any;
+
+      console.log("DATA ASSOCIADO:", data);
+
+      setNome(data.nome || "");
+      setNascimento(toDateInput(data.nascimento || ""));
+
+      setDocumento(data.documento || data.rg || "");
+      setOrgaoExpedidor(data.orgao || "");
+
+      setTelefone(formatTelefone(data.telefone || ""));
+
+      setRua(data.rua || data.endereco || "");
+      setBairro(data.bairro || "");
+      setCidade(data.cidade || "");
+      setEstado(data.uf || "");
+      setCep(formatCep(data.cep || ""));
+
+      setEmail(data.email || "");
+
+      if (data.cidade) {
+        setCidadeAtendimento(data.cidade);
+      }
     }
   };
 
@@ -156,6 +181,29 @@ export function FormularioDpsForm() {
       setTipoHepatite("");
     }
   }
+
+
+  useEffect(() => {
+    async function carregarCidadesAtendimento() {
+      try {
+        const lista = await buscarCidadesResgate(); // [{ ID_CIDADES, ID_UF, NM_CIDADE }]
+        const opcoes = (lista || [])
+          .map((c: any) => {
+            const nome = String(c.NM_CIDADE || "").trim();
+            return { value: nome, label: nome };
+          })
+          .filter((c) => c.value.length > 0);
+
+        setCidadesAtendimento(opcoes);
+      } catch (e) {
+        console.error("Erro ao carregar cidades de atendimento:", e);
+        setCidadesAtendimento([]);
+      }
+    }
+
+    carregarCidadesAtendimento();
+  }, []);
+
 
   const gerar = async () => {
     await gerarPdfFormularioDps({
@@ -413,9 +461,21 @@ export function FormularioDpsForm() {
               >
                 <div className="text-sm text-gray-800">
                   {item.label}
+                </div>
+
+                <div className="flex items-center gap-3 text-sm text-gray-700">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name={item.key}
+                      checked={doencas[item.key] === "sim"}
+                      onChange={() => setRespostaDoenca(item.key, "sim")}
+                    />
+                    Sim
+                  </label>
 
                   {item.key === "diabetes" && doencas.diabetes === "sim" && (
-                    <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-700">
+                    <div className="flex items-center gap-4">
                       <label className="flex items-center gap-2">
                         <input
                           type="radio"
@@ -447,7 +507,7 @@ export function FormularioDpsForm() {
                   )}
 
                   {item.key === "hepatite" && doencas.hepatite === "sim" && (
-                    <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-700">
+                    <div className="flex items-center gap-4">
                       <label className="flex items-center gap-2">
                         <input
                           type="radio"
@@ -477,27 +537,19 @@ export function FormularioDpsForm() {
                       </label>
                     </div>
                   )}
+
+                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="radio"
+                      name={item.key}
+                      checked={doencas[item.key] === "nao"}
+                      onChange={() => setRespostaDoenca(item.key, "nao")}
+                    />
+                    Não
+                  </label>
+
                 </div>
 
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    name={item.key}
-                    checked={doencas[item.key] === "sim"}
-                    onChange={() => setRespostaDoenca(item.key, "sim")}
-                  />
-                  Sim
-                </label>
-
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    name={item.key}
-                    checked={doencas[item.key] === "nao"}
-                    onChange={() => setRespostaDoenca(item.key, "nao")}
-                  />
-                  Não
-                </label>
               </div>
             ))}
           </div>
@@ -524,12 +576,18 @@ export function FormularioDpsForm() {
           <label className="block text-xs font-medium text-gray-600 mb-1">
             Cidade do atendimento
           </label>
-          <input
+          <select
             value={cidadeAtendimento}
             onChange={(e) => setCidadeAtendimento(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-            placeholder="Cidade do atendimento"
-          />
+            className="w-full border px-3 py-2 rounded bg-white"
+          >
+            <option value="">Selecione</option>
+            {cidadesAtendimento.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
