@@ -139,12 +139,12 @@ export const estoqueConsumiveisService = {
     }) {
         const existe = await oracleExecute(
             `
-      SELECT ID_ITEM
-      FROM DBACRESSEM.ESTOQUE_ITENS
-      WHERE ST_ATIVO = 'S'
-        AND UPPER(TRIM(NM_ITEM)) = UPPER(TRIM(:nome))
-      FETCH FIRST 1 ROWS ONLY
-    `,
+  SELECT ID_ITEM
+  FROM DBACRESSEM.ESTOQUE_ITENS
+  WHERE ST_ATIVO = 'S'
+    AND UPPER(TRIM(NM_ITEM)) = UPPER(TRIM(:nome))
+  FETCH FIRST 1 ROWS ONLY
+`,
             { nome: data.nome },
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
@@ -154,22 +154,22 @@ export const estoqueConsumiveisService = {
         }
 
         const sql = `
-      INSERT INTO DBACRESSEM.ESTOQUE_ITENS (
-        NM_ITEM,
-        DS_ITEM,
-        DS_UNIDADE,
-        QT_SALDO_ATUAL,
-        QT_SALDO_MINIMO,
-        DT_ATUALIZACAO
-      ) VALUES (
-        :nome,
-        :descricao,
-        :unidade,
-        :saldoAtual,
-        :saldoMinimo,
-        SYSDATE
-      )
-    `;
+  INSERT INTO DBACRESSEM.ESTOQUE_ITENS (
+    NM_ITEM,
+    DS_ITEM,
+    DS_UNIDADE,
+    QT_SALDO_ATUAL,
+    QT_SALDO_MINIMO,
+    DT_ATUALIZACAO
+  ) VALUES (
+    :nome,
+    :descricao,
+    :unidade,
+    :saldoAtual,
+    :saldoMinimo,
+    SYSDATE
+  )
+`;
 
         await oracleExecute(
             sql,
@@ -182,6 +182,93 @@ export const estoqueConsumiveisService = {
             },
             { autoCommit: true }
         );
+
+        const saldoInicial = normalizeNumber(data.saldoAtual);
+
+        if (saldoInicial > 0) {
+            const itemCriado = await this.buscarItemPorNomeAproximado(data.nome);
+
+            if (itemCriado?.ID_ITEM) {
+                await oracleExecute(
+                    `
+            INSERT INTO DBACRESSEM.ESTOQUE_MOVIMENTACOES (
+                ID_ITEM,
+                TP_MOVIMENTACAO,
+                QT_MOVIMENTACAO,
+                QT_SALDO_ANTES,
+                QT_SALDO_DEPOIS,
+                DS_OBSERVACAO,
+                NM_USUARIO_BAIXA
+            ) VALUES (
+                :idItem,
+                'ENTRADA',
+                :quantidade,
+                0,
+                :saldoDepois,
+                :observacao,
+                :usuario
+            )
+            `,
+                    {
+                        idItem: itemCriado.ID_ITEM,
+                        quantidade: saldoInicial,
+                        saldoDepois: saldoInicial,
+                        observacao: "Entrada inicial no cadastro do produto",
+                        usuario: "cadastro_produto",
+                    },
+                    { autoCommit: true }
+                );
+            }
+        }
+
+        let idItemGlpi: number | null = null;
+
+        try {
+            const glpiItem = await glpiService.createConsumableItemEstoque({
+                nome: data.nome,
+                descricao: data.descricao || "",
+            });
+
+            idItemGlpi = Number(
+                glpiItem?.id ||
+                glpiItem?.ID ||
+                glpiItem?.data?.id ||
+                glpiItem?.data?.ID
+            );
+
+            if (idItemGlpi) {
+                await oracleExecute(
+                    `
+      UPDATE DBACRESSEM.ESTOQUE_ITENS
+      SET ID_ITEM_GLPI = :idItemGlpi,
+          DT_ULTIMA_SINCRONIZACAO_GLPI = SYSDATE
+      WHERE UPPER(TRIM(NM_ITEM)) = UPPER(TRIM(:nome))
+        AND ST_ATIVO = 'S'
+      `,
+                    {
+                        idItemGlpi,
+                        nome: data.nome,
+                    },
+                    { autoCommit: true }
+                );
+
+                const saldoAtual = normalizeNumber(data.saldoAtual);
+
+                if (saldoAtual > 0) {
+                    for (let i = 0; i < saldoAtual; i++) {
+                        await glpiService.createConsumableEstoque({
+                            idItem: idItemGlpi,
+                            quantidade: 1,
+                        });
+                    }
+                }
+            }
+        } catch (error: any) {
+            console.error(
+                "Produto cadastrado no Oracle, mas falhou ao cadastrar no GLPI:",
+                error?.response?.data || error?.message || error
+            );
+        }
 
         return { success: true };
     },
@@ -446,6 +533,36 @@ export const estoqueConsumiveisService = {
             { autoCommit: true }
         );
 
+        try {
+            const idItemGlpi = Number(item.ID_ITEM_GLPI);
+
+            if (idItemGlpi) {
+                for (let i = 0; i < quantidade; i++) {
+                    await glpiService.createConsumableEstoque({
+                        idItem: idItemGlpi,
+                        quantidade: 1,
+                    });
+                }
+
+                await oracleExecute(
+                    `
+                UPDATE DBACRESSEM.ESTOQUE_ITENS
+                SET DT_ULTIMA_SINCRONIZACAO_GLPI = SYSDATE
+                WHERE ID_ITEM = :idItem
+                `,
+                    {
+                        idItem: data.idItem,
+                    },
+                    { autoCommit: true }
+                );
+            }
+        } catch (error: any) {
+            console.error(
+                "Entrada registrada no Oracle, mas falhou ao enviar para o GLPI:",
+                error?.response?.data || error?.message || error
+            );
+        }
+
         await this.resolverAlertasNormalizados();
 
         return { success: true, saldoDepois };
@@ -599,6 +716,40 @@ Observação: ${data.observacao || "-"}
     `;
 
         const result = await oracleExecute(sql, {}, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        return result.rows || [];
+    },
+
+    async listarMovimentacoesMensais(ano: number, mes: number) {
+        const sql = `
+      SELECT
+        M.ID_MOVIMENTACAO,
+        M.ID_ITEM,
+        I.NM_ITEM,
+        I.DS_UNIDADE,
+        M.TP_MOVIMENTACAO,
+        M.QT_MOVIMENTACAO,
+        M.QT_SALDO_ANTES,
+        M.QT_SALDO_DEPOIS,
+        M.DS_OBSERVACAO,
+        M.NM_SOLICITANTE,
+        M.NM_SETOR,
+        M.ID_CHAMADO_GLPI,
+        M.NM_USUARIO_BAIXA,
+        M.DT_MOVIMENTACAO
+      FROM DBACRESSEM.ESTOQUE_MOVIMENTACOES M
+      INNER JOIN DBACRESSEM.ESTOQUE_ITENS I
+        ON I.ID_ITEM = M.ID_ITEM
+      WHERE EXTRACT(YEAR FROM M.DT_MOVIMENTACAO) = :ano
+        AND EXTRACT(MONTH FROM M.DT_MOVIMENTACAO) = :mes
+      ORDER BY M.DT_MOVIMENTACAO DESC, M.ID_MOVIMENTACAO DESC
+    `;
+
+        const result = await oracleExecute(
+            sql,
+            { ano, mes },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
         return result.rows || [];
     },
 
@@ -865,17 +1016,17 @@ ${data.resposta}
 
                     await oracleExecute(
                         `
-                    UPDATE DBACRESSEM.ESTOQUE_ITENS
-                    SET QT_SALDO_ATUAL = :saldoDepois,
-                        QT_SALDO_MINIMO = CASE
-                            WHEN :saldoMinimo > 0 THEN :saldoMinimo
-                            ELSE QT_SALDO_MINIMO
-                        END,
-                        DS_ITEM = NVL(:descricao, DS_ITEM),
-                        DS_UNIDADE = NVL(:unidade, DS_UNIDADE),
-                        DT_ATUALIZACAO = SYSDATE
-                    WHERE ID_ITEM = :idItem
-                    `,
+                UPDATE DBACRESSEM.ESTOQUE_ITENS
+                SET QT_SALDO_ATUAL = :saldoDepois,
+                    QT_SALDO_MINIMO = CASE
+                        WHEN :saldoMinimo > 0 THEN :saldoMinimo
+                        ELSE QT_SALDO_MINIMO
+                    END,
+                    DS_ITEM = NVL(:descricao, DS_ITEM),
+                    DS_UNIDADE = NVL(:unidade, DS_UNIDADE),
+                    DT_ATUALIZACAO = SYSDATE
+                WHERE ID_ITEM = :idItem
+                `,
                         {
                             idItem: itemExistente.ID_ITEM,
                             saldoDepois,
@@ -889,24 +1040,24 @@ ${data.resposta}
                     if (saldoAtual > 0) {
                         await oracleExecute(
                             `
-                        INSERT INTO DBACRESSEM.ESTOQUE_MOVIMENTACOES (
-                            ID_ITEM,
-                            TP_MOVIMENTACAO,
-                            QT_MOVIMENTACAO,
-                            QT_SALDO_ANTES,
-                            QT_SALDO_DEPOIS,
-                            DS_OBSERVACAO,
-                            NM_USUARIO_BAIXA
-                        ) VALUES (
-                            :idItem,
-                            'ENTRADA',
-                            :quantidade,
-                            :saldoAntes,
-                            :saldoDepois,
-                            :observacao,
-                            :usuario
-                        )
-                        `,
+                    INSERT INTO DBACRESSEM.ESTOQUE_MOVIMENTACOES (
+                        ID_ITEM,
+                        TP_MOVIMENTACAO,
+                        QT_MOVIMENTACAO,
+                        QT_SALDO_ANTES,
+                        QT_SALDO_DEPOIS,
+                        DS_OBSERVACAO,
+                        NM_USUARIO_BAIXA
+                    ) VALUES (
+                        :idItem,
+                        'ENTRADA',
+                        :quantidade,
+                        :saldoAntes,
+                        :saldoDepois,
+                        :observacao,
+                        :usuario
+                    )
+                    `,
                             {
                                 idItem: itemExistente.ID_ITEM,
                                 quantidade: saldoAtual,
@@ -925,22 +1076,22 @@ ${data.resposta}
 
                 await oracleExecute(
                     `
-                INSERT INTO DBACRESSEM.ESTOQUE_ITENS (
-                    NM_ITEM,
-                    DS_ITEM,
-                    DS_UNIDADE,
-                    QT_SALDO_ATUAL,
-                    QT_SALDO_MINIMO,
-                    DT_ATUALIZACAO
-                ) VALUES (
-                    :nome,
-                    :descricao,
-                    :unidade,
-                    :saldoAtual,
-                    :saldoMinimo,
-                    SYSDATE
-                )
-                `,
+            INSERT INTO DBACRESSEM.ESTOQUE_ITENS (
+                NM_ITEM,
+                DS_ITEM,
+                DS_UNIDADE,
+                QT_SALDO_ATUAL,
+                QT_SALDO_MINIMO,
+                DT_ATUALIZACAO
+            ) VALUES (
+                :nome,
+                :descricao,
+                :unidade,
+                :saldoAtual,
+                :saldoMinimo,
+                SYSDATE
+            )
+            `,
                     {
                         nome,
                         descricao,
@@ -950,6 +1101,85 @@ ${data.resposta}
                     },
                     { autoCommit: true }
                 );
+
+                const itemCriado = await this.buscarItemPorNomeAproximado(nome);
+
+                if (itemCriado?.ID_ITEM && saldoAtual > 0) {
+                    await oracleExecute(
+                        `
+                INSERT INTO DBACRESSEM.ESTOQUE_MOVIMENTACOES (
+                    ID_ITEM,
+                    TP_MOVIMENTACAO,
+                    QT_MOVIMENTACAO,
+                    QT_SALDO_ANTES,
+                    QT_SALDO_DEPOIS,
+                    DS_OBSERVACAO,
+                    NM_USUARIO_BAIXA
+                ) VALUES (
+                    :idItem,
+                    'ENTRADA',
+                    :quantidade,
+                    0,
+                    :saldoDepois,
+                    :observacao,
+                    :usuario
+                )
+                `,
+                        {
+                            idItem: itemCriado.ID_ITEM,
+                            quantidade: saldoAtual,
+                            saldoDepois: saldoAtual,
+                            observacao: "Entrada inicial por importação em massa via Excel",
+                            usuario: "importacao_excel",
+                        },
+                        { autoCommit: true }
+                    );
+                }
+
+                try {
+                    const glpiItem = await glpiService.createConsumableItemEstoque({
+                        nome,
+                        descricao: descricao || "",
+                    });
+
+                    const idItemGlpi = Number(
+                        glpiItem?.id ||
+                        glpiItem?.ID ||
+                        glpiItem?.data?.id ||
+                        glpiItem?.data?.ID
+                    );
+
+                    if (idItemGlpi) {
+                        await oracleExecute(
+                            `
+                    UPDATE DBACRESSEM.ESTOQUE_ITENS
+                    SET ID_ITEM_GLPI = :idItemGlpi,
+                        DT_ULTIMA_SINCRONIZACAO_GLPI = SYSDATE
+                    WHERE UPPER(TRIM(NM_ITEM)) = UPPER(TRIM(:nome))
+                      AND ST_ATIVO = 'S'
+                    `,
+                            {
+                                idItemGlpi,
+                                nome,
+                            },
+                            { autoCommit: true }
+                        );
+
+                        if (saldoAtual > 0) {
+                            for (let i = 0; i < saldoAtual; i++) {
+                                await glpiService.createConsumableEstoque({
+                                    idItem: idItemGlpi,
+                                    quantidade: 1,
+                                });
+                            }
+                        }
+                    }
+                } catch (error: any) {
+                    console.error(
+                        "Produto importado no Oracle, mas falhou ao cadastrar estoque no GLPI:",
+                        error?.response?.data || error?.message || error
+                    );
+                }
 
                 inseridos++;
             } catch (error) {
@@ -1444,42 +1674,45 @@ ${data.resposta}
 
         const saldoDepois = saldoAntes - quantidade;
 
+        // 🔥 STATUS FINAL PADRÃO ENTERPRISE
+        const statusFinalGlpi = 6;
+
         await oracleExecute(
             `
-        INSERT INTO DBACRESSEM.ESTOQUE_SOLICITACOES_GLPI (
-            ID_CHAMADO_GLPI,
-            ID_ITEM,
-            NM_ITEM_SOLICITADO,
-            QT_SOLICITADA,
-            QT_ATENDIDA,
-            NM_SOLICITANTE,
-            NM_SETOR,
-            DS_DESCRICAO_GLPI,
-            DT_SOLICITACAO,
-            ST_SOLICITACAO,
-            DT_ATENDIMENTO,
-            NM_USUARIO_ATENDIMENTO,
-            NR_ULTIMO_STATUS_GLPI,
-            NR_STATUS_ATUAL_GLPI,
-            ST_NOTIFICADO_RETORNO
-        ) VALUES (
-            :idChamadoGlpi,
-            :idItem,
-            :nomeItem,
-            :quantidade,
-            :quantidade,
-            :nomeSolicitante,
-            :nomeSetor,
-            :descricaoGlpi,
-            SYSDATE,
-            'ATENDIDA',
-            SYSDATE,
-            :usuario,
-            5,
-            5,
-            'S'
-        )
-        `,
+    INSERT INTO DBACRESSEM.ESTOQUE_SOLICITACOES_GLPI (
+        ID_CHAMADO_GLPI,
+        ID_ITEM,
+        NM_ITEM_SOLICITADO,
+        QT_SOLICITADA,
+        QT_ATENDIDA,
+        NM_SOLICITANTE,
+        NM_SETOR,
+        DS_DESCRICAO_GLPI,
+        DT_SOLICITACAO,
+        ST_SOLICITACAO,
+        DT_ATENDIMENTO,
+        NM_USUARIO_ATENDIMENTO,
+        NR_ULTIMO_STATUS_GLPI,
+        NR_STATUS_ATUAL_GLPI,
+        ST_NOTIFICADO_RETORNO
+    ) VALUES (
+        :idChamadoGlpi,
+        :idItem,
+        :nomeItem,
+        :quantidade,
+        :quantidade,
+        :nomeSolicitante,
+        :nomeSetor,
+        :descricaoGlpi,
+        SYSDATE,
+        'ATENDIDA',
+        SYSDATE,
+        :usuario,
+        :statusFinalGlpi,
+        :statusFinalGlpi,
+        'S'
+    )
+    `,
             {
                 idChamadoGlpi,
                 idItem: data.idItem,
@@ -1489,36 +1722,37 @@ ${data.resposta}
                 nomeSetor: data.nomeSetor || null,
                 descricaoGlpi: data.observacao || "Saída manual registrada pela Intranet.",
                 usuario: data.usuarioAtendimento,
+                statusFinalGlpi,
             },
             { autoCommit: true }
         );
 
         await oracleExecute(
             `
-        INSERT INTO DBACRESSEM.ESTOQUE_MOVIMENTACOES (
-            ID_ITEM,
-            TP_MOVIMENTACAO,
-            QT_MOVIMENTACAO,
-            QT_SALDO_ANTES,
-            QT_SALDO_DEPOIS,
-            DS_OBSERVACAO,
-            NM_SOLICITANTE,
-            NM_SETOR,
-            ID_CHAMADO_GLPI,
-            NM_USUARIO_BAIXA
-        ) VALUES (
-            :idItem,
-            'SAIDA',
-            :quantidade,
-            :saldoAntes,
-            :saldoDepois,
-            :observacao,
-            :nomeSolicitante,
-            :nomeSetor,
-            :idChamadoGlpi,
-            :usuario
-        )
-        `,
+    INSERT INTO DBACRESSEM.ESTOQUE_MOVIMENTACOES (
+        ID_ITEM,
+        TP_MOVIMENTACAO,
+        QT_MOVIMENTACAO,
+        QT_SALDO_ANTES,
+        QT_SALDO_DEPOIS,
+        DS_OBSERVACAO,
+        NM_SOLICITANTE,
+        NM_SETOR,
+        ID_CHAMADO_GLPI,
+        NM_USUARIO_BAIXA
+    ) VALUES (
+        :idItem,
+        'SAIDA',
+        :quantidade,
+        :saldoAntes,
+        :saldoDepois,
+        :observacao,
+        :nomeSolicitante,
+        :nomeSetor,
+        :idChamadoGlpi,
+        :usuario
+    )
+    `,
             {
                 idItem: data.idItem,
                 quantidade,
@@ -1535,11 +1769,11 @@ ${data.resposta}
 
         await oracleExecute(
             `
-        UPDATE DBACRESSEM.ESTOQUE_ITENS
-        SET QT_SALDO_ATUAL = :saldoDepois,
-            DT_ATUALIZACAO = SYSDATE
-        WHERE ID_ITEM = :idItem
-        `,
+    UPDATE DBACRESSEM.ESTOQUE_ITENS
+    SET QT_SALDO_ATUAL = :saldoDepois,
+        DT_ATUALIZACAO = SYSDATE
+    WHERE ID_ITEM = :idItem
+    `,
             {
                 idItem: data.idItem,
                 saldoDepois,
@@ -1548,22 +1782,30 @@ ${data.resposta}
         );
 
         const mensagemGlpi = `
-        Solicitação manual atendida via Intranet.
+    Solicitação manual atendida via Intranet.
 
-        Item entregue: ${item.NM_ITEM}
-        Quantidade atendida: ${quantidade}
-        Solicitante: ${data.nomeSolicitante}
-        Setor: ${data.nomeSetor || "-"}
-        Responsável pela baixa: ${data.usuarioAtendimento}
-        Observação: ${data.observacao || "-"}
-            `.trim();
+    Item entregue: ${item.NM_ITEM}
+    Quantidade atendida: ${quantidade}
+    Solicitante: ${data.nomeSolicitante}
+    Setor: ${data.nomeSetor || "-"}
+    Responsável pela baixa: ${data.usuarioAtendimento}
+    Observação: ${data.observacao || "-"}
+        `.trim();
 
         try {
+            console.log("Enviando followup...");
             await glpiService.addTicketFollowup(idChamadoGlpi, mensagemGlpi);
+
+            console.log("Enviando solução...");
             await glpiService.solveTicket(idChamadoGlpi, mensagemGlpi);
+
+            console.log("Atualizando status para FECHADO...");
+            await glpiService.updateTicketStatus(idChamadoGlpi, statusFinalGlpi);
+
+            console.log("Chamado finalizado com sucesso no GLPI!");
         } catch (error: any) {
             console.error(
-                "Saída registrada no Oracle, mas falhou ao solucionar GLPI:",
+                "Saída registrada no Oracle, mas falhou ao atualizar GLPI:",
                 error?.response?.data || error?.message || error
             );
         }

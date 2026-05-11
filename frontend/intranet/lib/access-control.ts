@@ -60,23 +60,40 @@ function normalizeName(name?: string) {
     return String(name || "").trim().toUpperCase();
 }
 
-export function hasAnyGroup(user: AuthUserLike | null | undefined, groups?: string[]) {
+export function hasAnyGroup(
+    user: AuthUserLike | null | undefined,
+    groups?: string[]
+) {
     if (!groups?.length) return false;
-    const userGroups = Array.isArray(user?.grupos) ? user!.grupos! : [];
+
+    const userGroups = Array.isArray(user?.grupos) ? user.grupos : [];
+
     return groups.some((group) => userGroups.includes(group));
 }
 
-export function isAllowedUser(user: AuthUserLike | null | undefined, users?: string[]) {
+export function isAllowedUser(
+    user: AuthUserLike | null | undefined,
+    users?: string[]
+) {
     if (!users?.length) return false;
+
     const nome = normalizeName(user?.nome_completo || user?.nome);
+
     return users.some((allowed) => normalizeName(allowed) === nome);
 }
 
-export function isManagerOrDirector(user: AuthUserLike | null | undefined) {
+export function isManagerOrDirector(
+    user: AuthUserLike | null | undefined
+) {
     if (!user) return false;
 
-    if (typeof user.isManagerOrDirector === "boolean") return user.isManagerOrDirector;
-    if (typeof user.ehGerenteOuDiretor === "boolean") return user.ehGerenteOuDiretor;
+    if (typeof user.isManagerOrDirector === "boolean") {
+        return user.isManagerOrDirector;
+    }
+
+    if (typeof user.ehGerenteOuDiretor === "boolean") {
+        return user.ehGerenteOuDiretor;
+    }
 
     const nivel = normalizeName(
         user.cargo_nivel ||
@@ -88,7 +105,10 @@ export function isManagerOrDirector(user: AuthUserLike | null | undefined) {
     return nivel === "GERENCIA" || nivel === "DIRETORIA";
 }
 
-export function canAccess(user: AuthUserLike | null | undefined, rule?: AccessRule) {
+export function canAccess(
+    user: AuthUserLike | null | undefined,
+    rule?: AccessRule
+) {
     if (!rule) return true;
 
     const hasRules =
@@ -100,68 +120,176 @@ export function canAccess(user: AuthUserLike | null | undefined, rule?: AccessRu
 
     const byGroup = hasAnyGroup(user, rule.allowedGroups);
     const byUser = isAllowedUser(user, rule.allowedUsers);
-    const byManager = rule.requiresManagerOrDirector ? isManagerOrDirector(user) : false;
+    const byManager = rule.requiresManagerOrDirector
+        ? isManagerOrDirector(user)
+        : false;
 
     return byGroup || byUser || byManager;
 }
 
 export const PAGE_ACCESS = {
-    migracaoContrato: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+    autorizacaoDebito: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.FINANCEIRO,
+            AD_GROUPS.COBRANCA,
+        ],
     },
-    fichaDesimpedimento: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+
+    calculadoraJurosCartao: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.AGENCIA,
+        ],
     },
+
+    simuladorInvestimento: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.AGENCIA,
+        ],
+    },
+
     chequeEspecial: {
-        allowedGroups: [AD_GROUPS.SUPORTE],
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+        ],
         allowedUsers: CHEQUE_ESPECIAL,
     },
-    auditoria: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AUDITORIA],
-    },
-    popupAviso: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
-    },
-    simuladorInvestimento: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
-    },
-    termoResponsabilidadeTI: {
-        allowedGroups: [AD_GROUPS.SUPORTE],
-    },
-    tabelaSisbrTi: {
-        allowedGroups: [AD_GROUPS.SUPORTE],
-    },
-    recibosFinanceiros: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.FINANCEIRO, AD_GROUPS.COBRANCA],
-    },
+
     analiseLimite: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.AGENCIA,
+        ],
     },
+
+    consultaAnaliseLimite: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.AGENCIA,
+        ],
+    },
+
+    auditoria: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.AUDITORIA,
+        ],
+    },
+
+    estoque: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.ESTOQUE,
+        ],
+    },
+
+    balancoEstoque: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.ESTOQUE,
+        ],
+    },
+
+    migracaoContrato: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.CADASTRO,
+        ],
+    },
+
+    fichaDesimpedimento: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.CADASTRO,
+        ],
+    },
+
+    convenioCadastro: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.CADASTRO,
+        ],
+    },
+
+    funcionarios: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.RH,
+        ],
+    },
+
+    ferias: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.RH,
+        ],
+    },
+
     contratos: {
-        allowedGroups: [AD_GROUPS.SUPORTE],
-        allowedUsers: [...SECRETARIA, ...DIRETORIA],
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+        ],
+        allowedUsers: [
+            ...SECRETARIA,
+            ...DIRETORIA,
+        ],
     },
+
     relatorios: {
-        allowedGroups: [AD_GROUPS.SUPORTE],
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+        ],
         requiresManagerOrDirector: true,
     },
-    convenioCadastro: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
-    },
-    funcionarios: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
-    },
-    ferias: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
-    },
-    notebook: {
-        allowedGroups: [AD_GROUPS.SUPORTE],
-    },
+
     marketing: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.MARKETING,
+        ],
     },
+
+    popupAviso: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.MARKETING,
+        ],
+    },
+
+    termoResponsabilidadeTI: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+        ],
+    },
+
+    tabelaSisbrTi: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.TI,
+        ],
+    },
+
+    notebook: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+        ],
+    },
+
+    recibosFinanceiros: {
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.FINANCEIRO,
+            AD_GROUPS.COBRANCA,
+        ],
+    },
+
     docusign: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.DOCUSIGN],
+        allowedGroups: [
+            AD_GROUPS.SUPORTE,
+            AD_GROUPS.DOCUSIGN,
+        ],
         allowedUsers: ACESSO_DOCUSIGN,
     },
 } satisfies Record<string, AccessRule>;

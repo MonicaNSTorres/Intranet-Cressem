@@ -6,6 +6,8 @@ import {
   buscarAssociadoDemissaoPorCpf,
   buscarCidadesDemissao,
   buscarMotivosDemissao,
+  buscarConvenioDemissaoPorCpf,
+  desativarConvenioDemissao,
   type MotivoDemissaoOption,
 } from "@/services/demissao.service";
 import { gerarPdfDemissao } from "@/lib/pdf/gerarPdfDemissao";
@@ -73,6 +75,10 @@ export function DemissaoForm() {
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
 
+  const [possuiConvenio, setPossuiConvenio] = useState<"Sim" | "Não">("Não");
+  const [valorConvenio, setValorConvenio] = useState("");
+  const [loadingGerar, setLoadingGerar] = useState(false);
+
   useEffect(() => {
     async function carregarDados() {
       try {
@@ -99,9 +105,18 @@ export function DemissaoForm() {
   );
   const debitoCartaoNum = useMemo(() => parseBRL(debitoCartao), [debitoCartao]);
 
+  const valorConvenioNum = useMemo(
+    () => parseBRL(valorConvenio),
+    [valorConvenio]
+  );
+
   const totalDebitos = useMemo(
-    () => debitoContaNum + debitoEmprestimoNum + debitoCartaoNum,
-    [debitoContaNum, debitoEmprestimoNum, debitoCartaoNum]
+    () =>
+      debitoContaNum +
+      debitoEmprestimoNum +
+      debitoCartaoNum +
+      valorConvenioNum,
+    [debitoContaNum, debitoEmprestimoNum, debitoCartaoNum, valorConvenioNum]
   );
 
   const saldoFinal = useMemo(
@@ -132,6 +147,18 @@ export function DemissaoForm() {
       setEmpresa(data.EMPRESA || "");
       setSaldoCapital(fmtBRL(Number(data.SL_CONTA_CAPITAL || 0)));
 
+      const convenio = await buscarConvenioDemissaoPorCpf(cpf);
+
+      if (convenio?.titular_ativo) {
+        setPossuiConvenio("Sim");
+        setValorConvenio(
+          fmtBRL(Number(convenio?.total_custo || 0))
+        );
+      } else {
+        setPossuiConvenio("Não");
+        setValorConvenio(fmtBRL(0));
+      }
+
       setInfo("Associado carregado com sucesso.");
     } catch (error: any) {
       setErro(error?.response?.data?.error || "Erro ao buscar associado.");
@@ -142,43 +169,68 @@ export function DemissaoForm() {
   };
 
   const gerar = async () => {
-    await gerarPdfDemissao({
-      tipoFormulario,
-      cpf: formatCpfView(cpf),
-      nome,
-      matricula,
-      empresa,
-      telefone,
+    try {
+      setLoadingGerar(true);
+      setErro("");
+      setInfo("");
 
-      saldoCapital: fmtBRL(saldoCapitalNum),
-      debitoConta: fmtBRL(debitoContaNum),
-      debitoEmprestimo: fmtBRL(debitoEmprestimoNum),
-      debitoCartao: fmtBRL(debitoCartaoNum),
-      totalDebitos: fmtBRL(totalDebitos),
-      saldoFinal: fmtBRL(Math.abs(saldoFinal)),
+      if (possuiConvenio === "Sim") {
+        await desativarConvenioDemissao(cpf, "Atendente");
+      }
 
-      banco,
-      agencia,
-      conta,
-      digito,
+      await gerarPdfDemissao({
+        tipoFormulario,
+        cpf: formatCpfView(cpf),
+        nome,
+        matricula,
+        empresa,
+        telefone,
 
-      primeiraParcelaValor: "",
-      primeiraParcelaData: "",
-      totalDevolucaoParcelada: "",
-      parcelas: [],
+        saldoCapital: fmtBRL(saldoCapitalNum),
+        debitoConta: fmtBRL(debitoContaNum),
+        debitoEmprestimo: fmtBRL(debitoEmprestimoNum),
+        debitoCartao: fmtBRL(debitoCartaoNum),
+        convenioOdontologico: fmtBRL(valorConvenioNum),
+        totalDebitos: fmtBRL(totalDebitos),
+        saldoFinal: fmtBRL(Math.abs(saldoFinal)),
 
-      motivoDemissao,
-      dataRetorno,
+        banco,
+        agencia,
+        conta,
+        digito,
 
-      reciboTransferencia: "",
-      reciboPix: "",
-      reciboDebitoConta: "",
-      reciboTotal: fmtBRL(Math.abs(saldoFinal)),
+        primeiraParcelaValor: "",
+        primeiraParcelaData: "",
+        totalDevolucaoParcelada: "",
+        parcelas: [],
 
-      cidadeAtendimento,
-      dataAtendimento: hojeBR(),
-      atendente: "Atendente",
-    });
+        motivoDemissao,
+        dataRetorno,
+
+        reciboTransferencia: "",
+        reciboPix: "",
+        reciboDebitoConta: "",
+        reciboTotal: fmtBRL(Math.abs(saldoFinal)),
+
+        cidadeAtendimento,
+        dataAtendimento: hojeBR(),
+        atendente: "Atendente",
+      } as any);
+
+      setInfo(
+        possuiConvenio === "Sim"
+          ? "PDF gerado e convênio odontológico desativado com envio de e-mail."
+          : "PDF gerado com sucesso."
+      );
+    } catch (error: any) {
+      setErro(
+        error?.response?.data?.error ||
+        error?.response?.data?.detail ||
+        "Erro ao gerar PDF ou desativar convênio."
+      );
+    } finally {
+      setLoadingGerar(false);
+    }
   };
 
   return (
@@ -273,6 +325,31 @@ export function DemissaoForm() {
             value={tipoFormulario === "CREDOR" ? "Credor" : "Devedor"}
             className="w-full border px-3 py-2 rounded bg-gray-50 font-medium"
           />
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Possui convênio odontológico
+            </label>
+            <input
+              readOnly
+              value={possuiConvenio}
+              className="w-full border px-3 py-2 rounded bg-gray-50 font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Valor convênio odontológico
+            </label>
+            <input
+              value={valorConvenio}
+              onChange={(e) => setValorConvenio(monetizarDigitacao(e.target.value))}
+              className="w-full border px-3 py-2 rounded text-right"
+              placeholder="R$ 0,00"
+            />
+          </div>
         </div>
       </div>
 
@@ -453,9 +530,10 @@ export function DemissaoForm() {
       <div className="pt-5 border-t mt-6 flex items-center justify-end">
         <button
           onClick={gerar}
-          className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+          disabled={loadingGerar}
+          className="inline-flex items-center gap-2 bg-secondary hover:bg-primary disabled:opacity-60 cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
         >
-          Gerar PDF
+          {loadingGerar ? "Gerando..." : "Gerar PDF"}
         </button>
       </div>
     </div>

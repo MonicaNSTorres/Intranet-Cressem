@@ -18,6 +18,7 @@ import {
     FaCheckCircle,
     FaEye,
     FaMapSigns,
+    FaDesktop
 } from "react-icons/fa";
 import HomeScreenSearch from "@/components/search-home/search-home";
 import { SCREENS } from "@/config/screens";
@@ -158,10 +159,10 @@ export default function HomePage() {
                 badge: "mais usado",
             },
             {
-                title: "Consultar ramais",
-                desc: "Encontre rapidamente contatos internos e departamentos.",
-                href: "/auth/ramais",
-                icon: <FaPhoneAlt className="h-5 w-5" />,
+                title: "Consultar telas",
+                desc: "Encontre rapidamente todas as telas da intranet em um só lugar.",
+                href: "/auth/links_uteis",
+                icon: <FaDesktop className="h-5 w-5" />,
             },
             {
                 title: "Gerenciar arquivos",

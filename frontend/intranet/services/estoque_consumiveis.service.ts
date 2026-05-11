@@ -170,3 +170,33 @@ export async function registrarSaidaManualComGlpi(payload: {
 
     return data;
 }
+
+export async function listarMovimentacoesMensaisEstoque(ano: number, mes: number) {
+    const { data } = await axios.get(
+        `${API_URL}/v1/estoque-consumiveis/movimentacoes-mensais`,
+        {
+            params: { ano, mes },
+            withCredentials: true,
+        }
+    );
+
+    return data;
+}
+
+export async function atualizarItemEstoqueConsumiveis(
+    idItem: number,
+    payload: {
+        nome: string;
+        descricao?: string;
+        unidade: string;
+        saldoMinimo?: number;
+    }
+) {
+    const { data } = await axios.put(
+        `${API_URL}/v1/estoque-consumiveis/itens/${idItem}`,
+        payload,
+        { withCredentials: true }
+    );
+
+    return data;
+}

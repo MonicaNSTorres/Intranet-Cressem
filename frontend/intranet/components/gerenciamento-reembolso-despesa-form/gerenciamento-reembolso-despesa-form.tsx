@@ -177,9 +177,12 @@ export function GerenciamentoReembolsoDespesaForm() {
 
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
 
-      const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.FINANCEIRO);
-      const usuarioTemAcesso = Boolean(String(nomeAD || "").trim());
-      const usuarioPodeVerTodos = usuarioEhFinanceiroAD;
+      const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.TODO_MUNDO);
+      const usuarioEhSuporteAD = grupos.includes(AD_GROUPS.SUPORTE);
+      const usuarioTemAcesso = usuarioEhFinanceiroAD || usuarioEhSuporteAD;
+      const usuarioPodeVerTodos = usuarioEhFinanceiroAD || usuarioEhSuporteAD;
+
+
 
       setHasAccess(usuarioTemAcesso);
       setPodeVerTodos(usuarioPodeVerTodos);

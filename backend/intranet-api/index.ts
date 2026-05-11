@@ -1,4 +1,6 @@
 import "dotenv/config";
+import "./src/cron/ferias.cron";
+import "./src/cron/contratos.cron";
 import express from "express";
 import { routes } from "./src/routes/routes";
 import bodyParser from "body-parser";
