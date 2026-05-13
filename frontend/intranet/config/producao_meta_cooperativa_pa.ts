@@ -44,6 +44,8 @@ export const CAMPOS_COLORIR = new Set([
   "perc_meta_realizada",
   "falta_para_meta",
   "porcentagem_semanal",
+  "perc_meta_realizada_mensal",
+  "falta_para_meta_mensal",
 ]);
 
 export const MAPA_TEMA_PARA_TABELA: Record<string, string> = {
@@ -636,8 +638,52 @@ export function getConfigAjustadaPorPeriodo(
   const configOriginal = CONFIGURACAO_RELATORIOS[relatorio];
   if (!configOriginal) return null;
 
+  const montarConfigPadraoSemana = () => {
+    const camposDisponiveis = new Set(
+      configOriginal.campos.map((campo) => normalizarTexto(String(campo)))
+    );
+
+    const escolherCampo = (candidatos: string[]) => {
+      const encontrado = candidatos.find((campo) =>
+        camposDisponiveis.has(normalizarTexto(campo))
+      );
+
+      return encontrado ?? candidatos[0];
+    };
+
+    const camposPadrao = [
+      escolherCampo(["numero_pa", "nr_pa"]),
+      escolherCampo(["nome_pa"]),
+      escolherCampo(["producao_semanal", "premio_liquido_semanal", "feito_no_mes_vigente"]),
+      escolherCampo(["meta_semanal_ano", "meta_semanal"]),
+      escolherCampo(["porcentagem_semanal", "perc_semana"]),
+      escolherCampo(["gap_semanal"]),
+      escolherCampo(["producao_ano", "premio_liquido_ano"]),
+      escolherCampo(["meta_2026", "meta_ano"]),
+      escolherCampo(["perc_meta_realizada", "perc_ano"]),
+      escolherCampo(["falta_para_meta", "gap_ano"]),
+    ];
+
+    return {
+      ...configOriginal,
+      colunas: [
+        "Numero PA",
+        "Nome PA",
+        "Produção Semanal",
+        "Meta Semanal",
+        "% Semanal",
+        "GAP Semanal",
+        "Produção Ano",
+        "Meta 2026",
+        "% Meta Realizada",
+        "Falta Para Meta",
+      ],
+      campos: camposPadrao,
+    };
+  };
+
   if (modoPeriodo !== "mes" && modoPeriodo !== "ano") {
-    return configOriginal;
+    return montarConfigPadraoSemana();
   }
 
   const pares = configOriginal.colunas.map((col, i) => ({
@@ -671,6 +717,76 @@ export function getConfigAjustadaPorPeriodo(
     const colunaNomePA = pares.find((p) => ehNomePA(p.campo));
     const colunaProducao = pares.find((p) => ehProducao(p.col, p.campo));
 
+    if (
+      relatorio === "conta_corrente_abertas" ||
+      relatorio === "entrada_cooperados" ||
+      relatorio === "volume_transacoes" ||
+      relatorio === "liquidacao_baixa" ||
+      relatorio === "faturamento_sipag" ||
+      relatorio === "seguro_gerais_novo" ||
+      relatorio === "seguro_gerais_renovado" ||
+      relatorio === "seguro_arrecadação" ||
+      relatorio === "consorcio" ||
+      relatorio === "emprestimo_bancoob" ||
+      relatorio === "saldo_previdencia_mi" ||
+      relatorio === "seguro_venda_nova"
+    ) {
+      const paresAjustados = [];
+
+      if (colunaNumeroPA) {
+        paresAjustados.push({
+          col: "Numero PA",
+          campo: colunaNumeroPA.campo,
+        });
+      }
+
+      if (colunaNomePA) {
+        paresAjustados.push({
+          col: "Nome PA",
+          campo: colunaNomePA.campo,
+        });
+      }
+
+      if (colunaProducao) {
+        paresAjustados.push({
+          col: "Produção Mensal",
+          campo: colunaProducao.campo,
+        });
+      }
+
+      paresAjustados.push({
+        col: "Meta Mensal",
+        campo: "meta_mensal",
+      });
+      paresAjustados.push({
+        col: "% Meta Realizada",
+        campo: "perc_meta_realizada_mensal",
+      });
+      paresAjustados.push({
+        col: "Falta Para Meta",
+        campo: "falta_para_meta_mensal",
+      });
+
+      return {
+        ...configOriginal,
+        colunas: paresAjustados.map((p) => p.col),
+        campos: paresAjustados.map((p) => p.campo),
+      };
+    }
+
+    const colunaMeta = pares.find((p) => {
+      const tCampo = normalizarTexto(String(p.campo));
+      return tCampo === "meta_mensal" || tCampo === "meta_2026" || tCampo === "meta_ano";
+    });
+    const colunaPercMeta = pares.find((p) => {
+      const tCampo = normalizarTexto(String(p.campo));
+      return tCampo === "perc_meta_realizada_mensal" || tCampo === "perc_meta_realizada";
+    });
+    const colunaFaltaMeta = pares.find((p) => {
+      const tCampo = normalizarTexto(String(p.campo));
+      return tCampo === "falta_para_meta_mensal" || tCampo === "falta_para_meta";
+    });
+
     const paresAjustados = [];
 
     if (colunaNumeroPA) {
@@ -691,6 +807,27 @@ export function getConfigAjustadaPorPeriodo(
       paresAjustados.push({
         col: "Produção Mensal",
         campo: colunaProducao.campo,
+      });
+    }
+
+    if (colunaMeta) {
+      paresAjustados.push({
+        col: "Meta Mensal",
+        campo: colunaMeta.campo,
+      });
+    }
+
+    if (colunaPercMeta) {
+      paresAjustados.push({
+        col: "% Meta Realizada",
+        campo: colunaPercMeta.campo,
+      });
+    }
+
+    if (colunaFaltaMeta) {
+      paresAjustados.push({
+        col: "Falta Para Meta",
+        campo: colunaFaltaMeta.campo,
       });
     }
 
@@ -724,3 +861,4 @@ export function getConfigAjustadaPorPeriodo(
 
   return configOriginal;
 }
+

@@ -416,7 +416,7 @@ const Sidebar = () => {
                 },
                 {
                     label: "Procuração Outorgante PF/PJ",
-                    href: "/auth/procuracao_ortugante",
+                    href: "/auth/procuracao_outorgante",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {

@@ -42,14 +42,14 @@ export async function buscarProducaoMetaRelatorioFuncionario(params: {
 
 export async function buscarUltimaAtualizacaoMetaFuncionario() {
   const { data } = await api.get<RelatorioFuncionarioDataInfo[]>(
-    "/v1/producao-meta-funcionario/datas"
+    "/v1/producao-meta-cooperativa-pa/datas"
   );
   return data;
 }
 
 export async function buscarDatasRelatorioMetaFuncionario() {
   const { data } = await api.get<RelatorioFuncionarioDataInfo[]>(
-    "/v1/producao-meta-funcionario/datas"
+    "/v1/producao-meta-cooperativa-pa/datas"
   );
   return data;
 }

@@ -171,6 +171,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           s.ID_SOLICITACAO_REEMBOLSO_DESPESA,
           s.NM_FUNCIONARIO,
           s.NR_CPF_FUNCIONARIO,
+          TO_CHAR(s.DT_ABERTURA, 'YYYY-MM-DD') AS DT_ABERTURA,
           TO_CHAR(s.DT_IDA, 'YYYY-MM-DD') AS DT_IDA,
           TO_CHAR(s.DT_VOLTA, 'YYYY-MM-DD') AS DT_VOLTA,
           s.DESC_JTF_EVENTO,
@@ -249,7 +250,11 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           :tipoUsuario AS TIPO_USUARIO
         FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA s
         ${whereSql}
-        ORDER BY s.ID_SOLICITACAO_REEMBOLSO_DESPESA DESC
+        ORDER BY
+          s.DT_ABERTURA DESC NULLS LAST,
+          NVL(s.SN_FINALIZADO, 0) ASC,
+          UPPER(NVL(s.NM_FUNCIONARIO, ' ')) ASC,
+          s.ID_SOLICITACAO_REEMBOLSO_DESPESA DESC
         OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
       `;
 
@@ -314,6 +319,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           ID_SOLICITACAO_REEMBOLSO_DESPESA: item.ID_SOLICITACAO_REEMBOLSO_DESPESA,
           NM_FUNCIONARIO: item.NM_FUNCIONARIO || "",
           NR_CPF_FUNCIONARIO: item.NR_CPF_FUNCIONARIO || "",
+          DT_ABERTURA: item.DT_ABERTURA || "",
           DT_IDA: item.DT_IDA || "",
           DT_VOLTA: item.DT_VOLTA || "",
           DESC_JTF_EVENTO: item.DESC_JTF_EVENTO || "",

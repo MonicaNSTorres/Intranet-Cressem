@@ -14,7 +14,6 @@ import {
 import {
   buscarDatasRelatorioMetaFuncionario,
   buscarProducaoMetaRelatorioFuncionario,
-  buscarUltimaAtualizacaoMetaFuncionario,
   buscarUsuarioLogadoMetaFuncionario,
 } from "@/services/producao_meta_funcionario.service";
 import {
@@ -65,6 +64,16 @@ function formatarDataHoraBR(valor?: string | Date | null) {
   const min = String(dt.getMinutes()).padStart(2, "0");
 
   return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+}
+
+function obterMaisRecente(datas: Array<string | Date | null | undefined>) {
+  const validas = datas
+    .filter(Boolean)
+    .map((valor) => new Date(String(valor).replace(" ", "T")))
+    .filter((dt) => !Number.isNaN(dt.getTime()));
+
+  if (!validas.length) return null;
+  return new Date(Math.max(...validas.map((dt) => dt.getTime())));
 }
 
 function aplicarClasseCor(campo: string, valorOriginal: unknown) {
@@ -197,7 +206,8 @@ export function ProducaoMetaFuncionarioForm() {
   const [dados, setDados] = useState<RelatorioFuncionarioItem[]>([]);
   const [erro, setErro] = useState("");
 
-  const [ultimaAtualizacao, setUltimaAtualizacao] = useState("-");
+  const [ultimaAtualizacaoBanco, setUltimaAtualizacaoBanco] = useState("-");
+  const [ultimaAtualizacaoSisbr, setUltimaAtualizacaoSisbr] = useState("-");
   const [infoTema, setInfoTema] = useState<RelatorioFuncionarioDataInfo | null>(
     null
   );
@@ -231,56 +241,90 @@ export function ProducaoMetaFuncionarioForm() {
 
   async function carregarUltimaAtualizacao() {
     try {
-      const lista = await buscarUltimaAtualizacaoMetaFuncionario();
+      const lista = await buscarDatasRelatorioMetaFuncionario();
 
       if (!Array.isArray(lista) || !lista.length) {
-        setUltimaAtualizacao("-");
+        setUltimaAtualizacaoBanco("-");
+        setUltimaAtualizacaoSisbr("-");
         return;
       }
 
-      const datasValidas = lista
-        .flatMap((item) => [
-          item?.ultima_insercao,
-          item?.dt_ultima_insercao,
-          item?.datetime,
-          item?.dt_carga,
-          item?.dt_movimento,
-        ])
-        .filter(Boolean)
-        .map((valor) => new Date(String(valor).replace(" ", "T")))
-        .filter((dt) => !Number.isNaN(dt.getTime()));
-
-      if (!datasValidas.length) {
-        setUltimaAtualizacao("-");
-        return;
-      }
-
-      const maisRecente = new Date(
-        Math.max(...datasValidas.map((dt) => dt.getTime()))
+      const maisRecenteCarga = obterMaisRecente(
+        lista.map((item) => item?.dt_carga)
+      );
+      const maisRecenteMovimento = obterMaisRecente(
+        lista.map((item) => item?.dt_movimento)
       );
 
-      setUltimaAtualizacao(formatarDataHoraBR(maisRecente));
+      setUltimaAtualizacaoBanco(
+        maisRecenteCarga ? formatarDataHoraBR(maisRecenteCarga) : "-"
+      );
+      setUltimaAtualizacaoSisbr(
+        maisRecenteMovimento ? formatarDataHoraBR(maisRecenteMovimento) : "-"
+      );
     } catch {
-      setUltimaAtualizacao("-");
+      setUltimaAtualizacaoBanco("-");
+      setUltimaAtualizacaoSisbr("-");
     }
   }
 
   async function carregarInfoTema(chaveTema: ChaveRelatorioFuncionario) {
     try {
       const nmTabela = MAPA_TEMA_PARA_TABELA_FUNCIONARIO[chaveTema];
+      const lista = await buscarDatasRelatorioMetaFuncionario();
+
       if (!nmTabela) {
         setInfoTema(null);
+
+        const baseLista = Array.isArray(lista) ? lista : [];
+        const maisRecenteCarga = obterMaisRecente(
+          baseLista.map((row) => row?.dt_carga)
+        );
+        const maisRecenteMovimento = obterMaisRecente(
+          baseLista.map((row) => row?.dt_movimento)
+        );
+        setUltimaAtualizacaoBanco(
+          maisRecenteCarga ? formatarDataHoraBR(maisRecenteCarga) : "-"
+        );
+        setUltimaAtualizacaoSisbr(
+          maisRecenteMovimento ? formatarDataHoraBR(maisRecenteMovimento) : "-"
+        );
         return;
       }
 
-      const lista = await buscarDatasRelatorioMetaFuncionario();
       const item = Array.isArray(lista)
         ? lista.find((row) => row?.nm_tabela === nmTabela)
         : null;
 
       setInfoTema(item ?? null);
+
+      if (item) {
+        setUltimaAtualizacaoBanco(
+          item?.dt_carga ? formatarDataHoraBR(item.dt_carga) : "-"
+        );
+        setUltimaAtualizacaoSisbr(
+          item?.dt_movimento ? formatarDataHoraBR(item.dt_movimento) : "-"
+        );
+        return;
+      }
+
+      const baseLista = Array.isArray(lista) ? lista : [];
+      const maisRecenteCarga = obterMaisRecente(
+        baseLista.map((row) => row?.dt_carga)
+      );
+      const maisRecenteMovimento = obterMaisRecente(
+        baseLista.map((row) => row?.dt_movimento)
+      );
+      setUltimaAtualizacaoBanco(
+        maisRecenteCarga ? formatarDataHoraBR(maisRecenteCarga) : "-"
+      );
+      setUltimaAtualizacaoSisbr(
+        maisRecenteMovimento ? formatarDataHoraBR(maisRecenteMovimento) : "-"
+      );
     } catch {
       setInfoTema(null);
+      setUltimaAtualizacaoBanco("-");
+      setUltimaAtualizacaoSisbr("-");
     }
   }
 
@@ -450,8 +494,17 @@ export function ProducaoMetaFuncionarioForm() {
                   <FaDatabase />
                   Última atualização
                 </div>
-                <p className="text-sm font-semibold text-emerald-900">
-                  {ultimaAtualizacao}
+                <p className="text-xs text-emerald-800">
+                  Banco:{" "}
+                  <span className="font-semibold text-emerald-900">
+                    {ultimaAtualizacaoBanco}
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-emerald-800">
+                  Sisbr AnalÃ­tico:{" "}
+                  <span className="font-semibold text-emerald-900">
+                    {ultimaAtualizacaoSisbr}
+                  </span>
                 </p>
               </div>
 

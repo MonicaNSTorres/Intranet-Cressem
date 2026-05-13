@@ -1,25 +1,25 @@
-export type Tema =
-    | "entrada_cooperados"
-    | "saldo_cooperados"
-    | "conta_corrente_abertas"
-    | "conta_corrente_ativas"
-    | "volume_transacoes"
-    | "liquidacao_baixa"
-    | "faturamento_sipag"
-    | "portabilidade"
-    | "seguro_gerais_novo"
-    | "seguro_gerais_renovado"
-    | "seguro_venda_nova"
-    | "seguro_arrecadacao"
-    | "saldo_previdencia_mi"
-    | "saldo_previdencia_vgbl"
-    | "emprestimo_bancoob"
-    | "consorcio";
+﻿export type Tema =
+  | "entrada_cooperados"
+  | "saldo_cooperados"
+  | "conta_corrente_abertas"
+  | "conta_corrente_ativas"
+  | "volume_transacoes"
+  | "liquidacao_baixa"
+  | "faturamento_sipag"
+  | "portabilidade"
+  | "seguro_gerais_novo"
+  | "seguro_gerais_renovado"
+  | "seguro_venda_nova"
+  | "seguro_arrecadacao"
+  | "saldo_previdencia_mi"
+  | "saldo_previdencia_vgbl"
+  | "emprestimo_bancoob"
+  | "consorcio";
 
 export function getSql(tema: Tema) {
-    switch (tema) {
-        case "entrada_cooperados":
-            return `
+  switch (tema) {
+    case "entrada_cooperados":
+      return `
         WITH
         PARAMS AS (
           SELECT
@@ -28,80 +28,133 @@ export function getSql(tema: Tema) {
           FROM DUAL
         ),
 
-        AA_BASE_ALL AS (
+        PERIODO_REF AS (
+          SELECT
+            CASE
+              WHEN PR.DT_INI_SEMANA IS NOT NULL AND PR.DT_FIM_SEMANA IS NOT NULL
+                THEN TRUNC(PR.DT_INI_SEMANA)
+              ELSE TRUNC(SYSDATE, 'IW')
+            END AS DT_INI_CORTE,
+            CASE
+              WHEN PR.DT_INI_SEMANA IS NOT NULL AND PR.DT_FIM_SEMANA IS NOT NULL
+                THEN TRUNC(PR.DT_FIM_SEMANA)
+              ELSE TRUNC(SYSDATE, 'IW') + 6
+            END AS DT_FIM_CORTE,
+            NVL(TRUNC(PR.DT_FIM_SEMANA), TRUNC(SYSDATE)) AS DT_REF_FIM
+          FROM PARAMS PR
+        ),
+
+        AA_BASE_RAW AS (
           SELECT
             AA.NR_PA,
+            AA.NR_COOPERATIVA,
             TRUNC(AA.DT_MATRICULA) AS DT_MOV,
-            AA.NR_CONTA_CAPITAL
+            AA.NR_CONTA_CAPITAL,
+            TRIM(UPPER(AA.SN_CONTA_CAPITAL)) AS SN_CONTA_CAPITAL,
+            CASE
+              WHEN AA.DT_MOVIMENTO IS NULL THEN NULL
+              WHEN REGEXP_LIKE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), '^\\d{2}/\\d{2}/\\d{4}$')
+                THEN TRUNC(TO_DATE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), 'DD/MM/YYYY'))
+              WHEN REGEXP_LIKE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), '^\\d{2}/\\d{2}/\\d{4}\\s\\d{2}:\\d{2}:\\d{2}$')
+                THEN TRUNC(TO_DATE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), 'DD/MM/YYYY HH24:MI:SS'))
+              WHEN REGEXP_LIKE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), '^\\d{4}-\\d{2}-\\d{2}$')
+                THEN TRUNC(TO_DATE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), 'YYYY-MM-DD'))
+              WHEN REGEXP_LIKE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), '^\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}$')
+                THEN TRUNC(TO_DATE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), 'YYYY-MM-DD HH24:MI:SS'))
+              ELSE NULL
+            END AS DT_MOVIMENTO_REF
           FROM DBACRESSEM.CONTA_CAPITAL_DIARIO_NOVO_NORMALIZADO AA
           WHERE AA.DT_MATRICULA IS NOT NULL
             AND AA.NR_CONTA_CAPITAL IS NOT NULL
-            AND AA.SN_CONTA_CAPITAL = 'ATIVO'
+        ),
+
+        AA_MOV_REF AS (
+          SELECT
+            COALESCE(
+              MAX(CASE WHEN B.DT_MOVIMENTO_REF <= PR.DT_REF_FIM THEN B.DT_MOVIMENTO_REF END),
+              MAX(CASE WHEN TRUNC(B.DT_MOVIMENTO_REF, 'MM') = TRUNC(PR.DT_REF_FIM, 'MM') THEN B.DT_MOVIMENTO_REF END),
+              MAX(B.DT_MOVIMENTO_REF)
+            ) AS DT_MOV_REF_ESCOLHIDA
+          FROM AA_BASE_RAW B
+          CROSS JOIN PERIODO_REF PR
+          WHERE B.DT_MOVIMENTO_REF IS NOT NULL
+        ),
+
+        AA_BASE_SNAPSHOT AS (
+          SELECT
+            X.NR_PA,
+            X.NR_COOPERATIVA,
+            X.DT_MOV,
+            X.NR_CONTA_CAPITAL
+          FROM (
+            SELECT
+              B.NR_PA,
+              B.NR_COOPERATIVA,
+              B.DT_MOV,
+              B.NR_CONTA_CAPITAL,
+              B.SN_CONTA_CAPITAL,
+              B.DT_MOVIMENTO_REF,
+              ROW_NUMBER() OVER (
+                PARTITION BY B.NR_CONTA_CAPITAL
+                ORDER BY B.DT_MOVIMENTO_REF DESC NULLS LAST
+              ) AS RN
+            FROM AA_BASE_RAW B
+            CROSS JOIN AA_MOV_REF R
+            WHERE B.DT_MOVIMENTO_REF = R.DT_MOV_REF_ESCOLHIDA
+          ) X
+          WHERE X.RN = 1
+            AND X.SN_CONTA_CAPITAL = 'ATIVO'
+        ),
+
+        AA_BASE_ALL AS (
+          SELECT
+            B.NR_PA,
+            B.DT_MOV,
+            B.NR_CONTA_CAPITAL
+          FROM AA_BASE_SNAPSHOT B
 
           UNION ALL
 
           SELECT
             4317 AS NR_PA,
-            TRUNC(AA.DT_MATRICULA) AS DT_MOV,
-            AA.NR_CONTA_CAPITAL
-          FROM DBACRESSEM.CONTA_CAPITAL_DIARIO_NOVO_NORMALIZADO AA
-          WHERE AA.DT_MATRICULA IS NOT NULL
-            AND AA.NR_CONTA_CAPITAL IS NOT NULL
-            AND AA.SN_CONTA_CAPITAL = 'ATIVO'
-            AND REGEXP_LIKE(TRIM(AA.NR_COOPERATIVA), '^[0-9]+$')
-            AND TO_NUMBER(TRIM(AA.NR_COOPERATIVA)) = 4317
+            B.DT_MOV,
+            B.NR_CONTA_CAPITAL
+          FROM AA_BASE_SNAPSHOT B
+          WHERE REGEXP_LIKE(TRIM(B.NR_COOPERATIVA), '^[0-9]+$')
+            AND TO_NUMBER(TRIM(B.NR_COOPERATIVA)) = 4317
         ),
 
-        AA_BASE AS (
+        AA_BASE_PERIODO AS (
           SELECT
             B.*
           FROM AA_BASE_ALL B
-          CROSS JOIN PARAMS PR
-          WHERE
-            (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-            OR
-            (
-              B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                           AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
-            )
+          CROSS JOIN PERIODO_REF PR
+          WHERE B.DT_MOV BETWEEN PR.DT_INI_CORTE AND PR.DT_FIM_CORTE
         ),
 
         AA_ANO AS (
           SELECT
-            NR_PA,
-            EXTRACT(YEAR FROM DT_MOV) AS ANO,
-            COUNT(DISTINCT NR_CONTA_CAPITAL) AS PRODUCAO_ANO
-          FROM AA_BASE_ALL
-          CROSS JOIN PARAMS PR
-          WHERE DT_MOV BETWEEN
-                TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-                AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
+            B.NR_PA,
+            EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
+            COUNT(DISTINCT B.NR_CONTA_CAPITAL) AS PRODUCAO_ANO
+          FROM AA_BASE_ALL B
+          CROSS JOIN PERIODO_REF PR
+          WHERE B.DT_MOV BETWEEN TRUNC(PR.DT_REF_FIM, 'YYYY') AND PR.DT_REF_FIM
           GROUP BY
-            NR_PA,
-            EXTRACT(YEAR FROM DT_MOV)
+            B.NR_PA,
+            EXTRACT(YEAR FROM PR.DT_REF_FIM)
         ),
 
-        AA_SEMANAL AS (
+        AA_PERIODO AS (
           SELECT
             B.NR_PA,
-            EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
-            COUNT(DISTINCT B.NR_CONTA_CAPITAL) AS PRODUCAO_SEMANAL
-          FROM AA_BASE B
-          CROSS JOIN PARAMS PR
-          WHERE
-            (
-              (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-              AND B.DT_MOV BETWEEN TRUNC(SYSDATE,'IW') AND (TRUNC(SYSDATE,'IW') + 6)
-            )
-            OR
-            (
-              (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
-              AND B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                              AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
-            )
+            EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
+            COUNT(DISTINCT B.NR_CONTA_CAPITAL) AS PRODUCAO_PERIODO
+          FROM AA_BASE_PERIODO B
+          CROSS JOIN PERIODO_REF PR
           GROUP BY
             B.NR_PA,
-            EXTRACT(YEAR FROM B.DT_MOV)
+            EXTRACT(YEAR FROM PR.DT_REF_FIM)
         ),
 
         META AS (
@@ -110,9 +163,9 @@ export function getSql(tema: Tema) {
             TO_NUMBER(MT.DT_ANO_META) AS ANO,
             SUM(MT.QTD_META) AS META_ANO
           FROM DBACRESSEM.META_TOTAL_NOVA MT
-          CROSS JOIN PARAMS PR
+          CROSS JOIN PERIODO_REF PR
           WHERE UPPER(MT.NM_PRODUTO) IN ('COOPERADOS NOVOS')
-            AND TO_NUMBER(MT.DT_ANO_META) = EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE))
+            AND TO_NUMBER(MT.DT_ANO_META) = EXTRACT(YEAR FROM PR.DT_REF_FIM)
           GROUP BY
             MT.NR_PA,
             TO_NUMBER(MT.DT_ANO_META)
@@ -120,11 +173,11 @@ export function getSql(tema: Tema) {
 
         SELECT
           P.NR_PA AS "numero_pa",
-          P.NM_PA AS "nome_pa",
+          P.NM_FANTANSIA AS "nome_pa",
 
           CASE
             WHEN P.NR_PA = 95 THEN 0
-            ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
+            ELSE NVL(PRD.PRODUCAO_PERIODO, 0)
           END AS "producao_semanal",
 
           ROUND(NVL(M.META_ANO, 0) / 52, 2) AS "meta_semanal",
@@ -132,13 +185,13 @@ export function getSql(tema: Tema) {
           CASE
             WHEN P.NR_PA = 95 THEN 0
             WHEN NVL(M.META_ANO, 0) > 0
-              THEN ROUND((NVL(SW.PRODUCAO_SEMANAL, 0) / (M.META_ANO / 52)) * 100, 2)
+              THEN ROUND((NVL(PRD.PRODUCAO_PERIODO, 0) / (M.META_ANO / 52)) * 100, 2)
             ELSE 0
           END AS "porcentagem_semanal",
 
           CASE
             WHEN P.NR_PA = 95 THEN 0
-            ELSE (NVL(SW.PRODUCAO_SEMANAL, 0) - ROUND(NVL(M.META_ANO, 0) / 52, 2))
+            ELSE (NVL(PRD.PRODUCAO_PERIODO, 0) - ROUND(NVL(M.META_ANO, 0) / 52, 2))
           END AS "gap_semanal",
 
           CASE
@@ -147,6 +200,23 @@ export function getSql(tema: Tema) {
           END AS "producao_ano",
 
           NVL(M.META_ANO, 0) AS "meta_2026",
+
+          CASE
+            WHEN P.NR_PA = 95 THEN 0
+            ELSE (NVL(M.META_ANO, 0) / 12)
+          END AS "meta_mensal",
+
+          CASE
+            WHEN P.NR_PA = 95 THEN 0
+            WHEN (NVL(M.META_ANO, 0) / 12) > 0
+              THEN (NVL(PRD.PRODUCAO_PERIODO, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+            ELSE 0
+          END AS "perc_meta_realizada_mensal",
+
+          CASE
+            WHEN P.NR_PA = 95 THEN 0
+            ELSE NVL(PRD.PRODUCAO_PERIODO, 0) - (NVL(M.META_ANO, 0) / 12)
+          END AS "falta_para_meta_mensal",
 
           CASE
             WHEN P.NR_PA = 95 THEN 0
@@ -168,15 +238,14 @@ export function getSql(tema: Tema) {
           ON AY.NR_PA = M.NR_PA
          AND AY.ANO = M.ANO
 
-        LEFT JOIN AA_SEMANAL SW
-          ON SW.NR_PA = M.NR_PA
-         AND SW.ANO = M.ANO
+        LEFT JOIN AA_PERIODO PRD
+          ON PRD.NR_PA = M.NR_PA
+         AND PRD.ANO = M.ANO
 
         ORDER BY P.NR_PA
       `;
-
-        case "conta_corrente_abertas":
-            return `
+    case "conta_corrente_abertas":
+      return `
         WITH
         PARAMS AS (
           SELECT
@@ -185,24 +254,66 @@ export function getSql(tema: Tema) {
           FROM DUAL
         ),
 
+        PERIODO_REF AS (
+          SELECT
+            CASE
+              WHEN PR.DT_INI_SEMANA IS NOT NULL AND PR.DT_FIM_SEMANA IS NOT NULL
+                THEN TRUNC(PR.DT_INI_SEMANA)
+              ELSE TRUNC(SYSDATE, 'IW')
+            END AS DT_INI_CORTE,
+            CASE
+              WHEN PR.DT_INI_SEMANA IS NOT NULL AND PR.DT_FIM_SEMANA IS NOT NULL
+                THEN TRUNC(PR.DT_FIM_SEMANA)
+              ELSE TRUNC(SYSDATE, 'IW') + 6
+            END AS DT_FIM_CORTE,
+            NVL(TRUNC(PR.DT_FIM_SEMANA), TRUNC(SYSDATE)) AS DT_REF_FIM
+          FROM PARAMS PR
+        ),
+
+        CC_BASE_DEDUP AS (
+          SELECT
+            X.NR_PA,
+            X.NR_COOPERATIVA,
+            X.DT_ABERTURA_CONTA,
+            X.NR_CONTA_CORRENTE,
+            X.NM_USUARIO_RESPONSAVEL_CADASTRO
+          FROM (
+            SELECT
+              C.NR_PA,
+              C.NR_COOPERATIVA,
+              TRUNC(C.DT_ABERTURA_CONTA) AS DT_ABERTURA_CONTA,
+              C.NR_CONTA_CORRENTE AS NR_CONTA_CORRENTE,
+              C.NM_USUARIO_RESPONSAVEL_CADASTRO,
+              ROW_NUMBER() OVER (
+                PARTITION BY
+                  C.NR_CONTA_CORRENTE,
+                  TRUNC(C.DT_ABERTURA_CONTA)
+                ORDER BY TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY') DESC
+              ) AS RN
+            FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO_NORMALIZADO C
+            WHERE C.DT_MOVIMENTO IS NOT NULL
+              AND REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}$')
+              AND C.DT_ABERTURA_CONTA IS NOT NULL
+              AND C.NM_MODALIDADE_CONTA IN ('CONTA CORRENTE')
+              AND C.TP_CONTA_CORRENTE IN ('PESSOAS FÍSICAS', 'PESSOAS JURÍDICAS')
+              AND C.NM_SITUACAO_CONTA_CORRENTE IN (
+                'ATIVA',
+                'ATIVA BLOQUEADA JUDICIALMENTE',
+                'ATIVA BLOQUEADA'
+              )
+              AND TRUNC(TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY'), 'MM') = TRUNC(C.DT_ABERTURA_CONTA, 'MM')
+          ) X
+          WHERE X.RN = 1
+        ),
+
         CC_BASE_ALL AS (
           SELECT
             C.NR_PA,
             C.DT_ABERTURA_CONTA,
             C.NR_CONTA_CORRENTE,
             C.NM_USUARIO_RESPONSAVEL_CADASTRO
-          FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO_NORMALIZADO C
-          CROSS JOIN PARAMS PR
-          WHERE C.DT_ABERTURA_CONTA IS NOT NULL
-            AND C.NM_MODALIDADE_CONTA IN ('CONTA CORRENTE')
-            AND C.TP_CONTA_CORRENTE IN ('PESSOAS FÍSICAS', 'PESSOAS JURÍDICAS')
-            AND C.NM_SITUACAO_CONTA_CORRENTE IN ('ATIVA', 'ATIVA BLOQUEADA JUDICIALMENTE', 'ATIVA BLOQUEADA')
-            AND (
-              PR.DT_INI_SEMANA IS NULL
-              OR PR.DT_FIM_SEMANA IS NULL
-              OR TRUNC(C.DT_ABERTURA_CONTA) BETWEEN TRUNC(PR.DT_INI_SEMANA) AND TRUNC(PR.DT_FIM_SEMANA)
-            )
-            AND C.NR_PA <> 4317
+          FROM CC_BASE_DEDUP C
+          WHERE C.NR_PA <> 4317
 
           UNION ALL
 
@@ -211,69 +322,77 @@ export function getSql(tema: Tema) {
             C.DT_ABERTURA_CONTA,
             C.NR_CONTA_CORRENTE,
             C.NM_USUARIO_RESPONSAVEL_CADASTRO
-          FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO_NORMALIZADO C
-          CROSS JOIN PARAMS PR
-          WHERE C.DT_ABERTURA_CONTA IS NOT NULL
-            AND C.NM_MODALIDADE_CONTA IN ('CONTA CORRENTE')
-            AND C.TP_CONTA_CORRENTE IN ('PESSOAS FÍSICAS', 'PESSOAS JURÍDICAS')
-            AND C.NM_SITUACAO_CONTA_CORRENTE IN ('ATIVA', 'ATIVA BLOQUEADA JUDICIALMENTE', 'ATIVA BLOQUEADA')
-            AND (
-              PR.DT_INI_SEMANA IS NULL
-              OR PR.DT_FIM_SEMANA IS NULL
-              OR TRUNC(C.DT_ABERTURA_CONTA) BETWEEN TRUNC(PR.DT_INI_SEMANA) AND TRUNC(PR.DT_FIM_SEMANA)
-            )
-            AND C.NR_PA <> 4317
+          FROM CC_BASE_DEDUP C
+          WHERE C.NR_PA <> 4317
             AND REGEXP_LIKE(TRIM(C.NR_COOPERATIVA), '^[0-9]+$')
             AND TO_NUMBER(TRIM(C.NR_COOPERATIVA)) = 4317
         ),
 
+        CC_BASE_SEMANA AS (
+          SELECT
+            C.NR_PA,
+            C.DT_ABERTURA_CONTA,
+            C.NR_CONTA_CORRENTE,
+            C.NM_USUARIO_RESPONSAVEL_CADASTRO
+          FROM CC_BASE_ALL C
+          CROSS JOIN PERIODO_REF PR
+          WHERE TRUNC(C.DT_ABERTURA_CONTA) BETWEEN PR.DT_INI_CORTE AND PR.DT_FIM_CORTE
+        ),
+
         CC_ANO AS (
           SELECT
-            NR_PA,
-            EXTRACT(YEAR FROM DT_ABERTURA_CONTA) AS ANO,
-            COUNT(DISTINCT NR_CONTA_CORRENTE) AS PRODUCAO_ANO
-          FROM CC_BASE_ALL
+            C.NR_PA,
+            EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
+            COUNT(DISTINCT C.NR_CONTA_CORRENTE) AS PRODUCAO_ANO
+          FROM CC_BASE_ALL C
+          CROSS JOIN PERIODO_REF PR
+          WHERE TRUNC(C.DT_ABERTURA_CONTA) BETWEEN TRUNC(PR.DT_REF_FIM, 'YYYY') AND PR.DT_REF_FIM
           GROUP BY
-            NR_PA,
-            EXTRACT(YEAR FROM DT_ABERTURA_CONTA)
+            C.NR_PA,
+            EXTRACT(YEAR FROM PR.DT_REF_FIM)
         ),
 
         CC_ANO_USUARIOS_PARA_95 AS (
           SELECT
-            EXTRACT(YEAR FROM DT_ABERTURA_CONTA) AS ANO,
-            COUNT(DISTINCT NR_CONTA_CORRENTE) AS QTD_USUARIOS_PARA_95
-          FROM CC_BASE_ALL
-          WHERE UPPER(TRIM(NM_USUARIO_RESPONSAVEL_CADASTRO)) IN (
+            EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
+            COUNT(DISTINCT C.NR_CONTA_CORRENTE) AS QTD_USUARIOS_PARA_95
+          FROM CC_BASE_ALL C
+          CROSS JOIN PERIODO_REF PR
+          WHERE TRUNC(C.DT_ABERTURA_CONTA) BETWEEN TRUNC(PR.DT_REF_FIM, 'YYYY') AND PR.DT_REF_FIM
+            AND UPPER(TRIM(C.NM_USUARIO_RESPONSAVEL_CADASTRO)) IN (
+              UPPER('Christian Jesus Siqueira'),
+              UPPER('YASMIN DE QUEIROZ LEMOS RIBEIRO'),
+              UPPER('GUSTAVO COLAFRANCESCO AMIM SOARES'),
+              UPPER('THIAGO SILVERIO DOS REIS')
+            )
+          GROUP BY EXTRACT(YEAR FROM PR.DT_REF_FIM)
+        ),
+
+        CC_SEMANA AS (
+          SELECT
+            C.NR_PA,
+            EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
+            COUNT(DISTINCT C.NR_CONTA_CORRENTE) AS PRODUCAO_SEMANAL
+          FROM CC_BASE_SEMANA C
+          CROSS JOIN PERIODO_REF PR
+          GROUP BY
+            C.NR_PA,
+            EXTRACT(YEAR FROM PR.DT_REF_FIM)
+        ),
+
+        CC_SEMANA_USUARIOS_PARA_95 AS (
+          SELECT
+            EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
+            COUNT(DISTINCT C.NR_CONTA_CORRENTE) AS QTD_USUARIOS_PARA_95_SEMANA
+          FROM CC_BASE_SEMANA C
+          CROSS JOIN PERIODO_REF PR
+          WHERE UPPER(TRIM(C.NM_USUARIO_RESPONSAVEL_CADASTRO)) IN (
             UPPER('Christian Jesus Siqueira'),
             UPPER('YASMIN DE QUEIROZ LEMOS RIBEIRO'),
             UPPER('GUSTAVO COLAFRANCESCO AMIM SOARES'),
             UPPER('THIAGO SILVERIO DOS REIS')
           )
-          GROUP BY EXTRACT(YEAR FROM DT_ABERTURA_CONTA)
-        ),
-
-        CC_MES AS (
-          SELECT
-            NR_PA,
-            EXTRACT(YEAR FROM DT_ABERTURA_CONTA) AS ANO,
-            EXTRACT(MONTH FROM DT_ABERTURA_CONTA) AS MES,
-            COUNT(DISTINCT NR_CONTA_CORRENTE) AS PRODUCAO_MES
-          FROM CC_BASE_ALL
-          GROUP BY
-            NR_PA,
-            EXTRACT(YEAR FROM DT_ABERTURA_CONTA),
-            EXTRACT(MONTH FROM DT_ABERTURA_CONTA)
-        ),
-
-        CC_SEMANA AS (
-          SELECT
-            NR_PA,
-            EXTRACT(YEAR FROM DT_ABERTURA_CONTA) AS ANO,
-            COUNT(DISTINCT NR_CONTA_CORRENTE) AS PRODUCAO_SEMANAL
-          FROM CC_BASE_ALL
-          GROUP BY
-            NR_PA,
-            EXTRACT(YEAR FROM DT_ABERTURA_CONTA)
+          GROUP BY EXTRACT(YEAR FROM PR.DT_REF_FIM)
         ),
 
         META AS (
@@ -287,19 +406,41 @@ export function getSql(tema: Tema) {
 
         SELECT
           PA.NR_PA AS "numero_pa",
-          PA.NM_PA AS "nome_pa",
-
-          NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
-
-          ROUND(NVL(M.META_ANO, 0) / 52, 0) AS "meta_semanal",
+          PA.NM_FANTANSIA AS "nome_pa",
 
           CASE
-            WHEN ROUND(NVL(M.META_ANO, 0) / 52, 0) > 0
-              THEN ROUND((NVL(SW.PRODUCAO_SEMANAL, 0) / ROUND(NVL(M.META_ANO, 0) / 52, 0)) * 100, 2)
+            WHEN PA.NR_PA = 95
+              THEN NVL(SW.PRODUCAO_SEMANAL, 0) + NVL(WS95.QTD_USUARIOS_PARA_95_SEMANA, 0)
+            WHEN PA.NR_PA = 0
+              THEN NVL(SW.PRODUCAO_SEMANAL, 0) - NVL(WS95.QTD_USUARIOS_PARA_95_SEMANA, 0)
+            ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
+          END AS "producao_semanal",
+
+          (NVL(M.META_ANO, 0) / 52) AS "meta_semanal",
+
+          CASE
+            WHEN (NVL(M.META_ANO, 0) / 52) > 0
+              THEN (
+                (CASE
+                   WHEN PA.NR_PA = 95
+                     THEN NVL(SW.PRODUCAO_SEMANAL, 0) + NVL(WS95.QTD_USUARIOS_PARA_95_SEMANA, 0)
+                   WHEN PA.NR_PA = 0
+                     THEN NVL(SW.PRODUCAO_SEMANAL, 0) - NVL(WS95.QTD_USUARIOS_PARA_95_SEMANA, 0)
+                   ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
+                 END) / (NVL(M.META_ANO, 0) / 52)
+              ) * 100
             ELSE 0
           END AS "porcentagem_semanal",
 
-          (NVL(SW.PRODUCAO_SEMANAL, 0) - ROUND(NVL(M.META_ANO, 0) / 52, 0)) AS "gap_semanal",
+          (
+            (CASE
+               WHEN PA.NR_PA = 95
+                 THEN NVL(SW.PRODUCAO_SEMANAL, 0) + NVL(WS95.QTD_USUARIOS_PARA_95_SEMANA, 0)
+               WHEN PA.NR_PA = 0
+                 THEN NVL(SW.PRODUCAO_SEMANAL, 0) - NVL(WS95.QTD_USUARIOS_PARA_95_SEMANA, 0)
+               ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
+             END) - (NVL(M.META_ANO, 0) / 52)
+          ) AS "gap_semanal",
 
           CASE
             WHEN PA.NR_PA = 95
@@ -309,11 +450,37 @@ export function getSql(tema: Tema) {
             ELSE NVL(AY.PRODUCAO_ANO, 0)
           END AS "producao_ano",
 
-          ROUND(NVL(M.META_ANO, 0), 0) AS "meta_ano",
+          NVL(M.META_ANO, 0) AS "meta_ano",
+
+          (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
+
+          CASE
+            WHEN (NVL(M.META_ANO, 0) / 12) > 0
+              THEN (
+                (CASE
+                   WHEN PA.NR_PA = 95
+                     THEN NVL(SW.PRODUCAO_SEMANAL, 0) + NVL(WS95.QTD_USUARIOS_PARA_95_SEMANA, 0)
+                   WHEN PA.NR_PA = 0
+                     THEN NVL(SW.PRODUCAO_SEMANAL, 0) - NVL(WS95.QTD_USUARIOS_PARA_95_SEMANA, 0)
+                   ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
+                 END) / (NVL(M.META_ANO, 0) / 12)
+              ) * 100
+            ELSE 0
+          END AS "perc_meta_realizada_mensal",
+
+          (
+            (CASE
+               WHEN PA.NR_PA = 95
+                 THEN NVL(SW.PRODUCAO_SEMANAL, 0) + NVL(WS95.QTD_USUARIOS_PARA_95_SEMANA, 0)
+               WHEN PA.NR_PA = 0
+                 THEN NVL(SW.PRODUCAO_SEMANAL, 0) - NVL(WS95.QTD_USUARIOS_PARA_95_SEMANA, 0)
+               ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
+             END) - (NVL(M.META_ANO, 0) / 12)
+          ) AS "falta_para_meta_mensal",
 
           CASE
             WHEN NVL(M.META_ANO, 0) > 0
-              THEN ROUND(
+              THEN (
                 (
                   (CASE
                      WHEN PA.NR_PA = 95
@@ -323,7 +490,7 @@ export function getSql(tema: Tema) {
                      ELSE NVL(AY.PRODUCAO_ANO, 0)
                    END) / M.META_ANO
                 ) * 100
-              , 2)
+              )
             ELSE 0
           END AS "perc_meta_realizada",
 
@@ -341,7 +508,6 @@ export function getSql(tema: Tema) {
         FROM META M
         JOIN DBACRESSEM.PA PA
           ON PA.NR_PA = M.NR_PA
-        CROSS JOIN PARAMS PR
 
         LEFT JOIN CC_ANO AY
           ON AY.NR_PA = M.NR_PA
@@ -354,11 +520,13 @@ export function getSql(tema: Tema) {
           ON SW.NR_PA = M.NR_PA
          AND SW.ANO = M.ANO
 
+        LEFT JOIN CC_SEMANA_USUARIOS_PARA_95 WS95
+          ON WS95.ANO = M.ANO
+
         ORDER BY PA.NR_PA
       `;
-
-        case "conta_corrente_ativas":
-            return `
+    case "conta_corrente_ativas":
+      return `
         WITH
         PARAMS AS (
           SELECT
@@ -367,26 +535,33 @@ export function getSql(tema: Tema) {
           FROM DUAL
         ),
 
-        CC_BASE_SEMANA_ALL AS (
+        PERIODO_REF AS (
+          SELECT
+            CASE
+              WHEN PR.DT_INI_SEMANA IS NOT NULL AND PR.DT_FIM_SEMANA IS NOT NULL
+                THEN TRUNC(PR.DT_INI_SEMANA)
+              ELSE TRUNC(SYSDATE, 'IW')
+            END AS DT_INI_CORTE,
+            CASE
+              WHEN PR.DT_INI_SEMANA IS NOT NULL AND PR.DT_FIM_SEMANA IS NOT NULL
+                THEN TRUNC(PR.DT_FIM_SEMANA)
+              ELSE TRUNC(SYSDATE, 'IW') + 6
+            END AS DT_FIM_CORTE,
+            NVL(TRUNC(PR.DT_FIM_SEMANA), TRUNC(SYSDATE)) AS DT_REF_FIM
+          FROM PARAMS PR
+        ),
+
+        CC_BASE_ALL AS (
           SELECT
             C.NR_PA,
             TRUNC(TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY')) AS DT_MOV,
             C.NR_CONTA_CORRENTE
           FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO C
-          CROSS JOIN PARAMS PR
           WHERE C.DT_MOVIMENTO IS NOT NULL
             AND REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}$')
             AND C.NM_MODALIDADE_CONTA IN ('CONTA CORRENTE')
             AND C.TP_CONTA_CORRENTE IN ('PESSOAS FÍSICAS', 'PESSOAS JURÍDICAS')
             AND C.NM_SITUACAO_CONTA_CORRENTE IN ('ATIVA', 'ATIVA BLOQUEADA JUDICIALMENTE', 'ATIVA BLOQUEADA')
-            AND (
-              (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-              OR (
-                TRUNC(TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY')) BETWEEN
-                NVL(TRUNC(PR.DT_INI_SEMANA), DATE '1900-01-01')
-                AND NVL(TRUNC(PR.DT_FIM_SEMANA), DATE '2999-12-31')
-              )
-            )
             AND C.NR_PA <> 4317
 
           UNION ALL
@@ -396,87 +571,55 @@ export function getSql(tema: Tema) {
             TRUNC(TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY')) AS DT_MOV,
             C.NR_CONTA_CORRENTE
           FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO C
-          CROSS JOIN PARAMS PR
           WHERE C.DT_MOVIMENTO IS NOT NULL
             AND REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}$')
             AND C.NM_MODALIDADE_CONTA IN ('CONTA CORRENTE')
             AND C.TP_CONTA_CORRENTE IN ('PESSOAS FÍSICAS', 'PESSOAS JURÍDICAS')
             AND C.NM_SITUACAO_CONTA_CORRENTE IN ('ATIVA', 'ATIVA BLOQUEADA JUDICIALMENTE', 'ATIVA BLOQUEADA')
-            AND (
-              (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-              OR (
-                TRUNC(TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY')) BETWEEN
-                NVL(TRUNC(PR.DT_INI_SEMANA), DATE '1900-01-01')
-                AND NVL(TRUNC(PR.DT_FIM_SEMANA), DATE '2999-12-31')
-              )
-            )
             AND REGEXP_LIKE(TRIM(C.NR_COOPERATIVA), '^[0-9]+$')
             AND TO_NUMBER(TRIM(C.NR_COOPERATIVA)) = 4317
         ),
 
-        CC_BASE_ANO_ALL AS (
+        CC_BASE_PERIODO AS (
           SELECT
-            C.NR_PA,
-            TRUNC(TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY')) AS DT_MOV,
-            C.NR_CONTA_CORRENTE
-          FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO C
-          WHERE C.DT_MOVIMENTO IS NOT NULL
-            AND REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}$')
-            AND C.NM_MODALIDADE_CONTA IN ('CONTA CORRENTE')
-            AND C.TP_CONTA_CORRENTE IN ('PESSOAS FÍSICAS', 'PESSOAS JURÍDICAS')
-            AND C.NM_SITUACAO_CONTA_CORRENTE IN ('ATIVA', 'ATIVA BLOQUEADA JUDICIALMENTE', 'ATIVA BLOQUEADA')
-            AND C.NR_PA <> 4317
-
-          UNION ALL
-
-          SELECT
-            4317 AS NR_PA,
-            TRUNC(TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY')) AS DT_MOV,
-            C.NR_CONTA_CORRENTE
-          FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO C
-          WHERE C.DT_MOVIMENTO IS NOT NULL
-            AND REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}$')
-            AND C.NM_MODALIDADE_CONTA IN ('CONTA CORRENTE')
-            AND C.TP_CONTA_CORRENTE IN ('PESSOAS FÍSICAS', 'PESSOAS JURÍDICAS')
-            AND C.NM_SITUACAO_CONTA_CORRENTE IN ('ATIVA', 'ATIVA BLOQUEADA JUDICIALMENTE', 'ATIVA BLOQUEADA')
-            AND REGEXP_LIKE(TRIM(C.NR_COOPERATIVA), '^[0-9]+$')
-            AND TO_NUMBER(TRIM(C.NR_COOPERATIVA)) = 4317
+            B.*
+          FROM CC_BASE_ALL B
+          CROSS JOIN PERIODO_REF PR
+          WHERE B.DT_MOV BETWEEN PR.DT_INI_CORTE AND PR.DT_FIM_CORTE
         ),
 
         CC_ANO AS (
           SELECT
             X.NR_PA,
-            EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE)) AS ANO,
+            EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
             COUNT(DISTINCT X.NR_CONTA_CORRENTE) AS PRODUCAO_ANO
           FROM (
             SELECT
               B.NR_PA,
               B.NR_CONTA_CORRENTE,
               MIN(B.DT_MOV) AS DT_PRIMEIRO_MOV
-            FROM CC_BASE_ANO_ALL B
+            FROM CC_BASE_ALL B
             GROUP BY
               B.NR_PA,
               B.NR_CONTA_CORRENTE
           ) X
-          CROSS JOIN PARAMS PR
-          WHERE X.DT_PRIMEIRO_MOV BETWEEN TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-                                     AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
+          CROSS JOIN PERIODO_REF PR
+          WHERE X.DT_PRIMEIRO_MOV BETWEEN TRUNC(PR.DT_REF_FIM, 'YYYY') AND PR.DT_REF_FIM
           GROUP BY
             X.NR_PA,
-            EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE))
+            EXTRACT(YEAR FROM PR.DT_REF_FIM)
         ),
 
-        CC_SEMANA AS (
+        CC_PERIODO AS (
           SELECT
             B.NR_PA,
-            EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
-            TO_NUMBER(TO_CHAR(B.DT_MOV, 'IW')) AS SEMANA,
+            EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
             COUNT(DISTINCT B.NR_CONTA_CORRENTE) AS PRODUCAO_SEMANAL
-          FROM CC_BASE_SEMANA_ALL B
+          FROM CC_BASE_PERIODO B
+          CROSS JOIN PERIODO_REF PR
           GROUP BY
             B.NR_PA,
-            EXTRACT(YEAR FROM B.DT_MOV),
-            TO_NUMBER(TO_CHAR(B.DT_MOV, 'IW'))
+            EXTRACT(YEAR FROM PR.DT_REF_FIM)
         ),
 
         META AS (
@@ -490,7 +633,7 @@ export function getSql(tema: Tema) {
 
         SELECT
           PA.NR_PA AS "numero_pa",
-          PA.NM_PA AS "nome_pa",
+          PA.NM_FANTANSIA AS "nome_pa",
 
           NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
@@ -513,22 +656,19 @@ export function getSql(tema: Tema) {
         FROM META M
         JOIN DBACRESSEM.PA PA
           ON PA.NR_PA = M.NR_PA
-        CROSS JOIN PARAMS PR
 
         LEFT JOIN CC_ANO AY
           ON AY.NR_PA = M.NR_PA
          AND AY.ANO = M.ANO
 
-        LEFT JOIN CC_SEMANA SW
+        LEFT JOIN CC_PERIODO SW
           ON SW.NR_PA = M.NR_PA
          AND SW.ANO = M.ANO
-         AND SW.SEMANA = TO_NUMBER(TO_CHAR(NVL(PR.DT_INI_SEMANA, SYSDATE), 'IW'))
 
         ORDER BY PA.NR_PA, M.ANO
       `;
-
-        case "saldo_cooperados":
-            return `
+    case "saldo_cooperados":
+      return `
         WITH
         PARAMS AS (
           SELECT
@@ -657,7 +797,7 @@ export function getSql(tema: Tema) {
 
         SELECT
           P.NR_PA AS "numero_pa",
-          P.NM_PA AS "nome_pa",
+          P.NM_FANTANSIA AS "nome_pa",
 
           NVL(JAN.SALDO_MES, 0) AS "feito_no_mes_vigente",
 
@@ -688,9 +828,8 @@ export function getSql(tema: Tema) {
 
         ORDER BY P.NR_PA, M.ANO
       `;
-
-        case "volume_transacoes":
-            return `
+    case "volume_transacoes":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -807,19 +946,17 @@ export function getSql(tema: Tema) {
 
     SELECT
       P.NR_PA AS "numero_pa",
-      P.NM_PA AS "nome_pa",
+      P.NM_FANTANSIA AS "nome_pa",
 
-      TO_CHAR(
-        NVL(SW.PRODUCAO_SEMANAL, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_semanal",
+      NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-      TO_CHAR(
-        ROUND(M.META_ANO / 52, 2),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_semanal_ano",
+      ROUND(
+        (M.META_ANO / 12) /
+        CEIL(
+          (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+           - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+        )
+      , 2) AS "meta_semanal_ano",
 
       CASE
         WHEN M.META_ANO > 0
@@ -827,66 +964,21 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "porcentagem_semanal",
 
-      TO_CHAR(
-        (NVL(SW.PRODUCAO_SEMANAL,0) - (M.META_ANO / 52)),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "gap_semanal",
+      (NVL(SW.PRODUCAO_SEMANAL,0) - (M.META_ANO / 52)) AS "gap_semanal",
 
-      TO_CHAR(
-        CASE
-          WHEN P.NR_PA = 0 THEN
-            NVL((
-              SELECT SUM(NVL(V95.VL_TRANSACAO,0))
-              FROM DBACRESSEM.VOLUME_TRANSACOES_DIARIO V95
-              CROSS JOIN PARAMS PR95
-              WHERE V95.DT_COMPETENCIA IS NOT NULL
-                AND UPPER(V95.NM_FUNCAO_TRANSACAO) = 'CRÉDITO'
-                AND TO_DATE(TRIM(V95.DT_COMPETENCIA),'DD/MM/YYYY')
-                      BETWEEN TRUNC(NVL(PR95.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-                          AND NVL(PR95.DT_FIM_SEMANA, SYSDATE)
-                AND (
-                  (95 = 4317 AND V95.NR_SINGULAR = 4317)
-                  OR
-                  (95 <> 4317
-                    AND REGEXP_LIKE(V95.CD_UNIDADE_INSTITUICAO, '^\d+$')
-                    AND TO_NUMBER(V95.CD_UNIDADE_INSTITUICAO) = 95
-                  )
-                )
-            ), 0)
+      NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
-          WHEN P.NR_PA = 95 THEN
-            0
+      NVL(M.META_ANO, 0) AS "meta_2026",
 
-          ELSE
-            NVL((
-              SELECT SUM(NVL(V2.VL_TRANSACAO,0))
-              FROM DBACRESSEM.VOLUME_TRANSACOES_DIARIO V2
-              CROSS JOIN PARAMS PR2
-              WHERE V2.DT_COMPETENCIA IS NOT NULL
-                AND UPPER(V2.NM_FUNCAO_TRANSACAO) = 'CRÉDITO'
-                AND TO_DATE(TRIM(V2.DT_COMPETENCIA),'DD/MM/YYYY')
-                      BETWEEN TRUNC(NVL(PR2.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-                          AND NVL(PR2.DT_FIM_SEMANA, SYSDATE)
-                AND (
-                  (P.NR_PA = 4317 AND V2.NR_SINGULAR = 4317)
-                  OR
-                  (P.NR_PA <> 4317
-                    AND REGEXP_LIKE(V2.CD_UNIDADE_INSTITUICAO, '^\d+$')
-                    AND TO_NUMBER(V2.CD_UNIDADE_INSTITUICAO) = P.NR_PA
-                  )
-                )
-            ), 0)
-        END,
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_ano",
+      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
 
-      TO_CHAR(
-        NVL(M.META_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_2026",
+      CASE
+        WHEN (NVL(M.META_ANO, 0) / 12) > 0
+          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
 
       CASE
         WHEN M.META_ANO > 0
@@ -894,11 +986,7 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "perc_meta_realizada",
 
-      TO_CHAR(
-        (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "falta_para_meta"
+      (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO) AS "falta_para_meta"
 
     FROM META M
     JOIN DBACRESSEM.PA P
@@ -914,8 +1002,8 @@ export function getSql(tema: Tema) {
 
     ORDER BY P.NR_PA
   `;
-        case "liquidacao_baixa":
-            return `
+    case "liquidacao_baixa":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -924,7 +1012,7 @@ export function getSql(tema: Tema) {
       FROM DUAL
     ),
 
-    MLB_BASE AS (
+    MLB_BASE_PERIODO AS (
       SELECT
         MLB.NR_PA,
         MLB.DT_PAGAMENTO,
@@ -932,7 +1020,7 @@ export function getSql(tema: Tema) {
       FROM DBACRESSEM.MOVIMENTO_LIQUIDACOES_BAIXA MLB
       CROSS JOIN PARAMS PR
       WHERE MLB.DT_PAGAMENTO IS NOT NULL
-        AND MLB.DESC_HISTORICO LIKE '%LIQUIDAÇÃO%'
+      AND UPPER(MLB.DESC_HISTORICO) LIKE '%LIQUIDAÇÃO%'
         AND (
           PR.DT_INI_SEMANA IS NULL
           OR PR.DT_FIM_SEMANA IS NULL
@@ -940,163 +1028,170 @@ export function getSql(tema: Tema) {
         )
     ),
 
+    MLB_BASE_ANO AS (
+      SELECT
+        MLB.NR_PA,
+        MLB.DT_PAGAMENTO,
+        MLB.VL_COBRADO
+      FROM DBACRESSEM.MOVIMENTO_LIQUIDACOES_BAIXA MLB
+      CROSS JOIN PARAMS PR
+      WHERE MLB.DT_PAGAMENTO IS NOT NULL
+      AND UPPER(MLB.DESC_HISTORICO) LIKE '%LIQUIDAÇÃO%'
+        AND TRUNC(MLB.DT_PAGAMENTO) BETWEEN
+            TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
+            AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
+    ),
+
     MLB_ANO AS (
       SELECT
-        NR_PA,
-        EXTRACT(YEAR FROM DT_PAGAMENTO) AS ANO,
-        SUM(NVL(VL_COBRADO,0)) AS PRODUCAO_ANO
-      FROM MLB_BASE
+        B.NR_PA,
+        EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE)) AS ANO,
+        SUM(NVL(B.VL_COBRADO,0)) AS PRODUCAO_ANO
+      FROM MLB_BASE_ANO B
+      CROSS JOIN PARAMS PR
       GROUP BY
-        NR_PA,
-        EXTRACT(YEAR FROM DT_PAGAMENTO)
+        B.NR_PA,
+        EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE))
     ),
 
     MLB_SEMANA AS (
       SELECT
-        NR_PA,
-        SUM(NVL(VL_COBRADO,0)) AS PRODUCAO_SEMANAL
-      FROM MLB_BASE
+        B.NR_PA,
+        EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE)) AS ANO,
+        SUM(NVL(B.VL_COBRADO,0)) AS PRODUCAO_SEMANAL
+      FROM MLB_BASE_PERIODO B
+      CROSS JOIN PARAMS PR
       GROUP BY
-        NR_PA
+        B.NR_PA,
+        EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE))
     ),
 
     META AS (
       SELECT
-        NR_PA,
-        TO_NUMBER(DT_ANO_META) AS ANO,
-        QTD_META AS META_ANO
-      FROM DBACRESSEM.META_TOTAL_NOVA
-      WHERE UPPER(NM_PRODUTO) = 'COBRANÇA'
+        MT.NR_PA,
+        TO_NUMBER(MT.DT_ANO_META) AS ANO,
+        MT.QTD_META AS META_ANO
+      FROM DBACRESSEM.META_TOTAL_NOVA MT
+      CROSS JOIN PARAMS PR
+      WHERE (
+        UPPER(MT.NM_PRODUTO) = 'COBRANÇA'
+      )
+        AND TO_NUMBER(MT.DT_ANO_META) = EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE))
     )
 
     SELECT
       P.NR_PA AS "numero_pa",
       P.NM_PA AS "nome_pa",
 
-      TO_CHAR(
+      CASE
+        WHEN P.NR_PA = 95 THEN
+          NVL((
+            SELECT SUM(NVL(B2.VL_COBRADO,0))
+            FROM MLB_BASE_PERIODO B2
+            WHERE B2.NR_PA IN (0,95)
+          ),0)
+        WHEN P.NR_PA = 4317 THEN
+          NVL((
+            SELECT SUM(NVL(B4.VL_COBRADO,0))
+            FROM MLB_BASE_PERIODO B4
+            WHERE B4.NR_PA <> 4317
+          ),0)
+        ELSE NVL(SW.PRODUCAO_SEMANAL,0)
+      END AS "producao_semanal",
+
+      ROUND(NVL(M.META_ANO,0)/52,2) AS "meta_semanal_ano",
+
+      (
         CASE
           WHEN P.NR_PA = 95 THEN
             NVL((
               SELECT SUM(NVL(B2.VL_COBRADO,0))
-              FROM MLB_BASE B2
-              CROSS JOIN PARAMS PR2
+              FROM MLB_BASE_PERIODO B2
               WHERE B2.NR_PA IN (0,95)
             ),0)
           WHEN P.NR_PA = 4317 THEN
             NVL((
               SELECT SUM(NVL(B4.VL_COBRADO,0))
-              FROM DBACRESSEM.MOVIMENTO_LIQUIDACOES_BAIXA B4
-              CROSS JOIN PARAMS PR4
+              FROM MLB_BASE_PERIODO B4
               WHERE B4.NR_PA <> 4317
-                AND B4.DT_PAGAMENTO IS NOT NULL
-                AND B4.DESC_HISTORICO LIKE '%LIQUIDAÇÃO%'
-                AND (
-                  PR4.DT_INI_SEMANA IS NULL
-                  OR PR4.DT_FIM_SEMANA IS NULL
-                  OR TRUNC(B4.DT_PAGAMENTO) BETWEEN TRUNC(PR4.DT_INI_SEMANA) AND TRUNC(PR4.DT_FIM_SEMANA)
-                )
             ),0)
           ELSE NVL(SW.PRODUCAO_SEMANAL,0)
-        END,
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_semanal",
-
-      TO_CHAR(
-        ROUND(NVL(M.META_ANO,0)/52,2),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_semanal_ano",
-
-      TO_CHAR(
-        (
-          CASE
-            WHEN P.NR_PA = 95 THEN
-              NVL((
-                SELECT SUM(NVL(B2.VL_COBRADO,0))
-                FROM MLB_BASE B2
-                CROSS JOIN PARAMS PR2
-                WHERE B2.NR_PA IN (0,95)
-              ),0)
-            WHEN P.NR_PA = 4317 THEN
-              NVL((
-                SELECT SUM(NVL(B4.VL_COBRADO,0))
-                FROM DBACRESSEM.MOVIMENTO_LIQUIDACOES_BAIXA B4
-                CROSS JOIN PARAMS PR4
-                WHERE B4.NR_PA <> 4317
-                  AND B4.DT_PAGAMENTO IS NOT NULL
-                  AND B4.DESC_HISTORICO LIKE '%LIQUIDAÇÃO%'
-                  AND (
-                    PR4.DT_INI_SEMANA IS NULL
-                    OR PR4.DT_FIM_SEMANA IS NULL
-                    OR TRUNC(B4.DT_PAGAMENTO) BETWEEN TRUNC(PR4.DT_INI_SEMANA) AND TRUNC(PR4.DT_FIM_SEMANA)
-                  )
-              ),0)
-            ELSE NVL(SW.PRODUCAO_SEMANAL,0)
-          END
-          - ROUND(NVL(M.META_ANO,0)/52,2)
-        ),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
+        END
+        - ROUND(NVL(M.META_ANO,0)/52,2)
       ) AS "gap_semanal",
 
-      TO_CHAR(
-        CASE
-          WHEN P.NR_PA = 95 THEN
-            NVL((
-              SELECT SUM(NVL(B3.VL_COBRADO,0))
-              FROM MLB_BASE B3
-              CROSS JOIN PARAMS PR3
-              WHERE B3.NR_PA IN (0,95)
-                AND TRUNC(B3.DT_PAGAMENTO) BETWEEN
-                    TRUNC(NVL(PR3.DT_FIM_SEMANA,SYSDATE),'YYYY')
-                    AND NVL(PR3.DT_FIM_SEMANA,SYSDATE)
-            ),0)
+      CASE
+        WHEN P.NR_PA = 95 THEN
+          NVL((
+            SELECT SUM(NVL(B3.VL_COBRADO,0))
+            FROM MLB_BASE_ANO B3
+            WHERE B3.NR_PA IN (0,95)
+          ),0)
 
-          WHEN P.NR_PA = 0 THEN
-            0
+        WHEN P.NR_PA = 0 THEN
+          0
 
-          WHEN P.NR_PA = 4317 THEN
-            NVL((
-              SELECT SUM(NVL(B4.VL_COBRADO,0))
-              FROM DBACRESSEM.MOVIMENTO_LIQUIDACOES_BAIXA B4
-              CROSS JOIN PARAMS PR4
-              WHERE B4.NR_PA <> 4317
-                AND B4.DT_PAGAMENTO IS NOT NULL
-                AND B4.DESC_HISTORICO LIKE '%LIQUIDAÇÃO%'
-                AND TRUNC(B4.DT_PAGAMENTO) BETWEEN
-                    TRUNC(NVL(PR4.DT_FIM_SEMANA,SYSDATE),'YYYY')
-                    AND NVL(PR4.DT_FIM_SEMANA,SYSDATE)
-            ),0)
+        WHEN P.NR_PA = 4317 THEN
+          NVL((
+            SELECT SUM(NVL(B4.VL_COBRADO,0))
+            FROM MLB_BASE_ANO B4
+            WHERE B4.NR_PA <> 4317
+          ),0)
 
-          ELSE NVL(AY.PRODUCAO_ANO,0)
-        END,
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_ano",
+        ELSE NVL(AY.PRODUCAO_ANO,0)
+      END AS "producao_ano",
 
-      TO_CHAR(
-        NVL(M.META_ANO,0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_2026",
+      NVL(M.META_ANO,0) AS "meta_2026",
+
+      (NVL(M.META_ANO,0) / 12) AS "meta_mensal",
+
+      CASE
+        WHEN (NVL(M.META_ANO,0) / 12) > 0
+          THEN (
+            (CASE
+               WHEN P.NR_PA = 95 THEN NVL((SELECT SUM(NVL(B2.VL_COBRADO,0)) FROM MLB_BASE_PERIODO B2 WHERE B2.NR_PA IN (0,95)),0)
+               WHEN P.NR_PA = 4317 THEN NVL((SELECT SUM(NVL(B4.VL_COBRADO,0)) FROM MLB_BASE_PERIODO B4 WHERE B4.NR_PA <> 4317),0)
+               ELSE NVL(SW.PRODUCAO_SEMANAL,0)
+             END) / (NVL(M.META_ANO,0) / 12)
+          ) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (
+        (CASE
+           WHEN P.NR_PA = 95 THEN NVL((SELECT SUM(NVL(B2.VL_COBRADO,0)) FROM MLB_BASE_PERIODO B2 WHERE B2.NR_PA IN (0,95)),0)
+           WHEN P.NR_PA = 4317 THEN NVL((SELECT SUM(NVL(B4.VL_COBRADO,0)) FROM MLB_BASE_PERIODO B4 WHERE B4.NR_PA <> 4317),0)
+           ELSE NVL(SW.PRODUCAO_SEMANAL,0)
+         END)
+        - (NVL(M.META_ANO,0) / 12)
+      ) AS "falta_para_meta_mensal",
 
       CASE
         WHEN NVL(M.META_ANO,0) > 0
-          THEN ROUND((NVL(AY.PRODUCAO_ANO,0)/M.META_ANO)*100,2)
+          THEN ROUND((
+            (CASE
+              WHEN P.NR_PA = 95 THEN NVL((SELECT SUM(NVL(B3.VL_COBRADO,0)) FROM MLB_BASE_ANO B3 WHERE B3.NR_PA IN (0,95)),0)
+              WHEN P.NR_PA = 0 THEN 0
+              WHEN P.NR_PA = 4317 THEN NVL((SELECT SUM(NVL(B4.VL_COBRADO,0)) FROM MLB_BASE_ANO B4 WHERE B4.NR_PA <> 4317),0)
+              ELSE NVL(AY.PRODUCAO_ANO,0)
+            END)
+          / M.META_ANO) * 100, 2)
         ELSE 0
       END AS "perc_meta_realizada",
 
-      TO_CHAR(
-        (NVL(AY.PRODUCAO_ANO,0)-NVL(M.META_ANO,0)),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
+      (
+        (CASE
+          WHEN P.NR_PA = 95 THEN NVL((SELECT SUM(NVL(B3.VL_COBRADO,0)) FROM MLB_BASE_ANO B3 WHERE B3.NR_PA IN (0,95)),0)
+          WHEN P.NR_PA = 0 THEN 0
+          WHEN P.NR_PA = 4317 THEN NVL((SELECT SUM(NVL(B4.VL_COBRADO,0)) FROM MLB_BASE_ANO B4 WHERE B4.NR_PA <> 4317),0)
+          ELSE NVL(AY.PRODUCAO_ANO,0)
+        END)
+        - NVL(M.META_ANO,0)
       ) AS "falta_para_meta"
 
     FROM META M
     JOIN DBACRESSEM.PA P
       ON P.NR_PA = M.NR_PA
-    CROSS JOIN PARAMS PR
 
     LEFT JOIN MLB_ANO AY
       ON AY.NR_PA = M.NR_PA
@@ -1104,11 +1199,12 @@ export function getSql(tema: Tema) {
 
     LEFT JOIN MLB_SEMANA SW
       ON SW.NR_PA = M.NR_PA
+     AND SW.ANO = M.ANO
 
     ORDER BY P.NR_PA, M.ANO
   `;
-        case "faturamento_sipag":
-            return `
+    case "faturamento_sipag":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -1202,31 +1298,23 @@ export function getSql(tema: Tema) {
 
     SELECT
       P.NR_PA AS "numero_pa",
-      P.NM_PA AS "nome_pa",
-
-      TO_CHAR(
-        CASE
-          WHEN P.NR_PA = 95 THEN NVL(SW0.PRODUCAO_SEMANAL, 0)
-          ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
-        END,
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_semanal",
-
-      TO_CHAR(
-        ROUND(M.META_ANO / 52, 2),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_semanal_ano",
+      P.NM_FANTANSIA AS "nome_pa",
 
       CASE
-        WHEN ROUND(
-          (M.META_ANO / 12) /
-          CEIL(
-            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-          )
-        , 2) > 0
+        WHEN P.NR_PA = 95 THEN NVL(SW0.PRODUCAO_SEMANAL, 0)
+        ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
+      END AS "producao_semanal",
+
+      ROUND(
+        (M.META_ANO / 12) /
+        CEIL(
+          (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+           - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+        )
+      , 2) AS "meta_semanal_ano",
+
+      CASE
+        WHEN ROUND(M.META_ANO / 52, 2) > 0
           THEN ROUND(
             (
               CASE
@@ -1234,51 +1322,50 @@ export function getSql(tema: Tema) {
                 ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
               END
               /
-              ROUND(
-                (M.META_ANO / 12) /
-                CEIL(
-                  (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-                   - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-                )
-              , 2)
+              ROUND(M.META_ANO / 52, 2)
             ) * 100
           , 2)
         ELSE 0
       END AS "porcentagem_semanal",
 
-      TO_CHAR(
-        (
-          CASE
-            WHEN P.NR_PA = 95 THEN NVL(SW0.PRODUCAO_SEMANAL, 0)
-            ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
-          END
-          -
-          ROUND(
-            (M.META_ANO / 12) /
-            CEIL(
-              (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-               - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-            )
-          , 2)
-        ),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
+      (
+        CASE
+          WHEN P.NR_PA = 95 THEN NVL(SW0.PRODUCAO_SEMANAL, 0)
+          ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
+        END
+        -
+        ROUND(M.META_ANO / 52, 2)
       ) AS "gap_semanal",
 
-      TO_CHAR(
-        CASE
-          WHEN P.NR_PA = 95 THEN NVL(AY0.PRODUCAO_ANO, 0)
-          ELSE NVL(AY.PRODUCAO_ANO, 0)
-        END,
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_ano",
+      CASE
+        WHEN P.NR_PA = 95 THEN NVL(AY0.PRODUCAO_ANO, 0)
+        ELSE NVL(AY.PRODUCAO_ANO, 0)
+      END AS "producao_ano",
 
-      TO_CHAR(
-        NVL(M.META_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_2026",
+      NVL(M.META_ANO, 0) AS "meta_2026",
+
+      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
+
+      CASE
+        WHEN (NVL(M.META_ANO, 0) / 12) > 0
+          THEN (
+            (
+              CASE
+                WHEN P.NR_PA = 95 THEN NVL(SW0.PRODUCAO_SEMANAL, 0)
+                ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
+              END
+            ) / (NVL(M.META_ANO, 0) / 12)
+          ) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (
+        CASE
+          WHEN P.NR_PA = 95 THEN NVL(SW0.PRODUCAO_SEMANAL, 0)
+          ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
+        END
+        - (NVL(M.META_ANO, 0) / 12)
+      ) AS "falta_para_meta_mensal",
 
       CASE
         WHEN M.META_ANO > 0
@@ -1292,15 +1379,12 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "perc_meta_realizada",
 
-      TO_CHAR((
-          CASE
-            WHEN P.NR_PA = 95 THEN NVL(AY0.PRODUCAO_ANO, 0)
-            ELSE NVL(AY.PRODUCAO_ANO, 0)
-          END
-          - M.META_ANO
-        ),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
+      (
+        CASE
+          WHEN P.NR_PA = 95 THEN NVL(AY0.PRODUCAO_ANO, 0)
+          ELSE NVL(AY.PRODUCAO_ANO, 0)
+        END
+        - M.META_ANO
       ) AS "falta_para_meta"
 
     FROM META M
@@ -1325,8 +1409,8 @@ export function getSql(tema: Tema) {
 
     ORDER BY P.NR_PA
   `;
-        case "portabilidade":
-            return `
+    case "portabilidade":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -1412,7 +1496,7 @@ export function getSql(tema: Tema) {
 
     SELECT
       PA.NR_PA AS "numero_pa",
-      PA.NM_PA AS "nome_pa",
+      PA.NM_FANTANSIA AS "nome_pa",
 
       NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
@@ -1453,8 +1537,8 @@ export function getSql(tema: Tema) {
 
     ORDER BY PA.NR_PA, M.ANO
   `;
-        case "seguro_gerais_novo":
-            return `
+    case "seguro_gerais_novo":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -1484,18 +1568,15 @@ export function getSql(tema: Tema) {
         AND TO_NUMBER(NR_COOPERATIVA) = 4317
     ),
 
-    SGPD_BASE AS (
-      SELECT
-        B.*
+    SGPD_PERIODO AS (
+      SELECT B.*
       FROM SGPD_BASE_ALL B
       CROSS JOIN PARAMS PR
       WHERE
         (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
         OR
-        (
-          B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                      AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
-        )
+        (B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+                     AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31'))
     ),
 
     SGPD_ANO AS (
@@ -1518,77 +1599,10 @@ export function getSql(tema: Tema) {
         B.NR_PA,
         EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
         SUM(B.VL_PREMIO_LIQUIDO_NUM) AS PRODUCAO_SEMANAL
-      FROM SGPD_BASE_ALL B
-      CROSS JOIN PARAMS PR
-      WHERE
-        (
-          (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-          AND B.DT_MOV BETWEEN TRUNC(SYSDATE,'IW') AND (TRUNC(SYSDATE,'IW') + 6)
-        )
-        OR
-        (
-          (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
-          AND B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                          AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
-        )
+      FROM SGPD_PERIODO B
       GROUP BY
         B.NR_PA,
         EXTRACT(YEAR FROM B.DT_MOV)
-    ),
-
-    SGPD_95_SEMANAL AS (
-      SELECT
-        EXTRACT(YEAR FROM TO_DATE(D.DT_MOVIMENTO, 'DD/MM/YYYY')) AS ANO,
-        SUM(NVL(D.VL_PREMIO_LIQUIDO, 0)) AS VALOR_95_SEMANAL
-      FROM DBACRESSEM.SEGUROS_GERAIS_PRODUCAO_DIARIO D
-      CROSS JOIN PARAMS PR
-      WHERE D.DT_MOVIMENTO IS NOT NULL
-        AND UPPER(D.DESC_TP_PROPOSTA) = 'SEGURO NOVO'
-        AND D.NR_PA IN (0, 95)
-        AND UPPER(D.NM_ANGARIADOR) IN (
-          'YASMIN QUEIROS LEMOS RIBEIRO',
-          'CHRISTIAN JESUS SIQUEIRA',
-          'THIAGO SILVERIO DOS REIS',
-          'THIAGO SILVÉRIO DOS REIS',
-          'GUSTAVO COLAFRANCESCO AMIM SOARES'
-        )
-        AND (
-          (
-            PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL
-            AND TO_DATE(D.DT_MOVIMENTO, 'DD/MM/YYYY')
-                BETWEEN TRUNC(SYSDATE,'IW') AND (TRUNC(SYSDATE,'IW') + 6)
-          )
-          OR
-          (
-            (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
-            AND TO_DATE(D.DT_MOVIMENTO, 'DD/MM/YYYY')
-                BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                    AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
-          )
-        )
-      GROUP BY EXTRACT(YEAR FROM TO_DATE(D.DT_MOVIMENTO, 'DD/MM/YYYY'))
-    ),
-
-    SGPD_95_ANO AS (
-      SELECT
-        EXTRACT(YEAR FROM TO_DATE(D.DT_MOVIMENTO, 'DD/MM/YYYY')) AS ANO,
-        SUM(NVL(D.VL_PREMIO_LIQUIDO, 0)) AS VALOR_95_ANO
-      FROM DBACRESSEM.SEGUROS_GERAIS_PRODUCAO_DIARIO D
-      CROSS JOIN PARAMS PR
-      WHERE D.DT_MOVIMENTO IS NOT NULL
-        AND UPPER(D.DESC_TP_PROPOSTA) = 'SEGURO NOVO'
-        AND D.NR_PA IN (0, 95)
-        AND UPPER(D.NM_ANGARIADOR) IN (
-          'YASMIN QUEIROS LEMOS RIBEIRO',
-          'CHRISTIAN JESUS SIQUEIRA',
-          'THIAGO SILVERIO DOS REIS',
-          'THIAGO SILVÉRIO DOS REIS',
-          'GUSTAVO COLAFRANCESCO AMIM SOARES'
-        )
-        AND TO_DATE(D.DT_MOVIMENTO, 'DD/MM/YYYY') BETWEEN
-            TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-            AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
-      GROUP BY EXTRACT(YEAR FROM TO_DATE(D.DT_MOVIMENTO, 'DD/MM/YYYY'))
     ),
 
     META AS (
@@ -1602,105 +1616,47 @@ export function getSql(tema: Tema) {
 
     SELECT
       P.NR_PA AS "numero_pa",
-      P.NM_PA AS "nome_pa",
+      P.NM_FANTANSIA AS "nome_pa",
 
-      TO_CHAR(
-        CASE
-          WHEN P.NR_PA = 95 THEN NVL(V95S.VALOR_95_SEMANAL, 0)
-          WHEN P.NR_PA = 0 THEN NVL(SW.PRODUCAO_SEMANAL, 0) - NVL(V95S.VALOR_95_SEMANAL, 0)
-          ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
-        END,
-        'FML999G999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_semanal",
+      NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-      TO_CHAR(
-        ROUND(M.META_ANO / 52, 2),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_semanal_ano",
+      ROUND(
+        (M.META_ANO / 12) /
+        CEIL(
+          (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+           - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+        )
+      , 2) AS "meta_semanal_ano",
 
       CASE
-        WHEN ROUND(
-          (M.META_ANO / 12) /
-          CEIL(
-            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-          )
-        , 2) > 0
-        THEN ROUND(
-          (
-            CASE
-              WHEN P.NR_PA = 95 THEN NVL(V95S.VALOR_95_SEMANAL, 0)
-              WHEN P.NR_PA = 0 THEN NVL(SW.PRODUCAO_SEMANAL, 0) - NVL(V95S.VALOR_95_SEMANAL, 0)
-              ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
-            END
-          ) /
-          ROUND(
-            (M.META_ANO / 12) /
-            CEIL(
-              (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-               - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-            )
-          , 2) * 100
-        , 2)
+        WHEN ROUND(M.META_ANO / 52, 2) > 0
+          THEN ROUND((NVL(SW.PRODUCAO_SEMANAL, 0) / ROUND(M.META_ANO / 52, 2)) * 100, 2)
         ELSE 0
       END AS "porcentagem_semanal",
 
-      TO_CHAR(
-        (
-          CASE
-            WHEN P.NR_PA = 95 THEN NVL(V95S.VALOR_95_SEMANAL, 0)
-            WHEN P.NR_PA = 0 THEN NVL(SW.PRODUCAO_SEMANAL, 0) - NVL(V95S.VALOR_95_SEMANAL, 0)
-            ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
-          END
-        ) -
-        ROUND(
-          (M.META_ANO / 12) /
-          CEIL(
-            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-          )
-        , 2),
-        'FML999G999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "gap_semanal",
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - ROUND(M.META_ANO / 52, 2)) AS "gap_semanal",
 
-      TO_CHAR(
-        CASE
-          WHEN P.NR_PA = 95 THEN NVL(V95A.VALOR_95_ANO, 0)
-          WHEN P.NR_PA = 0 THEN NVL(AY.PRODUCAO_ANO, 0) - NVL(V95A.VALOR_95_ANO, 0)
-          ELSE NVL(AY.PRODUCAO_ANO, 0)
-        END,
-        'FML999G999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_ano",
+      NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
-      TO_CHAR(
-        NVL(M.META_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_2026",
+      NVL(M.META_ANO, 0) AS "meta_2026",
+
+      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
 
       CASE
-        WHEN M.META_ANO > 0 THEN
-          CASE
-            WHEN P.NR_PA = 95 THEN ROUND((NVL(V95A.VALOR_95_ANO, 0) / M.META_ANO) * 100, 2)
-            WHEN P.NR_PA = 0 THEN ROUND(((NVL(AY.PRODUCAO_ANO, 0) - NVL(V95A.VALOR_95_ANO, 0)) / M.META_ANO) * 100, 2)
-            ELSE ROUND((NVL(AY.PRODUCAO_ANO, 0) / M.META_ANO) * 100, 2)
-          END
+        WHEN (NVL(M.META_ANO, 0) / 12) > 0
+          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
+
+      CASE
+        WHEN M.META_ANO > 0
+          THEN ROUND((NVL(AY.PRODUCAO_ANO, 0) / M.META_ANO) * 100, 2)
         ELSE 0
       END AS "perc_meta_realizada",
 
-      TO_CHAR(
-        CASE
-          WHEN P.NR_PA = 95 THEN NVL(V95A.VALOR_95_ANO, 0) - M.META_ANO
-          WHEN P.NR_PA = 0 THEN (NVL(AY.PRODUCAO_ANO, 0) - NVL(V95A.VALOR_95_ANO, 0)) - M.META_ANO
-          ELSE NVL(AY.PRODUCAO_ANO, 0) - M.META_ANO
-        END,
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "falta_para_meta"
+      (NVL(AY.PRODUCAO_ANO, 0) - M.META_ANO) AS "falta_para_meta"
 
     FROM META M
     JOIN DBACRESSEM.PA P
@@ -1714,16 +1670,10 @@ export function getSql(tema: Tema) {
       ON SW.NR_PA = M.NR_PA
      AND SW.ANO = M.ANO
 
-    LEFT JOIN SGPD_95_SEMANAL V95S
-      ON V95S.ANO = M.ANO
-
-    LEFT JOIN SGPD_95_ANO V95A
-      ON V95A.ANO = M.ANO
-
     ORDER BY P.NR_PA
   `;
-        case "seguro_gerais_renovado":
-            return `
+    case "seguro_gerais_renovado":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -1822,19 +1772,11 @@ export function getSql(tema: Tema) {
 
     SELECT
       P.NR_PA AS "numero_pa",
-      P.NM_PA AS "nome_pa",
+      P.NM_FANTANSIA AS "nome_pa",
 
-      TO_CHAR(
-        NVL(SW.PRODUCAO_SEMANAL, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_semanal",
+      NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-      TO_CHAR(
-        ROUND(M.META_ANO / 52, 2),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_semanal_ano",
+      ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
       CASE
         WHEN ROUND(
@@ -1858,31 +1800,30 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "porcentagem_semanal",
 
-      TO_CHAR(
-        (NVL(SW.PRODUCAO_SEMANAL,0) -
-          ROUND(
-            (M.META_ANO / 12) /
-            CEIL(
-              (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-               - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-            )
-          , 2)
-        ),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
+      (
+        NVL(SW.PRODUCAO_SEMANAL,0) -
+        ROUND(
+          (M.META_ANO / 12) /
+          CEIL(
+            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+          )
+        , 2)
       ) AS "gap_semanal",
 
-      TO_CHAR(
-        NVL(AY.PRODUCAO_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_ano",
+      NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
-      TO_CHAR(
-        NVL(M.META_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_2026",
+      NVL(M.META_ANO, 0) AS "meta_2026",
+
+      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
+
+      CASE
+        WHEN (NVL(M.META_ANO, 0) / 12) > 0
+          THEN (NVL(SW.PRODUCAO_SEMANAL,0) / (NVL(M.META_ANO, 0) / 12)) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (NVL(SW.PRODUCAO_SEMANAL,0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
 
       CASE
         WHEN M.META_ANO > 0
@@ -1890,14 +1831,10 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "perc_meta_realizada",
 
-      TO_CHAR(
-        CASE
-          WHEN P.NR_PA = 4317 THEN (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO)
-          ELSE 0
-        END,
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "falta_para_meta"
+      CASE
+        WHEN P.NR_PA = 4317 THEN (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO)
+        ELSE 0
+      END AS "falta_para_meta"
 
     FROM META M
     JOIN DBACRESSEM.PA P
@@ -1913,8 +1850,8 @@ export function getSql(tema: Tema) {
 
     ORDER BY P.NR_PA
   `;
-        case "seguro_venda_nova":
-            return `
+    case "seguro_venda_nova":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -2027,19 +1964,11 @@ export function getSql(tema: Tema) {
 
     SELECT
       P.NR_PA AS "numero_pa",
-      P.NM_PA AS "nome_pa",
+      P.NM_FANTANSIA AS "nome_pa",
 
-      TO_CHAR(
-        NVL(SW.PRODUCAO_SEMANAL, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_semanal",
+      NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-      TO_CHAR(
-        ROUND(M.META_ANO / 52, 2),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_semanal_ano",
+      ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
       CASE
         WHEN ROUND(
@@ -2063,31 +1992,30 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "porcentagem_semanal",
 
-      TO_CHAR(
-        (NVL(SW.PRODUCAO_SEMANAL,0) -
-          ROUND(
-            (M.META_ANO / 12) /
-            CEIL(
-              (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-               - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-            )
-          , 2)
-        ),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
+      (
+        NVL(SW.PRODUCAO_SEMANAL,0) -
+        ROUND(
+          (M.META_ANO / 12) /
+          CEIL(
+            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+          )
+        , 2)
       ) AS "gap_semanal",
 
-      TO_CHAR(
-        NVL(AY.PRODUCAO_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_ano",
+      NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
-      TO_CHAR(
-        NVL(M.META_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_2026",
+      NVL(M.META_ANO, 0) AS "meta_2026",
+
+      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
+
+      CASE
+        WHEN (NVL(M.META_ANO, 0) / 12) > 0
+          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
 
       CASE
         WHEN M.META_ANO > 0
@@ -2095,11 +2023,7 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "perc_meta_realizada",
 
-      TO_CHAR(
-        (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "falta_para_meta"
+      (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO) AS "falta_para_meta"
 
     FROM META M
     JOIN DBACRESSEM.PA P
@@ -2115,8 +2039,8 @@ export function getSql(tema: Tema) {
 
     ORDER BY P.NR_PA
   `;
-        case "seguro_arrecadacao":
-            return `
+    case "seguro_arrecadacao":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -2195,19 +2119,17 @@ export function getSql(tema: Tema) {
 
     SELECT
       P.NR_PA AS "numero_pa",
-      P.NM_PA AS "nome_pa",
+      P.NM_FANTANSIA AS "nome_pa",
 
-      TO_CHAR(
-        NVL(SW.PRODUCAO_SEMANAL, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_semanal",
+      NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-      TO_CHAR(
-        ROUND(M.META_ANO / 52, 2),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_semanal_ano",
+      ROUND(
+        (M.META_ANO / 12) /
+        CEIL(
+          (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+           - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+        )
+      , 2) AS "meta_semanal_ano",
 
       CASE
         WHEN ROUND(
@@ -2231,31 +2153,30 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "porcentagem_semanal",
 
-      TO_CHAR(
-        (NVL(SW.PRODUCAO_SEMANAL,0) -
-          ROUND(
-            (M.META_ANO / 12) /
-            CEIL(
-              (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-               - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-            )
-          , 2)
-        ),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
+      (
+        NVL(SW.PRODUCAO_SEMANAL,0) -
+        ROUND(
+          (M.META_ANO / 12) /
+          CEIL(
+            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+          )
+        , 2)
       ) AS "gap_semanal",
 
-      TO_CHAR(
-        NVL(AY.PRODUCAO_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_ano",
+      NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
-      TO_CHAR(
-        NVL(M.META_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_2026",
+      NVL(M.META_ANO, 0) AS "meta_2026",
+
+      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
+
+      CASE
+        WHEN (NVL(M.META_ANO, 0) / 12) > 0
+          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
 
       CASE
         WHEN M.META_ANO > 0
@@ -2263,11 +2184,7 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "perc_meta_realizada",
 
-      TO_CHAR(
-        (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "falta_para_meta"
+      (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO) AS "falta_para_meta"
 
     FROM META M
     JOIN DBACRESSEM.PA P
@@ -2283,8 +2200,8 @@ export function getSql(tema: Tema) {
 
     ORDER BY P.NR_PA, M.ANO
   `;
-        case "saldo_previdencia_mi":
-            return `
+    case "saldo_previdencia_mi":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -2377,14 +2294,14 @@ export function getSql(tema: Tema) {
 
     SELECT
       P.NR_PA AS "numero_pa",
-      P.NM_PA AS "nome_pa",
+      P.NM_FANTANSIA AS "nome_pa",
 
-      ROUND(NVL(SW.PRODUCAO_SEMANAL, 0), 0) AS "producao_semanal",
+      NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-      ROUND(NVL(M.META_ANO, 0) / 52, 0) AS "meta_semanal_ano",
+      (NVL(M.META_ANO, 0) / 52) AS "meta_semanal_ano",
 
       CASE
-        WHEN ROUND(
+        WHEN (
           (NVL(M.META_ANO, 0) / 12) /
           CEIL(
             (
@@ -2392,10 +2309,10 @@ export function getSql(tema: Tema) {
               - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
             ) / 7
           )
-        , 0) > 0
-          THEN ROUND(
+        ) > 0
+          THEN (
             (NVL(SW.PRODUCAO_SEMANAL,0) /
-              ROUND(
+              (
                 (NVL(M.META_ANO, 0) / 12) /
                 CEIL(
                   (
@@ -2403,34 +2320,35 @@ export function getSql(tema: Tema) {
                     - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
                   ) / 7
                 )
-              , 0)
+              )
             ) * 100
-          , 2)
+          )
         ELSE 0
       END AS "porcentagem_semanal",
 
-      ROUND(NVL(SW.PRODUCAO_SEMANAL, 0), 0)
-      - ROUND(
-          (NVL(M.META_ANO, 0) / 12) /
-          CEIL(
-            (
-              LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
-              - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
-            ) / 7
-          )
-        , 0) AS "gap_semanal",
+      NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 52) AS "gap_semanal",
 
-      ROUND(NVL(AY.PRODUCAO_ANO, 0), 0) AS "producao_ano",
+      NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
-      ROUND(NVL(M.META_ANO, 0), 0) AS "meta_2026",
+      NVL(M.META_ANO, 0) AS "meta_2026",
+
+      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
+
+      CASE
+        WHEN (NVL(M.META_ANO, 0) / 12) > 0
+          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
 
       CASE
         WHEN NVL(M.META_ANO, 0) > 0
-          THEN ROUND((NVL(AY.PRODUCAO_ANO,0) / M.META_ANO) * 100, 2)
+          THEN ((NVL(AY.PRODUCAO_ANO,0) / M.META_ANO) * 100)
         ELSE 0
       END AS "perc_meta_realizada",
 
-      ROUND(NVL(AY.PRODUCAO_ANO,0), 0) - ROUND(NVL(M.META_ANO,0), 0) AS "falta_para_meta"
+      NVL(AY.PRODUCAO_ANO,0) - NVL(M.META_ANO,0) AS "falta_para_meta"
 
     FROM META M
     JOIN DBACRESSEM.PA P
@@ -2447,8 +2365,8 @@ export function getSql(tema: Tema) {
 
     ORDER BY P.NR_PA, M.ANO
   `;
-        case "saldo_previdencia_vgbl":
-            return `
+    case "saldo_previdencia_vgbl":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -2539,61 +2457,35 @@ export function getSql(tema: Tema) {
 
     SELECT
       P.NR_PA AS "numero_pa",
-      P.NM_PA AS "nome_pa",
+      P.NM_FANTANSIA AS "nome_pa",
 
-      ROUND(NVL(SW.PRODUCAO_SEMANAL, 0), 0) AS "producao_semanal",
+      NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-      ROUND(NVL(M.META_ANO,0) / 12, 0) AS "meta_semanal_ano",
+      (NVL(M.META_ANO,0) / 52) AS "meta_semanal_ano",
 
       CASE
-        WHEN ROUND(
-          (NVL(M.META_ANO,0) / 12) /
-          CEIL(
-            (
-              LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
-              - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
-            ) / 7
+        WHEN (NVL(M.META_ANO,0) / 52) > 0
+          THEN (
+            (NVL(SW.PRODUCAO_SEMANAL,0) / (NVL(M.META_ANO,0) / 52)) * 100
           )
-        , 0) > 0
-          THEN ROUND(
-            (NVL(SW.PRODUCAO_SEMANAL,0) /
-              ROUND(
-                (NVL(M.META_ANO,0) / 12) /
-                CEIL(
-                  (
-                    LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
-                    - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
-                  ) / 7
-                )
-              , 0)
-            ) * 100
-          , 2)
         ELSE 0
       END AS "porcentagem_semanal",
 
-      ROUND(NVL(SW.PRODUCAO_SEMANAL,0), 0)
+      NVL(SW.PRODUCAO_SEMANAL,0)
       -
-      ROUND(
-        (NVL(M.META_ANO,0) / 12) /
-        CEIL(
-          (
-            LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
-            - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
-          ) / 7
-        )
-      , 0) AS "gap_semanal",
+      (NVL(M.META_ANO,0) / 52) AS "gap_semanal",
 
-      ROUND(NVL(AY.PRODUCAO_ANO, 0), 0) AS "producao_ano",
+      NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
-      ROUND(NVL(M.META_ANO, 0), 0) AS "meta_2026",
+      NVL(M.META_ANO, 0) AS "meta_2026",
 
       CASE
         WHEN NVL(M.META_ANO,0) > 0
-          THEN ROUND((NVL(AY.PRODUCAO_ANO,0) / M.META_ANO) * 100, 2)
+          THEN ((NVL(AY.PRODUCAO_ANO,0) / M.META_ANO) * 100)
         ELSE 0
       END AS "perc_meta_realizada",
 
-      ROUND(NVL(AY.PRODUCAO_ANO,0), 0) - ROUND(NVL(M.META_ANO,0), 0) AS "falta_para_meta"
+      NVL(AY.PRODUCAO_ANO,0) - NVL(M.META_ANO,0) AS "falta_para_meta"
 
     FROM META M
     JOIN DBACRESSEM.PA P
@@ -2610,8 +2502,8 @@ export function getSql(tema: Tema) {
 
     ORDER BY P.NR_PA, M.ANO
   `;
-        case "emprestimo_bancoob":
-            return `
+    case "emprestimo_bancoob":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -2711,19 +2603,11 @@ export function getSql(tema: Tema) {
 
     SELECT
       P.NR_PA AS "numero_pa",
-      P.NM_PA AS "nome_pa",
+      P.NM_FANTANSIA AS "nome_pa",
 
-      TO_CHAR(
-        NVL(SW.PRODUCAO_SEMANAL, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_semanal",
+      NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-      TO_CHAR(
-        ROUND(M.META_ANO / 52, 2),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_semanal_ano",
+      ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
       CASE
         WHEN ROUND((M.META_ANO / 12) / 4, 2) > 0
@@ -2731,23 +2615,21 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "porcentagem_semanal",
 
-      TO_CHAR(
-        (NVL(SW.PRODUCAO_SEMANAL,0) - ROUND((M.META_ANO / 12) / 4, 2)),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "gap_semanal",
+      (NVL(SW.PRODUCAO_SEMANAL,0) - ROUND((M.META_ANO / 12) / 4, 2)) AS "gap_semanal",
 
-      TO_CHAR(
-        NVL(AY.PRODUCAO_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_ano",
+      NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
-      TO_CHAR(
-        NVL(M.META_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_2026",
+      NVL(M.META_ANO, 0) AS "meta_2026",
+
+      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
+
+      CASE
+        WHEN (NVL(M.META_ANO, 0) / 12) > 0
+          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
 
       CASE
         WHEN M.META_ANO > 0
@@ -2755,11 +2637,7 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "perc_meta_realizada",
 
-      TO_CHAR(
-        (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "falta_para_meta"
+      (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO) AS "falta_para_meta"
 
     FROM META M
     JOIN DBACRESSEM.PA P
@@ -2775,8 +2653,8 @@ export function getSql(tema: Tema) {
 
     ORDER BY P.NR_PA
   `;
-        case "consorcio":
-            return `
+    case "consorcio":
+      return `
     WITH
     PARAMS AS (
       SELECT
@@ -2854,7 +2732,7 @@ export function getSql(tema: Tema) {
         B.NR_PA_EFETIVO AS NR_PA,
         EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
         SUM(B.VL_CONTRATADO_NUM) AS PRODUCAO_ANO
-      FROM CDN_BASE B
+      FROM CDN_BASE_AJUSTADA B
       CROSS JOIN PARAMS PR
       WHERE B.SN_VENDA_CONCLUIDA = 'SIM'
         AND B.SITUACAO_COTA <> 'EXCLUIDO'
@@ -2893,19 +2771,11 @@ export function getSql(tema: Tema) {
 
     SELECT
       R.NR_PA AS "numero_pa",
-      P.NM_PA AS "nome_pa",
+      P.NM_FANTANSIA AS "nome_pa",
 
-      TO_CHAR(
-        NVL(SW.PRODUCAO_SEMANAL, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_semanal",
+      NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-      TO_CHAR(
-        ROUND(M.META_ANO / 52, 2),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_semanal_ano",
+      ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
       CASE
         WHEN ROUND(
@@ -2929,31 +2799,30 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "porcentagem_semanal",
 
-      TO_CHAR(
-        (NVL(SW.PRODUCAO_SEMANAL,0) -
-          ROUND(
-            (M.META_ANO / 12) /
-            CEIL(
-              (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-               - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-            )
-          , 2)
-        ),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
+      (
+        NVL(SW.PRODUCAO_SEMANAL,0) -
+        ROUND(
+          (M.META_ANO / 12) /
+          CEIL(
+            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+          )
+        , 2)
       ) AS "gap_semanal",
 
-      TO_CHAR(
-        NVL(AY.PRODUCAO_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "producao_ano",
+      NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
-      TO_CHAR(
-        NVL(M.META_ANO, 0),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "meta_2026",
+      NVL(M.META_ANO, 0) AS "meta_2026",
+
+      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
+
+      CASE
+        WHEN (NVL(M.META_ANO, 0) / 12) > 0
+          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
 
       CASE
         WHEN M.META_ANO > 0
@@ -2961,11 +2830,7 @@ export function getSql(tema: Tema) {
         ELSE 0
       END AS "perc_meta_realizada",
 
-      TO_CHAR(
-        (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO),
-        'FML999G999G999G990D00',
-        'NLS_NUMERIC_CHARACTERS='',.'' NLS_CURRENCY=''R$ '''
-      ) AS "falta_para_meta"
+      (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO) AS "falta_para_meta"
 
     FROM PA_REL R
     JOIN META M
@@ -2987,7 +2852,18 @@ export function getSql(tema: Tema) {
     ORDER BY R.NR_PA
   `;
 
-        default:
-            throw new Error("Tema não implementado");
-    }
+    default:
+      throw new Error("Tema não implementado");
+  }
 }
+
+
+
+
+
+
+
+
+
+
+

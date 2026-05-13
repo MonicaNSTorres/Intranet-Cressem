@@ -25,6 +25,7 @@ export type SolicitaoListaItem = {
   ID_SOLICITACAO_REEMBOLSO_DESPESA: number;
   NM_FUNCIONARIO: string;
   NR_CPF_FUNCIONARIO: string;
+  DT_ABERTURA?: string;
   DT_IDA: string;
   DT_VOLTA: string;
   NM_CIDADE: string;

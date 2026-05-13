@@ -5,6 +5,54 @@ import path from "path";
 import { getOraclePool } from "../config/oracle.pool";
 import { sendEmail } from "../services/email.service";
 
+
+function escapeHtml(value: any) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatCpfEmail(value?: string) {
+  const cpf = onlyDigits(String(value || ""));
+
+  if (cpf.length !== 11) return escapeHtml(value || "");
+
+  return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`;
+}
+
+function montarLinhaInfoEmail(label: string, value: any) {
+  return `
+    <tr>
+      <td style="width:34%;padding:11px 14px;background:#f8faf9;border-bottom:1px solid #e8eeeb;font-weight:700;color:#2f3a35;">
+        ${escapeHtml(label)}
+      </td>
+      <td style="padding:11px 14px;border-bottom:1px solid #e8eeeb;color:#1f2933;">
+        ${escapeHtml(value || "-")}
+      </td>
+    </tr>
+  `;
+}
+
+function montarWrapperEmail(conteudo: string) {
+  return `
+    <div style="margin:0;padding:0;background:#f3f6f4;font-family:Arial,Helvetica,sans-serif;color:#1f2933;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;background:#f3f6f4;">
+        <tr>
+          <td align="center" style="padding:24px 12px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="760" style="width:100%;max-width:760px;border-collapse:separate;background:#ffffff;border:1px solid #dfe7e2;border-radius:14px;overflow:hidden;">
+              ${conteudo}
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+
 function onlyDigits(v: string) {
   return String(v || "").replace(/\D/g, "");
 }
@@ -323,52 +371,50 @@ function montarHtmlNotificacaoDecisaoReembolso(params: {
   const observacaoAprovadoDiretoria =
     params.etapaAnterior === "Pendente Diretoria" && params.etapaAtual === "Aprovado"
       ? `
-        <p><strong>Orientação:</strong> Solicitação aprovada. O pagamento deve ocorrer em até 48 horas e o financeiro precisa finalizar no sistema.</p>
+        <div style="margin-top:18px;padding:14px 16px;background:#edf7f1;border-left:4px solid #008542;border-radius:8px;color:#244434;">
+          <strong>Orientação:</strong> Solicitação aprovada. O pagamento deve ocorrer em até 48 horas e o financeiro precisa finalizar no sistema.
+        </div>
       `
       : "";
 
-  return `
-    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-      <h2 style="margin-bottom: 16px;">Atualização de Solicitação de Reembolso</h2>
+  const conteudo = `
+    <tr>
+      <td style="background:#006b3f;padding:22px 26px;color:#ffffff;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;opacity:.9;">
+          Reembolso de despesa
+        </div>
+        <h2 style="margin:6px 0 0;font-size:22px;line-height:1.3;font-weight:700;">
+          Atualização de solicitação
+        </h2>
+      </td>
+    </tr>
 
-      <p>Uma solicitação foi atualizada no fluxo de aprovação.</p>
+    <tr>
+      <td style="padding:24px 26px;">
+        <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#4b5563;">
+          Uma solicitação foi atualizada no fluxo de aprovação.
+        </p>
 
-      <table style="border-collapse: collapse; width: 100%; max-width: 760px;">
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>ID da solicitação</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${params.idSolicitacao}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Funcionário</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${params.nomeSolicitante}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Etapa anterior</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${params.etapaAnterior}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Etapa atual</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${params.etapaAtual}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Ação</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${acaoFmt}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Responsável</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${params.nomeResponsavel}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Parecer</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${params.parecer}</td>
-        </tr>
-      </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;border-spacing:0;border:1px solid #e1e8e4;border-radius:10px;overflow:hidden;">
+          ${montarLinhaInfoEmail("ID da solicitação", params.idSolicitacao)}
+          ${montarLinhaInfoEmail("Funcionário", params.nomeSolicitante)}
+          ${montarLinhaInfoEmail("Etapa anterior", params.etapaAnterior)}
+          ${montarLinhaInfoEmail("Etapa atual", params.etapaAtual)}
+          ${montarLinhaInfoEmail("Ação", acaoFmt)}
+          ${montarLinhaInfoEmail("Responsável", params.nomeResponsavel)}
+          ${montarLinhaInfoEmail("Parecer", params.parecer)}
+        </table>
 
-      ${observacaoAprovadoDiretoria}
+        ${observacaoAprovadoDiretoria}
 
-      <p style="margin-top: 16px;">Este e-mail foi enviado automaticamente pelo sistema.</p>
-    </div>
+        <p style="margin:20px 0 0;font-size:12px;line-height:1.5;color:#6b7280;">
+          Este e-mail foi enviado automaticamente pelo sistema.
+        </p>
+      </td>
+    </tr>
   `;
+
+  return montarWrapperEmail(conteudo);
 }
 
 async function enviarNotificacaoDecisaoReembolso(
@@ -511,77 +557,101 @@ function montarHtmlEmailReembolso(params: {
     .map((despesa, index) => {
       return `
         <tr>
-          <td style="padding:8px;border:1px solid #ddd;">${index + 1}</td>
-          <td style="padding:8px;border:1px solid #ddd;">${despesa?.TP_DESPESA || ""}</td>
-          <td style="padding:8px;border:1px solid #ddd;">${despesa?.DESC_DESPESA || ""}</td>
-          <td style="padding:8px;border:1px solid #ddd;">${formatCurrencyBRL(
-        toNumber(despesa?.VALOR, 0)
-      )}</td>
+          <td style="padding:12px 14px;border-bottom:1px solid #edf1ef;color:#374151;text-align:center;">
+            ${index + 1}
+          </td>
+          <td style="padding:12px 14px;border-bottom:1px solid #edf1ef;color:#374151;font-weight:600;">
+            ${escapeHtml(despesa?.TP_DESPESA || "-")}
+          </td>
+          <td style="padding:12px 14px;border-bottom:1px solid #edf1ef;color:#374151;">
+            ${escapeHtml(despesa?.DESC_DESPESA || "-")}
+          </td>
+          <td style="padding:12px 14px;border-bottom:1px solid #edf1ef;color:#111827;text-align:right;font-weight:600;white-space:nowrap;">
+            ${formatCurrencyBRL(toNumber(despesa?.VALOR, 0))}
+          </td>
         </tr>
       `;
     })
     .join("");
 
-  return `
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222;">
-      <h2 style="margin-bottom:16px;">${params.titulo || "Nova solicitação de reembolso de despesa"}</h2>
+  const titulo = params.titulo || "Nova solicitação de reembolso de despesa";
 
-      <p>
-        ${params.introducao || "Uma nova solicitação foi cadastrada no sistema e está aguardando análise do financeiro."}
-      </p>
+  const introducao =
+    params.introducao ||
+    "Uma nova solicitação foi cadastrada no sistema e está aguardando análise do financeiro.";
 
-      <table style="border-collapse:collapse;width:100%;margin-top:16px;margin-bottom:20px;">
-        <tr>
-          <td style="padding:8px;border:1px solid #ddd;"><strong>ID da solicitação</strong></td>
-          <td style="padding:8px;border:1px solid #ddd;">${params.idSolicitacao}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px;border:1px solid #ddd;"><strong>Funcionário</strong></td>
-          <td style="padding:8px;border:1px solid #ddd;">${params.nomeFuncionario}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px;border:1px solid #ddd;"><strong>CPF</strong></td>
-          <td style="padding:8px;border:1px solid #ddd;">${params.cpfFuncionario}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px;border:1px solid #ddd;"><strong>Cidade</strong></td>
-          <td style="padding:8px;border:1px solid #ddd;">${params.cidade}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px;border:1px solid #ddd;"><strong>Data de ida</strong></td>
-          <td style="padding:8px;border:1px solid #ddd;">${formatDateBR(params.dtIda)}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px;border:1px solid #ddd;"><strong>Data de volta</strong></td>
-          <td style="padding:8px;border:1px solid #ddd;">${formatDateBR(params.dtVolta)}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px;border:1px solid #ddd;"><strong>Justificativa</strong></td>
-          <td style="padding:8px;border:1px solid #ddd;">${params.justificativa}</td>
-        </tr>
-      </table>
+  const conteudo = `
+    <tr>
+      <td style="background:#006b3f;padding:22px 26px;color:#ffffff;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;opacity:.9;">
+          Reembolso de despesa
+        </div>
+        <h2 style="margin:6px 0 0;font-size:22px;line-height:1.3;font-weight:700;">
+          ${escapeHtml(titulo)}
+        </h2>
+      </td>
+    </tr>
 
-      <h3 style="margin:16px 0 8px;">Despesas informadas</h3>
+    <tr>
+      <td style="padding:24px 26px;">
+        <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#4b5563;">
+          ${escapeHtml(introducao)}
+        </p>
 
-      <table style="border-collapse:collapse;width:100%;">
-        <thead>
-          <tr>
-            <th style="padding:8px;border:1px solid #ddd;background:#f5f5f5;">#</th>
-            <th style="padding:8px;border:1px solid #ddd;background:#f5f5f5;">Tipo</th>
-            <th style="padding:8px;border:1px solid #ddd;background:#f5f5f5;">Descrição</th>
-            <th style="padding:8px;border:1px solid #ddd;background:#f5f5f5;">Valor</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${despesasHtml}
-          <tr>
-            <td colspan="3" style="padding:8px;border:1px solid #ddd;text-align:right;"><strong>Total</strong></td>
-            <td style="padding:8px;border:1px solid #ddd;"><strong>${formatCurrencyBRL(total)}</strong></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;border-spacing:0;border:1px solid #e1e8e4;border-radius:10px;overflow:hidden;margin-bottom:22px;">
+          ${montarLinhaInfoEmail("ID da solicitação", params.idSolicitacao)}
+          ${montarLinhaInfoEmail("Funcionário", params.nomeFuncionario)}
+          ${montarLinhaInfoEmail("CPF", formatCpfEmail(params.cpfFuncionario))}
+          ${montarLinhaInfoEmail("Cidade", params.cidade)}
+          ${montarLinhaInfoEmail("Data de ida", formatDateBR(params.dtIda))}
+          ${montarLinhaInfoEmail("Data de volta", formatDateBR(params.dtVolta))}
+          ${montarLinhaInfoEmail("Justificativa", params.justificativa)}
+        </table>
+
+        <h3 style="margin:0 0 10px;font-size:16px;line-height:1.4;color:#1f2933;">
+          Despesas informadas
+        </h3>
+
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;border-spacing:0;border:1px solid #e1e8e4;border-radius:10px;overflow:hidden;">
+          <thead>
+            <tr>
+              <th style="padding:11px 14px;background:#eef5f1;border-bottom:1px solid #dce7e1;color:#2f3a35;font-size:13px;text-align:center;width:50px;">
+                #
+              </th>
+              <th style="padding:11px 14px;background:#eef5f1;border-bottom:1px solid #dce7e1;color:#2f3a35;font-size:13px;text-align:left;width:170px;">
+                Tipo
+              </th>
+              <th style="padding:11px 14px;background:#eef5f1;border-bottom:1px solid #dce7e1;color:#2f3a35;font-size:13px;text-align:left;">
+                Descrição
+              </th>
+              <th style="padding:11px 14px;background:#eef5f1;border-bottom:1px solid #dce7e1;color:#2f3a35;font-size:13px;text-align:right;width:140px;">
+                Valor
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${despesasHtml}
+
+            <tr>
+              <td colspan="3" style="padding:14px;background:#fafafa;text-align:right;color:#1f2933;font-weight:700;">
+                Total
+              </td>
+              <td style="padding:14px;background:#fafafa;text-align:right;color:#006b3f;font-weight:800;white-space:nowrap;">
+                ${formatCurrencyBRL(total)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p style="margin:20px 0 0;font-size:12px;line-height:1.5;color:#6b7280;">
+          Este e-mail foi enviado automaticamente pelo sistema.
+        </p>
+      </td>
+    </tr>
   `;
+
+  return montarWrapperEmail(conteudo);
 }
 
 async function buscarResumoSolicitacaoParaEmail(
@@ -961,6 +1031,7 @@ export const solicitacaoReembolsoDespesaController = {
           ID_SOLICITACAO_REEMBOLSO_DESPESA,
           NM_FUNCIONARIO,
           NR_CPF_FUNCIONARIO,
+          DT_ABERTURA,
           DT_IDA,
           DT_VOLTA,
           DESC_JTF_EVENTO,
@@ -977,6 +1048,7 @@ export const solicitacaoReembolsoDespesaController = {
           :ID_SOLICITACAO_REEMBOLSO_DESPESA,
           :NM_FUNCIONARIO,
           :NR_CPF_FUNCIONARIO,
+          SYSDATE,
           TO_DATE(:DT_IDA, 'YYYY-MM-DD'),
           TO_DATE(:DT_VOLTA, 'YYYY-MM-DD'),
           :DESC_JTF_EVENTO,
@@ -1869,4 +1941,3 @@ export const solicitacaoReembolsoDespesaController = {
     }
   },
 };
-

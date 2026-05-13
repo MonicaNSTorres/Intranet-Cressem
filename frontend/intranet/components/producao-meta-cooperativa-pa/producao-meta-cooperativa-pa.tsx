@@ -14,7 +14,6 @@ import {
 import {
     buscarDatasRelatorioMetaPA,
     buscarProducaoMetaRelatorioPA,
-    buscarUltimaAtualizacaoMetaPA,
 } from "@/services/producao_meta_cooperativa_pa.service";
 import {
     CAMPOS_COLORIR,
@@ -60,6 +59,459 @@ function formatarDataHoraBR(valor?: string | Date | null) {
     return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 }
 
+function formatarInteiroBR(valor: number) {
+    return Math.round(valor).toLocaleString("pt-BR");
+}
+
+function formatarPercentualBR(valor: number, casas = 2) {
+    return `${valor.toLocaleString("pt-BR", {
+        minimumFractionDigits: casas,
+        maximumFractionDigits: casas,
+    })}%`;
+}
+
+function formatarMoedaBR(valor: number) {
+    const absoluto = Math.abs(valor).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+
+    return valor < 0 ? `-${absoluto}` : absoluto;
+}
+
+function formatarValorExibicaoRelatorio(
+    campo: string,
+    valor: unknown,
+    temaAtual?: ChaveRelatorioPA | ""
+) {
+    if (valor === null || valor === undefined || valor === "") return "-";
+
+    const numeroTema = parseNumeroBR(valor);
+    const temasComProducaoAnoFormatada = new Set<ChaveRelatorioPA>([
+        "entrada_cooperados",
+        "conta_corrente_abertas",
+        "conta_corrente_ativas",
+        "portabilidade",
+    ]);
+
+    if (
+        temaAtual &&
+        temasComProducaoAnoFormatada.has(temaAtual) &&
+        campo === "producao_ano" &&
+        !Number.isNaN(numeroTema)
+    ) {
+        return formatarInteiroBR(numeroTema);
+    }
+
+    // Entrada de cooperados deve permanecer com dados crus (sem formatação visual).
+    if (temaAtual === "entrada_cooperados") {
+        const numeroTema = parseNumeroBR(valor);
+        if (Number.isNaN(numeroTema)) return String(valor);
+
+        if (campo === "meta_mensal" || campo === "falta_para_meta_mensal") {
+            return formatarInteiroBR(numeroTema);
+        }
+
+        if (campo === "perc_meta_realizada_mensal") {
+            return formatarPercentualBR(numeroTema, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "conta_corrente_ativas") {
+        const numeroTema = parseNumeroBR(valor);
+        if (Number.isNaN(numeroTema)) return String(valor);
+
+        const camposInteirosContaCorrenteSaldo = new Set([
+            "producao_ano",
+            "meta_ano",
+            "falta_para_meta",
+        ]);
+
+        if (camposInteirosContaCorrenteSaldo.has(campo)) {
+            return formatarInteiroBR(numeroTema);
+        }
+
+        if (campo === "perc_meta_realizada") {
+            return formatarPercentualBR(numeroTema, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "volume_transacoes") {
+        const numero = parseNumeroBR(valor);
+        if (Number.isNaN(numero)) return String(valor);
+
+        const camposMoedaCartoes = new Set([
+            "producao_semanal",
+            "meta_semanal_ano",
+            "gap_semanal",
+            "producao_ano",
+            "meta_2026",
+            "falta_para_meta",
+            "meta_mensal",
+            "falta_para_meta",
+            "falta_para_meta_mensal"
+        ]);
+
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposMoedaCartoes.has(campo)) {
+            return formatarMoedaBR(numero);
+        }
+
+        if (camposPercentuaisCartoes.has(campo)) {
+            return formatarPercentualBR(numero, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "liquidacao_baixa") {
+        const numero = parseNumeroBR(valor);
+        if (Number.isNaN(numero)) return String(valor);
+
+        const camposMoedaCartoes = new Set([
+            "producao_semanal",
+            "meta_semanal_ano",
+            "gap_semanal",
+            "producao_ano",
+            "meta_2026",
+            "falta_para_meta",
+            "meta_mensal",
+            "falta_para_meta",
+            "falta_para_meta_mensal"
+        ]);
+
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposMoedaCartoes.has(campo)) {
+            return formatarMoedaBR(numero);
+        }
+
+        if (camposPercentuaisCartoes.has(campo)) {
+            return formatarPercentualBR(numero, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "faturamento_sipag") {
+        const numero = parseNumeroBR(valor);
+        if (Number.isNaN(numero)) return String(valor);
+
+        const camposMoedaCartoes = new Set([
+            "producao_semanal",
+            "meta_semanal_ano",
+            "gap_semanal",
+            "producao_ano",
+            "meta_2026",
+            "falta_para_meta",
+            "meta_mensal",
+            "falta_para_meta_mensal"
+        ]);
+
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposMoedaCartoes.has(campo)) {
+            return formatarMoedaBR(numero);
+        }
+
+        if (camposPercentuaisCartoes.has(campo)) {
+            return formatarPercentualBR(numero, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "seguro_gerais_novo") {
+        const numero = parseNumeroBR(valor);
+        if (Number.isNaN(numero)) return String(valor);
+
+        const camposMoedaCartoes = new Set([
+            "producao_semanal",
+            "meta_semanal_ano",
+            "gap_semanal",
+            "producao_ano",
+            "meta_2026",
+            "falta_para_meta",
+            "meta_mensal",
+            "falta_para_meta",
+            "falta_para_meta_mensal"
+        ]);
+
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposMoedaCartoes.has(campo)) {
+            return formatarMoedaBR(numero);
+        }
+
+        if (camposPercentuaisCartoes.has(campo)) {
+            return formatarPercentualBR(numero, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "seguro_gerais_renovado") {
+        const numero = parseNumeroBR(valor);
+        if (Number.isNaN(numero)) return String(valor);
+
+        const camposMoedaCartoes = new Set([
+            "producao_semanal",
+            "meta_semanal_ano",
+            "gap_semanal",
+            "producao_ano",
+            "meta_2026",
+            "falta_para_meta",
+            "meta_mensal",
+            "falta_para_meta",
+            "falta_para_meta_mensal"
+        ]);
+
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposMoedaCartoes.has(campo)) {
+            return formatarMoedaBR(numero);
+        }
+
+        if (camposPercentuaisCartoes.has(campo)) {
+            return formatarPercentualBR(numero, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "seguro_venda_nova") {
+        const numero = parseNumeroBR(valor);
+        if (Number.isNaN(numero)) return String(valor);
+
+        const camposMoedaCartoes = new Set([
+            "producao_semanal",
+            "meta_semanal_ano",
+            "gap_semanal",
+            "producao_ano",
+            "meta_2026",
+            "falta_para_meta",
+            "meta_mensal",
+            "falta_para_meta",
+            "falta_para_meta_mensal"
+        ]);
+
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposMoedaCartoes.has(campo)) {
+            return formatarMoedaBR(numero);
+        }
+
+        if (camposPercentuaisCartoes.has(campo)) {
+            return formatarPercentualBR(numero, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "seguro_arrecadação") {
+        const numero = parseNumeroBR(valor);
+        if (Number.isNaN(numero)) return String(valor);
+
+        const camposMoedaCartoes = new Set([
+            "producao_semanal",
+            "meta_semanal_ano",
+            "gap_semanal",
+            "producao_ano",
+            "meta_2026",
+            "falta_para_meta",
+            "meta_mensal",
+            "falta_para_meta",
+            "falta_para_meta_mensal"
+        ]);
+
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposMoedaCartoes.has(campo)) {
+            return formatarMoedaBR(numero);
+        }
+
+        if (camposPercentuaisCartoes.has(campo)) {
+            return formatarPercentualBR(numero, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "consorcio") {
+        const numero = parseNumeroBR(valor);
+        if (Number.isNaN(numero)) return String(valor);
+
+        const camposMoedaCartoes = new Set([
+            "producao_semanal",
+            "meta_semanal_ano",
+            "gap_semanal",
+            "producao_ano",
+            "meta_2026",
+            "falta_para_meta",
+            "meta_mensal",
+            "falta_para_meta",
+            "falta_para_meta_mensal"
+        ]);
+
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposMoedaCartoes.has(campo)) {
+            return formatarMoedaBR(numero);
+        }
+
+        if (camposPercentuaisCartoes.has(campo)) {
+            return formatarPercentualBR(numero, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "emprestimo_bancoob") {
+        const numero = parseNumeroBR(valor);
+        if (Number.isNaN(numero)) return String(valor);
+
+        const camposMoedaCartoes = new Set([
+            "producao_semanal",
+            "meta_semanal_ano",
+            "gap_semanal",
+            "producao_ano",
+            "meta_2026",
+            "falta_para_meta",
+            "meta_mensal",
+            "falta_para_meta",
+            "falta_para_meta_mensal"
+        ]);
+
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposMoedaCartoes.has(campo)) {
+            return formatarMoedaBR(numero);
+        }
+
+        if (camposPercentuaisCartoes.has(campo)) {
+            return formatarPercentualBR(numero, 2);
+        }
+
+        return String(valor);
+    }
+
+    if (temaAtual === "saldo_previdencia_vgbl") {
+        const numeroTema = parseNumeroBR(valor);
+        if (Number.isNaN(numeroTema)) return String(valor);
+
+        const camposInteirosContaCorrenteSaldo = new Set([
+            "producao_ano",
+            "meta_ano",
+            "falta_para_meta",
+            "meta_semanal_ano",
+            "meta_mensal",
+            "falta_para_meta_mensal",
+            "gap_semanal"
+        ]);
+
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposInteirosContaCorrenteSaldo.has(campo)) {
+            return formatarInteiroBR(numeroTema);
+        }
+
+        if (camposPercentuaisCartoes.has(campo)) {
+            return formatarPercentualBR(numeroTema, 2);
+        }
+
+
+        return String(valor);
+    }
+
+
+    const numero = parseNumeroBR(valor);
+    if (Number.isNaN(numero)) return String(valor);
+
+    const camposInteiros = new Set([
+        "feito_no_mes_vigente",
+        "meta_semanal",
+        "gap_semanal",
+        "meta_2026",
+        "meta_ano",
+        "falta_para_meta",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+    ]);
+
+    const camposPercentuais = new Set([
+        "porcentagem_semanal",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+    ]);
+
+    if (camposInteiros.has(campo)) {
+        return formatarInteiroBR(numero);
+    }
+
+    if (camposPercentuais.has(campo)) {
+        return formatarPercentualBR(numero, 2);
+    }
+
+    return String(valor);
+}
+
+function obterMaisRecente(datas: Array<string | Date | null | undefined>) {
+    const validas = datas
+        .filter(Boolean)
+        .map((valor) => new Date(String(valor).replace(" ", "T")))
+        .filter((dt) => !Number.isNaN(dt.getTime()));
+
+    if (!validas.length) return null;
+    return new Date(Math.max(...validas.map((dt) => dt.getTime())));
+}
+
 function aplicarClasseCor(campo: string, valorOriginal: unknown) {
     if (!CAMPOS_COLORIR.has(campo)) return "";
 
@@ -80,17 +532,19 @@ function getSemanasDoMes(ano: number, mesIndex: number) {
     let cursor = new Date(mesInicio);
 
     while (cursor <= mesFim) {
-        if (cursor.getDay() === 0 || cursor.getDay() === 6) {
+        // pula sábado/domingo e inicia semana em dia útil
+        while (cursor <= mesFim && (cursor.getDay() === 0 || cursor.getDay() === 6)) {
             cursor.setDate(cursor.getDate() + 1);
-            continue;
         }
 
+        if (cursor > mesFim) break;
+
         const inicioSemana = new Date(cursor);
-        let fimSemana = new Date(cursor);
+        const fimSemana = new Date(cursor);
 
-        while (fimSemana.getDay() !== 5 && fimSemana <= mesFim) {
+        // avança até sexta-feira (ou fim do mês)
+        while (fimSemana.getDay() !== 5 && fimSemana < mesFim) {
             fimSemana.setDate(fimSemana.getDate() + 1);
-
             if (fimSemana.getDay() === 6) {
                 fimSemana.setDate(fimSemana.getDate() - 1);
                 break;
@@ -195,7 +649,8 @@ export function ProducaoMetaCooperativaPAForm() {
     const [dados, setDados] = useState<RelatorioItem[]>([]);
     const [erro, setErro] = useState("");
 
-    const [ultimaAtualizacao, setUltimaAtualizacao] = useState("-");
+    const [ultimaAtualizacaoBanco, setUltimaAtualizacaoBanco] = useState("-");
+    const [ultimaAtualizacaoSisbr, setUltimaAtualizacaoSisbr] = useState("-");
     const [infoTema, setInfoTema] = useState<RelatorioDataInfo | null>(null);
 
     const mesesOptions = useMemo(() => gerarMesesAteAtual(), []);
@@ -219,49 +674,90 @@ export function ProducaoMetaCooperativaPAForm() {
 
     async function carregarUltimaAtualizacao() {
         try {
-            const lista = await buscarUltimaAtualizacaoMetaPA();
+            const lista = await buscarDatasRelatorioMetaPA();
 
             if (!Array.isArray(lista) || !lista.length) {
-                setUltimaAtualizacao("-");
+                setUltimaAtualizacaoBanco("-");
+                setUltimaAtualizacaoSisbr("-");
                 return;
             }
 
-            const datasValidas = lista
-                .flatMap((item) => [item?.dt_carga, item?.dt_movimento])
-                .filter(Boolean)
-                .map((valor) => new Date(String(valor).replace(" ", "T")))
-                .filter((dt) => !Number.isNaN(dt.getTime()));
-
-            if (!datasValidas.length) {
-                setUltimaAtualizacao("-");
-                return;
-            }
-
-            const maisRecente = new Date(
-                Math.max(...datasValidas.map((dt) => dt.getTime()))
+            const maisRecenteCarga = obterMaisRecente(
+                lista.map((item) => item?.dt_carga)
+            );
+            const maisRecenteMovimento = obterMaisRecente(
+                lista.map((item) => item?.dt_movimento)
             );
 
-            setUltimaAtualizacao(formatarDataHoraBR(maisRecente));
+            setUltimaAtualizacaoBanco(
+                maisRecenteCarga ? formatarDataHoraBR(maisRecenteCarga) : "-"
+            );
+            setUltimaAtualizacaoSisbr(
+                maisRecenteMovimento ? formatarDataHoraBR(maisRecenteMovimento) : "-"
+            );
         } catch {
-            setUltimaAtualizacao("-");
+            setUltimaAtualizacaoBanco("-");
+            setUltimaAtualizacaoSisbr("-");
         }
     }
+
     async function carregarInfoTema(chaveTema: ChaveRelatorioPA) {
         try {
+            const lista = await buscarDatasRelatorioMetaPA();
             const nmTabela = MAPA_TEMA_PARA_TABELA[chaveTema];
+
             if (!nmTabela) {
                 setInfoTema(null);
+                const baseLista = Array.isArray(lista) ? lista : [];
+                const maisRecenteCarga = obterMaisRecente(
+                    baseLista.map((row) => row?.dt_carga)
+                );
+                const maisRecenteMovimento = obterMaisRecente(
+                    baseLista.map((row) => row?.dt_movimento)
+                );
+                setUltimaAtualizacaoBanco(
+                    maisRecenteCarga ? formatarDataHoraBR(maisRecenteCarga) : "-"
+                );
+                setUltimaAtualizacaoSisbr(
+                    maisRecenteMovimento ? formatarDataHoraBR(maisRecenteMovimento) : "-"
+                );
                 return;
             }
 
-            const lista = await buscarDatasRelatorioMetaPA();
             const item = Array.isArray(lista)
                 ? lista.find((row) => row?.nm_tabela === nmTabela)
                 : null;
 
             setInfoTema(item ?? null);
+
+            if (item) {
+                setUltimaAtualizacaoBanco(
+                    item?.dt_carga ? formatarDataHoraBR(item.dt_carga) : "-"
+                );
+                setUltimaAtualizacaoSisbr(
+                    item?.dt_movimento ? formatarDataHoraBR(item.dt_movimento) : "-"
+                );
+                return;
+            }
+
+            const baseLista = Array.isArray(lista) ? lista : [];
+            const maisRecenteCarga = obterMaisRecente(
+                baseLista.map((row) => row?.dt_carga)
+            );
+            const maisRecenteMovimento = obterMaisRecente(
+                baseLista.map((row) => row?.dt_movimento)
+            );
+
+            setUltimaAtualizacaoBanco(
+                maisRecenteCarga ? formatarDataHoraBR(maisRecenteCarga) : "-"
+            );
+            setUltimaAtualizacaoSisbr(
+                maisRecenteMovimento ? formatarDataHoraBR(maisRecenteMovimento) : "-"
+            );
         } catch {
             setInfoTema(null);
+            setUltimaAtualizacaoBanco("-");
+            setUltimaAtualizacaoSisbr("-");
         }
     }
 
@@ -301,7 +797,14 @@ export function ProducaoMetaCooperativaPAForm() {
             });
 
             setModoPeriodo(modoBusca);
-            setDados(ordenado);
+            const dadosFiltrados =
+                temaBusca === "liquidacao_baixa" || temaBusca === "faturamento_sipag"
+                    ? ordenado.filter(
+                        (item) => Number(item?.numero_pa ?? item?.nr_pa ?? 0) !== 0
+                    )
+                    : ordenado;
+
+            setDados(dadosFiltrados);
         } catch (error) {
             console.error(error);
             setErro("Não foi possível carregar o relatório.");
@@ -318,6 +821,7 @@ export function ProducaoMetaCooperativaPAForm() {
     useEffect(() => {
         if (!tema) {
             setInfoTema(null);
+            carregarUltimaAtualizacao();
             return;
         }
 
@@ -438,8 +942,17 @@ export function ProducaoMetaCooperativaPAForm() {
                                     <FaDatabase />
                                     Última atualização
                                 </div>
-                                <p className="text-sm font-semibold text-emerald-900">
-                                    {ultimaAtualizacao}
+                                <p className="text-xs text-emerald-800">
+                                    Banco:{" "}
+                                    <span className="font-semibold text-emerald-900">
+                                        {ultimaAtualizacaoBanco}
+                                    </span>
+                                </p>
+                                <p className="mt-1 text-xs text-emerald-800">
+                                    Sisbr Analítico:{" "}
+                                    <span className="font-semibold text-emerald-900">
+                                        {ultimaAtualizacaoSisbr}
+                                    </span>
                                 </p>
                             </div>
 
@@ -632,7 +1145,7 @@ export function ProducaoMetaCooperativaPAForm() {
                                             {configAtual?.colunas.map((coluna, index) => (
                                                 <th
                                                     key={`${coluna}-${index}`}
-                                                    className={`border-b border-gray-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600 ${index <= 1 ? "text-left" : "text-center"
+                                                    className={`border-b border-gray-200 px-2 py-2 text-[12px] font-semibold uppercase tracking-wide text-gray-600 ${index <= 1 ? "text-left" : "text-center"
                                                         }`}
                                                 >
                                                     {coluna}
@@ -649,30 +1162,35 @@ export function ProducaoMetaCooperativaPAForm() {
                                                 <tr
                                                     key={`${item?.numero_pa ?? item?.nr_pa ?? rowIndex}-${rowIndex}`}
                                                     className={`transition ${isTotal
-                                                            ? "bg-[#79B729]/10"
-                                                            : rowIndex % 2 === 0
-                                                                ? "bg-white"
-                                                                : "bg-slate-50/50"
+                                                        ? "bg-[#79B729]/10"
+                                                        : rowIndex % 2 === 0
+                                                            ? "bg-white"
+                                                            : "bg-slate-50/50"
                                                         } hover:bg-[#00AE9D]/[0.04]`}
                                                 >
                                                     {configAtual?.campos.map((campo, index) => {
                                                         const valor = item?.[campo] ?? "-";
+                                                        const valorFormatado = formatarValorExibicaoRelatorio(
+                                                            campo,
+                                                            valor,
+                                                            tema
+                                                        );
                                                         const corClasse = aplicarClasseCor(campo, valor);
 
                                                         return (
                                                             <td
                                                                 key={`${campo}-${index}-${rowIndex}`}
-                                                                className={`border-b border-gray-100 px-4 py-3 text-sm ${index <= 1 ? "text-left" : "text-center"
+                                                                className={`border-b border-gray-100 px-2 py-2 text-sm ${index <= 1 ? "text-left" : "text-center"
                                                                     } ${isTotal
                                                                         ? "font-semibold text-gray-900"
                                                                         : "text-gray-700"
                                                                     }`}
                                                             >
                                                                 <span
-                                                                    className={`inline-block rounded-lg px-2 py-1 ${corClasse || ""
+                                                                    className={`inline-block whitespace-nowrap rounded-lg px-2 py-1 ${corClasse || ""
                                                                         }`}
                                                                 >
-                                                                    {String(valor)}
+                                                                    {valorFormatado}
                                                                 </span>
                                                             </td>
                                                         );

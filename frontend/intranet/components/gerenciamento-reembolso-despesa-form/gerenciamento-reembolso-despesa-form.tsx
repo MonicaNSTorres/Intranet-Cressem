@@ -168,6 +168,7 @@ export function GerenciamentoReembolsoDespesaForm() {
       const me = (await buscarUsuarioLogadoGerenciamentoReembolso()) as {
         nome?: string;
         nome_completo?: string;
+        username?: string;
         grupos?: string[];
       };
 
@@ -679,14 +680,14 @@ export function GerenciamentoReembolsoDespesaForm() {
               onChange={(e) => setFiltroStatus(e.target.value)}
               className="w-full rounded border px-3 py-2"
             >
-              <option value="">Todos os status</option>
-              <option value="Pendente Funcionario">Pendente Funcionário</option>
-              <option value="Pendente Financeiro">Pendente Financeiro</option>
-              <option value="Pendente Gerencia">Pendente Gerência</option>
-              <option value="Pendente Gerencia Superior">Pendente Gerência Superior</option>
-              <option value="Pendente Diretoria">Pendente Diretoria</option>
-              <option value="Aprovado">Aprovado</option>
-              <option value="Reprovado">Reprovado</option>
+              <option value="">TODOS OS STATUS</option>
+              <option value="Pendente Funcionario">PENDENTE FUNCIONÁRIO</option>
+              <option value="Pendente Financeiro">PENDENTE FINANCEIRO</option>
+              <option value="Pendente Gerencia">PENDENTE GERÊNCIA</option>
+              <option value="Pendente Gerencia Superior">PENDENTE GERÊNCIA SUPERIOR</option>
+              <option value="Pendente Diretoria">PENDENTE DIRETORIA</option>
+              <option value="Aprovado">APROVADO</option>
+              <option value="Reprovado">REPROVADO</option>
             </select>
 
             <button
@@ -734,6 +735,9 @@ export function GerenciamentoReembolsoDespesaForm() {
                   Cidade
                 </th>
                 <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                  Abertura
+                </th>
+                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
                   Ida
                 </th>
                 <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
@@ -751,13 +755,13 @@ export function GerenciamentoReembolsoDespesaForm() {
             <tbody>
               {loadingBusca ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-3 py-6 text-center text-sm text-gray-500">
                     Carregando...
                   </td>
                 </tr>
               ) : lista.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-3 py-6 text-center text-sm text-gray-500">
                     Nenhuma solicitação encontrada.
                   </td>
                 </tr>
@@ -772,6 +776,9 @@ export function GerenciamentoReembolsoDespesaForm() {
                     </td>
                     <td className="border-b px-3 py-2 text-sm text-gray-700">
                       {capitalizeWords(item.NM_CIDADE).toUpperCase()}
+                    </td>
+                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                      {formatDateBR(item.DT_ABERTURA)}
                     </td>
                     <td className="border-b px-3 py-2 text-sm text-gray-700">
                       {formatDateBR(item.DT_IDA)}
@@ -1237,3 +1244,4 @@ function ResumoCard({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+
