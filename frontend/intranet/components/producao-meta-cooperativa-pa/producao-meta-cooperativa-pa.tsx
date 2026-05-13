@@ -105,21 +105,40 @@ function formatarValorExibicaoRelatorio(
         return formatarInteiroBR(numeroTema);
     }
 
-    // Entrada de cooperados deve permanecer com dados crus (sem formatação visual).
     if (temaAtual === "entrada_cooperados") {
         const numeroTema = parseNumeroBR(valor);
         if (Number.isNaN(numeroTema)) return String(valor);
 
-        if (campo === "meta_mensal" || campo === "falta_para_meta_mensal") {
+        const camposInteirosContaCorrenteSaldo = new Set([
+            "producao_ano",
+            "meta_ano",
+            "falta_para_meta",
+            "gap_semanal",
+            "falta_para_meta",
+            "falta_para_meta_mensal",
+            "meta_semanal_ano",
+            "meta_2026",
+            "meta_semanal",
+            "meta_mensal"
+        ]);
+
+        if (camposInteirosContaCorrenteSaldo.has(campo)) {
             return formatarInteiroBR(numeroTema);
         }
 
-        if (campo === "perc_meta_realizada_mensal") {
+        const camposPercentuaisCartoes = new Set([
+            "porcentagem_semanal",
+            "perc_meta_realizada",
+            "perc_meta_realizada_mensal"
+        ]);
+
+        if (camposPercentuaisCartoes.has(campo)) {
             return formatarPercentualBR(numeroTema, 2);
         }
 
         return String(valor);
     }
+
 
     if (temaAtual === "conta_corrente_ativas") {
         const numeroTema = parseNumeroBR(valor);

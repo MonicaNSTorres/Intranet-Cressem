@@ -90,20 +90,20 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
         wherePerfilSql = `UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)`;
       } else if (tipoUsuario === "gerencia" || tipoUsuario === "gerencia superior") {
         wherePerfilSql = `
-  (
-    UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil1)
-    OR UPPER(NVL(s.NM_FUNCIONARIO, ' ')) IN (
-      SELECT UPPER(TRIM(f.NM_FUNCIONARIO))
-      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
-      WHERE f.CD_GERENCIA = (
-        SELECT fg.ID_FUNCIONARIO
-        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
-        WHERE UPPER(TRIM(fg.NM_FUNCIONARIO)) = UPPER(:nomePerfil2)
-        FETCH FIRST 1 ROWS ONLY
-      )
-    )
-  )
-`;
+          (
+            UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)
+            OR UPPER(NVL(s.NM_FUNCIONARIO, ' ')) IN (
+              SELECT UPPER(TRIM(f.NM_FUNCIONARIO))
+              FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+              WHERE f.CD_GERENCIA = (
+                SELECT fg.ID_FUNCIONARIO
+                FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
+                WHERE UPPER(TRIM(fg.NM_FUNCIONARIO)) = UPPER(:nomePerfil)
+                FETCH FIRST 1 ROWS ONLY
+              )
+            )
+          )
+        `;
       }
 
       const bindsBase: Record<string, any> = {
@@ -119,12 +119,8 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
         status2: status || " ",
       };
 
-      if (wherePerfilSql.includes(":nomePerfil1")) {
-        bindsBase.nomePerfil1 = nome;
-      }
-
-      if (wherePerfilSql.includes(":nomePerfil2")) {
-        bindsBase.nomePerfil2 = nome;
+      if (wherePerfilSql.includes(":nomePerfil")) {
+        bindsBase.nomePerfil = nome;
       }
 
       const whereSql = `
@@ -175,6 +171,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           s.ID_SOLICITACAO_REEMBOLSO_DESPESA,
           s.NM_FUNCIONARIO,
           s.NR_CPF_FUNCIONARIO,
+          TO_CHAR(s.DT_ABERTURA, 'YYYY-MM-DD') AS DT_ABERTURA,
           TO_CHAR(s.DT_IDA, 'YYYY-MM-DD') AS DT_IDA,
           TO_CHAR(s.DT_VOLTA, 'YYYY-MM-DD') AS DT_VOLTA,
           s.DESC_JTF_EVENTO,
@@ -184,7 +181,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           s.NR_CONTA,
           s.DESC_ANDAMENTO,
           s.SN_FINALIZADO,
- 
+
           s.DESC_PRC_FINANCEIRO,
           s.NM_FNC_FINANCEIRO,
           s.DESC_PRC_GERENCIA,
@@ -193,12 +190,12 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           s.NM_FNC_GERENCIA_SUP,
           s.DESC_PRC_DIRETORIA,
           s.NM_FNC_DIRETORIA,
- 
+
           s.ID_SOLICITANTE,
           s.ID_APROV_GERENCIA,
           s.ID_APROV_GERENCIA_SUP,
           s.ID_APROV_DIRETORIA,
- 
+
           CASE
             WHEN NVL(TRIM(s.NM_FNC_GERENCIA), '') <> ''
               OR s.ID_APROV_GERENCIA IS NOT NULL
@@ -206,7 +203,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
             THEN 1
             ELSE 0
           END AS HAS_GERENCIA,
- 
+
           CASE
             WHEN s.ID_APROV_GERENCIA_SUP IS NOT NULL
               OR NVL(TRIM(s.NM_FNC_GERENCIA_SUP), '') <> ''
@@ -214,7 +211,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
             THEN 1
             ELSE 0
           END AS HAS_GERENCIA_SUP,
- 
+
           CASE
             WHEN NVL(TRIM(s.NM_FNC_GERENCIA), '') <> '' THEN s.NM_FNC_GERENCIA
             ELSE (
@@ -224,7 +221,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               FETCH FIRST 1 ROWS ONLY
             )
           END AS APROV_GERENCIA_NOME,
- 
+
           CASE
             WHEN NVL(TRIM(s.NM_FNC_GERENCIA_SUP), '') <> '' THEN s.NM_FNC_GERENCIA_SUP
             ELSE (
@@ -234,7 +231,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               FETCH FIRST 1 ROWS ONLY
             )
           END AS APROV_GERENCIA_SUP_NOME,
- 
+
           CASE
             WHEN NVL(TRIM(s.NM_FNC_DIRETORIA), '') <> '' THEN s.NM_FNC_DIRETORIA
             ELSE (
@@ -244,16 +241,20 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               FETCH FIRST 1 ROWS ONLY
             )
           END AS APROV_DIRETORIA_NOME,
- 
+
           CASE
             WHEN s.ID_APROV_DIRETORIA IS NOT NULL THEN 1
             ELSE 0
           END AS HAS_DIRETORIA,
- 
+
           :tipoUsuario AS TIPO_USUARIO
         FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA s
         ${whereSql}
-        ORDER BY s.ID_SOLICITACAO_REEMBOLSO_DESPESA DESC
+        ORDER BY
+          s.DT_ABERTURA DESC NULLS LAST,
+          NVL(s.SN_FINALIZADO, 0) ASC,
+          UPPER(NVL(s.NM_FUNCIONARIO, ' ')) ASC,
+          s.ID_SOLICITACAO_REEMBOLSO_DESPESA DESC
         OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
       `;
 
@@ -318,6 +319,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           ID_SOLICITACAO_REEMBOLSO_DESPESA: item.ID_SOLICITACAO_REEMBOLSO_DESPESA,
           NM_FUNCIONARIO: item.NM_FUNCIONARIO || "",
           NR_CPF_FUNCIONARIO: item.NR_CPF_FUNCIONARIO || "",
+          DT_ABERTURA: item.DT_ABERTURA || "",
           DT_IDA: item.DT_IDA || "",
           DT_VOLTA: item.DT_VOLTA || "",
           DESC_JTF_EVENTO: item.DESC_JTF_EVENTO || "",
