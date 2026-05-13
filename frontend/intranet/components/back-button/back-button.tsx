@@ -12,7 +12,7 @@ const BackButton = () => {
 
     return (
         <div className="flex flex-col items-start">
-            <button onClick={handleBack} className="flex items-center text-lg text-gray-700 dark:text-white font-semibold mb-2 space-x-2 hover:cursor-pointer"> 
+            <button onClick={handleBack} className="flex items-center text-lg text-gray-700 dark:text-gray-700 font-semibold mb-2 space-x-2 hover:cursor-pointer"> 
                 <ArrowLeft size={25} />
                 <span>Voltar</span>
             </button>

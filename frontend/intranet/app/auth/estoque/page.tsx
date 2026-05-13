@@ -16,6 +16,12 @@ import {
   FaCalendarAlt,
 } from "react-icons/fa";
 import { listarEstoqueGlpi } from "@/services/glpi_estoque.service";
+import {
+  canAccess,
+  PAGE_ACCESS,
+  type AuthUserLike,
+} from "@/lib/access-control";
+import { getMeAdUser } from "@/services/auth.service";
 
 function getInitials(text?: string) {
   if (!text) return "PC";
@@ -37,7 +43,8 @@ function containsText(value: any, term: string) {
 
 export default function EstoquePage() {
   const [busca, setBusca] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
   const [items, setItems] = useState<any[]>([]);
   const [filtroRapido, setFiltroRapido] = useState<
     "todos" | "comSerial" | "comContato" | "comLocalizacao"
@@ -138,6 +145,42 @@ export default function EstoquePage() {
   function fecharDetalhes() {
     setItemSelecionado(null);
   }
+
+  useEffect(() => {
+    async function validarAcesso() {
+      try {
+        const user = (await getMeAdUser()) as AuthUserLike;
+
+        setAllowed(canAccess(user, PAGE_ACCESS.estoque));
+      } catch (error) {
+        console.error(error);
+        setAllowed(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    validarAcesso();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-sm text-gray-500">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="p-6">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Você não possui permissão para acessar esta tela.
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="mx-auto w-full min-w-225 space-y-6 rounded-[28px] border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
@@ -290,11 +333,10 @@ export default function EstoquePage() {
               <button
                 type="button"
                 onClick={() => setFiltroRapido("todos")}
-                className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-                  filtroRapido === "todos"
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${filtroRapido === "todos"
                     ? "bg-[#00AE9D] text-white shadow-md shadow-[#00AE9D]/20"
                     : "border border-slate-200 bg-white text-slate-600 hover:border-[#00AE9D] hover:text-[#00AE9D]"
-                }`}
+                  }`}
               >
                 Todos
               </button>
@@ -302,11 +344,10 @@ export default function EstoquePage() {
               <button
                 type="button"
                 onClick={() => setFiltroRapido("comSerial")}
-                className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-                  filtroRapido === "comSerial"
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${filtroRapido === "comSerial"
                     ? "bg-[#79B729] text-white shadow-md shadow-[#79B729]/20"
                     : "border border-slate-200 bg-white text-slate-600 hover:border-[#79B729] hover:text-[#79B729]"
-                }`}
+                  }`}
               >
                 Com serial
               </button>
@@ -314,11 +355,10 @@ export default function EstoquePage() {
               <button
                 type="button"
                 onClick={() => setFiltroRapido("comContato")}
-                className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-                  filtroRapido === "comContato"
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${filtroRapido === "comContato"
                     ? "bg-slate-800 text-white shadow-md shadow-slate-300"
                     : "border border-slate-200 bg-white text-slate-600 hover:border-slate-400 hover:text-slate-800"
-                }`}
+                  }`}
               >
                 Com contato
               </button>
@@ -326,11 +366,10 @@ export default function EstoquePage() {
               <button
                 type="button"
                 onClick={() => setFiltroRapido("comLocalizacao")}
-                className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-                  filtroRapido === "comLocalizacao"
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${filtroRapido === "comLocalizacao"
                     ? "bg-[#C7D300] text-slate-800 shadow-md shadow-[#C7D300]/25"
                     : "border border-slate-200 bg-white text-slate-600 hover:border-[#C7D300] hover:text-slate-800"
-                }`}
+                  }`}
               >
                 Com localização
               </button>
@@ -340,9 +379,8 @@ export default function EstoquePage() {
           <div className="border-b border-slate-100 bg-slate-50/70 px-5 py-3 text-xs font-medium text-slate-500 sm:px-6">
             {loading
               ? "Atualizando dados..."
-              : `${itemsFiltrados.length} ${
-                  itemsFiltrados.length === 1 ? "equipamento encontrado" : "equipamentos encontrados"
-                }`}
+              : `${itemsFiltrados.length} ${itemsFiltrados.length === 1 ? "equipamento encontrado" : "equipamentos encontrados"
+              }`}
           </div>
 
           <div className="overflow-x-auto">
@@ -428,9 +466,8 @@ export default function EstoquePage() {
                     return (
                       <tr
                         key={item.id}
-                        className={`group border-t border-slate-100 transition-all hover:bg-[#00AE9D]/3 ${
-                          ativo ? "bg-[#00AE9D]/5" : ""
-                        }`}
+                        className={`group border-t border-slate-100 transition-all hover:bg-[#00AE9D]/3 ${ativo ? "bg-[#00AE9D]/5" : ""
+                          }`}
                       >
                         <td className="px-6 py-4">
                           <button

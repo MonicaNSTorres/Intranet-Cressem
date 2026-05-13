@@ -29,6 +29,14 @@ function capitalizeWords(value?: string | null) {
         );
 }
 
+function normalizeSearch(value?: string | null) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
+
 function formatarCpfCnpj(value?: string | null) {
     const digits = String(value || "").replace(/\D/g, "");
 
@@ -185,7 +193,8 @@ export function ChequeEspecialForm() {
             setError(null);
             setInfo(null);
 
-            const termoNormalizado = String(termoBusca ?? q ?? "").trim();
+
+            const termoNormalizado = normalizeSearch(termoBusca ?? q ?? "");
 
             const response = await buscarChequeEspecialPaginado({
                 nome: termoNormalizado || " ",
@@ -377,7 +386,7 @@ export function ChequeEspecialForm() {
                     <div className="mt-4 flex flex-wrap gap-2">
                         <button
                             type="button"
-                            onClick={() => carregarRegistros(1, 15)}
+                            onClick={() => carregarRegistros(1, 15, q)}
                             className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary"
                         >
                             <FaSearch />
@@ -616,7 +625,7 @@ export function ChequeEspecialForm() {
                             <button
                                 key={page}
                                 type="button"
-                                onClick={() => carregarRegistros(page, 15)}
+                                onClick={() => carregarRegistros(page, 15, q)}
                                 className={`rounded-lg px-3 py-1.5 text-sm ${page === paginaAtual
                                     ? "bg-emerald-600 text-white"
                                     : "border border-gray-300 text-gray-700 hover:bg-gray-50"

@@ -41,45 +41,22 @@ const AD_GROUPS = {
     AUDITORIA: "GG_USERS_ANTEC",
     DOCUSIGN: "GG_USERS_DOCUSIGN",
     ESTOQUE: "GG_USERS_ALMO",
+
+    GERENCIA_DIRETORIA: "GG_USERS_GERENCIA_DIRETORIA",
+    TODO_MUNDO: "GG_INTRANET_FULL",
+    CHEQUE_ESPCIAL: "GG_INTRANET_CHEQUE_ESPECIAL",
+    CONSULTA_ANALISE_LIMITE: "GG_INTRANET_CONSULTA_ANALISE",
+    CADASTRO_CONVENIADA: "GG_INTRANET_EMPRESA_CONVENIADA",
+    NOTIFICACAO: "GG_INTRANET_MKT_NOTIFICACAO",
+    META_PA: "GG_INTRANET_META_PA",
+    DESEMPEDIMENTO: "GG_INTRANET_FICHA_DESEMPEDIMENTO",
+    CONVENIO_ODONTO: "GG_INTRANET_CADASTRO_ODONTO",
+    GERENCIAR_CONVENIO_ODONTO: "GG_INTRANET_GERENCIADOR_ODONTO",
+    FINANCEIRO_CADASTRO: "GG_INTRANET_CADASTRO_FIN",
+    RH_INTRANET: "GG_INTRANET_RH",
+    MIGRACAO_CONTRATO: "GG_INTRANET_MIGRACAO_CONTRATO",
+    SOLICITACAO_CREDITO: "GG_INTRANET_SOLICITACAO_CRED",
 } as const;
-
-const SECRETARIA = [
-    "JANAINA GABRIELA",
-    "VITORIA BEATRIZ FONTOURA CAVALHEIRO DOS SANTOS",
-];
-
-const DIRETORIA = [
-    "ADRIANA BATISTA DENARI DOS SANTOS",
-    "TIAGO FERREIRA TEIXEIRA",
-    "PAULO DE TARSO DOS SANTOS CUNHA",
-    "ADRIANO CASTRO SPEGIORIN",
-];
-
-const CHEQUE_ESPECIAL = [
-    "ADRIANO CASTRO SPEGIORIN",
-    "AMANDA DE ASSIS TEIXEIRA",
-    "ANA CAROLINA MOTA HESPANHA RODRIGUES",
-    "ANA KARINA SANTOS COELHO SENADOR",
-    "CLEIDIANA DA SILVA",
-    "GABRIELLE ALVES DOS SANTOS",
-    "HEITOR PEIXOTO DE SOUZA",
-    "ISIS GRASIELA SANCHES RONDON",
-    "MATHEUS GUILHERME COSTA SANT ANA",
-    "PATRICIA HASSMAN CHENA DINIZ ALMEIDA",
-    "VANDERLEIA MARIA DA SILVA MEDEIROS",
-    "CAROLINA BIANCA ALVARENGA DAUANNY",
-];
-
-const ACESSO_DOCUSIGN = [
-    "JANAINA GABRIELA",
-    "LUCAS ITNER ANDRADE",
-    "THAIS YUMI HASHIMOTO SANTOS",
-    "PAULO DE TARSO DOS SANTOS CUNHA",
-    "TIAGO FERREIRA TEIXEIRA",
-    "DIEGO ADRIANO DE SOUZA",
-    "VITORIA BEATRIZ FONTOURA CAVALHEIRO DOS SANTOS",
-    "JENNYFFER HELENA RODRIGUES DE JESUS",
-];
 
 type AccessRule = {
     allowedGroups?: string[];
@@ -158,18 +135,12 @@ function canAccess(user: any, rule?: AccessRule) {
 
 const links: LinkItem[] = [
     {
-        title: "Empréstimo Consignado",
-        description: "Acesse rapidamente a tela de empréstimo consignado.",
-        href: "/auth/emprestimo_consignado",
-        icon: FaFileInvoiceDollar,
-        category: "Financeiro",
-    },
-    {
-        title: "RCO",
-        description: "Acesse rapidamente a tela de RCO.",
+        title: "Custo de Operação de Portabilidade",
+        description: "Acesse rapidamente a tela de Custo de Operação de Portabilidade.",
         href: "/auth/rco",
         icon: FaFileInvoiceDollar,
         category: "Financeiro",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     },
     {
         title: "Relação de Faturamento",
@@ -177,6 +148,7 @@ const links: LinkItem[] = [
         href: "/auth/relacao_faturamento",
         icon: FaFileInvoiceDollar,
         category: "Financeiro",
+        allowedGroups: [AD_GROUPS.TODO_MUNDO, AD_GROUPS.SUPORTE],
     },
     {
         title: "Declaração de Rendimentos",
@@ -184,6 +156,7 @@ const links: LinkItem[] = [
         href: "/auth/declaracao_rendimentos",
         icon: FaIdCard,
         category: "Cadastro",
+        allowedGroups: [AD_GROUPS.TODO_MUNDO, AD_GROUPS.SUPORTE],
     },
     {
         title: "Estoque de Consumíveis",
@@ -191,7 +164,7 @@ const links: LinkItem[] = [
         href: "/auth/estoque_consumiveis",
         icon: FaArchive,
         category: "Estoque",
-        allowedGroups: [AD_GROUPS.ESTOQUE, AD_GROUPS.SUPORTE],
+        allowedGroups: [AD_GROUPS.SUPORTE],
     },
     {
         title: "Painel GLPI",
@@ -199,7 +172,7 @@ const links: LinkItem[] = [
         href: "/auth/painel_glpi_estoque",
         icon: FaDesktop,
         category: "Estoque",
-        allowedGroups: [AD_GROUPS.ESTOQUE, AD_GROUPS.SUPORTE],
+        allowedGroups: [AD_GROUPS.SUPORTE],
     },
     {
         title: "Resgate Parcial de Capital",
@@ -207,6 +180,7 @@ const links: LinkItem[] = [
         href: "/auth/resgate_capital",
         icon: FaIdCard,
         category: "Cadastro",
+        allowedGroups: [AD_GROUPS.TODO_MUNDO, AD_GROUPS.SUPORTE],
     },
     {
         title: "Migração de Contrato",
@@ -214,14 +188,15 @@ const links: LinkItem[] = [
         href: "/auth/migracao_contrato",
         icon: FaIdCard,
         category: "Cadastro",
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MIGRACAO_CONTRATO],
     },
     {
-        title: "Demissão",
+        title: "Formulário Demissão Espontânea",
         description: "Acesse rapidamente a tela de formulário de demissão.",
         href: "/auth/demissao",
         icon: FaIdCard,
         category: "Cadastro",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     },
     {
         title: "Ficha de Desimpedimento",
@@ -229,24 +204,31 @@ const links: LinkItem[] = [
         href: "/auth/ficha_desimpedimento",
         icon: FaIdCard,
         category: "Cadastro",
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.DESEMPEDIMENTO],
     },
     {
-        title: "Cheque Especial",
+        title: "Alteração de Cheque Especial",
         description: "Acesse rapidamente a tela de alteração benefício cheque especial.",
         href: "/auth/cheque_especial",
         icon: FaIdCard,
         category: "Cadastro",
-        allowedGroups: [AD_GROUPS.SUPORTE],
-        allowedUsers: CHEQUE_ESPECIAL,
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CHEQUE_ESPCIAL],
     },
     {
-        title: "Auditoria",
+        title: "Calculadora de Juros Cartão",
+        description: "Acesse rapidamente a tela de calculadora de juros cartão.",
+        href: "/auth/calculadora_juros_cartao",
+        icon: FaIdCard,
+        category: "Cadastro",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    },
+    {
+        title: "Solicitação de Crédito",
         description: "Acesse rapidamente a tela de formulário de solicitação de crédito.",
         href: "/auth/auditoria",
         icon: FaIdCard,
         category: "Cadastro",
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AUDITORIA],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.SOLICITACAO_CREDITO],
     },
     {
         title: "Docusign",
@@ -262,6 +244,7 @@ const links: LinkItem[] = [
         href: "/auth/antecipacao_capital",
         icon: FaIdCard,
         category: "Cadastro",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     },
     {
         title: "Termo de Responsabilidade TI",
@@ -277,7 +260,7 @@ const links: LinkItem[] = [
         href: "/auth/aniversariantes",
         icon: FaBirthdayCake,
         category: "Informativo",
-        //allowedGroups: [AD_GROUPS.SUPORTE],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     },
     {
         title: "Ramais",
@@ -285,7 +268,7 @@ const links: LinkItem[] = [
         href: "/auth/ramais",
         icon: FaPhoneAlt,
         category: "Informativo",
-        //allowedGroups: [AD_GROUPS.SUPORTE],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     },
     {
         title: "Tabela SISBR TI",
@@ -301,7 +284,7 @@ const links: LinkItem[] = [
         href: "/auth/links_externos",
         icon: FaBookReader,
         category: "Informativo",
-        //allowedGroups: [AD_GROUPS.SUPORTE],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     },
     {
         title: "Formulários de Cadastro",
@@ -312,27 +295,27 @@ const links: LinkItem[] = [
             {
                 title: "Alteração de Capital",
                 href: "/auth/alteracao_capital",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Declaração de Residência",
                 href: "/auth/declaracao_residencia",
-            },
-            {
-                title: "Ficha de Desimpedimento",
-                href: "/auth/ficha_desimpedimento",
-                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Procuração Outorgante PF/PJ",
-                href: "/auth/procuracao_outorgante",
+                href: "/auth/procuracao_ortugante",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Renúncia de Procurador",
                 href: "/auth/renuncia_procurador",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Tabela de integralização",
                 href: "/auth/tabela_integralizacao",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
         ],
     },
@@ -345,34 +328,42 @@ const links: LinkItem[] = [
             {
                 title: "Adendo Contratual",
                 href: "/auth/adendo_contratual",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Adiantamento Salarial",
                 href: "/auth/adiantamento_salarial_emprestimo",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Autorização de Débito",
                 href: "/auth/autorizacao_debito",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Cálculo de Margem",
                 href: "/auth/margem_consignavel",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Formulário DPS",
                 href: "/auth/formulario_dps",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Formulário Previsul",
                 href: "/auth/previsul",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Simulador de desconto",
                 href: "/auth/simulador_desconto",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Termo de Garantia",
                 href: "/auth/termo_garantia",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
         ],
     },
@@ -385,18 +376,22 @@ const links: LinkItem[] = [
             {
                 title: "Adiantamento Salarial",
                 href: "/auth/adiantamento_salarial",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
-                title: "Auxílio Creche / Babá",
+                title: "Reembolso Creche / Babá",
                 href: "/auth/auxilio_creche",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Bolsa de Estudo",
                 href: "/auth/bolsa_estudo",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Reembolso Convênio Médico",
                 href: "/auth/reembolso_convenio_medico",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
         ],
     },
@@ -409,14 +404,17 @@ const links: LinkItem[] = [
             {
                 title: "Aplicar marca d'água",
                 href: "/auth/aplica_marca_dagua",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Conversor de Arquivos",
                 href: "/auth/conversor_arquivos",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
                 title: "Juntar PDF",
                 href: "/auth/juntar_pdf",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
         ],
     },
@@ -430,10 +428,12 @@ const links: LinkItem[] = [
             {
                 title: "Cadastro de Recibo Financeiro",
                 href: "/auth/cadastro_recibo_financeiro",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.FINANCEIRO_CADASTRO],
             },
             {
-                title: "Consulta de Recibos Financeiros",
+                title: "Recibos Financeiros",
                 href: "/auth/consulta_recibo_financeiro",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.FINANCEIRO_CADASTRO],
             },
         ],
     },
@@ -444,12 +444,14 @@ const links: LinkItem[] = [
         category: "Financeiro",
         children: [
             {
-                title: "Cadastro de Despesas e Viagens",
+                title: "Solicitação de Reembolso",
                 href: "/auth/cadastro_reembolso_despesa",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
-                title: "Gerenciamento de Despesas e Viagens",
+                title: "Gerenciamento de Reembolso",
                 href: "/auth/gerenciamento_reembolso_despesa",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
         ],
     },
@@ -461,12 +463,14 @@ const links: LinkItem[] = [
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AGENCIA],
         children: [
             {
-                title: "Cadastro de Concessão de Limites",
+                title: "Análise de Limite",
                 href: "/auth/cadastro_analise_limite",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
-                title: "Consulta de Análise de Novos Limites",
+                title: "Consulta de Análise de Limite",
                 href: "/auth/consulta_analise_limite",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CONSULTA_ANALISE_LIMITE],
             },
         ],
     },
@@ -475,16 +479,17 @@ const links: LinkItem[] = [
         description: "Cadastre e consulte contratos em um só lugar.",
         icon: FaHandshake,
         category: "Contratos",
-        allowedGroups: [AD_GROUPS.SUPORTE],
-        allowedUsers: [...SECRETARIA, ...DIRETORIA],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO_CONVENIADA],
         children: [
             {
-                title: "Cadastro",
+                title: "Cadastro de Empresa Conveniada",
                 href: "/auth/cadastro_contrato",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO_CONVENIADA],
             },
             {
-                title: "Consulta",
+                title: "Gerenciador de Empresa Conveniada",
                 href: "/auth/consulta_contratos",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO_CONVENIADA],
             },
         ],
     },
@@ -497,12 +502,14 @@ const links: LinkItem[] = [
         requiresManagerOrDirector: true,
         children: [
             {
-                title: "Consolidado/Meta/PA",
+                title: "Meta PA",
                 href: "/auth/producao_meta_cooperativa_pa",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.META_PA],
             },
             {
-                title: "Meta Funcionários",
+                title: "Meta por Funcionário",
                 href: "/auth/producao_meta_funcionario",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.META_PA],
             },
         ],
     },
@@ -515,21 +522,22 @@ const links: LinkItem[] = [
             {
                 title: "Cadastro",
                 href: "/auth/cadastro_convenio_odonto",
-                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CONVENIO_ODONTO],
             },
             {
                 title: "Consulta",
                 href: "/auth/gerenciamento_convenio_odonto",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CONVENIO_ODONTO],
             },
             {
                 title: "Gerenciar Valores",
                 href: "/auth/gerenciamento_valor_convenio_odonto",
-                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.GERENCIAR_CONVENIO_ODONTO],
             },
             {
                 title: "Relatórios",
                 href: "/auth/relatorio_convenio_odonto",
-                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO],
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.GERENCIAR_CONVENIO_ODONTO],
             },
         ],
     },
@@ -543,18 +551,22 @@ const links: LinkItem[] = [
             {
                 title: "Cargos",
                 href: "/auth/gerenciamento_cargo",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
             },
             {
-                title: "Funcionários",
+                title: "Gerenciador de Funcionários",
                 href: "/auth/gerenciamento_funcionario",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
             },
             {
                 title: "Posições",
                 href: "/auth/gerenciamento_posicao",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
             },
             {
                 title: "Setores",
                 href: "/auth/gerenciamento_setor",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
             },
         ],
     },
@@ -566,12 +578,14 @@ const links: LinkItem[] = [
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH],
         children: [
             {
-                title: "Cadastro",
+                title: "Cadastro de Férias",
                 href: "/auth/cadastro_ferias",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
             },
             {
-                title: "Consulta",
+                title: "Gerenciador de Férias",
                 href: "/auth/gerenciamento_ferias",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.RH_INTRANET],
             },
         ],
     },
@@ -583,12 +597,14 @@ const links: LinkItem[] = [
         allowedGroups: [AD_GROUPS.SUPORTE],
         children: [
             {
-                title: "Cadastro",
+                title: "Cadastro de Notebook",
                 href: "/auth/cadastro_notebook",
+                allowedGroups: [AD_GROUPS.SUPORTE],
             },
             {
-                title: "Consulta",
+                title: "Gerenciador de Notebook",
                 href: "/auth/consulta_notebook",
+                allowedGroups: [AD_GROUPS.SUPORTE],
             },
         ],
     },
@@ -600,12 +616,19 @@ const links: LinkItem[] = [
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
         children: [
             {
-                title: "Solicitações",
+                title: "Solicitação de Subsídio",
                 href: "/auth/solicitacao_participacao",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
-                title: "Consulta",
+                title: "Notificação",
+                href: "/auth/popup_aviso",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.NOTIFICACAO],
+            },
+            {
+                title: "Gerenciador de Subsídio",
                 href: "/auth/gerenciamento_participacao",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
         ],
     },
@@ -670,19 +693,27 @@ export function LinksUteis() {
             .filter(Boolean) as LinkItem[];
     }, [usuarioLogado]);
 
+    function normalizeText(text?: string) {
+        return String(text || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
+    }
+
     const filteredLinks = useMemo(() => {
-        const term = search.toLowerCase().trim();
+        const term = normalizeText(search);
 
         if (!term) return visibleLinks;
 
         return visibleLinks
             .map((item) => {
                 const matchMain = [item.title, item.description, item.category].some((field) =>
-                    field.toLowerCase().includes(term)
+                    normalizeText(field).includes(term)
                 );
 
                 const filteredChildren = item.children?.filter((child) =>
-                    child.title.toLowerCase().includes(term)
+                    normalizeText(child.title).includes(term)
                 );
 
                 if (matchMain) {

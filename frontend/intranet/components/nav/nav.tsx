@@ -54,6 +54,7 @@ export const AD_GROUPS = {
     FINANCEIRO_CADASTRO: "GG_INTRANET_CADASTRO_FIN",
     RH_INTRANET: "GG_INTRANET_RH",
     MIGRACAO_CONTRATO: "GG_INTRANET_MIGRACAO_CONTRATO",
+    SOLICITACAO_CREDITO: "GG_INTRANET_SOLICITACAO_CRED",
 } as const;
 
 const ALL_AD_GROUPS = Object.values(AD_GROUPS);
@@ -138,10 +139,24 @@ const Sidebar = () => {
     };
 
     const toggleGroup = (key: string) => {
-        if (!isOpen) return;
+        //se menu estiver fechado
+        if (!isOpen) {
+            setIsOpen(true);
 
+            // já deixa o grupo aberto
+            setOpenGroups((prev) => {
+                if (prev.includes(key)) return prev;
+                return [...prev, key];
+            });
+
+            return;
+        }
+
+        //comportamento normal
         setOpenGroups((prev) =>
-            prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]
+            prev.includes(key)
+                ? prev.filter((item) => item !== key)
+                : [...prev, key]
         );
     };
 
@@ -195,7 +210,7 @@ const Sidebar = () => {
                 {
                     label: "Solicitação de Crédito",
                     href: "/auth/auditoria",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO], //todo mundo precisa ter acesso, remover o grupo auditoria
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.SOLICITACAO_CREDITO], //todo mundo precisa ter acesso, remover o grupo auditoria
                 },
             ],
         },
@@ -270,22 +285,17 @@ const Sidebar = () => {
         },
         {
             key: "marketing",
-            label: "Marketing",
+            label: "Solicitação de Patrocínio",
             icon: FaBullhorn,
             section: "Gestão e Comunicação",
             children: [
                 {
-                    label: "Gerenciador de Subsídio",
+                    label: "Gerenciador de Patrocínio",
                     href: "/auth/gerenciamento_participacao",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],//todo mundo
                 },
                 {
-                    label: "Notificação",
-                    href: "/auth/popup_aviso",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.NOTIFICACAO],//liberar para o diego
-                },
-                {
-                    label: "Solicitação de Subsídio",
+                    label: "Solicitação de Patrocínio",
                     href: "/auth/solicitacao_participacao",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],//todo mundo faz
                 },
@@ -306,6 +316,19 @@ const Sidebar = () => {
                     label: "Meta por Funcionário",
                     href: "/auth/producao_meta_funcionario",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.META_PA],
+                },
+            ],
+        },
+        {
+            key: "notificacao",
+            label: "Notificação",
+            icon: FaBullhorn,
+            section: "Comunicados",
+            children: [
+                {
+                    label: "PopUp",
+                    href: "/auth/popup_aviso",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.NOTIFICACAO],
                 },
             ],
         },
@@ -364,11 +387,6 @@ const Sidebar = () => {
                 {
                     label: "Aniversariantes",
                     href: "/auth/aniversariantes",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
-                },
-                {
-                    label: "Empréstimo Consignado",
-                    href: "/auth/emprestimo_consignado",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
@@ -655,14 +673,14 @@ const Sidebar = () => {
             .map((group) => group.key);
 
         setOpenGroups((prev) => {
-            const merged = new Set([...prev, ...activeGroups]);
-            const next = Array.from(merged);
 
-            if (next.length === prev.length && next.every((value, index) => value === prev[index])) {
-                return prev;
-            }
+            const merged = Array.from(new Set([...prev, ...activeGroups]));
 
-            return next;
+            const mudou =
+                merged.length !== prev.length ||
+                merged.some((item) => !prev.includes(item));
+
+            return mudou ? merged : prev;
         });
     }, [pathname, visibleMenuGroups]);
 

@@ -8,6 +8,12 @@ import {
     cadastrarNotebook,
     type FuncionarioOption,
 } from "@/services/cadastro_notebook.service";
+import {
+    canAccess,
+    PAGE_ACCESS,
+    type AuthUserLike,
+} from "@/lib/access-control";
+import { getMeAdUser } from "@/services/auth.service";
 
 type NotebookFormData = {
     NM_NOTEBOOK: string;
@@ -52,12 +58,32 @@ export default function CadastroNotebookPage() {
     const debouncedFuncionario = useDebouncedValue(form.NM_FUNCIONARIO_TI, 300);
     const funcionarioBoxRef = useRef<HTMLDivElement | null>(null);
 
+    const [loadingAccess, setLoadingAccess] = useState(true);
+    const [allowed, setAllowed] = useState(false);
+
     function handleChange<K extends keyof NotebookFormData>(field: K, value: NotebookFormData[K]) {
         setForm((prev) => ({
             ...prev,
             [field]: value,
         }));
     }
+
+    useEffect(() => {
+        async function validarAcesso() {
+            try {
+                const user = (await getMeAdUser()) as AuthUserLike;
+
+                setAllowed(canAccess(user, PAGE_ACCESS.cadastroNotebook));
+            } catch (error) {
+                console.error(error);
+                setAllowed(false);
+            } finally {
+                setLoadingAccess(false);
+            }
+        }
+
+        validarAcesso();
+    }, []);
 
     useEffect(() => {
         const loadFuncionarios = async () => {
@@ -142,6 +168,24 @@ export default function CadastroNotebookPage() {
         } finally {
             setLoading(false);
         }
+    }
+
+    if (loadingAccess) {
+        return (
+            <div className="p-6 text-sm text-gray-500">
+                Carregando...
+            </div>
+        );
+    }
+
+    if (!allowed) {
+        return (
+            <div className="p-6">
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    Você não possui permissão para acessar esta tela.
+                </div>
+            </div>
+        );
     }
 
     return (

@@ -9,7 +9,7 @@ export default function Footer() {
 
             <div className="absolute left-1/2 top-0 h-24 w-72 -translate-x-1/2 rounded-full bg-[#00AE9D]/10 blur-3xl" />
 
-            <div className="relative flex flex-col items-center justify-center gap-3 px-6 py-6 text-center">
+            <div className="relative flex flex-col items-center justify-center gap-3 px-4 py-4 text-center">
 
                 <div className="flex flex-col items-center gap-2">
 

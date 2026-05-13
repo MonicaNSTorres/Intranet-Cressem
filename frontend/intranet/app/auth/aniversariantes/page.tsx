@@ -16,17 +16,13 @@ type Aniversariante = {
 };
 
 
-const NOMES_OCULTOS = [
-    "EXTERNO",
-    "SALA TI",
-].map((n) => n.toUpperCase());
-
-
-function deveOcultarNome(nome: string) {
-    const normalizado = String(nome || "").trim().toUpperCase();
-    return NOMES_OCULTOS.includes(normalizado);
+function normalizeSearch(value: string) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
 }
-
 
 function pad2(n: number) {
     return String(n).padStart(2, "0");
@@ -100,22 +96,60 @@ export default function AniversariantesPage() {
         }
     }
 
+    async function fetchTodosAniversariantes() {
+        setLoading(true);
+        setErro(null);
+
+        try {
+            const resultados = await Promise.all(
+                MESES_BR.map((m) => buscarAniversariantesPorMes(m.value))
+            );
+
+            const lista = resultados.flatMap((res) =>
+                Array.isArray(res?.data) ? res.data : []
+            );
+
+            const normalized = lista
+                .map(normalizeItem)
+                .filter((x: Aniversariante) => x.nome?.trim());
+
+            normalized.sort((a: any, b: any) => {
+                const ad = a.dia ?? 999;
+                const bd = b.dia ?? 999;
+                if (ad !== bd) return ad - bd;
+                return a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" });
+            });
+
+            setItems(normalized);
+        } catch (e: any) {
+            setErro(e?.message || "Erro ao carregar aniversariantes");
+            setItems([]);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     useEffect(() => {
+        if (busca.trim()) {
+            fetchTodosAniversariantes();
+            return;
+        }
+
         fetchAniversariantes(mes);
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mes]);
+    }, [mes, busca]);
 
     const filtrados = useMemo(() => {
-        const q = busca.trim().toLowerCase();
+        const q = normalizeSearch(busca);
 
-        const base = items.filter((p) => !deveOcultarNome(p.nome));
+        if (!q) return items;
 
-        if (!q) return base;
+        return items.filter((p) => {
+            const nome = normalizeSearch(p.nome);
+            const setor = normalizeSearch(p.setor);
+            const ramal = normalizeSearch(p.ramal);
 
-        return base.filter((p) => {
-            const nome = (p.nome || "").toLowerCase();
-            const setor = (p.setor || "").toLowerCase();
-            const ramal = (p.ramal || "").toLowerCase();
             return nome.includes(q) || setor.includes(q) || ramal.includes(q);
         });
     }, [items, busca]);

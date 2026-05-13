@@ -28,9 +28,16 @@ import {
     CartesianGrid,
 } from "recharts";
 import BackButton from "@/components/back-button/back-button";
+import {
+    canAccess,
+    PAGE_ACCESS,
+    type AuthUserLike,
+} from "@/lib/access-control";
+import { getMeAdUser } from "@/services/auth.service";
 
 export default function BalancoEstoquePage() {
     const [loading, setLoading] = useState(false);
+    const [allowed, setAllowed] = useState(false);
     const [balanco, setBalanco] = useState<any[]>([]);
     const [itens, setItens] = useState<any[]>([]);
     const [movimentacoes, setMovimentacoes] = useState<any[]>([]);
@@ -211,6 +218,41 @@ export default function BalancoEstoquePage() {
             });
     }, [movimentacoes, produtoFiltro]);
 
+    useEffect(() => {
+        async function validarAcesso() {
+            try {
+                const user = (await getMeAdUser()) as AuthUserLike;
+
+                setAllowed(canAccess(user, PAGE_ACCESS.balanco));
+            } catch (error) {
+                console.error(error);
+                setAllowed(false);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        validarAcesso();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="p-6 text-sm text-gray-500">
+                Carregando...
+            </div>
+        );
+    }
+
+    if (!allowed) {
+        return (
+            <div className="p-6">
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    Você não possui permissão para acessar esta tela.
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[#F8FAFC] p-6 lg:p-8">
             <div className="mx-auto min-w-225 space-y-6">
@@ -275,7 +317,7 @@ export default function BalancoEstoquePage() {
                     />
                 </div>
 
-                                <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">

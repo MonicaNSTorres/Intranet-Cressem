@@ -28,6 +28,7 @@ export const associadoController = {
                 a.NM_CIDADE    AS CIDADE,
                 a.DS_ENDERECO  AS RUA,
                 a.SG_ESTADO    AS UF,
+<<<<<<< Updated upstream
                 a.NR_CEP       AS CEP,
                 a.DS_EMAIL     AS EMAIL,
                 a.NR_TELEFONE  AS TELEFONE,
@@ -47,6 +48,11 @@ export const associadoController = {
                 ) AS NR_CONTA_CORRENTE
                 FROM DBACRESSEM.ASSOCIADO_ANALITICO a
                 WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') = :documento
+=======
+                a.NR_CEP       AS CEP
+                FROM DBACRESSEM.ASSOCIADO_ANALITICO a
+                WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') = :cpf
+>>>>>>> Stashed changes
                 AND ROWNUM = 1
             `;
 
