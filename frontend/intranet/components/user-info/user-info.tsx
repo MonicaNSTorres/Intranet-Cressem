@@ -27,6 +27,40 @@ type UserSessionData = {
     ramal: string;
 };
 
+function getStoredUser(): UserSessionData {
+    if (typeof window === "undefined") {
+        return {
+            username: "",
+            nome_completo: "",
+            grupos: [],
+            department: "",
+            email: "",
+            ramal: "",
+        };
+    }
+
+    let grupos: string[] = [];
+
+    const gruposRaw = sessionStorage.getItem("GRUPOS_USUARIO");
+
+    if (gruposRaw) {
+        try {
+            grupos = JSON.parse(gruposRaw);
+        } catch {
+            grupos = [];
+        }
+    }
+
+    return {
+        username: sessionStorage.getItem("REMOTE_USER_INTRANET") || "",
+        nome_completo: sessionStorage.getItem("NOME_COMPLETO") || "",
+        grupos,
+        department: sessionStorage.getItem("DEPARTMENT") || "",
+        email: sessionStorage.getItem("EMAIL_USUARIO") || "",
+        ramal: sessionStorage.getItem("RAMAL_USUARIO") || "",
+    };
+}
+
 export default function UserInfo() {
     const router = useRouter();
     const menuRef = useRef<HTMLDivElement | null>(null);
@@ -34,36 +68,31 @@ export default function UserInfo() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
 
-    const [user, setUser] = useState<UserSessionData>({
-        username: "",
-        nome_completo: "",
-        grupos: [],
-        department: "",
-        email: "",
-        ramal: "",
-    });
+    const [user, setUser] = useState<UserSessionData>(() => getStoredUser());
+
+    const [mounted, setMounted] = useState(false);
+    const [userLoaded, setUserLoaded] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         async function carregarUsuario() {
             try {
                 const me = await getMeAdUser();
 
-                const username =
-                    me.username || sessionStorage.getItem("REMOTE_USER_INTRANET") || "";
+                const storedUser = getStoredUser();
 
-                const nomeCompleto =
-                    me.nome_completo || sessionStorage.getItem("NOME_COMPLETO") || "";
-
-                const department =
-                    me.department || sessionStorage.getItem("DEPARTMENT") || "";
-
-                const grupos = Array.isArray(me.grupos) ? me.grupos : [];
-
-                const email =
-                    me.email || sessionStorage.getItem("EMAIL_USUARIO") || "";
-
-                const ramal =
-                    me.ramal || sessionStorage.getItem("RAMAL_USUARIO") || "";
+                const username = me.username || storedUser.username;
+                const nomeCompleto = me.nome_completo || storedUser.nome_completo;
+                const department = me.department || storedUser.department;
+                const grupos =
+                    Array.isArray(me.grupos) && me.grupos.length > 0
+                        ? me.grupos
+                        : storedUser.grupos;
+                const email = me.email || storedUser.email;
+                const ramal = me.ramal || storedUser.ramal;
 
                 sessionStorage.setItem("REMOTE_USER_INTRANET", username);
                 sessionStorage.setItem("NOME_COMPLETO", nomeCompleto);
@@ -83,31 +112,9 @@ export default function UserInfo() {
             } catch (error) {
                 console.error("Erro ao buscar dados do usuário:", error);
 
-                const username = sessionStorage.getItem("REMOTE_USER_INTRANET") || "";
-                const nomeCompleto = sessionStorage.getItem("NOME_COMPLETO") || "";
-                const department = sessionStorage.getItem("DEPARTMENT") || "";
-                const gruposRaw = sessionStorage.getItem("GRUPOS_USUARIO");
-                const email = sessionStorage.getItem("EMAIL_USUARIO") || "";
-                const ramal = sessionStorage.getItem("RAMAL_USUARIO") || "";
-
-                let grupos: string[] = [];
-
-                if (gruposRaw) {
-                    try {
-                        grupos = JSON.parse(gruposRaw);
-                    } catch {
-                        grupos = [];
-                    }
-                }
-
-                setUser({
-                    username,
-                    nome_completo: nomeCompleto,
-                    department,
-                    grupos,
-                    email,
-                    ramal,
-                });
+                setUser(getStoredUser());
+            } finally {
+                setUserLoaded(true);
             }
         }
 
@@ -145,8 +152,8 @@ export default function UserInfo() {
         }
     }
 
-    const displayName = user.nome_completo || "Usuário";
-    const username = user.username || "sem.login";
+    const displayName = user.nome_completo;
+    const username = user.username;
     const departamento = user.department || "Não informado";
     const email = user.email || "Não informado";
     const ramal = user.ramal || "Não informado";
@@ -158,13 +165,22 @@ export default function UserInfo() {
                 className="relative flex items-center gap-3 text-left"
             >
                 <div className="hidden sm:block">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {displayName}
-                    </p>
+                    {!mounted || (!userLoaded && !displayName) ? (
+                        <div className="space-y-1">
+                            <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
+                            <div className="h-3 w-20 animate-pulse rounded bg-gray-200" />
+                        </div>
+                    ) : (
+                        <>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-900">
+                                {displayName}
+                            </p>
 
-                    <p className="text-xs text-gray-500 dark:text-gray-300">
-                        {username}
-                    </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-700">
+                                {username}
+                            </p>
+                        </>
+                    )}
 
                     <Image
                         src="/logo-icon.png"
@@ -189,7 +205,7 @@ export default function UserInfo() {
                     aria-label="Abrir menu do usuário"
                 >
                     <Triangle
-                        className={`h-3 w-3 cursor-pointer text-black transition-transform duration-200 dark:text-white ${menuOpen ? "" : "rotate-180"
+                        className={`h-3 w-3 cursor-pointer text-gray-900 transition-transform duration-200 dark:text-gray-900 ${menuOpen ? "" : "rotate-180"
                             }`}
                         fill="currentColor"
                     />

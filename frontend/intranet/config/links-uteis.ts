@@ -17,13 +17,6 @@ import { ACCESS_LISTS } from "@/lib/authorization";
 
 export const links = [
   {
-    title: "Empréstimo Consignado",
-    description: "Acesse rapidamente a tela de empréstimo consignado.",
-    href: "/auth/emprestimo_consignado",
-    icon: FaFileInvoiceDollar,
-    category: "Financeiro",
-  },
-  {
     title: "RCO",
     description: "Acesse rapidamente a tela de RCO.",
     href: "/auth/rco",
@@ -84,12 +77,12 @@ export const links = [
     allowedUsers: ACCESS_LISTS.CHEQUE_ESPECIAL,
   },
   {
-    title: "Auditoria",
+    title: "Solicitação de Crédito",
     description: "Acesse rapidamente a tela de formulário de solicitação de crédito.",
     href: "/auth/auditoria",
     icon: FaIdCard,
     category: "Cadastro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.AUDITORIA],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.SOLICITACAO_CREDITO],
   },
   {
     title: "Antecipação de Capital",

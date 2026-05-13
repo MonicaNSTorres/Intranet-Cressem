@@ -4,6 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import BackButton from "@/components/back-button/back-button";
 import { FaNetworkWired } from "react-icons/fa";
 import { buscarTabelaSisbrTi } from "@/services/sisbr-ti.service";
+import {
+  canAccess,
+  PAGE_ACCESS,
+  type AuthUserLike,
+} from "@/lib/access-control";
+import { getMeAdUser } from "@/services/auth.service";
 
 type SisbrRow = {
   FW: string | number | null;
@@ -16,7 +22,8 @@ type SisbrRow = {
 
 export default function TabelaSisbrTiPage() {
   const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
   const [rows, setRows] = useState<SisbrRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const debouncedQ = useDebouncedValue(q, 300);
@@ -32,12 +39,12 @@ export default function TabelaSisbrTiPage() {
 
         const filtered = debouncedQ.trim()
           ? allRows.filter((row) =>
-              Object.values(row).some((value) =>
-                String(value ?? "")
-                  .toLowerCase()
-                  .includes(debouncedQ.trim().toLowerCase())
-              )
+            Object.values(row).some((value) =>
+              String(value ?? "")
+                .toLowerCase()
+                .includes(debouncedQ.trim().toLowerCase())
             )
+          )
           : allRows;
 
         setRows(filtered);
@@ -53,6 +60,42 @@ export default function TabelaSisbrTiPage() {
   }, [debouncedQ]);
 
   const total = useMemo(() => rows.length, [rows]);
+
+  useEffect(() => {
+    async function validarAcesso() {
+      try {
+        const user = (await getMeAdUser()) as AuthUserLike;
+
+        setAllowed(canAccess(user, PAGE_ACCESS.tabelaSisbrTi));
+      } catch (error) {
+        console.error(error);
+        setAllowed(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    validarAcesso();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-sm text-gray-500">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="p-6">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Você não possui permissão para acessar esta tela.
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="p-6 lg:p-8">

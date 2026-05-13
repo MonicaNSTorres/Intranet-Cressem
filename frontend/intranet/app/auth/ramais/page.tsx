@@ -16,6 +16,13 @@ type RamalRow = {
     LOGIN: string | null;
 };
 
+function normalizeSearch(value: string) {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+}
+
 function normalizeField(value: string | number | null | undefined) {
     if (value === null || value === undefined) return "";
     return String(value).trim();
@@ -60,9 +67,9 @@ export default function RamaisPage() {
 
             try {
                 const data = await buscarRamais({
-                    q: debouncedQ,
-                    nome: debouncedNome,
-                    departamento: debouncedDepartamento,
+                    q: normalizeSearch(debouncedQ),
+                    nome: normalizeSearch(debouncedNome),
+                    departamento: normalizeSearch(debouncedDepartamento),
                     sortBy,
                     sortOrder,
                 });

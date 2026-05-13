@@ -2,17 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { FileSearch } from "lucide-react";
-
 import BackButton from "@/components/back-button/back-button";
 import { GrDocumentMissingForm } from "@/components/docusign-form/docusign-form";
-
 import {
   canAccess,
   PAGE_ACCESS,
   type AuthUserLike,
 } from "@/lib/access-control";
-
-import { buscarUsuarioLogadoGerenciamentoReembolso } from "@/services/gerenciamento_reembolso_despesa.service";
+import { getMeAdUser } from "@/services/auth.service";
 
 export default function GrDocumentMissingPage() {
   const [loading, setLoading] = useState(true);
@@ -21,12 +18,9 @@ export default function GrDocumentMissingPage() {
   useEffect(() => {
     async function validarAcesso() {
       try {
-        const user =
-          (await buscarUsuarioLogadoGerenciamentoReembolso()) as AuthUserLike;
+        const user = (await getMeAdUser()) as AuthUserLike;
 
-        setAllowed(
-          canAccess(user, PAGE_ACCESS.docusign)
-        );
+        setAllowed(canAccess(user, PAGE_ACCESS.docusign));
       } catch (error) {
         console.error(error);
         setAllowed(false);

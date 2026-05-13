@@ -558,7 +558,7 @@ export function GerenciamentoCargoForm() {
                 <button
                   type="button"
                   onClick={baixarCsv}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary md:w-auto cursor-pointer"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary border-primary md:w-auto cursor-pointer"
                 >
                   <FaDownload />
                   Baixar Relatório

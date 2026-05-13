@@ -28,6 +28,12 @@ import {
   type FichaRow,
   type TipoFicha,
 } from "@/services/ficha-desimpedimento.service";
+import {
+  canAccess,
+  PAGE_ACCESS,
+  type AuthUserLike,
+} from "@/lib/access-control";
+import { getMeAdUser } from "@/services/auth.service";
 
 const initialForm: FichaFormData = {
   nome: "",
@@ -55,7 +61,8 @@ const initialForm: FichaFormData = {
 
 export default function ConsultaFichaDesimpedimentoPage() {
   const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
   const [rows, setRows] = useState<FichaRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -83,20 +90,20 @@ export default function ConsultaFichaDesimpedimentoPage() {
         const filtradas = !termo
           ? lista
           : lista.filter((f) =>
-              [
-                f.TIPO_FICHA,
-                String(f.SEQUENCIAL ?? ""),
-                f.NOME,
-                f.CPF,
-                f.DS_EMAIL,
-                f.EMPRESA,
-                f.PRONTUARIO,
-                f.RESPONSAVEL,
-                f.RISCO,
-              ]
-                .filter(Boolean)
-                .some((valor) => String(valor).toLowerCase().includes(termo))
-            );
+            [
+              f.TIPO_FICHA,
+              String(f.SEQUENCIAL ?? ""),
+              f.NOME,
+              f.CPF,
+              f.DS_EMAIL,
+              f.EMPRESA,
+              f.PRONTUARIO,
+              f.RESPONSAVEL,
+              f.RISCO,
+            ]
+              .filter(Boolean)
+              .some((valor) => String(valor).toLowerCase().includes(termo))
+          );
 
         setRows(filtradas);
       } catch (e: any) {
@@ -363,6 +370,98 @@ export default function ConsultaFichaDesimpedimentoPage() {
     setRefreshKey((prev) => prev + 1);
   }
 
+  useEffect(() => {
+    async function validarAcesso() {
+      try {
+        const user = (await getMeAdUser()) as AuthUserLike;
+
+        setAllowed(canAccess(user, PAGE_ACCESS.consultaFichaDesempedimento));
+      } catch (error) {
+        console.error(error);
+        setAllowed(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    validarAcesso();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-sm text-gray-500">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="p-6">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Você não possui permissão para acessar esta tela.
+        </div>
+      </div>
+    );
+  }
+
+  function baixarRelatorioCsv() {
+    if (!rows.length) {
+      alert("Nenhuma ficha encontrada para baixar.");
+      return;
+    }
+
+    const headers = [
+      "Tipo",
+      "Sequencial",
+      "Nome",
+      "CPF",
+      "Email",
+      "Empresa",
+      "Data",
+      "Responsável",
+    ];
+
+    const csvRows = rows.map((r) => [
+      r.TIPO_FICHA ?? "",
+      r.SEQUENCIAL ?? "",
+      r.NOME ?? "",
+      r.CPF ?? "",
+      r.DS_EMAIL ?? "",
+      r.EMPRESA ?? "",
+      formatarDataPtBr(r.DATA_FICHA),
+      r.RESPONSAVEL ?? "",
+    ]);
+
+    const escapeCsv = (value: any) => {
+      const str = String(value ?? "");
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const csvContent = [
+      headers.map(escapeCsv).join(";"),
+      ...csvRows.map((row) => row.map(escapeCsv).join(";")),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `relatorio_fichas_desimpedimento_${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="p-6 lg:p-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -444,12 +543,25 @@ export default function ConsultaFichaDesimpedimentoPage() {
       </div>
 
       <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-base font-semibold text-gray-900">
             Lista de Fichas
           </h2>
-          <div className="text-xs text-gray-500">
-            {loading ? "Carregando..." : `${total} encontradas`}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={baixarRelatorioCsv}
+              disabled={loading || rows.length === 0}
+              className="inline-flex w-full items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary border-primary md:w-auto cursor-pointer"
+            >
+              <ArrowDownToLine size={15} />
+              Baixar relatório
+            </button>
+
+            <div className="text-xs text-gray-500">
+              {loading ? "Carregando..." : `${total} encontradas`}
+            </div>
           </div>
         </div>
 

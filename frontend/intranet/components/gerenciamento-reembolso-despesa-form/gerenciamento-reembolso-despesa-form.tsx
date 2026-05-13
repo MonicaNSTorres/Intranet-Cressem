@@ -25,7 +25,6 @@ import {
   type SolicitaoListaItem,
   type SolicitacaoDetalheItem,
 } from "@/services/gerenciamento_reembolso_despesa.service";
-import { gerarPdfSolicitacaoReembolso } from "@/lib/pdf/gerarPdfSolicitacaoReembolso";
 
 function capitalizeWords(text: string) {
   const palavrasMinusculas = new Set([
@@ -132,7 +131,9 @@ export function GerenciamentoReembolsoDespesaForm() {
   const [totalPages, setTotalPages] = useState(1);
 
   const [nomeResponsavel, setNomeResponsavel] = useState("");
+  const [nomeResponsavelAD, setNomeResponsavelAD] = useState("");
   const [diretoriaCompleto, setDiretoriaCompleto] = useState<any>(null);
+  const [isFinanceiroAD, setIsFinanceiroAD] = useState(false);
   const [podeVerTodos, setPodeVerTodos] = useState(false);
 
   const [lista, setLista] = useState<SolicitaoListaItem[]>([]);
@@ -171,19 +172,17 @@ export function GerenciamentoReembolsoDespesaForm() {
         grupos?: string[];
       };
 
-      const nomeAD = String(
-        me?.nome_completo || me?.nome || me?.username || ""
-      ).trim();
-
+      const nomeAD = me?.nome || me?.nome_completo || "";
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
+
+      setNomeResponsavelAD(nomeAD);
 
       const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.TODO_MUNDO);
       const usuarioEhSuporteAD = grupos.includes(AD_GROUPS.SUPORTE);
       const usuarioTemAcesso = usuarioEhFinanceiroAD || usuarioEhSuporteAD;
       const usuarioPodeVerTodos = usuarioEhFinanceiroAD || usuarioEhSuporteAD;
 
-
-
+      setIsFinanceiroAD(usuarioEhFinanceiroAD);
       setHasAccess(usuarioTemAcesso);
       setPodeVerTodos(usuarioPodeVerTodos);
 
@@ -195,12 +194,7 @@ export function GerenciamentoReembolsoDespesaForm() {
       }
 
       if (nomeAD) {
-        let funcionario: any = null;
-        try {
-          funcionario = await buscarFuncionarioPorNomeGerenciamento(nomeAD);
-        } catch {
-          funcionario = null;
-        }
+        const funcionario = await buscarFuncionarioPorNomeGerenciamento(nomeAD);
         const nomeCompleto = funcionario?.NM_FUNCIONARIO || nomeAD;
 
         setNomeResponsavel(nomeCompleto);
@@ -240,7 +234,6 @@ export function GerenciamentoReembolsoDespesaForm() {
         cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
         cidade: filtros?.cidade ?? filtroCidade ?? "",
         status: filtros?.status ?? filtroStatus ?? "",
-        verTodos,
         page: 1,
         limit: 999999,
       });
@@ -291,7 +284,6 @@ export function GerenciamentoReembolsoDespesaForm() {
         cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
         cidade: filtros?.cidade ?? filtroCidade ?? "",
         status: filtros?.status ?? filtroStatus ?? "",
-        verTodos,
         page: pagina,
         limit: 10,
       });
@@ -564,50 +556,8 @@ export function GerenciamentoReembolsoDespesaForm() {
     router.push(`/auth/cadastro_reembolso_despesa?id=${id}`);
   }
 
-  async function imprimirSolicitacao() {
-    if (!solicitacaoAtual) return;
-
-    try {
-      const despesas = (solicitacaoAtual.DESPESAS || solicitacaoAtual.despesas || []) as any[];
-
-      await gerarPdfSolicitacaoReembolso(
-        {
-          idSolicitacao: solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA,
-          nomeFuncionario: solicitacaoAtual.NM_FUNCIONARIO || "",
-          cpfFuncionario: solicitacaoAtual.NR_CPF_FUNCIONARIO || "",
-          cidade: solicitacaoAtual.NM_CIDADE || "",
-          dtIda: solicitacaoAtual.DT_IDA || "",
-          dtVolta: solicitacaoAtual.DT_VOLTA || "",
-          justificativa: solicitacaoAtual.DESC_JTF_EVENTO || "",
-          nrBanco: solicitacaoAtual.NR_BANCO || "",
-          agencia: solicitacaoAtual.CD_AGENCIA || "",
-          nrConta: solicitacaoAtual.NR_CONTA || "",
-          andamento: solicitacaoAtual.DESC_ANDAMENTO || "",
-          despesas,
-          nmFinanceiro: solicitacaoAtual.NM_FNC_FINANCEIRO || "",
-          parecerFinanceiro: solicitacaoAtual.DESC_PRC_FINANCEIRO || "",
-          nmGerencia:
-            solicitacaoAtual.APROV_GERENCIA_NOME || solicitacaoAtual.NM_FNC_GERENCIA || "",
-          parecerGerencia: solicitacaoAtual.DESC_PRC_GERENCIA || "",
-          nmGerenciaSup:
-            solicitacaoAtual.APROV_GERENCIA_SUP_NOME ||
-            solicitacaoAtual.NM_FNC_GERENCIA_SUP ||
-            "",
-          parecerGerenciaSup: solicitacaoAtual.DESC_PRC_GERENCIA_SUP || "",
-          nmDiretoria:
-            solicitacaoAtual.APROV_DIRETORIA_NOME || solicitacaoAtual.NM_FNC_DIRETORIA || "",
-          parecerDiretoria: solicitacaoAtual.DESC_PRC_DIRETORIA || "",
-          parecerFinal: solicitacaoAtual.DESC_ANDAMENTO || "",
-        },
-        {
-          acao: "print",
-          nomeArquivo: `reembolso_${solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA}.pdf`,
-        }
-      );
-    } catch (error) {
-      console.error(error);
-      alert("Nao foi possivel gerar o relatorio em PDF.");
-    }
+  function imprimirSolicitacao() {
+    window.print();
   }
 
   if (loading) {
@@ -628,22 +578,6 @@ export function GerenciamentoReembolsoDespesaForm() {
       </div>
     );
   }
-
-  const mostrarCamposFinanceiro = Boolean(
-    solicitacaoAtual &&
-    (
-      perfilTipo === "financeiro" ||
-      solicitacaoAtual.DESC_ANDAMENTO === "Pendente Funcionario" ||
-      String(solicitacaoAtual.DESC_PRC_FINANCEIRO || "").trim() ||
-      String(solicitacaoAtual.NM_FNC_FINANCEIRO || "").trim()
-    )
-  );
-
-  const podeEditarCamposFinanceiro = Boolean(
-    solicitacaoAtual &&
-    solicitacaoAtual.DESC_ANDAMENTO === "Pendente Financeiro" &&
-    perfilTipo === "financeiro"
-  );
 
   return (
     <>
@@ -765,13 +699,13 @@ export function GerenciamentoReembolsoDespesaForm() {
                 lista.map((item) => (
                   <tr key={item.ID_SOLICITACAO_REEMBOLSO_DESPESA} className="hover:bg-gray-50">
                     <td className="border-b px-3 py-2 text-sm text-gray-700">
-                      {primeiroUltimoNome(capitalizeWords(item.NM_FUNCIONARIO)).toUpperCase()}
+                      {primeiroUltimoNome(capitalizeWords(item.NM_FUNCIONARIO))}
                     </td>
                     <td className="border-b px-3 py-2 text-sm text-gray-700">
                       {formatCpfView(item.NR_CPF_FUNCIONARIO)}
                     </td>
                     <td className="border-b px-3 py-2 text-sm text-gray-700">
-                      {capitalizeWords(item.NM_CIDADE).toUpperCase()}
+                      {capitalizeWords(item.NM_CIDADE)}
                     </td>
                     <td className="border-b px-3 py-2 text-sm text-gray-700">
                       {formatDateBR(item.DT_IDA)}
@@ -780,7 +714,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                       {formatDateBR(item.DT_VOLTA)}
                     </td>
                     <td className="border-b px-3 py-2 text-sm text-gray-700">
-                      {capitalizeWords(item.DESC_ANDAMENTO).toUpperCase()}
+                      {capitalizeWords(item.DESC_ANDAMENTO)}
                     </td>
                     <td className="border-b px-3 py-2 text-center">
                       <button
@@ -962,18 +896,11 @@ export function GerenciamentoReembolsoDespesaForm() {
                           type="button"
                           disabled={!despesa.COMPROVANTE}
                           onClick={() => baixarArquivo(despesa.COMPROVANTE)}
-                          title={
-                            despesa.COMPROVANTE
-                              ? String(despesa.COMPROVANTE).split(/[/\\]/).pop()
-                              : "Sem comprovante"
-                          }
-                          className="inline-flex w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded bg-secondary px-4 py-2 text-left text-sm font-semibold text-white hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          <span className="block min-w-0 flex-1 truncate">
-                            {despesa.COMPROVANTE
-                              ? String(despesa.COMPROVANTE).split(/[/\\]/).pop()
-                              : "Sem comprovante"}
-                          </span>
+                          {despesa.COMPROVANTE
+                            ? String(despesa.COMPROVANTE).split(/[/\\]/).pop()
+                            : "Sem comprovante"}
                         </button>
                       </div>
 
@@ -1007,7 +934,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                 </div>
               </div>
 
-              {mostrarCamposFinanceiro && (
+              {perfilTipo === "financeiro" && (
                 <>
                   <div className="mt-5">
                     <label className="mb-1 block text-xs font-medium text-gray-600">
@@ -1016,7 +943,10 @@ export function GerenciamentoReembolsoDespesaForm() {
                     <select
                       value={parecerFinanceiroSelect}
                       onChange={(e) => setParecerFinanceiroSelect(e.target.value)}
-                      disabled={!podeEditarCamposFinanceiro}
+                      disabled={!(
+                        solicitacaoAtual.DESC_ANDAMENTO === "Pendente Financeiro" &&
+                        perfilTipo === "financeiro"
+                      )}
                       className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
                     >
                       <option value="">Selecione</option>
@@ -1032,7 +962,10 @@ export function GerenciamentoReembolsoDespesaForm() {
                     <textarea
                       value={parecerFinanceiroTexto}
                       onChange={(e) => setParecerFinanceiroTexto(e.target.value)}
-                      disabled={!podeEditarCamposFinanceiro}
+                      disabled={!(
+                        solicitacaoAtual.DESC_ANDAMENTO === "Pendente Financeiro" &&
+                        perfilTipo === "financeiro"
+                      )}
                       rows={3}
                       className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
                     />
@@ -1138,11 +1071,7 @@ export function GerenciamentoReembolsoDespesaForm() {
               <div className="mt-3">
                 <label className="mb-1 block text-xs font-medium text-gray-600">Diretoria</label>
                 <input
-                  value={
-                    solicitacaoAtual.APROV_DIRETORIA_NOME ||
-                    solicitacaoAtual.NM_FNC_DIRETORIA ||
-                    ""
-                  }
+                  value={solicitacaoAtual.NM_FNC_DIRETORIA || ""}
                   readOnly
                   className="w-full rounded border bg-gray-50 px-3 py-2"
                 />

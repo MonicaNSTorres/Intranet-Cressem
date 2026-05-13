@@ -237,10 +237,10 @@ export function GrDocumentMissingForm() {
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300]/20 text-[#00AE9D]">
                     <ShieldCheck className="h-7 w-7" />
                 </div>
-                <h2 className="text-xl font-semibold text-[var(--title)]">
+                <h2 className="text-xl font-semibold text-(--title)">
                     Verificando permissões de acesso
                 </h2>
-                <p className="mt-2 text-sm text-[var(--paragraph)]">
+                <p className="mt-2 text-sm text-(--paragraph)">
                     Aguarde enquanto validamos seu acesso ao painel da DocuSign.
                 </p>
             </div>
@@ -254,12 +254,12 @@ export function GrDocumentMissingForm() {
                     <ShieldCheck className="h-7 w-7" />
                 </div>
                 <h1 className="text-2xl font-semibold text-red-600">Acesso Negado</h1>
-                <p className="mt-3 text-sm leading-6 text-[var(--paragraph)]">
+                <p className="mt-3 text-sm leading-6 text-(--paragraph)">
                     {error || "Você não tem permissão para acessar esta tela."}
                 </p>
                 <button
-                    onClick={() => router.push("https://intranet/menu")}
-                    className="mt-6 inline-flex items-center justify-center rounded-xl bg-[var(--primary)] px-5 py-2.5 font-semibold text-white transition hover:cursor-pointer hover:bg-[var(--secondary)] hover:shadow-md"
+                    onClick={() => router.push("https://intranet2/auth/home")}
+                    className="mt-6 inline-flex items-center justify-center rounded-xl bg-secondary px-5 py-2.5 font-semibold text-white transition hover:cursor-pointer hover:bg-primary hover:shadow-md"
                 >
                     Retornar à Intranet
                 </button>
@@ -272,14 +272,14 @@ export function GrDocumentMissingForm() {
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div className="rounded-2xl border border-slate-200 bg-linear-to-br from-[#00AE9D]/10 via-white to-white p-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[var(--primary)] shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
                             <CalendarDays className="h-5 w-5" />
                         </div>
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-(--text-darken)">
                                 Período
                             </p>
-                            <p className="text-sm text-[var(--paragraph)]">
+                            <p className="text-sm text-(--paragraph)">
                                 Informe data inicial e final para iniciar a consulta.
                             </p>
                         </div>
@@ -288,14 +288,14 @@ export function GrDocumentMissingForm() {
 
                 <div className="rounded-2xl border border-slate-200 bg-linear-to-br from-[#79B729]/10 via-white to-white p-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[var(--secondary)] shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-secondary shadow-sm">
                             <Download className="h-5 w-5" />
                         </div>
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-(--text-darken)">
                                 Ações rápidas
                             </p>
-                            <p className="text-sm text-[var(--paragraph)]">
+                            <p className="text-sm text-(--paragraph)">
                                 Abra o PDF no navegador ou faça o download do arquivo.
                             </p>
                         </div>

@@ -1,10 +1,55 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { FaClipboardCheck } from "react-icons/fa";
 import BackButton from "@/components/back-button/back-button";
 import { AuditoriaForm } from "@/components/auditoria-form/auditoria-form";
+import {
+  canAccess,
+  PAGE_ACCESS,
+  type AuthUserLike,
+} from "@/lib/access-control";
+import { getMeAdUser } from "@/services/auth.service";
 
 export default function AuditoriaPage() {
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    async function validarAcesso() {
+      try {
+        const user = (await getMeAdUser()) as AuthUserLike;
+
+        setAllowed(canAccess(user, PAGE_ACCESS.docusign));
+      } catch (error) {
+        console.error(error);
+        setAllowed(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    validarAcesso();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-sm text-gray-500">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="p-6">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Você não possui permissão para acessar esta tela.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 lg:p-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -20,6 +65,7 @@ export default function AuditoriaPage() {
               <h1 className="truncate text-2xl font-semibold text-gray-900">
                 Formulário de Solicitação de Crédito
               </h1>
+
               <p className="mt-1 text-sm text-gray-600">
                 Preencha os dados da solicitação e gere a impressão do documento.
               </p>

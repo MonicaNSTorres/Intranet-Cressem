@@ -36,6 +36,12 @@ import {
 } from "@/services/estoque_consumiveis.service";
 import Link from "next/link";
 import BackButton from "@/components/back-button/back-button";
+import {
+    canAccess,
+    PAGE_ACCESS,
+    type AuthUserLike,
+} from "@/lib/access-control";
+import { getMeAdUser } from "@/services/auth.service";
 
 type AbaAtiva = "solicitacoes" | "estoque" | "balanco" | "alertas";
 
@@ -69,7 +75,8 @@ const SETORES_ESTOQUE = [
 
 export default function EstoqueConsumiveisPage() {
     const [abaAtiva, setAbaAtiva] = useState<AbaAtiva>("solicitacoes");
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [allowed, setAllowed] = useState(false);
     const [itens, setItens] = useState<any[]>([]);
     const [solicitacoes, setSolicitacoes] = useState<any[]>([]);
     const [balanco, setBalanco] = useState<any[]>([]);
@@ -547,6 +554,41 @@ export default function EstoqueConsumiveisPage() {
         } finally {
             setSalvandoEdicaoProduto(false);
         }
+    }
+
+    useEffect(() => {
+        async function validarAcesso() {
+            try {
+                const user = (await getMeAdUser()) as AuthUserLike;
+
+                setAllowed(canAccess(user, PAGE_ACCESS.estoque));
+            } catch (error) {
+                console.error(error);
+                setAllowed(false);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        validarAcesso();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="p-6 text-sm text-gray-500">
+                Carregando...
+            </div>
+        );
+    }
+
+    if (!allowed) {
+        return (
+            <div className="p-6">
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    Você não possui permissão para acessar esta tela.
+                </div>
+            </div>
+        );
     }
 
     return (
