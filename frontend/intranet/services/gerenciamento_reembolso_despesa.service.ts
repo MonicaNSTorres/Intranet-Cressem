@@ -14,6 +14,7 @@ export type AuthMeResponse = {
   nome?: string;
   username?: string;
   nome_completo?: string;
+  grupos?: string[];
 };
 
 export type FuncionarioResponse = {

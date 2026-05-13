@@ -172,44 +172,56 @@ export function GerenciamentoReembolsoDespesaForm() {
         grupos?: string[];
       };
 
-      const nomeAD = me?.nome || me?.nome_completo || "";
+      const nomeAD = me?.nome_completo || me?.nome || "";
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
 
       setNomeResponsavelAD(nomeAD);
 
-      const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.TODO_MUNDO);
+      const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.FINANCEIRO);
       const usuarioEhSuporteAD = grupos.includes(AD_GROUPS.SUPORTE);
-      const usuarioTemAcesso = usuarioEhFinanceiroAD || usuarioEhSuporteAD;
+
       const usuarioPodeVerTodos = usuarioEhFinanceiroAD || usuarioEhSuporteAD;
 
       setIsFinanceiroAD(usuarioEhFinanceiroAD);
-      setHasAccess(usuarioTemAcesso);
+      setHasAccess(true);
       setPodeVerTodos(usuarioPodeVerTodos);
 
-      if (!usuarioTemAcesso) {
+      let nomeFiltro = "";
+      let funcionario = null;
+
+      if (nomeAD) {
+        try {
+          funcionario = await buscarFuncionarioPorNomeGerenciamento(nomeAD);
+          nomeFiltro = funcionario?.NM_FUNCIONARIO || "";
+        } catch (error) {
+          console.warn("Funcionário não encontrado na base:", nomeAD);
+          nomeFiltro = "";
+        }
+      }
+
+      if (!usuarioPodeVerTodos && !nomeFiltro) {
+        setNomeResponsavel("");
+        setDiretoriaCompleto(null);
         setLista([]);
         setListaContador([]);
         setTotais(totaisInicial);
+
+        alert(
+          "Seu usuário do AD não foi encontrado na base de funcionários. Por isso, não foi possível carregar suas solicitações."
+        );
+
         return;
       }
 
-      if (nomeAD) {
-        const funcionario = await buscarFuncionarioPorNomeGerenciamento(nomeAD);
-        const nomeCompleto = funcionario?.NM_FUNCIONARIO || nomeAD;
+      const nomeBusca = usuarioPodeVerTodos ? "" : nomeFiltro;
 
-        setNomeResponsavel(nomeCompleto);
-        setDiretoriaCompleto(funcionario);
+      setNomeResponsavel(nomeBusca);
+      setDiretoriaCompleto(funcionario);
 
-        await Promise.all([
-          buscarDespesas(1, "", nomeCompleto, usuarioPodeVerTodos),
-          carregarContadores(nomeCompleto, usuarioPodeVerTodos),
-        ]);
-      } else {
-        await Promise.all([
-          buscarDespesas(1, "", "", usuarioPodeVerTodos),
-          carregarContadores("", usuarioPodeVerTodos),
-        ]);
-      }
+      await Promise.all([
+        buscarDespesas(1, "", nomeBusca, usuarioPodeVerTodos),
+        carregarContadores(nomeBusca, usuarioPodeVerTodos),
+      ]);
     } catch (error) {
       console.error(error);
       alert("Não foi possível carregar o gerenciamento.");
@@ -222,15 +234,24 @@ export function GerenciamentoReembolsoDespesaForm() {
     nome: string,
     verTodos = podeVerTodos,
     filtros?: {
+      pesquisa?: string;
       cpf?: string;
       cidade?: string;
       status?: string;
     }
   ) {
     try {
+      const nomeSeguro = verTodos ? "" : nome || nomeResponsavel;
+
+      if (!verTodos && !nomeSeguro) {
+        setListaContador([]);
+        setTotais(totaisInicial);
+        return;
+      }
+
       const response = await buscarSolicitacoesReembolsoPaginado({
-        nome: verTodos ? "" : nome,
-        pesquisa: " ",
+        nome: nomeSeguro,
+        pesquisa: (filtros?.pesquisa ?? pesquisa).trim(),
         cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
         cidade: filtros?.cidade ?? filtroCidade ?? "",
         status: filtros?.status ?? filtroStatus ?? "",
@@ -278,9 +299,18 @@ export function GerenciamentoReembolsoDespesaForm() {
     try {
       setLoadingBusca(true);
 
+      const nomeFiltro = verTodos ? "" : nomeResponsavel || nome;
+
+      console.log("BUSCANDO COM:", {
+        verTodos,
+        nomeFiltro,
+        nomeResponsavel,
+        nome,
+      });
+
       const response = await buscarSolicitacoesReembolsoPaginado({
-        pesquisa: textoPesquisa || " ",
-        nome: verTodos ? "" : nome,
+        nome: nomeFiltro,
+        pesquisa: textoPesquisa.trim(),
         cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
         cidade: filtros?.cidade ?? filtroCidade ?? "",
         status: filtros?.status ?? filtroStatus ?? "",
@@ -294,7 +324,6 @@ export function GerenciamentoReembolsoDespesaForm() {
     } catch (error) {
       console.error(error);
       alert("Solicitações não encontradas.");
-      setLista([]);
     } finally {
       setLoadingBusca(false);
     }
@@ -333,6 +362,7 @@ export function GerenciamentoReembolsoDespesaForm() {
     });
 
     carregarContadores(nomeResponsavel, podeVerTodos, {
+      pesquisa: "",
       cpf: "",
       cidade: "",
       status: "",
@@ -625,7 +655,20 @@ export function GerenciamentoReembolsoDespesaForm() {
 
             <button
               type="button"
-              onClick={() => buscarDespesas(1)}
+              onClick={() => {
+                buscarDespesas(1, pesquisa, nomeResponsavel, podeVerTodos, {
+                  cpf: filtroCpf,
+                  cidade: filtroCidade,
+                  status: filtroStatus,
+                });
+
+                carregarContadores(nomeResponsavel, podeVerTodos, {
+                  pesquisa,
+                  cpf: filtroCpf,
+                  cidade: filtroCidade,
+                  status: filtroStatus,
+                });
+              }}
               className="inline-flex items-center justify-center gap-2 rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               <FaSearch size={12} />
