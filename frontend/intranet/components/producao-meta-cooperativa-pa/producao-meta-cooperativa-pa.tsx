@@ -648,6 +648,9 @@ export function ProducaoMetaCooperativaPAForm() {
     const [loading, setLoading] = useState(false);
     const [dados, setDados] = useState<RelatorioItem[]>([]);
     const [erro, setErro] = useState("");
+    const [datasRelatorioCache, setDatasRelatorioCache] = useState<
+        RelatorioDataInfo[]
+    >([]);
 
     const [ultimaAtualizacaoBanco, setUltimaAtualizacaoBanco] = useState("-");
     const [ultimaAtualizacaoSisbr, setUltimaAtualizacaoSisbr] = useState("-");
@@ -675,35 +678,15 @@ export function ProducaoMetaCooperativaPAForm() {
     async function carregarUltimaAtualizacao() {
         try {
             const lista = await buscarDatasRelatorioMetaPA();
-
-            if (!Array.isArray(lista) || !lista.length) {
-                setUltimaAtualizacaoBanco("-");
-                setUltimaAtualizacaoSisbr("-");
-                return;
-            }
-
-            const maisRecenteCarga = obterMaisRecente(
-                lista.map((item) => item?.dt_carga)
-            );
-            const maisRecenteMovimento = obterMaisRecente(
-                lista.map((item) => item?.dt_movimento)
-            );
-
-            setUltimaAtualizacaoBanco(
-                maisRecenteCarga ? formatarDataHoraBR(maisRecenteCarga) : "-"
-            );
-            setUltimaAtualizacaoSisbr(
-                maisRecenteMovimento ? formatarDataHoraBR(maisRecenteMovimento) : "-"
-            );
+            setDatasRelatorioCache(Array.isArray(lista) ? lista : []);
         } catch {
-            setUltimaAtualizacaoBanco("-");
-            setUltimaAtualizacaoSisbr("-");
+            setDatasRelatorioCache([]);
         }
     }
 
     async function carregarInfoTema(chaveTema: ChaveRelatorioPA) {
         try {
-            const lista = await buscarDatasRelatorioMetaPA();
+            const lista = datasRelatorioCache;
             const nmTabela = MAPA_TEMA_PARA_TABELA[chaveTema];
 
             if (!nmTabela) {
@@ -821,12 +804,13 @@ export function ProducaoMetaCooperativaPAForm() {
     useEffect(() => {
         if (!tema) {
             setInfoTema(null);
-            carregarUltimaAtualizacao();
+            setUltimaAtualizacaoBanco("-");
+            setUltimaAtualizacaoSisbr("-");
             return;
         }
 
         carregarInfoTema(tema);
-    }, [tema]);
+    }, [tema, datasRelatorioCache]);
 
     async function handleChangeTema(value: string) {
         const novoTema = value as ChaveRelatorioPA | "";

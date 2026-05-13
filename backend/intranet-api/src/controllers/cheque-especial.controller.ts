@@ -86,7 +86,6 @@ export const chequeEspecialController = {
 
       connection = await oracledb.getConnection();
 
-
       const nomeNormalizado = normalizeSearch(nome);
       const termoBusca = `%${nomeNormalizado}%`;
       const digitos = onlyDigits(nome);

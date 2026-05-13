@@ -712,7 +712,8 @@ function sqlEntradaCooperados() {
           COUNT(DISTINCT B.NR_CONTA_CAPITAL) AS PRODUCAO_ANO
         FROM AA_BASE_ALL B
         CROSS JOIN PARAMS PR
-        WHERE EXTRACT(YEAR FROM B.DT_MOV) = EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE))
+        WHERE B.DT_MOV BETWEEN TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
+                           AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
         GROUP BY
           B.NM_FUNCIONARIO,
           EXTRACT(YEAR FROM B.DT_MOV)
@@ -770,16 +771,50 @@ function sqlEntradaCooperados() {
         WHEN BF.NR_PA = 95 THEN 0
         ELSE NVL(AY.PRODUCAO_ANO, 0) - NVL(MA.META_ANO, 0)
       END AS FALTA_PARA_META,
-      ROUND(NVL(MA.META_ANO, 0) / 52, 0) AS META_SEMANAL,
+      ROUND(
+        (NVL(MA.META_ANO, 0) / 12) /
+        CEIL(
+          (
+            LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
+            - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
+          ) / 7
+        )
+      , 0) AS META_SEMANAL,
       CASE
         WHEN BF.NR_PA = 95 THEN 0
-        WHEN NVL(MA.META_ANO, 0) > 0
-          THEN ROUND((NVL(SW.PRODUCAO_SEMANAL, 0) / ROUND(NVL(MA.META_ANO, 0) / 52, 0)) * 100, 2)
+        WHEN ROUND(
+          (NVL(MA.META_ANO, 0) / 12) /
+          CEIL(
+            (
+              LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
+              - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
+            ) / 7
+          )
+        , 0) > 0
+          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) /
+            ROUND(
+              (NVL(MA.META_ANO, 0) / 12) /
+              CEIL(
+                (
+                  LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
+                  - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
+                ) / 7
+              )
+            , 0)
+          ) * 100
         ELSE 0
       END AS PORCENTAGEM_SEMANAL,
       CASE
         WHEN BF.NR_PA = 95 THEN 0
-        ELSE NVL(SW.PRODUCAO_SEMANAL, 0) - ROUND(NVL(MA.META_ANO, 0) / 52, 0)
+        ELSE NVL(SW.PRODUCAO_SEMANAL, 0) - ROUND(
+          (NVL(MA.META_ANO, 0) / 12) /
+          CEIL(
+            (
+              LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
+              - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
+            ) / 7
+          )
+        , 0)
       END AS GAP_SEMANAL,
       CASE
         WHEN BF.NR_PA = 95 THEN 0
@@ -789,10 +824,11 @@ function sqlEntradaCooperados() {
       CASE
         WHEN BF.NR_PA = 95 THEN 0
         WHEN NVL(MA.META_ANO, 0) > 0
-          THEN ROUND((NVL(AY.PRODUCAO_ANO, 0) / MA.META_ANO) * 100, 2)
+          THEN (NVL(AY.PRODUCAO_ANO, 0) / MA.META_ANO) * 100
         ELSE 0
       END AS PERC_META_REALIZADA
     FROM BASE_FUNCIONARIOS BF
+    CROSS JOIN PARAMS PR
     LEFT JOIN META_ANO MA
       ON MA.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
      AND MA.ANO = BF.ANO

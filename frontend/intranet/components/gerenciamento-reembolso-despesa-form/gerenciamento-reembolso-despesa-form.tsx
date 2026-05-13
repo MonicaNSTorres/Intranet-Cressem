@@ -256,6 +256,7 @@ export function GerenciamentoReembolsoDespesaForm() {
         cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
         cidade: filtros?.cidade ?? filtroCidade ?? "",
         status: filtros?.status ?? filtroStatus ?? "",
+        verTodos,
         page: 1,
         limit: 999999,
       });
@@ -315,6 +316,7 @@ export function GerenciamentoReembolsoDespesaForm() {
         cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
         cidade: filtros?.cidade ?? filtroCidade ?? "",
         status: filtros?.status ?? filtroStatus ?? "",
+        verTodos,
         page: pagina,
         limit: 10,
       });

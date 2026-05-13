@@ -36,7 +36,6 @@ export const kpiController = {
     async aniversariantesHoje(_req: Request, res: Response) {
         try {
             const sql = `
-
         SELECT
           FS.NM_FUNCIONARIO AS NOME, 
           SC.NM_SETOR       AS SETOR,
@@ -91,7 +90,6 @@ export const kpiController = {
             }
 
             const sql = `
-
       SELECT
         FS.NM_FUNCIONARIO AS NOME,
         SC.NM_SETOR       AS SETOR,

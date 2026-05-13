@@ -66,6 +66,89 @@ function formatarDataHoraBR(valor?: string | Date | null) {
   return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 }
 
+export function formatarInteiroBR(valor: number) {
+  return Math.round(valor).toLocaleString("pt-BR");
+}
+
+export function formatarPercentualBR(valor: number, casas = 2) {
+  return `${valor.toLocaleString("pt-BR", {
+    minimumFractionDigits: casas,
+    maximumFractionDigits: casas,
+  })}%`;
+}
+
+export function formatarMoedaBR(valor: number) {
+  const absoluto = Math.abs(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return valor < 0 ? `-${absoluto}` : absoluto;
+}
+
+export function formatarValorExibicaoRelatorio(
+  campo: string,
+  valor: unknown,
+  temaAtual?: ChaveRelatorioFuncionario | ""
+) {
+  if (valor === null || valor === undefined || valor === "") return "-";
+
+  const numero = parseNumeroBR(valor);
+  if (Number.isNaN(numero)) return String(valor);
+
+  // Monte por tema os campos que devem ser formatados.
+  // Exemplo de uso:
+  // const regrasPorTema = {
+  //   entrada_cooperados: {
+  //     inteiro: ["meta_2026", "falta_para_meta"],
+  //     percentual: ["perc_meta_realizada"],
+  //     moeda: [],
+  //   },
+  // };
+  const regrasPorTema: Partial<
+    Record<
+      ChaveRelatorioFuncionario,
+      {
+        inteiro?: string[];
+        percentual?: string[];
+        moeda?: string[];
+        percentualCasas?: number;
+      }
+    >
+  > = {
+    entrada_cooperados: {
+      inteiro: ["meta_semanal", "gap_semanal"],
+      percentual: ["perc_meta_realizada", "porcentagem_semanal"]
+    },
+  };
+
+  if (!temaAtual || !regrasPorTema[temaAtual]) {
+    return String(valor);
+  }
+
+  const regraTema = regrasPorTema[temaAtual];
+  const camposInteiro = new Set(regraTema?.inteiro ?? []);
+  const camposPercentual = new Set(regraTema?.percentual ?? []);
+  const camposMoeda = new Set(regraTema?.moeda ?? []);
+  const casasPercentual = regraTema?.percentualCasas ?? 2;
+
+  if (camposInteiro.has(campo)) {
+    return formatarInteiroBR(numero);
+  }
+
+  if (camposPercentual.has(campo)) {
+    return formatarPercentualBR(numero, casasPercentual);
+  }
+
+  if (camposMoeda.has(campo)) {
+    return formatarMoedaBR(numero);
+  }
+
+  return String(valor);
+}
+
 function obterMaisRecente(datas: Array<string | Date | null | undefined>) {
   const validas = datas
     .filter(Boolean)
@@ -102,7 +185,7 @@ function getSemanasDoMes(ano: number, mesIndex: number) {
     }
 
     const inicioSemana = new Date(cursor);
-    let fimSemana = new Date(cursor);
+    const fimSemana = new Date(cursor);
 
     while (fimSemana.getDay() !== 5 && fimSemana <= mesFim) {
       fimSemana.setDate(fimSemana.getDate() + 1);
@@ -205,6 +288,9 @@ export function ProducaoMetaFuncionarioForm() {
   const [loading, setLoading] = useState(false);
   const [dados, setDados] = useState<RelatorioFuncionarioItem[]>([]);
   const [erro, setErro] = useState("");
+  const [datasRelatorioCache, setDatasRelatorioCache] = useState<
+    RelatorioFuncionarioDataInfo[]
+  >([]);
 
   const [ultimaAtualizacaoBanco, setUltimaAtualizacaoBanco] = useState("-");
   const [ultimaAtualizacaoSisbr, setUltimaAtualizacaoSisbr] = useState("-");
@@ -242,36 +328,16 @@ export function ProducaoMetaFuncionarioForm() {
   async function carregarUltimaAtualizacao() {
     try {
       const lista = await buscarDatasRelatorioMetaFuncionario();
-
-      if (!Array.isArray(lista) || !lista.length) {
-        setUltimaAtualizacaoBanco("-");
-        setUltimaAtualizacaoSisbr("-");
-        return;
-      }
-
-      const maisRecenteCarga = obterMaisRecente(
-        lista.map((item) => item?.dt_carga)
-      );
-      const maisRecenteMovimento = obterMaisRecente(
-        lista.map((item) => item?.dt_movimento)
-      );
-
-      setUltimaAtualizacaoBanco(
-        maisRecenteCarga ? formatarDataHoraBR(maisRecenteCarga) : "-"
-      );
-      setUltimaAtualizacaoSisbr(
-        maisRecenteMovimento ? formatarDataHoraBR(maisRecenteMovimento) : "-"
-      );
+      setDatasRelatorioCache(Array.isArray(lista) ? lista : []);
     } catch {
-      setUltimaAtualizacaoBanco("-");
-      setUltimaAtualizacaoSisbr("-");
+      setDatasRelatorioCache([]);
     }
   }
 
   async function carregarInfoTema(chaveTema: ChaveRelatorioFuncionario) {
     try {
       const nmTabela = MAPA_TEMA_PARA_TABELA_FUNCIONARIO[chaveTema];
-      const lista = await buscarDatasRelatorioMetaFuncionario();
+      const lista = datasRelatorioCache;
 
       if (!nmTabela) {
         setInfoTema(null);
@@ -371,11 +437,13 @@ export function ProducaoMetaFuncionarioForm() {
   useEffect(() => {
     if (!tema) {
       setInfoTema(null);
+      setUltimaAtualizacaoBanco("-");
+      setUltimaAtualizacaoSisbr("-");
       return;
     }
 
     carregarInfoTema(tema);
-  }, [tema]);
+  }, [tema, datasRelatorioCache]);
 
   async function handleChangeTema(value: string) {
     const novoTema = value as ChaveRelatorioFuncionario | "";
@@ -501,7 +569,7 @@ export function ProducaoMetaFuncionarioForm() {
                   </span>
                 </p>
                 <p className="mt-1 text-xs text-emerald-800">
-                  Sisbr AnalÃ­tico:{" "}
+                  Sisbr Analí­tico:{" "}
                   <span className="font-semibold text-emerald-900">
                     {ultimaAtualizacaoSisbr}
                   </span>
@@ -734,6 +802,11 @@ export function ProducaoMetaFuncionarioForm() {
                       >
                         {configAtual?.campos.map((campo, index) => {
                           const valor = item?.[campo] ?? "-";
+                          const valorFormatado = formatarValorExibicaoRelatorio(
+                            campo,
+                            valor,
+                            tema
+                          );
                           const corClasse = aplicarClasseCor(campo, valor);
 
                           return (
@@ -750,7 +823,7 @@ export function ProducaoMetaFuncionarioForm() {
                                   corClasse || ""
                                 }`}
                               >
-                                {String(valor)}
+                                {valorFormatado}
                               </span>
                             </td>
                           );
