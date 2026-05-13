@@ -86,17 +86,12 @@ export const chequeEspecialController = {
 
       connection = await oracledb.getConnection();
 
-<<<<<<< Updated upstream
-      const termoBusca = `%${nome.toUpperCase()}%`;
-      const digitosBusca = onlyDigits(nome);
-      const termoDigitos = digitosBusca ? `%${digitosBusca}%` : null;
-=======
+
       const nomeNormalizado = normalizeSearch(nome);
       const termoBusca = `%${nomeNormalizado}%`;
       const digitos = onlyDigits(nome);
       const termoDigitos = digitos ? `%${digitos}%` : null;
       const temNumero = digitos ? 1 : 0;
->>>>>>> Stashed changes
 
       const resultCount = await connection.execute(
         `
@@ -104,17 +99,11 @@ export const chequeEspecialController = {
           FROM DBACRESSEM.ATUALIZACAO_BENEFICIO_CHEQUE_ESPECIAL a
           WHERE (
             :nome = '%%'
-<<<<<<< Updated upstream
             OR UPPER(a.NM_ASSOCIADO) LIKE :nome
             OR UPPER(a.NM_ALTERACAO) LIKE :nome
             OR (:nomeNumerico IS NOT NULL AND TO_CHAR(a.NR_CONTA_CORRENTE) LIKE :nomeNumerico)
             OR (:cpfNumerico IS NOT NULL AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico)
-=======
-            OR TRANSLATE(UPPER(a.NM_ASSOCIADO), :accentsFrom, :accentsTo) LIKE :nome
-OR TRANSLATE(UPPER(a.NM_ALTERACAO), :accentsFrom, :accentsTo) LIKE :nome
-            OR (:temNumero = 1 AND TO_CHAR(a.NR_CONTA_CORRENTE) LIKE :nomeNumerico)
-OR (:temNumero = 1 AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico)
->>>>>>> Stashed changes
+
           )
         `,
         {
@@ -154,17 +143,11 @@ OR (:temNumero = 1 AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNume
             FROM DBACRESSEM.ATUALIZACAO_BENEFICIO_CHEQUE_ESPECIAL a
             WHERE (
               :nome = '%%'
-<<<<<<< Updated upstream
               OR UPPER(a.NM_ASSOCIADO) LIKE :nome
               OR UPPER(a.NM_ALTERACAO) LIKE :nome
               OR (:nomeNumerico IS NOT NULL AND TO_CHAR(a.NR_CONTA_CORRENTE) LIKE :nomeNumerico)
               OR (:cpfNumerico IS NOT NULL AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico)
-=======
-              OR TRANSLATE(UPPER(a.NM_ASSOCIADO), :accentsFrom, :accentsTo) LIKE :nome
-OR TRANSLATE(UPPER(a.NM_ALTERACAO), :accentsFrom, :accentsTo) LIKE :nome
-              OR (:temNumero = 1 AND TO_CHAR(a.NR_CONTA_CORRENTE) LIKE :nomeNumerico)
-OR (:temNumero = 1 AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico)
->>>>>>> Stashed changes
+
             )
           )
           WHERE RN > :offset

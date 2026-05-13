@@ -36,20 +36,7 @@ export const kpiController = {
     async aniversariantesHoje(_req: Request, res: Response) {
         try {
             const sql = `
-<<<<<<< Updated upstream
-                        SELECT
-                        FS.NM_FUNCIONARIO AS NOME, 
-                        SC.NM_SETOR       AS SETOR,
-                        FS.NR_RAMAL       AS RAMAL
-                        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM FS
-                        INNER JOIN DBACRESSEM.SETOR_SICOOB_CRESSEM SC
-                        ON FS.ID_SETOR = SC.ID_SETOR
-                        WHERE TO_CHAR(FS.DT_NASCIMENTO, 'DDMM') = TO_CHAR(SYSDATE, 'DDMM')
-                        AND FS.DT_DESLIGAMENTO IS NULL
-                        AND FS.SN_ATIVO = 1
-                        ORDER BY FS.NM_FUNCIONARIO
-                    `;
-=======
+
         SELECT
           FS.NM_FUNCIONARIO AS NOME, 
           SC.NM_SETOR       AS SETOR,
@@ -61,7 +48,6 @@ export const kpiController = {
         AND FS.SN_ATIVO = 1
         ORDER BY FS.NM_FUNCIONARIO
       `;
->>>>>>> Stashed changes
 
             const result = await oracleExecute(sql, {}, { outFormat: oracledb.OUT_FORMAT_OBJECT });
 
@@ -105,21 +91,7 @@ export const kpiController = {
             }
 
             const sql = `
-<<<<<<< Updated upstream
-                        SELECT
-                        FS.NM_FUNCIONARIO AS NOME,
-                        SC.NM_SETOR       AS SETOR,
-                        FS.NR_RAMAL       AS RAMAL,
-                        TO_NUMBER(TO_CHAR(FS.DT_NASCIMENTO, 'DD')) AS DIA
-                        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM FS
-                        INNER JOIN DBACRESSEM.SETOR_SICOOB_CRESSEM SC
-                        ON FS.ID_SETOR = SC.ID_SETOR
-                        WHERE TO_NUMBER(TO_CHAR(FS.DT_NASCIMENTO, 'MM')) = :mes
-                        AND FS.DT_DESLIGAMENTO IS NULL
-                        AND FS.SN_ATIVO = 1
-                        ORDER BY DIA, NOME
-                        `;
-=======
+
       SELECT
         FS.NM_FUNCIONARIO AS NOME,
         SC.NM_SETOR       AS SETOR,
@@ -132,7 +104,6 @@ export const kpiController = {
         AND FS.SN_ATIVO = 1
       ORDER BY DIA, NOME
     `;
->>>>>>> Stashed changes
 
             const result = await oracleExecute(
                 sql,

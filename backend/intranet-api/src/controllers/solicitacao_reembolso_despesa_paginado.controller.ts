@@ -80,15 +80,9 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
       const limit = parseLimit(req.query.limit, 10);
       const offset = (page - 1) * limit;
 
-<<<<<<< Updated upstream
       const pesquisaUpper = pesquisa.toUpperCase();
       const pesquisaCpf = onlyDigits(pesquisa);
       const tipoUsuario = await buscarTipoUsuarioPorNome(nome, verTodos);
-=======
-            const countBinds: Record<string, any> = {
-                nome1: nome || " ",
-                nome2: nome || " ",
->>>>>>> Stashed changes
 
       let wherePerfilSql = "1 = 1";
 
@@ -96,23 +90,22 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
         wherePerfilSql = `UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)`;
       } else if (tipoUsuario === "gerencia" || tipoUsuario === "gerencia superior") {
         wherePerfilSql = `
-          (
-            UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)
-            OR UPPER(NVL(s.NM_FUNCIONARIO, ' ')) IN (
-              SELECT UPPER(TRIM(f.NM_FUNCIONARIO))
-              FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
-              WHERE f.CD_GERENCIA = (
-                SELECT fg.ID_FUNCIONARIO
-                FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
-                WHERE UPPER(TRIM(fg.NM_FUNCIONARIO)) = UPPER(:nomePerfil)
-                FETCH FIRST 1 ROWS ONLY
-              )
-            )
-          )
-        `;
+  (
+    UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil1)
+    OR UPPER(NVL(s.NM_FUNCIONARIO, ' ')) IN (
+      SELECT UPPER(TRIM(f.NM_FUNCIONARIO))
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      WHERE f.CD_GERENCIA = (
+        SELECT fg.ID_FUNCIONARIO
+        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
+        WHERE UPPER(TRIM(fg.NM_FUNCIONARIO)) = UPPER(:nomePerfil2)
+        FETCH FIRST 1 ROWS ONLY
+      )
+    )
+  )
+`;
       }
 
-<<<<<<< Updated upstream
       const bindsBase: Record<string, any> = {
         pesqVazio: pesquisaUpper ? 0 : 1,
         pesq1: normalizeLike(pesquisaUpper || " "),
@@ -125,39 +118,15 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
         status1: status || " ",
         status2: status || " ",
       };
-=======
-            const whereSql = `
-      WHERE (
-        :nome1 = ' '
-        OR UPPER(TRIM(NVL(s.NM_FUNCIONARIO, ' '))) = :nome2
-      )
-      AND (
-        :pesq1 = '% %'
-        OR UPPER(NVL(s.NM_FUNCIONARIO, ' ')) LIKE :pesq2
-        OR UPPER(NVL(s.DESC_ANDAMENTO, ' ')) LIKE :pesq3
-        OR UPPER(NVL(s.NM_CIDADE, ' ')) LIKE :pesq4
-        OR REGEXP_REPLACE(NVL(s.NR_CPF_FUNCIONARIO, ' '), '[^0-9]', '') LIKE '%' || :cpfPesq1 || '%'
-      )
-      AND (
-        :cpfFiltro1 = ' '
-        OR REGEXP_REPLACE(NVL(s.NR_CPF_FUNCIONARIO, ' '), '[^0-9]', '') = :cpfFiltro1
-      )
-      AND (
-        :cidade1 = ' '
-        OR UPPER(NVL(s.NM_CIDADE, ' ')) LIKE :cidade2
-      )
-      AND (
-        :status1 = ' '
-        OR UPPER(NVL(s.DESC_ANDAMENTO, ' ')) = :status2
-      )
-    `;
->>>>>>> Stashed changes
 
-      if (wherePerfilSql.includes(":nomePerfil")) {
-        bindsBase.nomePerfil = nome;
+      if (wherePerfilSql.includes(":nomePerfil1")) {
+        bindsBase.nomePerfil1 = nome;
       }
 
-<<<<<<< Updated upstream
+      if (wherePerfilSql.includes(":nomePerfil2")) {
+        bindsBase.nomePerfil2 = nome;
+      }
+
       const whereSql = `
         WHERE ${wherePerfilSql}
           AND (
@@ -179,127 +148,6 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
             :status1 = ' '
             OR UPPER(NVL(s.DESC_ANDAMENTO, ' ')) = :status2
           )
-=======
-            const countResult = await oracleExecute(
-                countSql,
-                countBinds,
-                { outFormat: oracledb.OUT_FORMAT_OBJECT }
-            );
-
-            const total = Number((countResult.rows?.[0] as any)?.TOTAL || 0);
-            const totalPages = Math.max(1, Math.ceil(total / limit));
-
-            const listBinds: Record<string, any> = {
-                nome1: nome || " ",
-                nome2: nome || " ",
-                nome7: nome || " ",
-                nome8: nome || " ",
-                nome9: nome || " ",
-                nome10: nome || " ",
-
-                pesq1: normalizeLike(pesquisaUpper || " "),
-                pesq2: normalizeLike(pesquisaUpper || " "),
-                pesq3: normalizeLike(pesquisaUpper || " "),
-                pesq4: normalizeLike(pesquisaUpper || " "),
-                cpfPesq1: pesquisaCpf || "00000000000",
-
-                cpfFiltro1: cpf || " ",
-                cidade1: cidade || " ",
-                cidade2: normalizeLike(cidade || " "),
-                status1: status || " ",
-                status2: status || " ",
-
-                offset,
-                limit,
-            };
-
-            const listSql = `
-      SELECT
-        s.ID_SOLICITACAO_REEMBOLSO_DESPESA,
-        s.NM_FUNCIONARIO,
-        s.NR_CPF_FUNCIONARIO,
-        TO_CHAR(s.DT_IDA, 'YYYY-MM-DD') AS DT_IDA,
-        TO_CHAR(s.DT_VOLTA, 'YYYY-MM-DD') AS DT_VOLTA,
-        s.DESC_JTF_EVENTO,
-        s.NM_CIDADE,
-        s.NR_BANCO,
-        s.CD_AGENCIA,
-        s.NR_CONTA,
-        s.DESC_ANDAMENTO,
-        s.SN_FINALIZADO,
-
-        s.DESC_PRC_FINANCEIRO,
-        s.NM_FNC_FINANCEIRO,
-        s.DESC_PRC_GERENCIA,
-        s.NM_FNC_GERENCIA,
-        s.DESC_PRC_GERENCIA_SUP,
-        s.NM_FNC_GERENCIA_SUP,
-        s.DESC_PRC_DIRETORIA,
-        s.NM_FNC_DIRETORIA,
-
-        s.ID_SOLICITANTE,
-        s.ID_APROV_GERENCIA,
-        s.ID_APROV_GERENCIA_SUP,
-        s.ID_APROV_DIRETORIA,
-
-        CASE
-          WHEN s.ID_APROV_GERENCIA IS NOT NULL THEN 1
-          ELSE 0
-        END AS HAS_GERENCIA,
-
-        CASE
-          WHEN s.ID_APROV_GERENCIA_SUP IS NOT NULL THEN 1
-          ELSE 0
-        END AS HAS_GERENCIA_SUP,
-
-        s.NM_FNC_GERENCIA AS APROV_GERENCIA_NOME,
-        s.NM_FNC_GERENCIA_SUP AS APROV_GERENCIA_SUP_NOME,
-        s.NM_FNC_DIRETORIA AS APROV_DIRETORIA_NOME,
-
-        CASE
-          WHEN UPPER(NVL(s.NM_FNC_FINANCEIRO, ' ')) = :nome7 THEN 'financeiro'
-          WHEN UPPER(NVL(s.NM_FNC_GERENCIA, ' ')) = :nome8 THEN 'gerencia'
-          WHEN UPPER(NVL(s.NM_FNC_GERENCIA_SUP, ' ')) = :nome9 THEN 'gerencia superior'
-          WHEN UPPER(NVL(s.NM_FNC_DIRETORIA, ' ')) = :nome10 THEN 'diretoria'
-          ELSE 'funcionario'
-        END AS TIPO_USUARIO
-      FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA s
-      ${whereSql}
-      ORDER BY s.ID_SOLICITACAO_REEMBOLSO_DESPESA DESC
-      OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
-    `;
-
-            const result = await oracleExecute(
-                listSql,
-                listBinds,
-                { outFormat: oracledb.OUT_FORMAT_OBJECT }
-            );
-
-            const itemsRaw = (result.rows || []) as any[];
-            const ids = itemsRaw.map((item) => item.ID_SOLICITACAO_REEMBOLSO_DESPESA);
-
-            let despesasMap = new Map<number, any[]>();
-
-            if (ids.length) {
-                const placeholders = ids.map((_, idx) => `:id${idx}`).join(", ");
-                const despesaBinds: Record<string, any> = {};
-
-                ids.forEach((id, idx) => {
-                    despesaBinds[`id${idx}`] = id;
-                });
-
-                const despesasSql = `
-        SELECT
-          d.ID_DESPESA_SOLICITADA,
-          d.ID_SOLICITACAO,
-          d.TP_DESPESA,
-          d.DESC_DESPESA,
-          d.VALOR,
-          d.COMPROVANTE
-        FROM DBACRESSEM.DESPESA_SOLICITADA d
-        WHERE d.ID_SOLICITACAO IN (${placeholders})
-        ORDER BY d.ID_DESPESA_SOLICITADA
->>>>>>> Stashed changes
       `;
 
       const countSql = `
@@ -337,7 +185,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           s.NR_CONTA,
           s.DESC_ANDAMENTO,
           s.SN_FINALIZADO,
-
+ 
           s.DESC_PRC_FINANCEIRO,
           s.NM_FNC_FINANCEIRO,
           s.DESC_PRC_GERENCIA,
@@ -346,12 +194,12 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           s.NM_FNC_GERENCIA_SUP,
           s.DESC_PRC_DIRETORIA,
           s.NM_FNC_DIRETORIA,
-
+ 
           s.ID_SOLICITANTE,
           s.ID_APROV_GERENCIA,
           s.ID_APROV_GERENCIA_SUP,
           s.ID_APROV_DIRETORIA,
-
+ 
           CASE
             WHEN NVL(TRIM(s.NM_FNC_GERENCIA), '') <> ''
               OR s.ID_APROV_GERENCIA IS NOT NULL
@@ -359,7 +207,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
             THEN 1
             ELSE 0
           END AS HAS_GERENCIA,
-
+ 
           CASE
             WHEN s.ID_APROV_GERENCIA_SUP IS NOT NULL
               OR NVL(TRIM(s.NM_FNC_GERENCIA_SUP), '') <> ''
@@ -367,7 +215,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
             THEN 1
             ELSE 0
           END AS HAS_GERENCIA_SUP,
-
+ 
           CASE
             WHEN NVL(TRIM(s.NM_FNC_GERENCIA), '') <> '' THEN s.NM_FNC_GERENCIA
             ELSE (
@@ -377,7 +225,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               FETCH FIRST 1 ROWS ONLY
             )
           END AS APROV_GERENCIA_NOME,
-
+ 
           CASE
             WHEN NVL(TRIM(s.NM_FNC_GERENCIA_SUP), '') <> '' THEN s.NM_FNC_GERENCIA_SUP
             ELSE (
@@ -387,7 +235,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               FETCH FIRST 1 ROWS ONLY
             )
           END AS APROV_GERENCIA_SUP_NOME,
-
+ 
           CASE
             WHEN NVL(TRIM(s.NM_FNC_DIRETORIA), '') <> '' THEN s.NM_FNC_DIRETORIA
             ELSE (
@@ -397,12 +245,12 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               FETCH FIRST 1 ROWS ONLY
             )
           END AS APROV_DIRETORIA_NOME,
-
+ 
           CASE
             WHEN s.ID_APROV_DIRETORIA IS NOT NULL THEN 1
             ELSE 0
           END AS HAS_DIRETORIA,
-
+ 
           :tipoUsuario AS TIPO_USUARIO
         FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA s
         ${whereSql}
