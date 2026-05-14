@@ -780,27 +780,27 @@ export function SolicitacaoParticipacaoForm() {
                             <label className="mb-1 block text-xs font-medium text-gray-600">
                                 Cidade destino
                             </label>
-                        <select
-                            value={cidade}
-                            onChange={(e) =>
-                                setCidade(
-                                    limitarTextoPorBytesOracle(
-                                        e.target.value,
-                                        ORACLE_LIMITS.NM_CIDADE
+                            <select
+                                value={cidade}
+                                onChange={(e) =>
+                                    setCidade(
+                                        limitarTextoPorBytesOracle(
+                                            e.target.value,
+                                            ORACLE_LIMITS.NM_CIDADE
+                                        )
                                     )
-                                )
-                            }
-                            className="w-full rounded border px-3 py-2"
-                        >
-                            <option value="">Selecione uma cidade</option>
-                            {cidadesOrdenadas.map((item, index) => (
-                                <option key={`${item}-${index}`} value={item}>
-                                    {item}
-                                </option>
-                            ))}
-                        </select>
+                                }
+                                className="w-full rounded border px-3 py-2"
+                            >
+                                <option value="">Selecione uma cidade</option>
+                                {cidadesOrdenadas.map((item, index) => (
+                                    <option key={`${item}-${index}`} value={item}>
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
-                </div>
 
                     <div>
                         <label className="mb-2 block text-xs font-medium text-gray-600">
@@ -871,37 +871,60 @@ export function SolicitacaoParticipacaoForm() {
                                         key={dia.id}
                                         className="grid grid-cols-1 gap-3 rounded border p-3 md:grid-cols-[1.2fr_1fr_1fr_auto]"
                                     >
-                                        <input
-                                            type="date"
-                                            value={dia.DT_DIA}
-                                            onChange={(e) =>
-                                                updateDiaEvento(dia.id, "DT_DIA", e.target.value)
-                                            }
-                                            className="rounded border px-3 py-2"
-                                        />
-                                        <input
-                                            type="time"
-                                            value={dia.HR_INICIO}
-                                            onChange={(e) =>
-                                                updateDiaEvento(dia.id, "HR_INICIO", e.target.value)
-                                            }
-                                            className="rounded border px-3 py-2"
-                                        />
-                                        <input
-                                            type="time"
-                                            value={dia.HR_FIM}
-                                            onChange={(e) =>
-                                                updateDiaEvento(dia.id, "HR_FIM", e.target.value)
-                                            }
-                                            className="rounded border px-3 py-2"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => removerDiaEvento(dia.id)}
-                                            className="inline-flex h-10 w-10 items-center justify-center rounded bg-red-50 text-red-600 hover:bg-red-100"
-                                        >
-                                            <FaTrash size={14} />
-                                        </button>
+                                        <div>
+                                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                Data
+                                            </label>
+
+                                            <input
+                                                type="date"
+                                                value={dia.DT_DIA}
+                                                onChange={(e) =>
+                                                    updateDiaEvento(dia.id, "DT_DIA", e.target.value)
+                                                }
+                                                className="w-full rounded border px-3 py-2"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                Hora Inicial
+                                            </label>
+
+                                            <input
+                                                type="time"
+                                                value={dia.HR_INICIO}
+                                                onChange={(e) =>
+                                                    updateDiaEvento(dia.id, "HR_INICIO", e.target.value)
+                                                }
+                                                className="w-full rounded border px-3 py-2"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                Hora Final
+                                            </label>
+
+                                            <input
+                                                type="time"
+                                                value={dia.HR_FIM}
+                                                onChange={(e) =>
+                                                    updateDiaEvento(dia.id, "HR_FIM", e.target.value)
+                                                }
+                                                className="w-full rounded border px-3 py-2"
+                                            />
+                                        </div>
+
+                                        <div className="flex items-end">
+                                            <button
+                                                type="button"
+                                                onClick={() => removerDiaEvento(dia.id)}
+                                                className="inline-flex h-10 w-10 items-center justify-center rounded bg-red-50 text-red-600 hover:bg-red-100"
+                                            >
+                                                <FaTrash size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))
                             )}

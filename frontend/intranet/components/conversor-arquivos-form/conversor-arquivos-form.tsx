@@ -108,9 +108,9 @@ export function ConversorArquivosForm() {
         </h3>
 
         <div className="mt-3 text-sm text-slate-700">
-          <p className="mb-2">Para converter seus arquivos:</p>
+          <p className="mb-2">Para converter seu arquivo:</p>
           <ol className="list-decimal space-y-1 pl-5">
-            <li>Clique em <strong>Selecionar</strong> e escolha os arquivos PDF desejados.</li>
+            <li>Clique em <strong>Selecionar</strong> e escolha o arquivo PDF desejado.</li>
             <li>Selecione o formato inicial e o formato final da conversão.</li>
             <li>Clique em <strong>Converter</strong> e aguarde o processamento.</li>
             <li>O download de um arquivo <strong>.zip</strong> será iniciado automaticamente.</li>

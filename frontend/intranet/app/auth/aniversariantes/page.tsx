@@ -13,6 +13,7 @@ type Aniversariante = {
     setor: string;
     ramal: string;
     dia?: number;
+    mes?: number;
 };
 
 
@@ -40,19 +41,22 @@ function initialsFromName(nome: string) {
 }
 
 function normalizeItem(p: any): Aniversariante {
-    //aceita tanto {nome,setor,ramal} quanto {NOME,SETOR,RAMAL}
     const nome = (p?.nome ?? p?.NOME ?? "").toString();
     const setor = (p?.setor ?? p?.SETOR ?? "").toString();
     const ramal = (p?.ramal ?? p?.RAMAL ?? "").toString();
 
     const diaRaw = p?.dia ?? p?.DIA ?? p?.DT_NASCIMENTO_DIA ?? null;
+    const mesRaw = p?.mes ?? p?.MES ?? p?.DT_NASCIMENTO_MES ?? null;
+
     const dia = Number(diaRaw);
+    const mes = Number(mesRaw);
 
     return {
         nome,
         setor,
         ramal,
         dia: Number.isFinite(dia) ? dia : undefined,
+        mes: Number.isFinite(mes) ? mes : undefined,
     };
 }
 
@@ -217,7 +221,7 @@ export default function AniversariantesPage() {
                         <div className="flex items-center gap-2">
                             <FaBirthdayCake className="text-gray-700" />
                             <h2 className="text-base font-semibold text-gray-900">
-                                Aniversariantes de {mesLabel}
+                                Aniversariantes {/*de {mesLabel}*/}
                             </h2>
                         </div>
                         <span className="text-xs text-gray-500">
@@ -281,13 +285,16 @@ export default function AniversariantesPage() {
 
                                             <div className="w-[220px] shrink-0 flex flex-col items-end gap-2">
                                                 <span className="inline-flex w-[100px] justify-center rounded-full bg-secondary px-3 py-1 text-sm font-bold text-white leading-none">
-                                                    Dia {typeof p.dia === "number" ? pad2(p.dia) : "--"}
+                                                    Data{" "}
+                                                    {typeof p.dia === "number" && typeof p.mes === "number"
+                                                        ? `${pad2(p.dia)}/${pad2(p.mes)}`
+                                                        : "--/--"}
                                                 </span>
 
                                                 <span
                                                     className={`inline-flex w-[100px] justify-center rounded-full px-3 py-1 text-sm font-semibold leading-none ${semRamal
-                                                            ? "bg-red-50 text-red-500"
-                                                            : "bg-[#EEF7EE] text-[#4D6B4D]"
+                                                        ? "bg-red-50 text-red-500"
+                                                        : "bg-[#EEF7EE] text-[#4D6B4D]"
                                                         }`}
                                                 >
                                                     {semRamal ? "Sem ramal" : `Ramal ${ramal}`}

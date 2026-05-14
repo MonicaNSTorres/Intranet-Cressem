@@ -54,6 +54,13 @@ export function ConsultaAssociadoForm() {
     });
   };
 
+  const isFormularioValido =
+    !!data &&
+    atendente.trim() !== "" &&
+    dataPrimeiroDesconto.trim() !== "" &&
+    valorAnterior.trim() !== "" &&
+    valorNovo.trim() !== "";
+
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
       <SearchForm onSearch={onBuscar}>
@@ -195,7 +202,14 @@ export function ConsultaAssociadoForm() {
           <div className="pt-4 border-t flex items-center justify-end">
             <button
               onClick={onGerarPdf}
-              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+              disabled={!isFormularioValido}
+              className={`
+    inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
+    ${isFormularioValido
+                  ? "bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
+                  : "bg-gray-300 cursor-not-allowed"
+                }
+  `}
             >
               Gerar PDF
             </button>
