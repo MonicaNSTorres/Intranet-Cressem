@@ -173,7 +173,7 @@ routes.get(
   auditoriaController.buscarAuditoria
 );
 
-//antecipaÃ§Ã£o de capital
+//antecipação de capital
 routes.get(
   "/v1/antecipacao-capital/associado/:cpf",
   antecipacaoCapitalController.buscarAssociado

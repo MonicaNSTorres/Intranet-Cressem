@@ -624,7 +624,7 @@ export const patrocinioController = {
             await conn.commit();
 
             return res.status(201).json({
-                message: "SolicitaÃ§Ã£o cadastrada com sucesso.",
+                message: "Solicitação cadastrada com sucesso.",
                 ID_PATROCINIO: idPatrocinio,
                 DIR_OFICIO: oficioPath,
                 DIR_DOC_SEM_FINS_LUCRATIVO: semFinsPath,
@@ -640,7 +640,7 @@ export const patrocinioController = {
 
             console.error("patrocinioController.cadastrar erro:", err);
             return res.status(500).json({
-                error: "Falha ao cadastrar solicitaÃ§Ã£o de participaÃ§Ã£o.",
+                error: "Falha ao cadastrar solicitação de participação.",
                 details: String(err?.message || err),
             });
         } finally {
@@ -854,7 +854,7 @@ export const patrocinioController = {
             const row: any = result.rows?.[0];
 
             if (!row) {
-                return res.status(404).json({ error: "SolicitaÃ§Ã£o nÃ£o encontrada." });
+                return res.status(404).json({ error: "Solicitação não encontrada." });
             }
 
             row.DIAS = await buscarDiasPatrocinio(id);
@@ -863,7 +863,7 @@ export const patrocinioController = {
         } catch (err: any) {
             console.error("patrocinioController.buscarPorId erro:", err);
             return res.status(500).json({
-                error: "Falha ao buscar solicitaÃ§Ã£o.",
+                error: "Falha ao buscar solicitação.",
                 details: String(err?.message || err),
             });
         }
@@ -923,17 +923,17 @@ export const patrocinioController = {
             );
 
             if (!result.rowsAffected) {
-                return res.status(404).json({ error: "SolicitaÃ§Ã£o nÃ£o encontrada." });
+                return res.status(404).json({ error: "Solicitção nÃ£o encontrada." });
             }
 
             return res.json({
-                message: "SolicitaÃ§Ã£o atualizada com sucesso.",
+                message: "Solicitação atualizada com sucesso.",
                 ID_PATROCINIO: id,
             });
         } catch (err: any) {
             console.error("patrocinioController.editar erro:", err);
             return res.status(500).json({
-                error: "Falha ao atualizar solicitaÃ§Ã£o.",
+                error: "Falha ao atualizar solicitação.",
                 details: String(err?.message || err),
             });
         }

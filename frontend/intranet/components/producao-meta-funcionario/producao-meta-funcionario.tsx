@@ -119,9 +119,149 @@ export function formatarValorExibicaoRelatorio(
     >
   > = {
     entrada_cooperados: {
-      inteiro: ["meta_semanal", "gap_semanal"],
-      percentual: ["perc_meta_realizada", "porcentagem_semanal"]
+      inteiro: [
+        "meta_semanal",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+      ],
+      percentual: [
+        "perc_meta_realizada",
+        "porcentagem_semanal",
+        "perc_meta_realizada_mensal",
+      ]
     },
+    conta_corrente_abertas: {
+      inteiro: [
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "meta_semanal_52",
+        "gap_semanal",
+      ],
+      percentual: [
+        "perc_meta_realizada_mensal",
+        "perc_meta_realizada",
+        "porcentagem_semana",
+      ]
+    },
+    seguro_gerais_novo: {
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+      moeda: [
+        "producao_semanal",
+        "meta_semanal_mes",
+        "meta_semanal_52",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+    },
+    seguro_venda_nova: {
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+      moeda: [
+        "producao_vigente",
+        "meta_vigente",
+        "gap_vigente",
+        "producao_semanal",
+        "meta_semanal",
+        "meta_semanal_52",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+    },
+    seguro_rural: {
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+      moeda: [
+        "producao_semanal",
+        "meta_semanal",
+        "meta_semanal_52",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+    },
+    consorcio: {
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+      moeda: [
+        "producao_semanal",
+        "meta_semanal_52",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+    },
+    saldo_previdencia_mi: {
+      inteiro: [
+        "producao_semanal",
+        "meta_semanal",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+    },
+    saldo_previdencia_vgbl: {
+      inteiro: [
+        "producao_semanal",
+        "meta_semanal",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+    },
+
+
   };
 
   if (!temaAtual || !regrasPorTema[temaAtual]) {
@@ -168,6 +308,53 @@ function aplicarClasseCor(campo: string, valorOriginal: unknown) {
   return n <= 0
     ? "text-red-600 bg-red-50/60"
     : "text-emerald-700 bg-emerald-50/60";
+}
+
+function calcularPercentualComMetaArredondada(
+  item: RelatorioFuncionarioItem,
+  campo: string,
+  temaAtual?: ChaveRelatorioFuncionario | ""
+) {
+  const temasAlvo = new Set<ChaveRelatorioFuncionario>([
+    "entrada_cooperados",
+    "conta_corrente_abertas",
+  ]);
+
+  if (!temaAtual || !temasAlvo.has(temaAtual)) return null;
+
+  if (campo === "porcentagem_semanal" || campo === "porcentagem_semana") {
+    const producao = parseNumeroBR(item?.producao_semanal);
+    const metaBruta = parseNumeroBR(
+      item?.meta_semanal ?? item?.meta_semanal_52 ?? item?.meta_semanal_ano
+    );
+    if (Number.isNaN(producao) || Number.isNaN(metaBruta)) return null;
+
+    const meta = Math.round(metaBruta);
+    if (meta <= 0) return 0;
+    return (producao / meta) * 100;
+  }
+
+  if (campo === "perc_meta_realizada_mensal") {
+    const producao = parseNumeroBR(item?.producao_mensal ?? item?.producao_vigente);
+    const metaBruta = parseNumeroBR(item?.meta_mensal ?? item?.meta_vigente);
+    if (Number.isNaN(producao) || Number.isNaN(metaBruta)) return null;
+
+    const meta = Math.round(metaBruta);
+    if (meta <= 0) return 0;
+    return (producao / meta) * 100;
+  }
+
+  if (campo === "perc_meta_realizada") {
+    const producao = parseNumeroBR(item?.producao_ano);
+    const metaBruta = parseNumeroBR(item?.meta_2026 ?? item?.meta_ano);
+    if (Number.isNaN(producao) || Number.isNaN(metaBruta)) return null;
+
+    const meta = Math.round(metaBruta);
+    if (meta <= 0) return 0;
+    return (producao / meta) * 100;
+  }
+
+  return null;
 }
 
 function getSemanasDoMes(ano: number, mesIndex: number) {
@@ -511,8 +698,8 @@ export function ProducaoMetaFuncionarioForm() {
       opt?.tipo === "mes_inteiro"
         ? "mes"
         : opt?.tipo === "semana"
-        ? "semana"
-        : "ano";
+          ? "semana"
+          : "ano";
 
     setModoPeriodo(novoModo);
 
@@ -782,9 +969,8 @@ export function ProducaoMetaFuncionarioForm() {
                       {configAtual?.colunas.map((coluna, index) => (
                         <th
                           key={`${coluna}-${index}`}
-                          className={`border-b border-gray-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600 ${
-                            index === 0 ? "text-left" : "text-center"
-                          }`}
+                          className={`border-b border-gray-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600 ${index === 0 ? "text-left" : "text-center"
+                            }`}
                         >
                           {coluna}
                         </th>
@@ -796,12 +982,18 @@ export function ProducaoMetaFuncionarioForm() {
                     {dados.map((item, rowIndex) => (
                       <tr
                         key={`${item?.nm_funcionario ?? rowIndex}-${rowIndex}`}
-                        className={`transition ${
-                          rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/50"
-                        } hover:bg-[#00AE9D]/[0.04]`}
+                        className={`transition ${rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/50"
+                          } hover:bg-[#00AE9D]/[0.04]`}
                       >
                         {configAtual?.campos.map((campo, index) => {
-                          const valor = item?.[campo] ?? "-";
+                          const valorOriginal = item?.[campo] ?? "-";
+                          const percentualAjustado = calcularPercentualComMetaArredondada(
+                            item,
+                            campo,
+                            tema
+                          );
+                          const valor =
+                            percentualAjustado === null ? valorOriginal : percentualAjustado;
                           const valorFormatado = formatarValorExibicaoRelatorio(
                             campo,
                             valor,
@@ -812,16 +1004,14 @@ export function ProducaoMetaFuncionarioForm() {
                           return (
                             <td
                               key={`${campo}-${index}-${rowIndex}`}
-                              className={`border-b border-gray-100 px-4 py-3 text-sm ${
-                                index === 0
+                              className={`border-b border-gray-100 px-4 py-3 text-sm ${index === 0
                                   ? "text-left font-medium text-gray-900"
                                   : "text-center text-gray-700"
-                              }`}
+                                }`}
                             >
                               <span
-                                className={`inline-block rounded-lg px-2 py-1 ${
-                                  corClasse || ""
-                                }`}
+                                className={`inline-block rounded-lg px-2 py-1 ${corClasse || ""
+                                  }`}
                               >
                                 {valorFormatado}
                               </span>

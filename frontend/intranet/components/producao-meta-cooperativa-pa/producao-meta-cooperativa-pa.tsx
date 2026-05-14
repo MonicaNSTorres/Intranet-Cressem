@@ -542,6 +542,53 @@ function aplicarClasseCor(campo: string, valorOriginal: unknown) {
         : "text-emerald-700 bg-emerald-50/60";
 }
 
+function calcularPercentualComMetaArredondada(
+    item: RelatorioItem,
+    campo: string,
+    temaAtual?: ChaveRelatorioPA | ""
+) {
+    const temasAlvo = new Set<ChaveRelatorioPA>([
+        "entrada_cooperados",
+        "conta_corrente_abertas",
+    ]);
+
+    if (!temaAtual || !temasAlvo.has(temaAtual)) return null;
+
+    if (campo === "porcentagem_semanal" || campo === "porcentagem_semana") {
+        const producao = parseNumeroBR(item?.producao_semanal);
+        const metaBruta = parseNumeroBR(
+            item?.meta_semanal ?? item?.meta_semanal_52 ?? item?.meta_semanal_ano
+        );
+        if (Number.isNaN(producao) || Number.isNaN(metaBruta)) return null;
+
+        const meta = Math.round(metaBruta);
+        if (meta <= 0) return 0;
+        return (producao / meta) * 100;
+    }
+
+    if (campo === "perc_meta_realizada_mensal") {
+        const producao = parseNumeroBR(item?.producao_mensal ?? item?.producao_vigente);
+        const metaBruta = parseNumeroBR(item?.meta_mensal ?? item?.meta_vigente);
+        if (Number.isNaN(producao) || Number.isNaN(metaBruta)) return null;
+
+        const meta = Math.round(metaBruta);
+        if (meta <= 0) return 0;
+        return (producao / meta) * 100;
+    }
+
+    if (campo === "perc_meta_realizada") {
+        const producao = parseNumeroBR(item?.producao_ano);
+        const metaBruta = parseNumeroBR(item?.meta_2026 ?? item?.meta_ano);
+        if (Number.isNaN(producao) || Number.isNaN(metaBruta)) return null;
+
+        const meta = Math.round(metaBruta);
+        if (meta <= 0) return 0;
+        return (producao / meta) * 100;
+    }
+
+    return null;
+}
+
 function getSemanasDoMes(ano: number, mesIndex: number) {
     const semanas: { inicio: Date; fim: Date }[] = [];
 
@@ -1172,7 +1219,14 @@ export function ProducaoMetaCooperativaPAForm() {
                                                         } hover:bg-[#00AE9D]/[0.04]`}
                                                 >
                                                     {configAtual?.campos.map((campo, index) => {
-                                                        const valor = item?.[campo] ?? "-";
+                                                        const valorOriginal = item?.[campo] ?? "-";
+                                                        const percentualAjustado = calcularPercentualComMetaArredondada(
+                                                            item,
+                                                            campo,
+                                                            tema
+                                                        );
+                                                        const valor =
+                                                            percentualAjustado === null ? valorOriginal : percentualAjustado;
                                                         const valorFormatado = formatarValorExibicaoRelatorio(
                                                             campo,
                                                             valor,

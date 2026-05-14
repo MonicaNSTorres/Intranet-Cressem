@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export type ChaveRelatorioFuncionario =
   | "entrada_cooperados"
@@ -27,10 +27,13 @@ export const TEMAS_SOMENTE_ANO_FUNCIONARIO = new Set<ChaveRelatorioFuncionario>(
 
 export const CAMPOS_COLORIR_FUNCIONARIO = new Set([
   "producao_semanal",
+  "producao_mensal",
   "gap_semanal",
   "producao_ano",
   "perc_meta_realizada",
+  "perc_meta_realizada_mensal",
   "falta_para_meta",
+  "falta_para_meta_mensal",
   "porcentagem_semanal",
   "porcentagem_semana",
   "gap_vigente",
@@ -177,9 +180,6 @@ export const CONFIGURACAO_RELATORIOS_FUNCIONARIO: Record<
   seguro_venda_nova: {
     colunas: [
       "Funcionário",
-      "Produção Vigente",
-      "Meta Vigente",
-      "GAP Vigente",
       "Produção Semanal",
       "Meta Semanal",
       "% Semana",
@@ -191,9 +191,6 @@ export const CONFIGURACAO_RELATORIOS_FUNCIONARIO: Record<
     ],
     campos: [
       "nm_funcionario",
-      "producao_vigente",
-      "meta_vigente",
-      "gap_vigente",
       "producao_semanal",
       "meta_semanal",
       "porcentagem_semana",
@@ -258,40 +255,6 @@ export const CONFIGURACAO_RELATORIOS_FUNCIONARIO: Record<
   saldo_previdencia_mi: {
     colunas: [
       "Funcionário",
-      "Produção Vigente",
-      "Meta Vigente",
-      "GAP Vigente",
-      "Produção Semanal",
-      "Meta Semanal",
-      "% Semana",
-      "GAP Semanal",
-      "Produção Ano",
-      "Meta Ano",
-      "% Meta Realizada",
-      "Falta Para Meta",
-    ],
-    campos: [
-      "nm_funcionario",
-      "producao_vigente",
-      "meta_vigente",
-      "gap_vigente",
-      "producao_semanal",
-      "meta_semanal",
-      "porcentagem_semana",
-      "gap_semanal",
-      "producao_ano",
-      "meta_ano",
-      "perc_meta_realizada",
-      "falta_para_meta",
-    ],
-  },
-
-  saldo_previdencia_vgbl: {
-    colunas: [
-      "Funcionário",
-      "Produção Vigente",
-      "Meta Vigente",
-      "GAP Vigente",
       "Produção Semanal",
       "Meta Semanal",
       "% Semana",
@@ -303,11 +266,33 @@ export const CONFIGURACAO_RELATORIOS_FUNCIONARIO: Record<
     ],
     campos: [
       "nm_funcionario",
-      "producao_vigente",
-      "meta_vigente",
-      "gap_vigente",
       "producao_semanal",
-      "meta_semanal_52",
+      "meta_semanal",
+      "porcentagem_semana",
+      "gap_semanal",
+      "producao_ano",
+      "meta_2026",
+      "perc_meta_realizada",
+      "falta_para_meta",
+    ],
+  },
+
+  saldo_previdencia_vgbl: {
+    colunas: [
+      "Funcionário",
+      "Produção Semanal",
+      "Meta Semanal",
+      "% Semana",
+      "GAP Semanal",
+      "Produção Ano",
+      "Meta 2026",
+      "% Meta Realizada",
+      "Falta Para Meta",
+    ],
+    campos: [
+      "nm_funcionario",
+      "producao_semanal",
+      "meta_semanal",
       "porcentagem_semana",
       "gap_semanal",
       "producao_ano",
@@ -327,6 +312,167 @@ export function getConfigAjustadaPorPeriodoFuncionario(
 
   if (modoPeriodo !== "mes" && modoPeriodo !== "ano") {
     return configOriginal;
+  }
+
+  if (modoPeriodo === "mes" && relatorio === "conta_corrente_abertas") {
+    return {
+      ...configOriginal,
+      colunas: [
+        "Funcionário",
+        "Produção Mensal",
+        "Meta Mensal",
+        "% Meta Realizada",
+        "Falta Para Meta",
+      ],
+      campos: [
+        "nm_funcionario",
+        "producao_mensal",
+        "meta_mensal",
+        "perc_meta_realizada_mensal",
+        "falta_para_meta_mensal",
+      ],
+    };
+  }
+
+  if (modoPeriodo === "mes" && relatorio === "entrada_cooperados") {
+    return {
+      ...configOriginal,
+      colunas: [
+        "Funcionário",
+        "Produção Mensal",
+        "Meta Mensal",
+        "% Meta Realizada",
+        "Falta Para Meta",
+      ],
+      campos: [
+        "nm_funcionario",
+        "producao_mensal",
+        "meta_mensal",
+        "perc_meta_realizada_mensal",
+        "falta_para_meta_mensal",
+      ],
+    };
+  }
+
+  if (modoPeriodo === "mes" && relatorio === "seguro_gerais_novo") {
+    return {
+      ...configOriginal,
+      colunas: [
+        "Funcionário",
+        "Produção Mensal",
+        "Meta Mensal",
+        "% Meta Realizada",
+        "Falta Para Meta",
+      ],
+      campos: [
+        "nm_funcionario",
+        "producao_mensal",
+        "meta_mensal",
+        "perc_meta_realizada_mensal",
+        "falta_para_meta_mensal",
+      ],
+    };
+  }
+
+  if (modoPeriodo === "mes" && relatorio === "seguro_venda_nova") {
+    return {
+      ...configOriginal,
+      colunas: [
+        "Funcionário",
+        "Produção Mensal",
+        "Meta Mensal",
+        "% Meta Realizada",
+        "Falta Para Meta",
+      ],
+      campos: [
+        "nm_funcionario",
+        "producao_mensal",
+        "meta_mensal",
+        "perc_meta_realizada_mensal",
+        "falta_para_meta_mensal",
+      ],
+    };
+  }
+
+  if (modoPeriodo === "mes" && relatorio === "seguro_rural") {
+    return {
+      ...configOriginal,
+      colunas: [
+        "Funcionário",
+        "Produção Mensal",
+        "Meta Mensal",
+        "% Meta Realizada",
+        "Falta Para Meta",
+      ],
+      campos: [
+        "nm_funcionario",
+        "producao_mensal",
+        "meta_mensal",
+        "perc_meta_realizada_mensal",
+        "falta_para_meta_mensal",
+      ],
+    };
+  }
+
+
+  if (modoPeriodo === "mes" && relatorio === "consorcio") {
+    return {
+      ...configOriginal,
+      colunas: [
+        "Funcionário",
+        "Produção Mensal",
+        "Meta Mensal",
+        "% Meta Realizada",
+        "Falta Para Meta",
+      ],
+      campos: [
+        "nm_funcionario",
+        "producao_mensal",
+        "meta_mensal",
+        "perc_meta_realizada_mensal",
+        "falta_para_meta_mensal",
+      ],
+    };
+  }
+
+  if (modoPeriodo === "mes" && relatorio === "saldo_previdencia_mi") {
+    return {
+      ...configOriginal,
+      colunas: [
+        "Funcionário",
+        "Produção Mensal",
+        "Meta Mensal",
+        "% Meta Realizada",
+        "Falta Para Meta",
+      ],
+      campos: [
+        "nm_funcionario",
+        "producao_mensal",
+        "meta_mensal",
+        "perc_meta_realizada_mensal",
+        "falta_para_meta_mensal",
+      ],
+    };
+  }
+
+  if (modoPeriodo === "mes" && relatorio === "saldo_previdencia_vgbl") {
+    return {
+      ...configOriginal,
+      colunas: [
+        "Funcionário",
+        "Produção Mensal",
+        "Meta Mensal",
+        "% Meta Realizada",
+        "Falta Para Meta",
+      ],
+      campos: [
+        "nm_funcionario",
+        "producao_mensal",
+        "meta_mensal",
+        "perc_meta_realizada_mensal",
+        "falta_para_meta_mensal",
+      ],
+    };
   }
 
   const pares = configOriginal.colunas.map((col, i) => ({
