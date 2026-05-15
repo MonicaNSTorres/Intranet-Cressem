@@ -24,6 +24,16 @@ type Assoc = {
   cep: string;
 };
 
+const formatRgView = (v: string) => {
+  const s = (v || "").replace(/\D/g, "").slice(0, 9);
+
+  if (s.length <= 2) return s;
+  if (s.length <= 5) return `${s.slice(0, 2)}.${s.slice(2)}`;
+  if (s.length <= 8) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5)}`;
+
+  return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}-${s.slice(8)}`;
+};
+
 const maskCepView = (v: string) => {
   const s = (v || "").replace(/\D/g, "").slice(0, 8);
   if (s.length <= 5) return s;
@@ -120,7 +130,7 @@ export function DeclaracaoResidenciaForm() {
         ...emptyAssoc,
         nome: assocData.nome || "",
         cpf: assocData.cpf || onlyDigits(cpfBusca),
-        rg: assocData.rg || "",
+        rg: "",
         cidade: assocData.cidade || "",
         bairro: assocData.bairro || "",
         rua: assocData.rua || "",
@@ -185,6 +195,21 @@ export function DeclaracaoResidenciaForm() {
 
     setCidadeRodape((prev) => prev || cepData.cidade || "");
   };
+
+  const formularioCompleto =
+    !!data &&
+    !!data.nome?.trim() &&
+    !!onlyDigits(data.cpf)?.trim() &&
+    !!data.rg?.trim() &&
+    !!data.rua?.trim() &&
+    !!data.bairro?.trim() &&
+    !!data.cidade?.trim() &&
+    !!data.uf?.trim() &&
+    !!onlyDigits(data.cep)?.trim() &&
+    !!cidadeRodape?.trim() &&
+    !!dia?.trim() &&
+    !!mes?.trim() &&
+    !!ano?.trim();
 
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
@@ -279,7 +304,16 @@ export function DeclaracaoResidenciaForm() {
               <>
                 <InputRO label="Nome completo" value={data.nome} />
                 <InputRO label="CPF" value={formatCpfView(data.cpf)} />
-                <InputRO label="RG" value={data.rg} />
+                <InputRW
+                  label="RG"
+                  value={formatRgView(data.rg)}
+                  onChange={(v) =>
+                    setData({
+                      ...data,
+                      rg: onlyDigits(v),
+                    })
+                  }
+                />
               </>
             ) : (
               <>
@@ -289,12 +323,21 @@ export function DeclaracaoResidenciaForm() {
                   value={formatCpfView(data.cpf)}
                   onChange={(v) => setData({ ...data, cpf: onlyDigits(v) })}
                 />
-                <InputRW label="RG" value={data.rg} onChange={(v) => setData({ ...data, rg: v })} />
+                <InputRW
+                  label="RG"
+                  value={formatRgView(data.rg)}
+                  onChange={(v) =>
+                    setData({
+                      ...data,
+                      rg: onlyDigits(v),
+                    })
+                  }
+                />
               </>
             )}
 
             <InputRW label="Rua" value={data.rua} onChange={(v) => setData({ ...data, rua: v })} />
-            <InputRW label="Número" value={data.numero} onChange={(v) => setData({ ...data, numero: v })} />
+            {/*<InputRW label="Número" value={data.numero} onChange={(v) => setData({ ...data, numero: v })} />*/}
             <InputRW
               label="Complemento"
               value={data.complemento}
@@ -338,7 +381,14 @@ export function DeclaracaoResidenciaForm() {
           <div className="pt-4 border-t flex items-center justify-end">
             <button
               onClick={onGerarPdf}
-              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+              disabled={!formularioCompleto}
+              className={`
+    inline-flex items-center gap-2 px-5 py-2 rounded shadow font-semibold transition
+    ${formularioCompleto
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }
+  `}
               title="Gerar PDF igual ao modelo"
             >
               Gerar PDF

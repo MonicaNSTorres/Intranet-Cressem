@@ -35,7 +35,6 @@ function scoreItem(q: string, item: ScreenItem) {
 
   const t = normalize(item.title);
   const d = normalize(item.desc ?? "");
-  const h = normalize(item.href);
   const k = normalize((item.keywords ?? []).join(" "));
 
   let score = 0;
@@ -46,9 +45,9 @@ function scoreItem(q: string, item: ScreenItem) {
 
   if (k.includes(nq)) score += 35;
   if (d.includes(nq)) score += 20;
-  if (h.includes(nq)) score += 10;
 
-  if (item.pinned) score += 8;
+  // Só dá bônus para favorito SE já encontrou alguma coisa
+  if (score > 0 && item.pinned) score += 8;
 
   return score;
 }
@@ -129,7 +128,7 @@ export default function HomeScreenSearch({
   return (
     <div ref={panelRef} className="mt-6">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
           <div className="flex-1">
             <label className="text-xs font-medium text-gray-600">Busca por telas</label>
 
@@ -170,7 +169,7 @@ export default function HomeScreenSearch({
                   }
                 }}
                 placeholder={placeholder}
-                className="w-full rounded-xl border border-gray-200 pl-10 pr-10 py-2 outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-10 w-full rounded-xl border border-gray-200 pl-10 pr-10 py-2 outline-none focus:ring-2 focus:ring-primary/30"
               />
 
               {query.trim() && (
@@ -202,19 +201,20 @@ export default function HomeScreenSearch({
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 lg:pt-6.5">
             <button
               onClick={() => {
                 setOpen(true);
                 inputRef.current?.focus();
               }}
-              className="px-4 py-2 rounded-xl bg-secondary text-white hover:opacity-95 cursor-pointer"
+              className="h-10 px-4 rounded-xl bg-secondary text-white hover:opacity-95 cursor-pointer"
             >
               Buscar
             </button>
+
             <button
               onClick={clear}
-              className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer"
+              className="h-10 px-4 rounded-xl bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer"
             >
               Limpar
             </button>
@@ -287,11 +287,40 @@ export default function HomeScreenSearch({
               })}
 
               {emptyState && (
-                <div className="px-4 py-4 text-sm text-gray-600">
-                  Nada encontrado. Tenta buscar por palavras como{" "}
-                  <span className="font-semibold text-gray-900">ramais</span>,{" "}
-                  <span className="font-semibold text-gray-900">convênios</span> ou{" "}
-                  <span className="font-semibold text-gray-900">reembolso</span>.
+                <div className="flex flex-col items-center justify-center px-6 py-8 text-center">
+                  <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 border border-red-100">
+                    <FaSearch className="text-red-400" size={20} />
+                  </div>
+
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Nenhuma tela encontrada
+                  </h3>
+
+                  <p className="mt-1 max-w-md text-sm text-gray-500">
+                    Não encontramos nenhuma tela relacionada a{" "}
+                    <span className="font-semibold text-gray-800">
+                      "{query.trim()}"
+                    </span>.
+                  </p>
+
+                  <p className="mt-2 text-xs text-gray-400">
+                    Tente pesquisar por palavras como:
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap justify-center gap-2">
+                    {["ramais", "reembolso", "convênios", "aniversariantes"].map((sug) => (
+                      <button
+                        key={sug}
+                        onClick={() => {
+                          setQuery(sug);
+                          setOpen(true);
+                        }}
+                        className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-700 hover:bg-white"
+                      >
+                        {sug}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 

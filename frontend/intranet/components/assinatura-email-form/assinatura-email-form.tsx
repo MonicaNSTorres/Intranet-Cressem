@@ -202,9 +202,8 @@ export function AssinaturaEmailForm() {
                                     </div>
                                     <input
                                         value={nome}
-                                        onChange={(e) => setNome(e.target.value)}
-                                        placeholder="Digite o nome"
-                                        className="w-full px-4 py-3 text-sm text-gray-900 outline-none"
+                                        readOnly
+                                        className="w-full px-4 py-3 text-sm text-gray-900 outline-none bg-gray-50 cursor-not-allowed"
                                     />
                                 </div>
                             </div>

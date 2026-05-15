@@ -109,9 +109,6 @@ export const chequeEspecialController = {
           nome: termoBusca,
           nomeNumerico: termoDigitos,
           cpfNumerico: termoDigitos,
-          temNumero,
-          accentsFrom: ORACLE_ACCENTS_FROM,
-          accentsTo: ORACLE_ACCENTS_TO,
         },
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
@@ -159,9 +156,6 @@ export const chequeEspecialController = {
           cpfNumerico: termoDigitos,
           offset,
           limit,
-          temNumero,
-          accentsFrom: ORACLE_ACCENTS_FROM,
-          accentsTo: ORACLE_ACCENTS_TO,
         },
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
