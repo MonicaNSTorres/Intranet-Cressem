@@ -1,13 +1,12 @@
-"use client";
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMemo, useState } from "react";
+﻿"use client";
+import { useEffect, useMemo, useState } from "react";
 import { formatCpfView, monetizarDigitacao, parseBRL, fmtBRL, hojeBR } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { gerarPdfPrevisul } from "@/lib/pdf/gerarPdfPrevisul";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
+import { buscarCidadesResgate, type CidadeResgateItem } from "@/services/resgate_capital.service";
 
 function toIsoFromBr(value: string) {
     if (!value) return "";
@@ -73,6 +72,12 @@ function formatNascimentoParaInput(value?: string | Date) {
         return str;
     }
 
+    //yyyy-mm-ddTHH:mm:ss(.sss)Z (ou variantes)
+    const isoPrefix = str.match(/^(\d{4}-\d{2}-\d{2})T/);
+    if (isoPrefix?.[1]) {
+        return isoPrefix[1];
+    }
+
     //dd/mm/yyyy
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
         const [dia, mes, ano] = str.split("/");
@@ -85,7 +90,24 @@ function formatNascimentoParaInput(value?: string | Date) {
         return `${ano}-${mes}-${dia}`;
     }
 
+    //Fallback para datas parseáveis
+    const d = new Date(str);
+    if (!Number.isNaN(d.getTime())) {
+        const ano = d.getFullYear();
+        const mes = String(d.getMonth() + 1).padStart(2, "0");
+        const dia = String(d.getDate()).padStart(2, "0");
+        return `${ano}-${mes}-${dia}`;
+    }
+
     return "";
+}
+
+function normalizeText(value?: string) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toUpperCase();
 }
 
 export function PrevisulForm() {
@@ -103,6 +125,7 @@ export function PrevisulForm() {
     const [dataPrimeiraParcelaSeguro, setDataPrimeiraParcelaSeguro] = useState("");
     const [dataUltimaParcelaSeguro, setDataUltimaParcelaSeguro] = useState("");
     const [cidadeAtendimento, setCidadeAtendimento] = useState("");
+    const [cidadesAtendimento, setCidadesAtendimento] = useState<Array<{ value: string; label: string }>>([]);
     const [dataHoje, setDataHoje] = useState(hojeBR());
 
     const [erroLocal, setErroLocal] = useState("");
@@ -114,6 +137,10 @@ export function PrevisulForm() {
     const idadeTexto = useMemo(() => calculateAgeFromIso(nascimento), [nascimento]);
     const parcelasNum = useMemo(() => Number(totalParcelas || 0), [totalParcelas]);
     const valorEmprestimoNum = useMemo(() => parseBRL(valorEmprestimo), [valorEmprestimo]);
+    const cidadeSelecionadaValida = useMemo(
+        () => cidadesAtendimento.some((c) => c.value === cidadeAtendimento),
+        [cidadesAtendimento, cidadeAtendimento]
+    );
 
     const mostrarCompetencia = useMemo(() => {
         if (!dataPrimeiraParcelaEmprestimo) return false;
@@ -122,9 +149,16 @@ export function PrevisulForm() {
         return !(ref.getMonth() === now.getMonth() && ref.getFullYear() === now.getFullYear());
     }, [dataPrimeiraParcelaEmprestimo]);
 
+    const failWithScroll = (message: string) => {
+        setErroLocal(message);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return false;
+    };
+
     const onBuscar = async () => {
         setErroLocal("");
         setInfoLocal("");
+        setCpfTermo(formatCpfView(cpf));
 
         const r = await buscar(cpf);
 
@@ -132,31 +166,70 @@ export function PrevisulForm() {
             setNome(r.data.nome || "NOMECLIENTE");
             setCpfTermo(formatCpfView(r.data.cpf || cpf));
             setNascimento(formatNascimentoParaInput(r.data.nascimento));
+            if (r.data.cidade) {
+                const cidadeAssociado = String(r.data.cidade).trim();
+                const match = cidadesAtendimento.find(
+                    (c) => normalizeText(c.value) === normalizeText(cidadeAssociado)
+                );
+                setCidadeAtendimento(match?.value || "");
+            }
             setInfoLocal("Dados carregados. Complete manualmente os campos do contrato.");
+            return;
         }
+
+        // Se não encontrou no cadastro, mantém os campos liberados para preenchimento manual.
+        setInfoLocal(
+            "Associado não encontrado na base. Preencha manualmente nome, CPF e nascimento para gerar o termo."
+        );
     };
+
+    useEffect(() => {
+        async function carregarCidadesAtendimento() {
+            try {
+                const lista = await buscarCidadesResgate();
+                const opcoes = (lista || [])
+                    .map((c: CidadeResgateItem) => {
+                        const nome = String(c?.NM_CIDADE || "").trim();
+                        return { value: nome, label: nome };
+                    })
+                    .filter((c) => c.value.length > 0);
+
+                setCidadesAtendimento(opcoes);
+            } catch {
+                setCidadesAtendimento([]);
+            }
+        }
+
+        carregarCidadesAtendimento();
+    }, []);
+
+    useEffect(() => {
+        if (erroLocal || erro) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    }, [erroLocal, erro]);
 
     const processar = () => {
         setErroLocal("");
         setInfoLocal("");
 
         if (!proposta.trim()) {
-            setErroLocal("Preencha o número da proposta.");
+            failWithScroll("Preencha o número da proposta.");
             return;
         }
 
         if (!valorEmprestimoNum || valorEmprestimoNum <= 0) {
-            setErroLocal("Informe um valor de empréstimo válido.");
+            failWithScroll("Informe um valor de empréstimo válido.");
             return;
         }
 
         if (!parcelasNum || parcelasNum <= 0) {
-            setErroLocal("Informe a quantidade de parcelas.");
+            failWithScroll("Informe a quantidade de parcelas.");
             return;
         }
 
         if (!dataPrimeiraParcelaEmprestimo) {
-            setErroLocal("Informe a data da primeira parcela do empréstimo.");
+            failWithScroll("Informe a data da primeira parcela do empréstimo.");
             return;
         }
 
@@ -178,58 +251,63 @@ export function PrevisulForm() {
 
     const validarGeracao = () => {
         if (!nome.trim() || nome === "NOMECLIENTE") {
-            setErroLocal("Preencha o nome do associado.");
-            return false;
+            return failWithScroll("Preencha o nome do associado.");
         }
 
         if (!cpf.trim()) {
-            setErroLocal("Preencha o CPF do associado.");
-            return false;
+            return failWithScroll("Preencha o CPF do associado.");
+        }
+
+        if (!cpfTermo.trim() || cpfTermo === "CPFCLIENTE") {
+            return failWithScroll("Preencha o CPF do associado no termo.");
         }
 
         if (!nascimento) {
-            setErroLocal("Preencha a data de nascimento.");
-            return false;
+            return failWithScroll("Preencha a data de nascimento.");
+        }
+
+        if (!idadeTexto.trim()) {
+            return failWithScroll("Data de nascimento inválida para calcular a idade.");
         }
 
         if (!proposta.trim()) {
-            setErroLocal("Preencha o número da proposta.");
-            return false;
+            return failWithScroll("Preencha o número da proposta.");
         }
 
         if (!valorEmprestimo.trim()) {
-            setErroLocal("Preencha o valor do empréstimo.");
-            return false;
+            return failWithScroll("Preencha o valor do empréstimo.");
         }
 
         if (!totalParcelas.trim()) {
-            setErroLocal("Preencha o total de parcelas.");
-            return false;
+            return failWithScroll("Preencha o total de parcelas.");
         }
 
         if (!dataPrimeiraParcelaEmprestimo) {
-            setErroLocal("Preencha a data da primeira parcela do empréstimo.");
-            return false;
+            return failWithScroll("Preencha a data da primeira parcela do empréstimo.");
         }
 
         if (!valorMensalSeguro || !valorTotalSeguro) {
-            setErroLocal("Clique em Processar antes de gerar o PDF.");
-            return false;
+            return failWithScroll("Clique em Processar antes de gerar o PDF.");
         }
 
         if (mostrarCompetencia && (!dataPrimeiraParcelaSeguro || !dataUltimaParcelaSeguro)) {
-            setErroLocal("Preencha as datas do seguro.");
-            return false;
+            return failWithScroll("Preencha as datas do seguro.");
         }
 
         if (!cidadeAtendimento.trim()) {
-            setErroLocal("Preencha a cidade do atendimento.");
-            return false;
+            return failWithScroll("Preencha a cidade do atendimento.");
+        }
+
+        if (!cidadeSelecionadaValida) {
+            return failWithScroll("Cidade do atendimento inválida. Selecione uma opção da lista.");
         }
 
         if (!dataHoje.trim()) {
-            setErroLocal("Preencha a data do atendimento.");
-            return false;
+            return failWithScroll("Preencha a data do atendimento.");
+        }
+
+        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dataHoje.trim())) {
+            return failWithScroll("Data do atendimento inválida. Use o formato dd/mm/aaaa.");
         }
 
         return true;
@@ -309,7 +387,7 @@ export function PrevisulForm() {
                 </p>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
                         Nome do associado
@@ -318,6 +396,18 @@ export function PrevisulForm() {
                         value={nome}
                         onChange={(e) => setNome(e.target.value)}
                         className="w-full border px-3 py-2 rounded"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                        CPF no termo
+                    </label>
+                    <input
+                        value={cpfTermo === "CPFCLIENTE" ? formatCpfView(cpf) : cpfTermo}
+                        onChange={(e) => setCpfTermo(formatCpfView(e.target.value))}
+                        className="w-full border px-3 py-2 rounded"
+                        maxLength={14}
                     />
                 </div>
 
@@ -480,12 +570,18 @@ export function PrevisulForm() {
                     <label className="block text-xs font-medium text-gray-600 mb-1">
                         Cidade do atendimento
                     </label>
-                    <input
+                    <select
                         value={cidadeAtendimento}
                         onChange={(e) => setCidadeAtendimento(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
-                        placeholder="Cidade do atendimento"
-                    />
+                        className="w-full border px-3 py-2 rounded bg-white"
+                    >
+                        <option value="">Selecione</option>
+                        {cidadesAtendimento.map((cidade) => (
+                            <option key={cidade.value} value={cidade.value}>
+                                {cidade.label}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div>
@@ -501,20 +597,6 @@ export function PrevisulForm() {
                 </div>
             </div>
 
-            <div className="mt-6 border rounded p-4 bg-white">
-                <div className="space-y-5 text-sm text-gray-700">
-                    <div>
-                        <div className="border-b border-gray-400 w-full mb-2" />
-                        <p className="text-center">{nome || "Assinatura do Contratante"}</p>
-                    </div>
-
-                    <div>
-                        <div className="border-b border-gray-400 w-full mb-2" />
-                        <p className="text-center">Validação</p>
-                    </div>
-                </div>
-            </div>
-
             <div className="pt-5 border-t mt-6 flex items-center justify-end">
                 <button
                     onClick={gerar}
@@ -526,3 +608,4 @@ export function PrevisulForm() {
         </div>
     );
 }
+

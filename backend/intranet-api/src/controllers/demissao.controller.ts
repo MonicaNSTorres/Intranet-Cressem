@@ -59,6 +59,8 @@ export const demissaoController = {
           a.NM_CLIENTE AS NOME,
           a.NR_MATRICULA AS MATRICULA,
           a.NM_EMPRESA AS EMPRESA,
+          a.NM_CIDADE AS CIDADE,
+          a.NR_TELEFONE AS TELEFONE,
           a.SL_CONTA_CAPITAL AS SL_CONTA_CAPITAL
         FROM DBACRESSEM.ASSOCIADO_ANALITICO a
         WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ,'[^0-9]','') = :cpf

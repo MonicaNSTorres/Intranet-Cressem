@@ -1,6 +1,4 @@
 "use client";
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from "react";
 import { formatCpfView, monetizarDigitacao, onlyDigits } from "@/utils/br";
 import {
@@ -121,14 +119,23 @@ export function TermoGarantiaForm() {
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
 
+  function failWithScroll(message: string) {
+    setInfo("");
+    setErro(message);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return false;
+  }
+
   useEffect(() => {
     async function carregarCidades() {
       try {
         setLoadingCidades(true);
         const response = await listarCidadesTermoGarantia();
         setCidades(response || []);
-      } catch (e: any) {
-        setErro(e?.message || "Erro ao carregar cidades.");
+      } catch (e: unknown) {
+        const message =
+          e instanceof Error ? e.message : "Erro ao carregar cidades.";
+        failWithScroll(message);
       } finally {
         setLoadingCidades(false);
       }
@@ -151,12 +158,12 @@ export function TermoGarantiaForm() {
     const cpfLimpo = onlyDigits(cpf);
 
     if (!cpfLimpo) {
-      setErro("CPF não preenchido.");
+      failWithScroll("CPF não preenchido.");
       return;
     }
 
     if (!validarCPF(cpfLimpo)) {
-      setErro("Informe um CPF válido.");
+      failWithScroll("Informe um CPF válido.");
       return;
     }
 
@@ -211,7 +218,7 @@ export function TermoGarantiaForm() {
     const mensagem = validarCampos();
 
     if (mensagem) {
-      setErro(mensagem);
+      failWithScroll(mensagem);
       return;
     }
 
@@ -236,20 +243,6 @@ export function TermoGarantiaForm() {
   return (
     <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
       <SearchForm onSearch={handleBuscarAssociado}>
-        {(erro || info) && (
-          <div className="mb-6">
-            {erro ? (
-              <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {erro}
-              </div>
-            ) : (
-              <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                {info}
-              </div>
-            )}
-          </div>
-        )}
-
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">
@@ -272,6 +265,20 @@ export function TermoGarantiaForm() {
             <SearchButton loading={loadingBuscar} label="Pesquisar" />
           </div>
         </div>
+
+        {(erro || info) && (
+          <div className="mt-4">
+            {erro ? (
+              <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {erro}
+              </div>
+            ) : (
+              <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                {info}
+              </div>
+            )}
+          </div>
+        )}
       </SearchForm>
 
       <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-12">
@@ -390,7 +397,7 @@ export function TermoGarantiaForm() {
           />
         </div>
 
-        <div className="md:col-span-8">
+        <div className="md:col-span-4">
           <label className="mb-1 block text-xs font-medium text-gray-600">
             Cidade do atendimento
           </label>
@@ -562,19 +569,6 @@ export function TermoGarantiaForm() {
         </p>
       </div>
 
-      <div className="mt-10 text-center text-gray-800">
-        <p className="text-base">
-          <strong>{capitalizeWords(cidadeAtendimento) || "CIDADE"}</strong>,{" "}
-          <strong>{dataHojeBR || "DATADEHOJE"}</strong>
-        </p>
-      </div>
-
-      <div className="mt-16 text-center text-gray-800">
-        <p className="mx-auto w-full max-w-md border-t border-slate-500 pt-3">
-          {capitalizeWords(nome) || "NOMEASSOCIADOASSINATURA"}
-        </p>
-      </div>
-
       <div className="mt-6 flex items-center justify-end border-t pt-5">
         <button
           type="button"
@@ -587,3 +581,4 @@ export function TermoGarantiaForm() {
     </div>
   );
 }
+

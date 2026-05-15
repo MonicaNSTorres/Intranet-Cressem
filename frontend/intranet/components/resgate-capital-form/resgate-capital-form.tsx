@@ -1297,8 +1297,8 @@ export function ResgateCapitalForm() {
         </div>
       </div>
 
-      <div className="mt-6 border-t pt-5">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">
               Valor da 1ª parcela
@@ -1309,7 +1309,7 @@ export function ResgateCapitalForm() {
                 setValorPrimeiraParcela(monetizarDigitacao(e.target.value));
                 limparParcelas();
               }}
-              className="w-full rounded border px-3 py-2 text-right"
+              className="w-full border px-3 py-2 rounded text-right bg-white"
               placeholder="R$ 0,00"
             />
           </div>
@@ -1325,85 +1325,71 @@ export function ResgateCapitalForm() {
                 setDataPrimeiraParcela(e.target.value);
                 limparParcelas();
               }}
-              className="w-full rounded border px-3 py-2"
+              className="w-full border px-3 py-2 rounded bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Total devolução parcelada
+            </label>
+            <input
+              readOnly
+              value={fmtBRL(totalParcelado)}
+              className="w-full border px-3 py-2 rounded bg-gray-100 text-right"
             />
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-3">
+        <div className="mt-3 flex items-center gap-2">
           <button
             type="button"
             onClick={adicionarParcela}
-            className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 font-semibold text-white hover:bg-primary cursor-pointer"
+            className="inline-flex items-center gap-2 rounded bg-secondary px-3 py-2 text-sm font-medium text-white hover:bg-primary"
           >
-            <FaPlus />
+            <FaPlus size={12} />
             Adicionar parcela
           </button>
 
           <button
             type="button"
             onClick={removerParcela}
-            className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
           >
-            <FaTrash />
+            <FaTrash size={12} />
             Remover parcela
           </button>
         </div>
 
         {(parcelas.length > 0 || totalParcelado > 0) && (
-          <>
-            <div className="mt-4 overflow-x-auto rounded-xl border">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
+          <div className="mt-4 overflow-hidden rounded border border-slate-200 bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-100 text-slate-700">
+                <tr>
+                  <th className="px-3 py-2 text-left">Parcela</th>
+                  <th className="px-3 py-2 text-left">Data</th>
+                  <th className="px-3 py-2 text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parcelas.length === 0 ? (
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Parcela
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Data
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Valor
-                    </th>
+                    <td colSpan={3} className="px-3 py-3 text-center text-slate-500">
+                      Nenhuma parcela adicionada.
+                    </td>
                   </tr>
-                </thead>
-
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {parcelas.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={3}
-                        className="px-4 py-6 text-center text-slate-500"
-                      >
-                        Nenhuma parcela adicionada.
-                      </td>
+                ) : (
+                  parcelas.map((item) => (
+                    <tr key={item.id} className="border-t border-slate-100">
+                      <td className="px-3 py-2">{`Parcela ${item.numero}`}</td>
+                      <td className="px-3 py-2">{formatDateBR(item.data)}</td>
+                      <td className="px-3 py-2 text-right">{item.valor}</td>
                     </tr>
-                  ) : (
-                    parcelas.map((item) => (
-                      <tr key={item.id}>
-                        <td className="px-4 py-3">{`Parcela ${item.numero}`}</td>
-                        <td className="px-4 py-3">{formatDateBR(item.data)}</td>
-                        <td className="px-4 py-3">{item.valor}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr]">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Total da devolução parcelada
-                </label>
-                <input
-                  readOnly
-                  value={fmtBRL(totalParcelado)}
-                  className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-                />
-              </div>
-            </div>
-          </>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

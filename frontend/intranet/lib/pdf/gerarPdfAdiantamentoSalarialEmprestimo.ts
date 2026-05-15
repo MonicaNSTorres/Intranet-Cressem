@@ -32,12 +32,14 @@ export async function gerarPdfAdiantamentoSalarialEmprestimo(o: PdfOpts) {
     }
   };
 
-  const addLogo = async (logoUrl: string, width = 120, ratio = 0.5) => {
+  const addLogo = async (logoUrl: string, maxW = 120, maxH = 60) => {
     try {
-      const dataUrl = await toDataURL(logoUrl);
-      const h = width * ratio;
+      const logo = await loadImageDataURL(logoUrl);
+      const scale = Math.min(maxW / logo.width, maxH / logo.height);
+      const w = logo.width * scale;
+      const h = logo.height * scale;
       ensureSpace(h + 20);
-      doc.addImage(dataUrl, "PNG", 30, y - 8, width, h);
+      doc.addImage(logo.dataUrl, "PNG", 30, y - 8, w, h);
       y = y - 8 + h + 18;
     } catch {
       y += 24;
@@ -48,7 +50,7 @@ export async function gerarPdfAdiantamentoSalarialEmprestimo(o: PdfOpts) {
   doc.setFontSize(11);
 
   if (o.tipoFormulario === "RETORNO") {
-    await addLogo("/sicoob-cressem-logo.png", 120, 0.5);
+    await addLogo("/marca_agua3.png", 120, 54);
 
     doc.text(`São José dos Campos, ${o.dataHoje}.`, margin, y);
     y += 26;
@@ -83,7 +85,7 @@ export async function gerarPdfAdiantamentoSalarialEmprestimo(o: PdfOpts) {
   }
 
   if (o.empresaCancelamento === "IPSM") {
-    await addLogo("/logoipsm.png", 110, 0.55);
+    await addLogo("/logoipsm.png", 170, 80);
 
     doc.text(`São José dos Campos, ${o.dataHoje}.`, margin, y);
     y += 28;
@@ -113,7 +115,7 @@ export async function gerarPdfAdiantamentoSalarialEmprestimo(o: PdfOpts) {
   }
 
   if (o.empresaCancelamento === "URBAM") {
-    await addLogo("/logourban.png", 150, 0.45);
+    await addLogo("/logourban.png", 170, 85);
 
     doc.setFont("helvetica", "bold");
     doc.text("CANCELAMENTO DE ADIANTAMENTO SALARIAL", pageW / 2, y, {
@@ -153,7 +155,7 @@ export async function gerarPdfAdiantamentoSalarialEmprestimo(o: PdfOpts) {
   }
 
   if (o.empresaCancelamento === "PMSJC") {
-    await addLogo("/logopmsjc.png", 100, 0.8);
+    await addLogo("/logopmsjc.png", 120, 95);
 
     doc.text("DEPARTAMENTO DE RECURSOS HUMANOS", pageW / 2, y, {
       align: "center",
@@ -246,4 +248,45 @@ async function toDataURL(url: string) {
     fr.onloadend = () => resolve(fr.result as string);
     fr.readAsDataURL(b);
   });
+}
+
+async function loadImageDataURL(url: string) {
+  const rawDataUrl = await toDataURL(url);
+  const dataUrl = await normalizeImageForPdf(rawDataUrl);
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+
+  return {
+    dataUrl,
+    width: img.width,
+    height: img.height,
+  };
+}
+
+async function normalizeImageForPdf(dataUrl: string) {
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) return dataUrl;
+
+  // Flatten alpha onto white to avoid renderer artifacts in some PNGs inside jsPDF.
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0);
+
+  return canvas.toDataURL("image/png");
 }

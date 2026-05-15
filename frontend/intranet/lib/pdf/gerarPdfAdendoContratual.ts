@@ -27,12 +27,15 @@ export async function gerarPdfAdendoContratual(o: PdfOpts) {
 
   try {
     const logoUrl = "/sicoob-cressem-logo.png";
-    const dataUrl = await toDataURL(logoUrl);
-    const w = 120;
-    const h = w * (500 / 1000);
+    const logo = await loadImageDataURL(logoUrl);
+    const maxW = 120;
+    const maxH = 44;
+    const scale = Math.min(maxW / logo.width, maxH / logo.height);
+    const w = logo.width * scale;
+    const h = logo.height * scale;
 
     ensureSpace(h + 40);
-    doc.addImage(dataUrl, "PNG", 30, y - 8, w, h);
+    doc.addImage(logo.dataUrl, "PNG", 30, y - 8, w, h);
     y = y - 8 + h + 22;
   } catch {
     ensureSpace(36);
@@ -125,4 +128,21 @@ async function toDataURL(url: string) {
     fr.onloadend = () => resolve(fr.result as string);
     fr.readAsDataURL(b);
   });
+}
+
+async function loadImageDataURL(url: string) {
+  const dataUrl = await toDataURL(url);
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+
+  return {
+    dataUrl,
+    width: img.width,
+    height: img.height,
+  };
 }

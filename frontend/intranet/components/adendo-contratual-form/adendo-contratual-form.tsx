@@ -1,6 +1,5 @@
-"use client";
+﻿"use client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { formatCpfView } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
@@ -25,15 +24,17 @@ export function AdendoContratualForm() {
 
   const [cpfConjugue, setCpfConjugue] = useState("");
   const [nomeConjugue, setNomeConjugue] = useState("");
+  const [erroLocal, setErroLocal] = useState("");
 
   const associadoHook = useAssociadoPorCpf();
   const conjugueHook = useAssociadoPorCpf();
 
-  const erro = associadoHook.erro || conjugueHook.erro;
-  const info = associadoHook.info || conjugueHook.info;
+  const erro = erroLocal || associadoHook.erro || conjugueHook.erro;
+  const info = erro ? "" : associadoHook.info || conjugueHook.info;
   const loading = associadoHook.loading || conjugueHook.loading;
 
   const onBuscarAssociado = async () => {
+    setErroLocal("");
     const r = await associadoHook.buscar(cpfAssociado);
 
     if (r.found) {
@@ -43,6 +44,7 @@ export function AdendoContratualForm() {
   };
 
   const onBuscarConjugue = async () => {
+    setErroLocal("");
     const r = await conjugueHook.buscar(cpfConjugue);
 
     if (r.found) {
@@ -50,7 +52,24 @@ export function AdendoContratualForm() {
     }
   };
 
+  const validarCamposGeracao = () => {
+    if (!cpfAssociado.trim()) return "Preencha o CPF do associado.";
+    if (!nomeAssociado.trim()) return "Preencha o nome do associado.";
+    if (!empresa.trim()) return "Preencha a empresa.";
+    if (!ccb.trim()) return "Preencha o número da CCB.";
+    if (!cpfConjugue.trim()) return "Preencha o CPF do cônjuge.";
+    if (!nomeConjugue.trim()) return "Preencha o nome do cônjuge.";
+    return "";
+  };
+
   const gerar = async () => {
+    const erroValidacao = validarCamposGeracao();
+    if (erroValidacao) {
+      setErroLocal(erroValidacao);
+      return;
+    }
+
+    setErroLocal("");
     await gerarPdfAdendoContratual({
       dataHoje: hojeBR(),
       ccb,
@@ -70,10 +89,13 @@ export function AdendoContratualForm() {
             CPF do associado
           </label>
 
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
             <SearchInput
               value={formatCpfView(cpfAssociado)}
-              onChange={(e) => setCpfAssociado(e.target.value)}
+              onChange={(e) => {
+                setCpfAssociado(e.target.value);
+                setErroLocal("");
+              }}
               placeholder="CPF do associado"
               className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
               inputMode="numeric"
@@ -81,6 +103,14 @@ export function AdendoContratualForm() {
             />
 
             <SearchButton loading={loading} label="Pesquisar" />
+
+            <button
+              type="button"
+              onClick={gerar}
+              className="inline-flex items-center justify-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow whitespace-nowrap"
+            >
+              Gerar PDF
+            </button>
           </div>
 
           {erro && (
@@ -104,7 +134,10 @@ export function AdendoContratualForm() {
           </label>
           <input
             value={nomeAssociado}
-            onChange={(e) => setNomeAssociado(e.target.value)}
+            onChange={(e) => {
+              setNomeAssociado(e.target.value);
+              setErroLocal("");
+            }}
             className="w-full border px-3 py-2 rounded"
           />
         </div>
@@ -115,7 +148,10 @@ export function AdendoContratualForm() {
           </label>
           <input
             value={empresa}
-            onChange={(e) => setEmpresa(e.target.value)}
+            onChange={(e) => {
+              setEmpresa(e.target.value);
+              setErroLocal("");
+            }}
             className="w-full border px-3 py-2 rounded"
           />
         </div>
@@ -126,58 +162,56 @@ export function AdendoContratualForm() {
           </label>
           <input
             value={ccb}
-            onChange={(e) => setCcb(e.target.value)}
+            onChange={(e) => {
+              setCcb(e.target.value);
+              setErroLocal("");
+            }}
             className="w-full border px-3 py-2 rounded"
             placeholder="Digite o número da CCB"
           />
         </div>
       </div>
 
-      <div className="mt-6">
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          CPF do cônjuge
-        </label>
-
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-[0.8fr_auto_1.2fr] gap-3 items-end">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            CPF do cônjuge
+          </label>
           <input
             value={formatCpfView(cpfConjugue)}
-            onChange={(e) => setCpfConjugue(e.target.value)}
+            onChange={(e) => {
+              setCpfConjugue(e.target.value);
+              setErroLocal("");
+            }}
             placeholder="CPF do cônjuge"
-            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
             inputMode="numeric"
             maxLength={14}
           />
-
-          <button
-            onClick={onBuscarConjugue}
-            disabled={loading}
-            className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md"
-          >
-            {conjugueHook.loading ? "Buscando..." : "Pesquisar"}
-          </button>
         </div>
-      </div>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-1 gap-3">
+        <button
+          type="button"
+          onClick={onBuscarConjugue}
+          disabled={loading}
+          className="bg-secondary text-white font-semibold px-6 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md h-[42px]"
+        >
+          {conjugueHook.loading ? "Buscando..." : "Pesquisar"}
+        </button>
+
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
             Nome do cônjuge
           </label>
           <input
             value={nomeConjugue}
-            onChange={(e) => setNomeConjugue(e.target.value)}
+            onChange={(e) => {
+              setNomeConjugue(e.target.value);
+              setErroLocal("");
+            }}
             className="w-full border px-3 py-2 rounded"
           />
         </div>
-      </div>
-
-      <div className="pt-5 border-t mt-6 flex items-center justify-end">
-        <button
-          onClick={gerar}
-          className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
-        >
-          Gerar PDF
-        </button>
       </div>
     </div>
   );

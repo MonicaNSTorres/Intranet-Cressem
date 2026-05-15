@@ -4,6 +4,8 @@ export type DemissaoAssociadoResponse = {
   NOME?: string;
   MATRICULA?: string;
   EMPRESA?: string;
+  CIDADE?: string;
+  TELEFONE?: string;
   CPF?: string;
   SL_CONTA_CAPITAL?: number;
 };
