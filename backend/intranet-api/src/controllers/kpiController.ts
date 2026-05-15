@@ -45,6 +45,7 @@ export const kpiController = {
           ON FS.ID_SETOR = SC.ID_SETOR
         WHERE TO_CHAR(FS.DT_NASCIMENTO,'DDMM') = TO_CHAR(SYSDATE,'DDMM')
         AND FS.SN_ATIVO = 1
+        AND UPPER(TRIM(NVL(FS.NM_FUNCIONARIO, ' '))) NOT IN ('SALA TI', 'EXTERNO', 'MONICA TESTE')
         ORDER BY FS.NM_FUNCIONARIO
       `;
 
@@ -101,6 +102,7 @@ export const kpiController = {
         ON FS.ID_SETOR = SC.ID_SETOR
       WHERE TO_NUMBER(TO_CHAR(FS.DT_NASCIMENTO, 'MM')) = :mes
         AND FS.SN_ATIVO = 1
+        AND UPPER(TRIM(NVL(FS.NM_FUNCIONARIO, ' '))) NOT IN ('SALA TI', 'EXTERNO', 'MONICA TESTE')
       ORDER BY DIA, NOME
     `;
 

@@ -55,6 +55,19 @@ type QuickAccessItem = {
     badge?: string;
 };
 
+function normalizeSearch(value: string) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
+
+function isUsuarioOculto(value?: string) {
+    const nome = normalizeSearch(value || "");
+    return nome === "externo" || nome === "sala ti" || nome === "monica teste";
+}
+
 export default function HomePage() {
     const [aniversariantesHoje, setAniversariantesHoje] = useState<Aniversariante[]>([]);
     const [popupHome, setPopupHome] = useState<PopupAviso | null>(null);
@@ -74,11 +87,17 @@ export default function HomePage() {
                 const lista = Array.isArray(data?.data) ? data.data : [];
 
                 setAniversariantesHoje(
-                    lista.map((p: any) => ({
-                        nome: p.nome ?? p.NOME ?? "",
-                        setor: p.setor ?? p.SETOR ?? "",
-                        ramal: p.ramal ?? p.RAMAL ?? "",
-                    }))
+                    lista
+                        .map((p: any) => ({
+                            nome: p.nome ?? p.NOME ?? "",
+                            setor: p.setor ?? p.SETOR ?? "",
+                            ramal: p.ramal ?? p.RAMAL ?? "",
+                        }))
+                        .filter(
+                            (p: Aniversariante) =>
+                                !isUsuarioOculto(p.nome) &&
+                                !isUsuarioOculto(p.setor)
+                        )
                 );
             } catch (err) {
                 console.error("Erro ao carregar aniversariantes", err);

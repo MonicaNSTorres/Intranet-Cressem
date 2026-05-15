@@ -28,6 +28,18 @@ function normalizeField(value: string | number | null | undefined) {
     return String(value).trim();
 }
 
+function normalizeKey(value: string | number | null | undefined) {
+    return normalizeField(value)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
+
+function isUsuarioOculto(value: string | number | null | undefined) {
+    const v = normalizeKey(value);
+    return v === "externo" || v === "sala ti" || v === "monica teste";
+}
+
 function isMissing(value: string | number | null | undefined) {
     const v = normalizeField(value).toLowerCase();
 
@@ -77,6 +89,10 @@ export default function RamaisPage() {
                 const dataRows = Array.isArray(data.data) ? data.data : [];
 
                 const filtrados = dataRows.filter((r) => {
+                    if (isUsuarioOculto(r.NOME) || isUsuarioOculto(r.DEPARTAMENTO)) {
+                        return false;
+                    }
+
                     const semRamal = isMissing(r.RAMAL);
                     const semLogin = isMissing(r.LOGIN);
 

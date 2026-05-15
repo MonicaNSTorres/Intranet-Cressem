@@ -25,6 +25,11 @@ function normalizeSearch(value: string) {
         .trim();
 }
 
+function isUsuarioOculto(value?: string) {
+    const nome = normalizeSearch(value || "");
+    return nome === "externo" || nome === "sala ti" || nome === "monica teste";
+}
+
 function pad2(n: number) {
     return String(n).padStart(2, "0");
 }
@@ -81,7 +86,12 @@ export default function AniversariantesPage() {
 
             const normalized = lista
                 .map(normalizeItem)
-                .filter((x: Aniversariante) => x.nome?.trim());
+                .filter(
+                    (x: Aniversariante) =>
+                        x.nome?.trim() &&
+                        !isUsuarioOculto(x.nome) &&
+                        !isUsuarioOculto(x.setor)
+                );
 
             // ordena por dia (se existir), senão por nome
             normalized.sort((a: any, b: any) => {
@@ -115,7 +125,12 @@ export default function AniversariantesPage() {
 
             const normalized = lista
                 .map(normalizeItem)
-                .filter((x: Aniversariante) => x.nome?.trim());
+                .filter(
+                    (x: Aniversariante) =>
+                        x.nome?.trim() &&
+                        !isUsuarioOculto(x.nome) &&
+                        !isUsuarioOculto(x.setor)
+                );
 
             normalized.sort((a: any, b: any) => {
                 const ad = a.dia ?? 999;
