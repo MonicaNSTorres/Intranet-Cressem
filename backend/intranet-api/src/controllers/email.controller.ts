@@ -291,7 +291,7 @@ export const emailController = {
           "Nova Solicitação de Reserva do Auditório Sede Recebida";
 
         await sendEmail(
-          ["marcelo.bueno@sicoob.com.br"],
+          ["informatica.cressem@sicoob.com.br", "luiz.gerhard@sicoob.com.br", "fabio.sprado@sicoob.com.br"],
           subjectAuditorio,
           bodyAuditorio
         );

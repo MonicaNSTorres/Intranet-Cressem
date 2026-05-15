@@ -66,6 +66,33 @@ function formatarDataHoraBR(valor?: string | Date | null) {
   return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 }
 
+function normalizarTextoComparacao(valor: unknown) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
+function temMetaAcimaDeUm(item: RelatorioFuncionarioItem) {
+  const ignorar = ["perc_meta", "porcentagem", "percentual"];
+
+  for (const [chave, valor] of Object.entries(item || {})) {
+    const chaveNormalizada = normalizarTextoComparacao(chave);
+    const ehCampoMeta = chaveNormalizada.startsWith("META");
+    const ehCampoIgnorado = ignorar.some((termo) =>
+      chaveNormalizada.includes(normalizarTextoComparacao(termo))
+    );
+
+    if (!ehCampoMeta || ehCampoIgnorado) continue;
+
+    const numero = parseNumeroBR(valor);
+    if (!Number.isNaN(numero) && numero > 1) return true;
+  }
+
+  return false;
+}
+
 export function formatarInteiroBR(valor: number) {
   return Math.round(valor).toLocaleString("pt-BR");
 }
@@ -497,6 +524,23 @@ export function ProducaoMetaFuncionarioForm() {
     if (!tema) return null;
     return getConfigAjustadaPorPeriodoFuncionario(tema, modoPeriodo);
   }, [tema, modoPeriodo]);
+
+  const dadosFiltrados = useMemo(() => {
+    const alvo = "COLABORADOR SANTA BRANCA";
+
+    return (dados || []).filter((item) => {
+      const nome =
+        item?.nm_funcionario ??
+        (item as Record<string, unknown>)?.NM_FUNCIONARIO ??
+        (item as Record<string, unknown>)?.funcionario ??
+        (item as Record<string, unknown>)?.FUNCIONARIO ??
+        "";
+
+      if (normalizarTextoComparacao(nome) === alvo) return false;
+
+      return temMetaAcimaDeUm(item);
+    });
+  }, [dados]);
 
   const temaLabel = useMemo(() => {
     return TIPOS_RELATORIO_FUNCIONARIO_OPTIONS.flatMap((grupo) => grupo.options).find(
@@ -956,7 +1000,7 @@ export function ProducaoMetaFuncionarioForm() {
             <div className="flex min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 text-center text-sm text-gray-500">
               Selecione um tipo de relatório para iniciar a consulta.
             </div>
-          ) : !dados.length ? (
+          ) : !dadosFiltrados.length ? (
             <div className="flex min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 text-center text-sm text-gray-500">
               Sem dados para exibir.
             </div>
@@ -979,7 +1023,7 @@ export function ProducaoMetaFuncionarioForm() {
                   </thead>
 
                   <tbody>
-                    {dados.map((item, rowIndex) => (
+                    {dadosFiltrados.map((item, rowIndex) => (
                       <tr
                         key={`${item?.nm_funcionario ?? rowIndex}-${rowIndex}`}
                         className={`transition ${rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/50"
