@@ -2504,154 +2504,156 @@ export function getSql(tema: Tema) {
   `;
     case "emprestimo_bancoob":
       return `
-    WITH
-    PARAMS AS (
-      SELECT
-        TO_DATE(:dt_inicio, 'DD/MM/YYYY') AS DT_INI_SEMANA,
-        TO_DATE(:dt_fim, 'DD/MM/YYYY') AS DT_FIM_SEMANA
-      FROM DUAL
-    ),
+      WITH
+      PARAMS AS (
+        SELECT
+          TO_DATE(:dt_inicio, 'DD/MM/YYYY') AS DT_INI_SEMANA,
+          TO_DATE(:dt_fim, 'DD/MM/YYYY') AS DT_FIM_SEMANA
+        FROM DUAL
+      ),
 
-    CCBD_BASE_ALL AS (
-      SELECT
-        NR_PA_LOCAL_NEGOCIO,
-        TRUNC(CAST(DT_LIBERACAO_CREDITO AS DATE)) AS DT_MOV,
-        NVL(VL_CONTRATO, 0) AS VL_CONTRATO_NUM
-      FROM DBACRESSEM.CARTAO_CREDITO_BANCOOB_DIARIO
-      WHERE DT_LIBERACAO_CREDITO IS NOT NULL
-        AND DS_SUBMODALIDADE_BACEN = 'CRÉDITO PESSOAL - COM CONSIGNAÇÃO EM FOLHA DE PAGAM.'
-        AND NVL(NR_PA_LOCAL_NEGOCIO, -1) <> 4317
+      CCBD_BASE_ALL AS (
+        SELECT
+          NR_PA_LOCAL_NEGOCIO,
+          TRUNC(CAST(DT_LIBERACAO_CREDITO AS DATE)) AS DT_MOV,
+          NVL(VL_CONTRATO, 0) AS VL_CONTRATO_NUM
+        FROM DBACRESSEM.CARTAO_CREDITO_BANCOOB_DIARIO_NORMALIZADO
+        WHERE DT_LIBERACAO_CREDITO IS NOT NULL
+          AND DS_SUBMODALIDADE_BACEN = 'CRÉDITO PESSOAL - COM CONSIGNAÇÃO EM FOLHA DE PAGAM.'
+          AND NVL(NR_PA_LOCAL_NEGOCIO, -1) <> 4317
 
-      UNION ALL
+        UNION ALL
 
-      SELECT
-        4317 AS NR_PA_LOCAL_NEGOCIO,
-        TRUNC(CAST(DT_LIBERACAO_CREDITO AS DATE)) AS DT_MOV,
-        NVL(VL_CONTRATO, 0) AS VL_CONTRATO_NUM
-      FROM DBACRESSEM.CARTAO_CREDITO_BANCOOB_DIARIO
-      WHERE DT_LIBERACAO_CREDITO IS NOT NULL
-        AND DS_SUBMODALIDADE_BACEN = 'CRÉDITO PESSOAL - COM CONSIGNAÇÃO EM FOLHA DE PAGAM.'
-        AND REGEXP_LIKE(TRIM(NR_COOPERATIVA_LOCAL_NEGOCIO), '^\\d+$')
-        AND TO_NUMBER(TRIM(NR_COOPERATIVA_LOCAL_NEGOCIO)) = 4317
-    ),
+        SELECT
+          4317 AS NR_PA_LOCAL_NEGOCIO,
+          TRUNC(CAST(DT_LIBERACAO_CREDITO AS DATE)) AS DT_MOV,
+          NVL(VL_CONTRATO, 0) AS VL_CONTRATO_NUM
+        FROM DBACRESSEM.CARTAO_CREDITO_BANCOOB_DIARIO_NORMALIZADO
+        WHERE DT_LIBERACAO_CREDITO IS NOT NULL
+          AND DS_SUBMODALIDADE_BACEN = 'CRÉDITO PESSOAL - COM CONSIGNAÇÃO EM FOLHA DE PAGAM.'
+          AND (
+            NVL(NR_PA_LOCAL_NEGOCIO, -1) = 4317
+            OR REGEXP_REPLACE(TRIM(NVL(NR_COOPERATIVA_LOCAL_NEGOCIO, '')), '[^0-9]', '') = '4317'
+          )
+      ),
 
-    CCBD_BASE AS (
-      SELECT
-        B.*
-      FROM CCBD_BASE_ALL B
-      CROSS JOIN PARAMS PR
-      WHERE
-        (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-        OR
-        (B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                     AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31'))
-    ),
-
-    CCBD_ANO AS (
-      SELECT
-        B.NR_PA_LOCAL_NEGOCIO AS NR_PA,
-        EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
-        SUM(B.VL_CONTRATO_NUM) AS PRODUCAO_ANO
-      FROM CCBD_BASE_ALL B
-      CROSS JOIN PARAMS PR
-      WHERE
-        (
+      CCBD_BASE AS (
+        SELECT
+          B.*
+        FROM CCBD_BASE_ALL B
+        CROSS JOIN PARAMS PR
+        WHERE
           (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-        )
-        OR
-        (
-          (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
-          AND B.DT_MOV BETWEEN TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-                          AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
-        )
-      GROUP BY
-        B.NR_PA_LOCAL_NEGOCIO,
-        EXTRACT(YEAR FROM B.DT_MOV)
-    ),
+          OR
+          (B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+                      AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31'))
+      ),
 
-    CCBD_SEMANAL AS (
+      CCBD_ANO AS (
+        SELECT
+          B.NR_PA_LOCAL_NEGOCIO AS NR_PA,
+          EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
+          SUM(B.VL_CONTRATO_NUM) AS PRODUCAO_ANO
+        FROM CCBD_BASE_ALL B
+        CROSS JOIN PARAMS PR
+        WHERE
+          (
+            (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
+          )
+          OR
+          (
+            (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
+            AND B.DT_MOV BETWEEN TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
+                            AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+          )
+        GROUP BY
+          B.NR_PA_LOCAL_NEGOCIO,
+          EXTRACT(YEAR FROM B.DT_MOV)
+      ),
+
+      CCBD_SEMANAL AS (
+        SELECT
+          B.NR_PA_LOCAL_NEGOCIO AS NR_PA,
+          EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
+          SUM(B.VL_CONTRATO_NUM) AS PRODUCAO_SEMANAL
+        FROM CCBD_BASE_ALL B
+        CROSS JOIN PARAMS PR
+        WHERE
+          (
+            (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
+            AND B.DT_MOV BETWEEN TRUNC(SYSDATE,'IW') AND (TRUNC(SYSDATE,'IW') + 6)
+          )
+          OR
+          (
+            (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
+            AND B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+                            AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+          )
+        GROUP BY
+          B.NR_PA_LOCAL_NEGOCIO,
+          EXTRACT(YEAR FROM B.DT_MOV)
+      ),
+
+      META AS (
+        SELECT
+          NR_PA,
+          TO_NUMBER(DT_ANO_META) AS ANO,
+          QTD_META AS META_ANO
+        FROM DBACRESSEM.META_TOTAL_NOVA
+        WHERE UPPER(NM_PRODUTO) IN ('EMPRÉSTIMO CONSIGNADO - CCS')
+      )
+
       SELECT
-        B.NR_PA_LOCAL_NEGOCIO AS NR_PA,
-        EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
-        SUM(B.VL_CONTRATO_NUM) AS PRODUCAO_SEMANAL
-      FROM CCBD_BASE_ALL B
-      CROSS JOIN PARAMS PR
-      WHERE
-        (
-          (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-          AND B.DT_MOV BETWEEN TRUNC(SYSDATE,'IW') AND (TRUNC(SYSDATE,'IW') + 6)
-        )
-        OR
-        (
-          (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
-          AND B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                          AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
-        )
-      GROUP BY
-        B.NR_PA_LOCAL_NEGOCIO,
-        EXTRACT(YEAR FROM B.DT_MOV)
-    ),
+        P.NR_PA AS "numero_pa",
+        P.NM_FANTANSIA AS "nome_pa",
 
-    META AS (
-      SELECT
-        NR_PA,
-        TO_NUMBER(DT_ANO_META) AS ANO,
-        QTD_META AS META_ANO
-      FROM DBACRESSEM.META_TOTAL_NOVA
-      WHERE UPPER(NM_PRODUTO) IN ('EMPRÉSTIMO CONSIGNADO - CCS')
-    )
+        NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-    SELECT
-      P.NR_PA AS "numero_pa",
-      P.NM_FANTANSIA AS "nome_pa",
+        ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
-      NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
+        CASE
+          WHEN ROUND((M.META_ANO / 12) / 4, 2) > 0
+            THEN ROUND((NVL(SW.PRODUCAO_SEMANAL,0) / ROUND((M.META_ANO / 12) / 4, 2)) * 100, 2)
+          ELSE 0
+        END AS "porcentagem_semanal",
 
-      ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
+        (NVL(SW.PRODUCAO_SEMANAL,0) - ROUND((M.META_ANO / 12) / 4, 2)) AS "gap_semanal",
 
-      CASE
-        WHEN ROUND((M.META_ANO / 12) / 4, 2) > 0
-          THEN ROUND((NVL(SW.PRODUCAO_SEMANAL,0) / ROUND((M.META_ANO / 12) / 4, 2)) * 100, 2)
-        ELSE 0
-      END AS "porcentagem_semanal",
+        NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
-      (NVL(SW.PRODUCAO_SEMANAL,0) - ROUND((M.META_ANO / 12) / 4, 2)) AS "gap_semanal",
+        NVL(M.META_ANO, 0) AS "meta_2026",
 
-      NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
+        (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
 
-      NVL(M.META_ANO, 0) AS "meta_2026",
+        CASE
+          WHEN (NVL(M.META_ANO, 0) / 12) > 0
+            THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+          ELSE 0
+        END AS "perc_meta_realizada_mensal",
 
-      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
+        (NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
 
-      CASE
-        WHEN (NVL(M.META_ANO, 0) / 12) > 0
-          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
-        ELSE 0
-      END AS "perc_meta_realizada_mensal",
+        CASE
+          WHEN M.META_ANO > 0
+            THEN ROUND((NVL(AY.PRODUCAO_ANO,0) / M.META_ANO) * 100, 2)
+          ELSE 0
+        END AS "perc_meta_realizada",
 
-      (NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
+        (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO) AS "falta_para_meta"
 
-      CASE
-        WHEN M.META_ANO > 0
-          THEN ROUND((NVL(AY.PRODUCAO_ANO,0) / M.META_ANO) * 100, 2)
-        ELSE 0
-      END AS "perc_meta_realizada",
+      FROM META M
+      JOIN DBACRESSEM.PA P
+        ON P.NR_PA = M.NR_PA
 
-      (NVL(AY.PRODUCAO_ANO,0) - M.META_ANO) AS "falta_para_meta"
+      LEFT JOIN CCBD_ANO AY
+        ON AY.NR_PA = M.NR_PA
+      AND AY.ANO   = M.ANO
 
-    FROM META M
-    JOIN DBACRESSEM.PA P
-      ON P.NR_PA = M.NR_PA
+      LEFT JOIN CCBD_SEMANAL SW
+        ON SW.NR_PA = M.NR_PA
+      AND SW.ANO   = M.ANO
 
-    LEFT JOIN CCBD_ANO AY
-      ON AY.NR_PA = M.NR_PA
-     AND AY.ANO   = M.ANO
-
-    LEFT JOIN CCBD_SEMANAL SW
-      ON SW.NR_PA = M.NR_PA
-     AND SW.ANO   = M.ANO
-
-    ORDER BY P.NR_PA
+      ORDER BY P.NR_PA
   `;
     case "consorcio":
       return `
