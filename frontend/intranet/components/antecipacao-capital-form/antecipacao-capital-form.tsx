@@ -181,6 +181,30 @@ export function AntecipacaoCapitalForm() {
         }
     }
 
+    const formularioValido = useMemo(() => {
+        const cpfValido = cpfLimpo.length === 11;
+
+        if (!cpfValido) return false;
+        if (!form.nome.trim()) return false;
+        if (!form.integralizacao.trim()) return false;
+        if (!form.taxa.trim()) return false;
+        if (!form.cidade.trim()) return false;
+
+        const valorIntegralizacao = moedaParaNumero(form.integralizacao);
+        const valorTaxa = moedaParaNumero(form.taxa);
+
+        if (valorIntegralizacao <= 0) return false;
+        if (valorTaxa < 0) return false;
+
+        return true;
+    }, [
+        cpfLimpo,
+        form.nome,
+        form.integralizacao,
+        form.taxa,
+        form.cidade,
+    ]);
+
     function handleGerarPdf() {
         if (!validarCampos()) return;
 
@@ -331,7 +355,12 @@ export function AntecipacaoCapitalForm() {
                         <button
                             type="button"
                             onClick={handleGerarPdf}
-                            className="inline-flex items-center gap-2 rounded-lg bg-secondary px-6 py-2 font-semibold text-white shadow transition hover:bg-primary"
+                            disabled={!formularioValido}
+                            className={`inline-flex items-center gap-2 rounded-lg px-6 py-2 font-semibold text-white shadow transition
+        ${formularioValido
+                                    ? "bg-secondary hover:bg-primary cursor-pointer"
+                                    : "bg-gray-300 cursor-not-allowed"
+                                }`}
                         >
                             <FaFilePdf />
                             Gerar PDF

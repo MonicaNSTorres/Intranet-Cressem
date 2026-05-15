@@ -210,6 +210,41 @@ export function FaturamentoFormPJ() {
     );
   };
 
+  const formularioValido = useMemo(() => {
+    if (!razao.trim()) return false;
+    if (!cnpj.trim()) return false;
+
+    if (qtdMeses <= 0) return false;
+    if (total <= 0) return false;
+
+    if (percentualFormas !== 100) return false;
+    if (percentualMeios !== 100) return false;
+
+    if (!municipioUF.trim()) return false;
+    if (!data.trim()) return false;
+
+    if (!contNome.trim()) return false;
+    if (!contCPF.trim()) return false;
+    if (!contCRC.trim()) return false;
+
+    if (!pjVisitada) return false;
+
+    return true;
+  }, [
+    razao,
+    cnpj,
+    qtdMeses,
+    total,
+    percentualFormas,
+    percentualMeios,
+    municipioUF,
+    data,
+    contNome,
+    contCPF,
+    contCRC,
+    pjVisitada,
+  ]);
+
   const gerar = async () => {
     await gerarPdfFaturamentoPJ({
       razaoSocial: razao,
@@ -464,9 +499,8 @@ export function FaturamentoFormPJ() {
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-gray-600">Total informado</span>
               <span
-                className={`text-sm font-semibold ${
-                  percentualFormas === 100 ? "text-emerald-700" : "text-amber-700"
-                }`}
+                className={`text-sm font-semibold ${percentualFormas === 100 ? "text-emerald-700" : "text-amber-700"
+                  }`}
               >
                 {percentualFormas}%
               </span>
@@ -501,9 +535,8 @@ export function FaturamentoFormPJ() {
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-gray-600">Total informado</span>
               <span
-                className={`text-sm font-semibold ${
-                  percentualMeios === 100 ? "text-emerald-700" : "text-amber-700"
-                }`}
+                className={`text-sm font-semibold ${percentualMeios === 100 ? "text-emerald-700" : "text-amber-700"
+                  }`}
               >
                 {percentualMeios}%
               </span>
@@ -616,8 +649,14 @@ export function FaturamentoFormPJ() {
           </div>
 
           <button
+            type="button"
             onClick={gerar}
-            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-secondary px-6 py-3 text-sm font-semibold text-white shadow transition hover:bg-primary"
+            disabled={!formularioValido}
+            className={`inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow transition
+    ${formularioValido
+                ? "bg-secondary hover:bg-primary cursor-pointer"
+                : "bg-gray-300 cursor-not-allowed"
+              }`}
           >
             <FaFilePdf />
             Gerar PDF

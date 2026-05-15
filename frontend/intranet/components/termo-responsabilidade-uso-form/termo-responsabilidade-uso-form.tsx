@@ -213,6 +213,31 @@ export function TermoResponsabilidadeUsoForm() {
         setAcessorios("");
     }
 
+    const formularioValido = useMemo(() => {
+        if (!cpfNumerico) return false;
+        if (!validarCpf(cpfNumerico)) return false;
+
+        if (!nome.trim()) return false;
+        if (!equipamento) return false;
+        if (!modelo.trim()) return false;
+        if (!numeroSerie.trim()) return false;
+        if (!entrega.trim()) return false;
+        if (!acessorios.trim()) return false;
+
+        if (equipamento === "celular" && !linha.trim()) return false;
+
+        return true;
+    }, [
+        cpfNumerico,
+        nome,
+        equipamento,
+        modelo,
+        numeroSerie,
+        entrega,
+        acessorios,
+        linha,
+    ]);
+
     async function gerarPdf() {
         try {
             setErro("");
@@ -369,9 +394,14 @@ export function TermoResponsabilidadeUsoForm() {
 
             <div className="mt-6 border-t pt-5 flex items-center justify-end">
                 <button
+                    type="button"
                     onClick={gerarPdf}
-                    disabled={gerando}
-                    className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={!formularioValido || gerando}
+                    className={`inline-flex items-center gap-2 rounded px-5 py-2 font-semibold text-white shadow transition
+        ${formularioValido && !gerando
+                            ? "bg-secondary hover:bg-primary cursor-pointer"
+                            : "bg-gray-300 cursor-not-allowed"
+                        }`}
                 >
                     <FaFilePdf />
                     {gerando ? "Gerando PDF..." : "Gerar PDF"}

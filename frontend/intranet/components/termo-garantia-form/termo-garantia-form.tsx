@@ -211,6 +211,46 @@ export function TermoGarantiaForm() {
     return "";
   }
 
+  const formularioValido = useMemo(() => {
+    const cpfValido = validarCPF(cpf);
+
+    if (!cpfValido) return false;
+
+    if (!nome.trim()) return false;
+    if (!estadoCivil) return false;
+    if (!tipoDocumento) return false;
+    if (!numeroDocumento.trim()) return false;
+
+    if (!numeroContrato.trim()) return false;
+    if (!dataContrato) return false;
+
+    if (!valorContrato.trim()) return false;
+    if (onlyDigits(valorContrato).length === 0) return false;
+
+    if (!cidadeAtendimento.trim()) return false;
+
+    if (!avalista) return false;
+    if (!prestamistaSicoob) return false;
+    if (!prestamistaTerceiros) return false;
+    if (!garantiaReal) return false;
+
+    return true;
+  }, [
+    cpf,
+    nome,
+    estadoCivil,
+    tipoDocumento,
+    numeroDocumento,
+    numeroContrato,
+    dataContrato,
+    valorContrato,
+    cidadeAtendimento,
+    avalista,
+    prestamistaSicoob,
+    prestamistaTerceiros,
+    garantiaReal,
+  ]);
+
   async function handleGerarPdf() {
     setErro("");
     setInfo("");
@@ -573,7 +613,12 @@ export function TermoGarantiaForm() {
         <button
           type="button"
           onClick={handleGerarPdf}
-          className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+          disabled={!formularioValido}
+          className={`inline-flex items-center gap-2 rounded px-5 py-2 font-semibold text-white shadow transition
+    ${formularioValido
+              ? "bg-secondary hover:bg-primary cursor-pointer"
+              : "bg-gray-300 cursor-not-allowed"
+            }`}
         >
           Gerar PDF
         </button>

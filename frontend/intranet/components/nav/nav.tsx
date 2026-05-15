@@ -23,7 +23,8 @@ import {
     FaUserFriends,
     FaWarehouse,
     FaChartBar,
-    FaMoneyCheck
+    FaMoneyCheck,
+    FaBell
 } from "react-icons/fa";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useMe } from "@/hooks/use-me";
@@ -322,7 +323,7 @@ const Sidebar = () => {
         {
             key: "notificacao",
             label: "Notificação",
-            icon: FaBullhorn,
+            icon: FaBell,
             section: "Comunicados",
             children: [
                 {

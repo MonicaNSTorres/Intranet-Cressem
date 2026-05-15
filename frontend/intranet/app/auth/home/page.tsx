@@ -215,7 +215,7 @@ export default function HomePage() {
                 icon: <FaBirthdayCake className="h-5 w-5" />,
             },
             {
-                title: "Despesas e viagens",
+                title: "Reembolso",
                 desc: "Solicite, acompanhe ou gerencie reembolsos.",
                 href: "/auth/cadastro_reembolso_despesa",
                 icon: <FaFileInvoiceDollar className="h-5 w-5" />,
@@ -617,7 +617,7 @@ export default function HomePage() {
                             </div>
                         </div>*/}
 
-                        <div className="overflow-hidden rounded-[28px] border border-[#00AE9D]/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+                        {/*<div className="overflow-hidden rounded-[28px] border border-[#00AE9D]/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
                             <div className="border-b border-[#EAECF0] px-6 py-5">
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#00AE9D]/10 text-[#00AE9D]">
@@ -707,7 +707,7 @@ export default function HomePage() {
                                     </ResponsiveContainer>
                                 </div>
                             </div>
-                        </div>
+                        </div>*/}
 
                         <div className="rounded-[28px] border border-[#79B729]/15 bg-[linear-gradient(135deg,#00AE9D_0%,#79B729_100%)] p-6 text-white shadow-[0_12px_30px_rgba(0,174,157,0.18)]">
                             <div className="flex items-start gap-3">

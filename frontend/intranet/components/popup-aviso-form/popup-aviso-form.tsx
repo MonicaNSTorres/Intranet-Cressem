@@ -548,7 +548,7 @@ export function PopupAvisoForm() {
                                         <img
                                             src={form.imagemBase64}
                                             alt="Prévia rápida"
-                                            className="h-32 w-full object-cover"
+                                            className="h-80 w-full object-cover"
                                         />
                                     ) : (
                                         <div className="h-20 bg-linear-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/10" />

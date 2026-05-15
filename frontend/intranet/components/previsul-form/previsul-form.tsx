@@ -313,6 +313,51 @@ export function PrevisulForm() {
         return true;
     };
 
+    const formularioValido = useMemo(() => {
+        const cpfValido = cpf.replace(/\D/g, "").length === 11;
+        const cpfTermoValido = cpfTermo.replace(/\D/g, "").length === 11;
+        const dataHojeValida = /^\d{2}\/\d{2}\/\d{4}$/.test(dataHoje.trim());
+
+        if (!cpfValido) return false;
+        if (!nome.trim() || nome === "NOMECLIENTE") return false;
+        if (!cpfTermoValido || cpfTermo === "CPFCLIENTE") return false;
+        if (!nascimento) return false;
+        if (!proposta.trim()) return false;
+        if (!valorEmprestimo.trim() || valorEmprestimoNum <= 0) return false;
+        if (!totalParcelas.trim() || parcelasNum <= 0) return false;
+        if (!dataPrimeiraParcelaEmprestimo) return false;
+        if (!valorMensalSeguro || !valorTotalSeguro) return false;
+
+        if (mostrarCompetencia && (!dataPrimeiraParcelaSeguro || !dataUltimaParcelaSeguro)) {
+            return false;
+        }
+
+        if (!cidadeAtendimento.trim()) return false;
+        if (!cidadeSelecionadaValida) return false;
+        if (!dataHoje.trim() || !dataHojeValida) return false;
+
+        return true;
+    }, [
+        cpf,
+        cpfTermo,
+        nome,
+        nascimento,
+        proposta,
+        valorEmprestimo,
+        valorEmprestimoNum,
+        totalParcelas,
+        parcelasNum,
+        dataPrimeiraParcelaEmprestimo,
+        valorMensalSeguro,
+        valorTotalSeguro,
+        mostrarCompetencia,
+        dataPrimeiraParcelaSeguro,
+        dataUltimaParcelaSeguro,
+        cidadeAtendimento,
+        cidadeSelecionadaValida,
+        dataHoje,
+    ]);
+
     const gerar = async () => {
         setErroLocal("");
         setInfoLocal("");
@@ -599,8 +644,14 @@ export function PrevisulForm() {
 
             <div className="pt-5 border-t mt-6 flex items-center justify-end">
                 <button
+                    type="button"
                     onClick={gerar}
-                    className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+                    disabled={!formularioValido}
+                    className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
+        ${formularioValido
+                            ? "bg-secondary hover:bg-primary cursor-pointer"
+                            : "bg-gray-300 cursor-not-allowed"
+                        }`}
                 >
                     Gerar PDF
                 </button>

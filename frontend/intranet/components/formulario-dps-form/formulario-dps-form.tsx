@@ -204,6 +204,61 @@ export function FormularioDpsForm() {
     carregarCidadesAtendimento();
   }, []);
 
+  const formularioValido = useMemo(() => {
+    const cpfValido = cpf.replace(/\D/g, "").length === 11;
+
+    const todasDoencasRespondidas = Object.values(doencas).every(
+      (resposta) => resposta === "sim" || resposta === "nao"
+    );
+
+    if (!cpfValido) return false;
+    if (!nome.trim()) return false;
+    if (!estadoCivil) return false;
+    if (!sexo) return false;
+    if (!nascimento) return false;
+    if (!documento.trim()) return false;
+    if (!orgaoExpedidor.trim()) return false;
+    if (!telefone.trim()) return false;
+    if (telefone.replace(/\D/g, "").length < 10) return false;
+    if (!rua.trim()) return false;
+    if (!bairro.trim()) return false;
+    if (!cidade.trim()) return false;
+    if (!estado.trim()) return false;
+    if (!cep.trim()) return false;
+    if (cep.replace(/\D/g, "").length !== 8) return false;
+    if (!email.trim()) return false;
+
+    if (!todasDoencasRespondidas) return false;
+
+    if (doencas.diabetes === "sim" && !tipoDiabetes) return false;
+    if (doencas.hepatite === "sim" && !tipoHepatite) return false;
+
+    if (!cidadeAtendimento.trim()) return false;
+    if (!diaAtendimento.trim()) return false;
+
+    return true;
+  }, [
+    cpf,
+    nome,
+    estadoCivil,
+    sexo,
+    nascimento,
+    documento,
+    orgaoExpedidor,
+    telefone,
+    rua,
+    bairro,
+    cidade,
+    estado,
+    cep,
+    email,
+    doencas,
+    tipoDiabetes,
+    tipoHepatite,
+    cidadeAtendimento,
+    diaAtendimento,
+  ]);
+
 
   const gerar = async () => {
     await gerarPdfFormularioDps({
@@ -619,8 +674,14 @@ export function FormularioDpsForm() {
 
       <div className="pt-5 border-t mt-6 flex items-center justify-end">
         <button
+          type="button"
           onClick={gerar}
-          className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+          disabled={!formularioValido}
+          className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
+    ${formularioValido
+              ? "bg-secondary hover:bg-primary cursor-pointer"
+              : "bg-gray-300 cursor-not-allowed"
+            }`}
         >
           Gerar PDF
         </button>

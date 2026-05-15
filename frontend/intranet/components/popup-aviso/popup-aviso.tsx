@@ -117,7 +117,7 @@ export function PopupAvisoGate() {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[2147483647]"
+      className="fixed inset-0 z-2147483647"
       aria-modal="true"
       role="dialog"
     >
@@ -125,18 +125,19 @@ export function PopupAvisoGate() {
 
       <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
         <div
-          className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[28px] bg-white shadow-[0_30px_80px_rgba(0,0,0,0.28)]"
+          className="w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-[28px] bg-white shadow-[0_30px_80px_rgba(0,0,0,0.28)]"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="max-h-[90vh] overflow-y-auto">
             {imagemValida ? (
-              <div className="relative h-55 w-full overflow-hidden bg-slate-100">
+              <div className="relative h-[440px] w-full overflow-hidden bg-slate-100">
                 <img
                   src={imagemValida}
                   alt="Imagem do aviso"
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+
+                <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/10 to-transparent" />
 
                 <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 shadow">
                   <FaImage className="text-[#00AE9D]" />
@@ -144,7 +145,7 @@ export function PopupAvisoGate() {
                 </div>
               </div>
             ) : (
-              <div className="border-b border-slate-200 bg-gradient-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+              <div className="border-b border-slate-200 bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#00AE9D]/10 text-[#00AE9D]">
                     <FaExclamationCircle size={22} />
@@ -202,7 +203,7 @@ export function PopupAvisoGate() {
                   type="button"
                   onClick={() => handleResposta("RECUSADO")}
                   disabled={submitting}
-                  className="inline-flex min-w-[150px] items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-5 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                  className="inline-flex min-w-37.5 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-5 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                 >
                   <FaTimes />
                   {popup.BOTAO_RECUSAR || "Recusar"}
@@ -212,7 +213,7 @@ export function PopupAvisoGate() {
                   type="button"
                   onClick={() => handleResposta("ACEITO")}
                   disabled={submitting}
-                  className="inline-flex min-w-[170px] items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                  className="inline-flex min-w-42.5 items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                 >
                   <FaCheckCircle />
                   {popup.BOTAO_ACEITAR || "Aceitar"}

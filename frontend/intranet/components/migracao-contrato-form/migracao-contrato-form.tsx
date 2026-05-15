@@ -205,6 +205,26 @@ export function MigracaoContratoForm() {
     return true;
   };
 
+  const formularioValido = useMemo(() => {
+    if (!linhas.length) return false;
+
+    return linhas.every((linha) => {
+      const cpfValido = onlyDigits(linha.cpf).length === 11;
+      const salarioValido = parseCurrencyToNumber(linha.salario) !== null;
+
+      return (
+        linha.nascimento.trim() !== "" &&
+        linha.cargo.trim() !== "" &&
+        linha.salario.trim() !== "" &&
+        salarioValido &&
+        linha.admissao.trim() !== "" &&
+        cpfValido &&
+        linha.situacao.trim() !== "" &&
+        linha.matricula.trim() !== ""
+      );
+    });
+  }, [linhas]);
+
   const gerar = async () => {
     setErro("");
     setInfo("");
@@ -397,9 +417,14 @@ export function MigracaoContratoForm() {
 
       <div className="pt-5 border-t mt-6 flex items-center justify-end">
         <button
+          type="button"
           onClick={gerar}
-          disabled={loadingGerar}
-          className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+          disabled={!formularioValido || loadingGerar}
+          className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
+    ${formularioValido && !loadingGerar
+              ? "bg-secondary hover:bg-primary cursor-pointer"
+              : "bg-gray-300 cursor-not-allowed"
+            }`}
         >
           <FaFileAlt size={14} />
           {loadingGerar ? "Gerando..." : "Gerar arquivo"}

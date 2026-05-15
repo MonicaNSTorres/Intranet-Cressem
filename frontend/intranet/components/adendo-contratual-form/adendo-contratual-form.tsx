@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { formatCpfView } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { gerarPdfAdendoContratual } from "@/lib/pdf/gerarPdfAdendoContratual";
@@ -81,6 +81,24 @@ export function AdendoContratualForm() {
     });
   };
 
+  const formularioValido = useMemo(() => {
+    return (
+      cpfAssociado.replace(/\D/g, "").length === 11 &&
+      nomeAssociado.trim() !== "" &&
+      empresa.trim() !== "" &&
+      ccb.trim() !== "" &&
+      cpfConjugue.replace(/\D/g, "").length === 11 &&
+      nomeConjugue.trim() !== ""
+    );
+  }, [
+    cpfAssociado,
+    nomeAssociado,
+    empresa,
+    ccb,
+    cpfConjugue,
+    nomeConjugue,
+  ]);
+
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
       <SearchForm onSearch={onBuscarAssociado}>
@@ -107,7 +125,12 @@ export function AdendoContratualForm() {
             <button
               type="button"
               onClick={gerar}
-              className="inline-flex items-center justify-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow whitespace-nowrap"
+              disabled={!formularioValido}
+              className={`inline-flex items-center justify-center gap-2 text-white font-semibold px-5 py-2 rounded shadow whitespace-nowrap transition
+    ${formularioValido
+                  ? "bg-secondary hover:bg-primary cursor-pointer"
+                  : "bg-gray-300 cursor-not-allowed"
+                }`}
             >
               Gerar PDF
             </button>

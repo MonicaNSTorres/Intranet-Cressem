@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { formatCpfView, hojeBR } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { gerarPdfAdiantamentoSalarialEmprestimo } from "@/lib/pdf/gerarPdfAdiantamentoSalarialEmprestimo";
@@ -156,6 +156,56 @@ export function AdiantamentoSalarialEmprestimoForm() {
     });
   };
 
+  const formularioValido = useMemo(() => {
+    if (cpf.replace(/\D/g, "").length !== 11) return false;
+    if (!tipoFormulario) return false;
+    if (!nome.trim()) return false;
+    if (!matricula.trim()) return false;
+
+    if (isCancelamento) {
+      if (!empresaCancelamento) return false;
+
+      if (isUrbam && !solicita) return false;
+
+      if ((isIpsm || isUrbam || isPmsjc) && (!dataInicio || !dataFim)) {
+        return false;
+      }
+
+      if ((isUrbam || isPmsjc) && !documento.trim()) {
+        return false;
+      }
+
+      if ((isUrbam || isPmsjc) && !reativacaoMeses.trim()) {
+        return false;
+      }
+    }
+
+    if (isRetorno) {
+      if (!empresaRetorno) return false;
+      if (!motivoRetorno) return false;
+    }
+
+    return true;
+  }, [
+    cpf,
+    tipoFormulario,
+    nome,
+    matricula,
+    isCancelamento,
+    isRetorno,
+    empresaCancelamento,
+    isUrbam,
+    isIpsm,
+    isPmsjc,
+    solicita,
+    dataInicio,
+    dataFim,
+    documento,
+    reativacaoMeses,
+    empresaRetorno,
+    motivoRetorno,
+  ]);
+
   return (
     <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
       <SearchForm onSearch={onBuscar}>
@@ -179,7 +229,12 @@ export function AdiantamentoSalarialEmprestimoForm() {
             <button
               type="button"
               onClick={gerar}
-              className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+              disabled={!formularioValido}
+              className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
+    ${formularioValido
+                  ? "bg-secondary hover:bg-primary cursor-pointer"
+                  : "bg-gray-300 cursor-not-allowed"
+                }`}
             >
               Gerar PDF
             </button>

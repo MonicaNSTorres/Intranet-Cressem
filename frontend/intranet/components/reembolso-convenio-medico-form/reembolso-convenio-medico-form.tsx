@@ -140,8 +140,8 @@ export function ReembolsoConvenioMedicoForm() {
       console.error("Erro ao carregar reembolso convênio médico:", error);
       setErro(
         error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          "Não foi possível carregar os dados da solicitação."
+        error?.response?.data?.message ||
+        "Não foi possível carregar os dados da solicitação."
       );
     } finally {
       setLoading(false);
@@ -208,6 +208,22 @@ export function ReembolsoConvenioMedicoForm() {
     if (!form.diretor.trim()) return "Selecione um diretor para assinar.";
     return "";
   }
+
+  const formularioValido = useMemo(() => {
+    if (!form.nome.trim()) return false;
+    if (!form.matricula.trim()) return false;
+    if (!form.setor.trim()) return false;
+    if (!form.empresaConvenio.trim()) return false;
+    if (!form.mensalidade.trim()) return false;
+    if (!form.valorReembolso.trim()) return false;
+    if (!form.diretor.trim()) return false;
+
+    const mensalidadeNumero = parseMoedaBRL(form.mensalidade);
+
+    if (mensalidadeNumero <= 0) return false;
+
+    return true;
+  }, [form]);
 
   async function handleGerar() {
     const mensagemErro = validarCampos();
@@ -390,8 +406,12 @@ export function ReembolsoConvenioMedicoForm() {
               <button
                 type="button"
                 onClick={handleGerar}
-                disabled={gerando}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-secondary px-6 py-2 font-semibold text-white shadow transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={!formularioValido || gerando}
+                className={`inline-flex items-center gap-2 rounded-lg px-6 py-2 font-semibold text-white shadow transition
+    ${formularioValido && !gerando
+                    ? "bg-secondary hover:bg-primary cursor-pointer"
+                    : "bg-gray-300 cursor-not-allowed"
+                  }`}
               >
                 <FaPrint />
                 {gerando ? "Gerando..." : "Gerar PDF"}

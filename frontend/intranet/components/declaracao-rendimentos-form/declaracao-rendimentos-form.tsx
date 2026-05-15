@@ -150,7 +150,7 @@ export function DeclaracaoRendimentosForm() {
         <button
           onClick={onGerar}
           disabled={!data}
-          className="inline-flex items-center gap-2 bg-secondary hover:bg-primary disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+          className="inline-flex items-center gap-2 bg-secondary hover:bg-primary disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
           title={!data ? "Busque um CPF antes de gerar" : "Gerar PDF"}
         >
           Gerar PDF

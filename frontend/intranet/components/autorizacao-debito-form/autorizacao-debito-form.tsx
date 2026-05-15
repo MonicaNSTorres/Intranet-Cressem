@@ -169,6 +169,17 @@ export function AutorizacaoDebitoForm() {
     return "";
   };
 
+  const formularioValido = useMemo(() => {
+    const cpfValido = onlyDigits(cpf).length === 11;
+
+    if (!cpfValido) return false;
+    if (!nome.trim()) return false;
+    if (!contaAssociado.trim()) return false;
+    if (!cidadeAtendimento.trim()) return false;
+
+    return true;
+  }, [cpf, nome, contaAssociado, cidadeAtendimento]);
+
   const handleGerarPdf = async () => {
     setErro("");
     setInfo("");
@@ -468,8 +479,14 @@ export function AutorizacaoDebitoForm() {
 
       <div className="mt-6 border-t pt-5 flex items-center justify-end">
         <button
+          type="button"
           onClick={handleGerarPdf}
-          className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+          disabled={!formularioValido}
+          className={`inline-flex items-center gap-2 rounded px-5 py-2 font-semibold text-white shadow transition
+    ${formularioValido
+              ? "bg-secondary hover:bg-primary cursor-pointer"
+              : "bg-gray-300 cursor-not-allowed"
+            }`}
         >
           Gerar PDF
         </button>

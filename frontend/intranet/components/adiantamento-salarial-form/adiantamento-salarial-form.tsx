@@ -40,6 +40,31 @@ export function AdiantamentoSalarialForm() {
     }
   };
 
+  const formularioValido = useMemo(() => {
+    const cpfValido = cpf.replace(/\D/g, "").length === 11;
+
+    if (!cpfValido) return false;
+
+    if (!nome.trim()) return false;
+
+    if (!matricula.trim()) return false;
+
+    if (!acao) return false;
+
+    if (![20, 30].includes(percentual)) return false;
+
+    if (!dataLocal.trim()) return false;
+
+    return true;
+  }, [
+    cpf,
+    nome,
+    matricula,
+    acao,
+    percentual,
+    dataLocal,
+  ]);
+
   const gerar = async () => {
     await gerarPdfAdiantamentoSalarial({
       nome: nome || "_________________________",
@@ -152,8 +177,14 @@ export function AdiantamentoSalarialForm() {
 
       <div className="pt-5 border-t mt-6 flex items-center justify-end">
         <button
+          type="button"
           onClick={gerar}
-          className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+          disabled={!formularioValido}
+          className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
+    ${formularioValido
+              ? "bg-secondary hover:bg-primary cursor-pointer"
+              : "bg-gray-300 cursor-not-allowed"
+            }`}
         >
           Gerar PDF
         </button>

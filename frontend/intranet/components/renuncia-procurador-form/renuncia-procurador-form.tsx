@@ -106,6 +106,29 @@ export function RenunciaProcuradorForm() {
         carregarCidades();
     }, []);
 
+    const formularioValido = useMemo(() => {
+        return (
+            renuncianteNome.trim() !== "" &&
+            renuncianteCpf.replace(/\D/g, "").length === 11 &&
+            outorganteNomeRazao.trim() !== "" &&
+            outorganteCpfCnpj.trim() !== "" &&
+            numeroConta.trim() !== "" &&
+            cidade.trim() !== "" &&
+            dia.trim() !== "" &&
+            mes.trim() !== "" &&
+            ano.trim() !== ""
+        );
+    }, [
+        renuncianteNome,
+        renuncianteCpf,
+        outorganteNomeRazao,
+        outorganteCpfCnpj,
+        numeroConta,
+        cidade,
+        dia,
+        mes,
+        ano,
+    ]);
 
     return (
         <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
@@ -276,7 +299,12 @@ export function RenunciaProcuradorForm() {
             <div className="pt-5 border-t mt-6 flex items-center justify-end">
                 <button
                     onClick={gerar}
-                    className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+                    disabled={!formularioValido}
+                    className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
+        ${formularioValido
+                            ? "bg-secondary hover:bg-primary cursor-pointer"
+                            : "bg-gray-300 cursor-not-allowed"
+                        }`}
                 >
                     Gerar PDF
                 </button>
