@@ -26,10 +26,8 @@ function parseVerTodos(value: any) {
 }
 
 async function buscarTipoUsuarioPorNome(nome: string, verTodos: boolean) {
-  if (verTodos) return "financeiro";
-
   const nomeLimpo = String(nome || "").trim();
-  if (!nomeLimpo) return "funcionario";
+  if (!nomeLimpo) return verTodos ? "suporte" : "funcionario";
 
   const result = await oracleExecute(
     `
@@ -86,24 +84,26 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
 
       let wherePerfilSql = "1 = 1";
 
-      if (tipoUsuario === "funcionario") {
-        wherePerfilSql = `UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)`;
-      } else if (tipoUsuario === "gerencia" || tipoUsuario === "gerencia superior") {
-        wherePerfilSql = `
-          (
-            UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)
-            OR UPPER(NVL(s.NM_FUNCIONARIO, ' ')) IN (
-              SELECT UPPER(TRIM(f.NM_FUNCIONARIO))
-              FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
-              WHERE f.CD_GERENCIA = (
-                SELECT fg.ID_FUNCIONARIO
-                FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
-                WHERE UPPER(TRIM(fg.NM_FUNCIONARIO)) = UPPER(:nomePerfil)
-                FETCH FIRST 1 ROWS ONLY
+      if (!verTodos) {
+        if (tipoUsuario === "funcionario") {
+          wherePerfilSql = `UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)`;
+        } else if (tipoUsuario === "gerencia" || tipoUsuario === "gerencia superior") {
+          wherePerfilSql = `
+            (
+              UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)
+              OR UPPER(NVL(s.NM_FUNCIONARIO, ' ')) IN (
+                SELECT UPPER(TRIM(f.NM_FUNCIONARIO))
+                FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+                WHERE f.CD_GERENCIA = (
+                  SELECT fg.ID_FUNCIONARIO
+                  FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
+                  WHERE UPPER(TRIM(fg.NM_FUNCIONARIO)) = UPPER(:nomePerfil)
+                  FETCH FIRST 1 ROWS ONLY
+                )
               )
             )
-          )
-        `;
+          `;
+        }
       }
 
       const bindsBase: Record<string, any> = {

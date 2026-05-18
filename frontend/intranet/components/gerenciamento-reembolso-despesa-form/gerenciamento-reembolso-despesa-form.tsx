@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -83,6 +83,32 @@ function primeiroUltimoNome(nomeCompleto: string) {
   const nomes = String(nomeCompleto || "").trim().split(" ").filter(Boolean);
   if (nomes.length <= 1) return nomes[0] || "";
   return `${nomes[0]} ${nomes[nomes.length - 1]}`;
+}
+
+function normalizeNomeComparacao(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function normalizeGrupo(value: string) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function normalizeStatus(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function isAndamento(value: string, esperado: string) {
+  return normalizeStatus(value) === normalizeStatus(esperado);
 }
 
 function fmtBRL(value: number) {
@@ -174,14 +200,19 @@ export function GerenciamentoReembolsoDespesaForm() {
         grupos?: string[];
       };
 
-      const nomeAD = me?.nome_completo || me?.nome || "";
+      const nomeAD =  me?.nome_completo || me?.nome || "";
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
+      const gruposNormalizados = grupos.map(normalizeGrupo);
 
       setNomeResponsavelAD(nomeAD);
       setNomeUsuarioLogado(nomeAD);
 
-      const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.FINANCEIRO);
-      const usuarioEhSuporteAD = grupos.includes(AD_GROUPS.SUPORTE);
+      const usuarioEhFinanceiroAD =
+        gruposNormalizados.includes(normalizeGrupo(AD_GROUPS.FINANCEIRO)) ||
+        gruposNormalizados.includes("GG_IMP_FIN");
+      const usuarioEhSuporteAD = gruposNormalizados.includes(
+        normalizeGrupo(AD_GROUPS.SUPORTE)
+      );
 
       const usuarioPodeVerTodos = usuarioEhFinanceiroAD || usuarioEhSuporteAD;
 
@@ -216,7 +247,7 @@ export function GerenciamentoReembolsoDespesaForm() {
         return;
       }
 
-      const nomeBusca = usuarioPodeVerTodos ? "" : nomeFiltro;
+      const nomeBusca = nomeFiltro || nomeAD;
 
       setNomeResponsavel(nomeBusca);
       setDiretoriaCompleto(funcionario);
@@ -244,9 +275,9 @@ export function GerenciamentoReembolsoDespesaForm() {
     }
   ) {
     try {
-      const nomeSeguro = verTodos ? "" : nome || nomeResponsavel;
+      const nomeSeguro = nome || nomeResponsavel || nomeResponsavelAD;
 
-      if (!verTodos && !nomeSeguro) {
+      if (!nomeSeguro) {
         setListaContador([]);
         setTotais(totaisInicial);
         return;
@@ -303,7 +334,7 @@ export function GerenciamentoReembolsoDespesaForm() {
     try {
       setLoadingBusca(true);
 
-      const nomeFiltro = verTodos ? "" : nomeResponsavel || nome;
+      const nomeFiltro = nomeResponsavel || nome || nomeResponsavelAD;
 
       console.log("BUSCANDO COM:", {
         verTodos,
@@ -337,7 +368,11 @@ export function GerenciamentoReembolsoDespesaForm() {
   function abrirSolicitacao(item: SolicitaoListaItem) {
     setSolicitacaoAtual(item as SolicitacaoDetalheItem);
 
-    setParecerFinanceiroSelect(item.DESC_PRC_FINANCEIRO || "");
+    setParecerFinanceiroSelect(
+      isFinanceiroAD && isAndamento(item.DESC_ANDAMENTO || "", "Pendente Financeiro")
+        ? ""
+        : item.DESC_PRC_FINANCEIRO || ""
+    );
     setParecerFinanceiroTexto(item.DESC_PRC_FINANCEIRO || "");
     setParecerGerenciaTexto(item.DESC_PRC_GERENCIA || "");
     setParecerGerenciaSupTexto(item.DESC_PRC_GERENCIA_SUP || "");
@@ -376,32 +411,44 @@ export function GerenciamentoReembolsoDespesaForm() {
 
   function podeEditarSolicitacao() {
     if (!solicitacaoAtual) return false;
-    return (
-      solicitacaoAtual.DESC_ANDAMENTO === "Pendente Funcionario" &&
-      solicitacaoAtual.NM_FUNCIONARIO === nomeResponsavel
+
+    if (!isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Funcionario")) return false;
+
+    const nomeSolicitacao = normalizeNomeComparacao(
+      solicitacaoAtual.NM_FUNCIONARIO || ""
     );
+
+    const nomesPossiveisUsuario = [
+      nomeResponsavel,
+      nomeResponsavelAD,
+      nomeUsuarioLogado,
+    ]
+      .map((n) => normalizeNomeComparacao(n || ""))
+      .filter(Boolean);
+
+    return nomesPossiveisUsuario.includes(nomeSolicitacao);
   }
 
   function podeSalvarParecer() {
     if (!solicitacaoAtual) return false;
 
     if (
-      solicitacaoAtual.DESC_ANDAMENTO === "Pendente Financeiro" &&
-      perfilTipo === "financeiro"
+      isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Financeiro") &&
+      isFinanceiroAD
     ) return true;
 
     if (
-      solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia" &&
+      isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia") &&
       perfilTipo === "gerencia"
     ) return true;
 
     if (
-      solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia Superior" &&
+      isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia Superior") &&
       perfilTipo === "gerencia superior"
     ) return true;
 
     if (
-      solicitacaoAtual.DESC_ANDAMENTO === "Pendente Diretoria" &&
+      isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
       perfilTipo === "diretoria"
     ) return true;
 
@@ -410,14 +457,14 @@ export function GerenciamentoReembolsoDespesaForm() {
 
   function podeGerarRelatorio() {
     if (!solicitacaoAtual) return false;
-    return solicitacaoAtual.DESC_ANDAMENTO === "Aprovado" && perfilTipo === "financeiro";
+    return solicitacaoAtual.DESC_ANDAMENTO === "Aprovado" && isFinanceiroAD;
   }
 
   function podeConcluir() {
     if (!solicitacaoAtual) return false;
     return (
       solicitacaoAtual.DESC_ANDAMENTO === "Aprovado" &&
-      perfilTipo === "financeiro" &&
+      isFinanceiroAD &&
       !solicitacaoAtual.SN_FINALIZADO
     );
   }
@@ -425,8 +472,12 @@ export function GerenciamentoReembolsoDespesaForm() {
   function validarCampos() {
     if (!solicitacaoAtual) return false;
 
-    if (perfilTipo === "financeiro") {
-      if (!parecerFinanceiroSelect) {
+    if (isFinanceiroAD) {
+      const parecerFinanceiroValido =
+        parecerFinanceiroSelect.endsWith("OK") ||
+        parecerFinanceiroSelect.endsWith("Divergente");
+
+      if (!parecerFinanceiroValido) {
         alert("Dê o parecer do financeiro.");
         return false;
       }
@@ -487,26 +538,26 @@ export function GerenciamentoReembolsoDespesaForm() {
       let parecer = "";
 
       if (
-        perfilTipo === "financeiro" &&
-        solicitacaoAtual.DESC_ANDAMENTO === "Pendente Financeiro"
+        isFinanceiroAD &&
+        isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Financeiro")
       ) {
         parecer = parecerFinanceiroTexto;
         acao = parecerFinanceiroSelect === "Solicitação OK" ? "aprovar" : "devolver";
       } else if (
         perfilTipo === "gerencia" &&
-        solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia"
+        isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia")
       ) {
         parecer = parecerGerenciaTexto;
         acao = parecerFinal === "Reprovado" ? "reprovar" : "aprovar";
       } else if (
         perfilTipo === "gerencia superior" &&
-        solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia Superior"
+        isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia Superior")
       ) {
         parecer = parecerGerenciaSupTexto;
         acao = parecerFinal === "Reprovado" ? "reprovar" : "aprovar";
       } else if (
         perfilTipo === "diretoria" &&
-        solicitacaoAtual.DESC_ANDAMENTO === "Pendente Diretoria"
+        isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria")
       ) {
         parecer = parecerDiretoriaTexto;
         acao = parecerFinal === "Aprovado" ? "aprovar" : "reprovar";
@@ -891,7 +942,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                 </div>
 
                 <div className="md:col-span-4">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Nr. Banco</label>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">Nº Banco</label>
                   <input
                     value={solicitacaoAtual.NR_BANCO || ""}
                     readOnly
@@ -909,7 +960,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                 </div>
 
                 <div className="md:col-span-4">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Nr. Conta</label>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">Nº Conta</label>
                   <input
                     value={solicitacaoAtual.NR_CONTA || ""}
                     readOnly
@@ -927,7 +978,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                           <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">Tp.</label>
+                            <label className="mb-1 block text-xs font-medium text-gray-600">Tipo</label>
                             <input
                               value={capitalizeWords(despesa.TP_DESPESA || "")}
                               readOnly
@@ -936,7 +987,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                           </div>
 
                           <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">Vl.</label>
+                            <label className="mb-1 block text-xs font-medium text-gray-600">Valor</label>
                             <input
                               value={fmtBRL(despesa.VALOR || 0)}
                               readOnly
@@ -971,7 +1022,7 @@ export function GerenciamentoReembolsoDespesaForm() {
 
                   <div className="grid grid-cols-1 md:grid-cols-[280px]">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">Total Despesas</label>
+                      <label className="mb-1 block text-xs font-medium text-gray-600">Total de Despesas</label>
                       <input
                         value={fmtBRL(
                           (solicitacaoAtual.DESPESAS || solicitacaoAtual.despesas || []).reduce(
@@ -987,8 +1038,11 @@ export function GerenciamentoReembolsoDespesaForm() {
                 </div>
               </div>
 
-              {perfilTipo === "financeiro" && (
-                <>
+              {isAndamento(
+                solicitacaoAtual.DESC_ANDAMENTO || "",
+                "Pendente Financeiro"
+              ) &&
+                isFinanceiroAD && (
                   <div className="mt-5">
                     <label className="mb-1 block text-xs font-medium text-gray-600">
                       Parecer Financeiro
@@ -996,46 +1050,50 @@ export function GerenciamentoReembolsoDespesaForm() {
                     <select
                       value={parecerFinanceiroSelect}
                       onChange={(e) => setParecerFinanceiroSelect(e.target.value)}
-                      disabled={!(
-                        solicitacaoAtual.DESC_ANDAMENTO === "Pendente Financeiro" &&
-                        perfilTipo === "financeiro"
-                      )}
-                      className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
+                      className="w-full rounded border px-3 py-2"
                     >
                       <option value="">Selecione</option>
                       <option value="Solicitação Divergente">Solicitação Divergente</option>
                       <option value="Solicitação OK">Solicitação OK</option>
                     </select>
                   </div>
+                )}
 
-                  <div className="mt-3">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Parecer Financeiro Escrito
-                    </label>
-                    <textarea
-                      value={parecerFinanceiroTexto}
-                      onChange={(e) => setParecerFinanceiroTexto(e.target.value)}
-                      disabled={!(
-                        solicitacaoAtual.DESC_ANDAMENTO === "Pendente Financeiro" &&
-                        perfilTipo === "financeiro"
-                      )}
-                      rows={3}
-                      className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="mt-5">
+              <div className="mt-3">
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Financeiro
+                  Parecer Financeiro Escrito
                 </label>
-                <input
-                  value={solicitacaoAtual.NM_FNC_FINANCEIRO || ""}
-                  readOnly
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
+                <textarea
+                  value={parecerFinanceiroTexto}
+                  onChange={(e) => setParecerFinanceiroTexto(e.target.value)}
+                  disabled={!(
+                    isAndamento(
+                      solicitacaoAtual.DESC_ANDAMENTO || "",
+                      "Pendente Financeiro"
+                    ) &&
+                    isFinanceiroAD
+                  )}
+                  rows={3}
+                  className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
                 />
               </div>
+
+              {isAndamento(
+                solicitacaoAtual.DESC_ANDAMENTO || "",
+                "Pendente Financeiro"
+              ) &&
+                isFinanceiroAD && (
+                  <div className="mt-5">
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      Financeiro
+                    </label>
+                    <input
+                      value={solicitacaoAtual.NM_FNC_FINANCEIRO || ""}
+                      readOnly
+                      className="w-full rounded border bg-gray-50 px-3 py-2"
+                    />
+                  </div>
+                )}
 
               {!!solicitacaoAtual.HAS_GERENCIA && (
                 <>
@@ -1130,26 +1188,30 @@ export function GerenciamentoReembolsoDespesaForm() {
                 />
               </div>
 
-              <div className="mt-5">
-                <label className="mb-1 block text-xs font-medium text-gray-600">Parecer Final</label>
-                <select
-                  value={parecerFinal}
-                  onChange={(e) => setParecerFinal(e.target.value)}
-                  disabled={!(
-                    (solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia" &&
-                      perfilTipo === "gerencia") ||
-                    (solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia Superior" &&
-                      perfilTipo === "gerencia superior") ||
-                    (solicitacaoAtual.DESC_ANDAMENTO === "Pendente Diretoria" &&
-                      perfilTipo === "diretoria")
-                  )}
-                  className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
-                >
-                  <option value="">Selecione</option>
-                  <option value="Aprovado">Aprovado</option>
-                  <option value="Reprovado">Reprovado</option>
-                </select>
-              </div>
+              {((isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia") &&
+                perfilTipo === "gerencia") ||
+                (isAndamento(
+                  solicitacaoAtual.DESC_ANDAMENTO || "",
+                  "Pendente Gerencia Superior"
+                ) &&
+                  perfilTipo === "gerencia superior") ||
+                (isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
+                  perfilTipo === "diretoria")) && (
+                <div className="mt-5">
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Parecer Final
+                  </label>
+                  <select
+                    value={parecerFinal}
+                    onChange={(e) => setParecerFinal(e.target.value)}
+                    className="w-full rounded border px-3 py-2"
+                  >
+                    <option value="">Selecione</option>
+                    <option value="Aprovado">Aprovado</option>
+                    <option value="Reprovado">Reprovado</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-wrap justify-end gap-3 border-t px-5 py-4">
@@ -1219,3 +1281,4 @@ function ResumoCard({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+

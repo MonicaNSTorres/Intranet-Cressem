@@ -372,7 +372,7 @@ function montarHtmlNotificacaoDecisaoReembolso(params: {
     params.etapaAnterior === "Pendente Diretoria" && params.etapaAtual === "Aprovado"
       ? `
         <div style="margin-top:18px;padding:14px 16px;background:#edf7f1;border-left:4px solid #008542;border-radius:8px;color:#244434;">
-          <strong>Orientação:</strong> Solicitação aprovada. O pagamento deve ocorrer em até 48 horas e o financeiro precisa finalizar no sistema.
+          <strong>Orientação:</strong> Solicitação aprovada. O pagamento deve ocorrer em até 48 horas.
         </div>
       `
       : "";
@@ -1265,7 +1265,15 @@ export const solicitacaoReembolsoDespesaController = {
                NR_BANCO            = :NR_BANCO,
                CD_AGENCIA          = :CD_AGENCIA,
                NR_CONTA            = :NR_CONTA,
-               DESC_ANDAMENTO      = :DESC_ANDAMENTO
+               DESC_ANDAMENTO      = :DESC_ANDAMENTO,
+               DESC_PRC_FINANCEIRO = CASE
+                                       WHEN :DESC_ANDAMENTO = 'Pendente Financeiro' THEN NULL
+                                       ELSE DESC_PRC_FINANCEIRO
+                                     END,
+               NM_FNC_FINANCEIRO   = CASE
+                                       WHEN :DESC_ANDAMENTO = 'Pendente Financeiro' THEN NULL
+                                       ELSE NM_FNC_FINANCEIRO
+                                     END
          WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :ID_SOLICITACAO_REEMBOLSO_DESPESA
       `;
 
