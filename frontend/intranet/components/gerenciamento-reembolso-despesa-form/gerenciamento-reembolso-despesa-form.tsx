@@ -132,6 +132,7 @@ export function GerenciamentoReembolsoDespesaForm() {
 
   const [nomeResponsavel, setNomeResponsavel] = useState("");
   const [nomeResponsavelAD, setNomeResponsavelAD] = useState("");
+  const [nomeUsuarioLogado, setNomeUsuarioLogado] = useState("");
   const [diretoriaCompleto, setDiretoriaCompleto] = useState<any>(null);
   const [isFinanceiroAD, setIsFinanceiroAD] = useState(false);
   const [podeVerTodos, setPodeVerTodos] = useState(false);
@@ -177,6 +178,7 @@ export function GerenciamentoReembolsoDespesaForm() {
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
 
       setNomeResponsavelAD(nomeAD);
+      setNomeUsuarioLogado(nomeAD);
 
       const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.FINANCEIRO);
       const usuarioEhSuporteAD = grupos.includes(AD_GROUPS.SUPORTE);
@@ -520,11 +522,10 @@ export function GerenciamentoReembolsoDespesaForm() {
 
       await decidirSolicitacaoReembolso({
         id: solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA,
-        nomeResponsavel,
+        nomeResponsavel: nomeUsuarioLogado,
         acao,
         parecer,
       });
-
       alert("Solicitação atualizada com sucesso.");
       setModalOpen(false);
 

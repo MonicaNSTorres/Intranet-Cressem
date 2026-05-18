@@ -118,7 +118,7 @@ export const PAGE_ACCESS = {
     auditoria: {
         allowedGroups: [
             AD_GROUPS.SUPORTE,
-            AD_GROUPS.TODO_MUNDO,
+            AD_GROUPS.SOLICITACAO_CREDITO,
         ],
     },
 

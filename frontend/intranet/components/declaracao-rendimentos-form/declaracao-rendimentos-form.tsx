@@ -30,7 +30,11 @@ function pad2(n: number) {
 
 export function DeclaracaoRendimentosForm() {
   const [cpf, setCpf] = useState("");
+  //const [data, setData] = useState<Associado | null>(null);
+
   const [data, setData] = useState<Associado | null>(null);
+  const [nome, setNome] = useState("");
+  const [cpfFormulario, setCpfFormulario] = useState("");
 
   const [destinatario, setDestinatario] = useState("Sicoob Cressem");
   const [valorMensal, setValorMensal] = useState("");
@@ -46,15 +50,35 @@ export function DeclaracaoRendimentosForm() {
 
   const onBuscar = async () => {
     setData(null);
+
     const r = await buscar(cpf);
 
-    if (!r.found) return;
+    if (!r.found) {
+      setNome("");
+      setCpfFormulario(onlyDigits(cpf));
+      return;
+    }
 
-    setData({
+    const associadoEncontrado = {
       nome: r.data.nome || "",
       cpf: r.data.cpf || onlyDigits(cpf),
-    });
+    };
+
+    setData(associadoEncontrado);
+    setNome(associadoEncontrado.nome);
+    setCpfFormulario(associadoEncontrado.cpf);
   };
+
+  const podeGerarPdf =
+    nome.trim().length > 0 &&
+    onlyDigits(cpfFormulario).length > 0 &&
+    destinatario.trim().length > 0 &&
+    valorMensal.trim().length > 0 &&
+    atividade.trim().length > 0 &&
+    cidade.trim().length > 0 &&
+    dia.trim().length > 0 &&
+    mes.trim().length > 0 &&
+    ano.trim().length > 0;
 
   const onGerar = async () => {
     await gerarPdfDeclaracaoRendimentos({
@@ -65,8 +89,8 @@ export function DeclaracaoRendimentosForm() {
       dia,
       mes,
       ano,
-      nome: data?.nome,
-      cpf: data?.cpf,
+      nome,
+      cpf: cpfFormulario,
     });
   };
 
@@ -106,8 +130,19 @@ export function DeclaracaoRendimentosForm() {
       </SearchForm>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <InputRO label="Nome" value={data?.nome || ""} />
-        <InputRO label="CPF" value={maskCpfView(data?.cpf || "")} />
+        <InputRW
+          label="Nome"
+          value={nome}
+          onChange={setNome}
+          placeholder="Nome do empregado(a)"
+        />
+
+        <InputRW
+          label="CPF"
+          value={maskCpfView(cpfFormulario)}
+          onChange={(v) => setCpfFormulario(onlyDigits(v))}
+          placeholder="CPF"
+        />
 
         <InputRW
           label="Destinatário"
@@ -149,9 +184,9 @@ export function DeclaracaoRendimentosForm() {
       <div className="pt-4 mt-4 border-t flex items-center justify-end">
         <button
           onClick={onGerar}
-          disabled={!data}
+          disabled={!podeGerarPdf}
           className="inline-flex items-center gap-2 bg-secondary hover:bg-primary disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
-          title={!data ? "Busque um CPF antes de gerar" : "Gerar PDF"}
+          title={!podeGerarPdf ? "Preencha todos os campos obrigatórios" : "Gerar PDF"}
         >
           Gerar PDF
         </button>

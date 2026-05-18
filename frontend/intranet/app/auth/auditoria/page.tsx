@@ -20,7 +20,7 @@ export default function AuditoriaPage() {
       try {
         const user = (await getMeAdUser()) as AuthUserLike;
 
-        setAllowed(canAccess(user, PAGE_ACCESS.docusign));
+        setAllowed(canAccess(user, PAGE_ACCESS.auditoria));
       } catch (error) {
         console.error(error);
         setAllowed(false);

@@ -11,7 +11,6 @@ import {
     FaHandshake,
     FaHistory,
     FaPhoneAlt,
-    FaRegClock,
     FaShieldAlt,
     FaStar,
     FaBolt,
@@ -55,6 +54,10 @@ type QuickAccessItem = {
     badge?: string;
 };
 
+type PopupAvisoComImagem = PopupAviso & {
+    IMAGEM_BASE64?: string | null;
+};
+
 function normalizeSearch(value: string) {
     return String(value || "")
         .normalize("NFD")
@@ -70,15 +73,25 @@ function isUsuarioOculto(value?: string) {
 
 export default function HomePage() {
     const [aniversariantesHoje, setAniversariantesHoje] = useState<Aniversariante[]>([]);
-    const [popupHome, setPopupHome] = useState<PopupAviso | null>(null);
+    const [popupHome, setPopupHome] = useState<PopupAvisoComImagem | null>(null);
+    const [ultimoPopupRespondido, setUltimoPopupRespondido] = useState<PopupAvisoComImagem | null>(null);
     const [loadingPopupHome, setLoadingPopupHome] = useState(true);
     const [submittingPopupHome, setSubmittingPopupHome] = useState(false);
     const [statusResposta, setStatusResposta] = useState<"PENDENTE" | "ACEITO" | "RECUSADO">("PENDENTE");
-    const [ultimoPopupRespondido, setUltimoPopupRespondido] = useState<PopupAviso | null>(null);
     const [modalPopupAberta, setModalPopupAberta] = useState(false);
     const [userGroups, setUserGroups] = useState<string[]>([]);
+    const [erroPopup, setErroPopup] = useState("");
+    const [modalErroAberta, setModalErroAberta] = useState(false);
 
     const popupConteudo = popupHome ?? ultimoPopupRespondido;
+
+    const imagemValidaPopupHome = useMemo(() => {
+        const popup = popupConteudo as PopupAvisoComImagem | null;
+
+        if (!popup?.IMAGEM_BASE64) return "";
+
+        return String(popup.IMAGEM_BASE64).trim();
+    }, [popupConteudo]);
 
     useEffect(() => {
         const load = async () => {
@@ -160,8 +173,17 @@ export default function HomePage() {
             setUltimoPopupRespondido(popupHome);
             setStatusResposta(resposta);
             setPopupHome(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro ao responder popup da home:", error);
+
+            const mensagem =
+                error?.response?.data?.details || "";
+
+            if (mensagem.includes("ORA-00001")) {
+                alert("Você já respondeu este comunicado anteriormente.");
+                return;
+            }
+
             alert("Não foi possível registrar sua resposta.");
         } finally {
             setSubmittingPopupHome(false);
@@ -375,7 +397,7 @@ export default function HomePage() {
                                                 {loadingPopupHome
                                                     ? "Buscando informações do aviso..."
                                                     : popupConteudo?.MENSAGEM ||
-                                                      "No momento, não há comunicados pendentes para ciência."}
+                                                    "No momento, não há comunicados pendentes para ciência."}
                                             </p>
 
                                             {popupConteudo && (
@@ -400,18 +422,6 @@ export default function HomePage() {
                                                         <FaEye className="h-4 w-4" />
                                                         Ler comunicado
                                                     </button>
-
-                                                    {popupHome && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleResponderPopupHome("RECUSADO")}
-                                                            disabled={submittingPopupHome}
-                                                            className="inline-flex items-center gap-2 rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-[var(--title)] transition hover:border-[#79B729]/30 hover:bg-[#79B729]/5 disabled:cursor-not-allowed disabled:opacity-60"
-                                                        >
-                                                            <FaRegClock className="h-4 w-4" />
-                                                            {popupHome.BOTAO_RECUSAR || "Ver depois"}
-                                                        </button>
-                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -424,23 +434,23 @@ export default function HomePage() {
                                                 {loadingPopupHome
                                                     ? "Carregando..."
                                                     : statusResposta === "ACEITO"
-                                                      ? "Você aceitou o comunicado"
-                                                      : statusResposta === "RECUSADO"
-                                                        ? "Você recusou o comunicado"
-                                                        : popupHome
-                                                          ? "Aguardando ciência"
-                                                          : "Sem pendência"}
+                                                        ? "Você aceitou o comunicado"
+                                                        : statusResposta === "RECUSADO"
+                                                            ? "Você recusou o comunicado"
+                                                            : popupHome
+                                                                ? "Aguardando ciência"
+                                                                : "Sem pendência"}
                                             </p>
                                             <p className="mt-2 text-xs leading-5 text-[var(--paragraph)]">
                                                 {loadingPopupHome
                                                     ? "Buscando status do comunicado."
                                                     : statusResposta === "ACEITO"
-                                                      ? "Sua resposta de aceite foi registrada com sucesso."
-                                                      : statusResposta === "RECUSADO"
-                                                        ? "Sua resposta de recusa foi registrada com sucesso."
-                                                        : popupHome
-                                                          ? "Há um comunicado pendente de resposta para este usuário."
-                                                          : "Não há comunicado pendente no momento."}
+                                                        ? "Sua resposta de aceite foi registrada com sucesso."
+                                                        : statusResposta === "RECUSADO"
+                                                            ? "Sua resposta de recusa foi registrada com sucesso."
+                                                            : popupHome
+                                                                ? "Há um comunicado pendente de resposta para este usuário."
+                                                                : "Não há comunicado pendente no momento."}
                                             </p>
                                         </div>
                                     </div>
@@ -734,32 +744,147 @@ export default function HomePage() {
 
                 {modalPopupAberta && popupConteudo && (
                     <div
-                        className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-                        onClick={() => setModalPopupAberta(false)}
+                        className="fixed inset-0 z-[99999]"
+                        aria-modal="true"
+                        role="dialog"
                     >
                         <div
-                            className="w-full max-w-2xl overflow-hidden rounded-[28px] bg-white shadow-xl"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="border-b border-gray-100 px-6 py-5">
-                                <h2 className="text-xl font-semibold text-gray-900">
-                                    {popupConteudo.TITULO}
-                                </h2>
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-[5px]"
+                            onClick={() => setModalPopupAberta(false)}
+                        />
+
+                        <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
+                            <div
+                                className="w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-[28px] bg-white shadow-[0_30px_80px_rgba(0,0,0,0.28)]"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="max-h-[90vh] overflow-y-auto">
+                                    {imagemValidaPopupHome ? (
+                                        <div className="relative h-[440px] w-full overflow-hidden bg-slate-100">
+                                            <img
+                                                src={imagemValidaPopupHome}
+                                                alt="Imagem do aviso"
+                                                className="h-full w-full object-cover object-center"
+                                            />
+
+                                            <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/10 to-transparent" />
+
+                                            <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 shadow">
+                                                <FaBell className="text-[#00AE9D]" />
+                                                Aviso institucional
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="border-b border-slate-200 bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#00AE9D]/10 text-[#00AE9D]">
+                                                    <FaBell size={22} />
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00AE9D]">
+                                                        Aviso importante
+                                                    </p>
+                                                    <p className="mt-1 text-sm text-slate-500">
+                                                        Comunicado institucional
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="px-6 py-6">
+                                        <div className="flex items-start gap-3">
+                                            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#C7D300]/25 text-slate-700 md:flex">
+                                                <FaBell size={18} />
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#00AE9D]">
+                                                    Aviso importante
+                                                </p>
+
+                                                <h2 className="text-2xl font-bold leading-tight text-slate-800">
+                                                    {popupConteudo.TITULO}
+                                                </h2>
+
+                                                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                                                    <p className="whitespace-pre-wrap text-[15px] leading-7 text-slate-700">
+                                                        {popupConteudo.MENSAGEM}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {popupHome && (
+                                            <div className="mt-5 rounded-2xl border border-[#79B729]/20 bg-[#79B729]/10 px-4 py-3">
+                                                <div className="flex items-start gap-3 text-sm text-slate-700">
+                                                    <FaCheckCircle className="mt-0.5 shrink-0 text-[#79B729]" />
+                                                    <span>
+                                                        Ao clicar em confirmar ciência, sua resposta será registrada automaticamente.
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="border-t border-slate-200 bg-white px-6 py-5">
+                                        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                            <button
+                                                type="button"
+                                                onClick={() => setModalPopupAberta(false)}
+                                                className="inline-flex min-w-32 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 cursor-pointer"
+                                            >
+                                                Fechar
+                                            </button>
+
+                                            {popupHome && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        handleResponderPopupHome("ACEITO");
+                                                        setModalPopupAberta(false);
+                                                    }}
+                                                    disabled={submittingPopupHome}
+                                                    className="inline-flex min-w-42.5 items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                                                >
+                                                    <FaCheckCircle />
+                                                    {popupHome.BOTAO_ACEITAR || "Li e estou ciente"}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {modalErroAberta && (
+                    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-500">
+                                    <FaBell />
+                                </div>
+
+                                <div className="flex-1">
+                                    <h2 className="text-lg font-semibold text-slate-800">
+                                        Aviso
+                                    </h2>
+
+                                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                                        {erroPopup}
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="px-6 py-6">
-                                <p className="whitespace-pre-wrap text-sm leading-7 text-gray-700">
-                                    {popupConteudo.MENSAGEM}
-                                </p>
-                            </div>
-
-                            <div className="flex justify-end border-t border-gray-100 px-6 py-4">
+                            <div className="mt-6 flex justify-end">
                                 <button
                                     type="button"
-                                    onClick={() => setModalPopupAberta(false)}
-                                    className="rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200"
+                                    onClick={() => setModalErroAberta(false)}
+                                    className="rounded-2xl bg-[#00AE9D] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                                 >
-                                    Fechar
+                                    Entendi
                                 </button>
                             </div>
                         </div>
@@ -864,3 +989,4 @@ function QuickAccessCard({
         </Link>
     );
 }
+
