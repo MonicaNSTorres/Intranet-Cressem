@@ -1,7 +1,6 @@
 import jsPDF from "jspdf";
 
 export type PJOpts = {
-    // OUTORGANTE (PJ)
     razaoSocial?: string;
     cnpj?: string;
     sedeEndereco?: string;
@@ -24,7 +23,6 @@ export type PJOpts = {
     representanteCid?: string;
     representanteUF?: string;
 
-    // OUTORGADO (PF)
     outorgadoNome?: string;
     outorgadoNacionalidade?: string;
     outorgadoEstadoCivil?: string;
@@ -39,7 +37,6 @@ export type PJOpts = {
     outorgadoCidade?: string;
     outorgadoUF?: string;
 
-    // Demais
     razaoCooperativa?: string;
     substabelecimento?: string;
     prazoValidade?: string;
@@ -51,14 +48,18 @@ export type PJOpts = {
 
 export async function gerarPdfProcuracaoPJ(o: PJOpts) {
     const left = 60;
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const doc = new jsPDF({
+  unit: "pt",
+  format: "a4",
+  compress: true,
+  putOnlyUsedFonts: true,
+});
     const pageW = doc.internal.pageSize.getWidth();
     let y = 80;
 
     const get = (v?: string, ph: string = "________________") =>
         (v && String(v).trim()) || ph;
 
-    // Título
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.text("PROCURAÇÃO", pageW / 2, y, { align: "center" });
@@ -74,17 +75,14 @@ export async function gerarPdfProcuracaoPJ(o: PJOpts) {
         });
     };
 
-    // OUTORGANTE (PJ)
     write(
         `OUTORGANTE: ${get(o.razaoSocial)}; inscrita no CNPJ sob o nº ${maskCnpj(get(o.cnpj, "________________"))}, sediada na ${get(o.sedeEndereco)}, nº ${get(o.sedeNumero)}, bairro ${get(o.sedeBairro)}, CEP ${maskCep(get(o.sedeCep, "________"))}, ${get(o.sedeCidade)} - ${get(o.sedeUF)}, representada neste instrumento por ${get(o.representanteNome)}, ${get(o.representanteNacionalidade)}, ${get(o.representanteEstadoCivil)}, ${get(o.representanteProfissao)}, ${get(o.representanteDocTipo)} nº ${get(o.representanteDocNumero)}, CPF nº ${maskCpf(get(o.representanteCpf, "______________"))}, residente e domiciliado na ${get(o.representanteEnd)}, nº ${get(o.representanteNum)}, bairro ${get(o.representanteBairro)}, CEP ${maskCep(get(o.representanteCep, "________"))}, ${get(o.representanteCid)} - ${get(o.representanteUF)}.`
     );
 
-    // OUTORGADO (PF)
     write(
         `OUTORGADO: ${get(o.outorgadoNome)}; ${get(o.outorgadoNacionalidade)}, ${get(o.outorgadoEstadoCivil)}, ${get(o.outorgadoProfissao)}, ${get(o.outorgadoDocTipo)} nº ${get(o.outorgadoDocNumero)}, CPF nº ${maskCpf(get(o.outorgadoCpf, "______________"))}, residente e domiciliado na ${get(o.outorgadoEndereco)}, nº ${get(o.outorgadoNumero)}, bairro ${get(o.outorgadoBairro)}, CEP ${maskCep(get(o.outorgadoCep, "________"))}, ${get(o.outorgadoCidade)} - ${get(o.outorgadoUF)}.`
     );
 
-    // Cláusula de poderes (texto do seu anexo)
     const blocos = [
         `Pelo presente instrumento de mandato, o OUTORGANTE nomeia e constitui o OUTORGADO seu bastante procurador, a quem confere amplos poderes para representá-lo perante a ${get(o.razaoCooperativa, "Razão social da cooperativa")} e ao Banco Cooperativo Sicoob S/A – Banco Sicoob, a fim de associar-se e demitir-se; abrir, movimentar e encerrar contas correntes de depósito à vista e de poupança; retirar cartões eletrônicos, cadastrar e alterar senhas eletrônicas; requisitar, emitir e endossar cheques; fazer saques e retiradas mediante recibos; autorizar débitos, transferências e pagamentos, inclusive por meio de cartas; solicitar saldos e extratos;`,
         `fazer transferências e pagamentos para qualquer parte do País, ou mesmo para o Exterior; realizar aplicações e retiradas financeiras; solicitar operações de crédito; assinar propostas de operações de crédito; emitir, endossar e avalizar contratos e títulos de crédito; penhorar, alienar fiduciariamente ou hipotecar bens; utilizar limites de crédito; autorizar débitos relativos às operações de crédito;`,
@@ -96,7 +94,6 @@ export async function gerarPdfProcuracaoPJ(o: PJOpts) {
     y += 8;
     write(`${get(o.cidadeData, "Cidade - UF")}, ${get(o.dia, "__")} de ${get(o.mes, "________")} de ${get(o.ano, "____")}.`);
 
-    // Assinatura (razão social + CNPJ)
     y += 30;
     const sigW = 360;
     doc.line((pageW - sigW) / 2, y, (pageW + sigW) / 2, y);
