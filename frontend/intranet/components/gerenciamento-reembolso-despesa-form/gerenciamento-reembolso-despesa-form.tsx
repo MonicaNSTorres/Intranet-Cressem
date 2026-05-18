@@ -200,19 +200,15 @@ export function GerenciamentoReembolsoDespesaForm() {
         grupos?: string[];
       };
 
-      const nomeAD =  me?.nome_completo || me?.nome || "";
+      const nomeAD = me?.nome_completo || me?.nome || "";
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
       const gruposNormalizados = grupos.map(normalizeGrupo);
 
       setNomeResponsavelAD(nomeAD);
       setNomeUsuarioLogado(nomeAD);
 
-      const usuarioEhFinanceiroAD =
-        gruposNormalizados.includes(normalizeGrupo(AD_GROUPS.FINANCEIRO)) ||
-        gruposNormalizados.includes("GG_IMP_FIN");
-      const usuarioEhSuporteAD = gruposNormalizados.includes(
-        normalizeGrupo(AD_GROUPS.SUPORTE)
-      );
+      const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.FINANCEIRO);
+      const usuarioEhSuporteAD = grupos.includes(AD_GROUPS.SUPORTE);
 
       const usuarioPodeVerTodos = usuarioEhFinanceiroAD || usuarioEhSuporteAD;
 
@@ -1197,21 +1193,21 @@ export function GerenciamentoReembolsoDespesaForm() {
                   perfilTipo === "gerencia superior") ||
                 (isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
                   perfilTipo === "diretoria")) && (
-                <div className="mt-5">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Parecer Final
-                  </label>
-                  <select
-                    value={parecerFinal}
-                    onChange={(e) => setParecerFinal(e.target.value)}
-                    className="w-full rounded border px-3 py-2"
-                  >
-                    <option value="">Selecione</option>
-                    <option value="Aprovado">Aprovado</option>
-                    <option value="Reprovado">Reprovado</option>
-                  </select>
-                </div>
-              )}
+                  <div className="mt-5">
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      Parecer Final
+                    </label>
+                    <select
+                      value={parecerFinal}
+                      onChange={(e) => setParecerFinal(e.target.value)}
+                      className="w-full rounded border px-3 py-2"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="Aprovado">Aprovado</option>
+                      <option value="Reprovado">Reprovado</option>
+                    </select>
+                  </div>
+                )}
             </div>
 
             <div className="flex flex-wrap justify-end gap-3 border-t px-5 py-4">

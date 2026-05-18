@@ -8,6 +8,13 @@ function getEnv(name: string) {
   return value;
 }
 
+function getEmailTimeoutMs() {
+  const raw = String(process.env.EMAIL_TIMEOUT_MS || "").trim();
+  const parsed = Number(raw);
+  if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  return 20000;
+}
+
 async function getAccessToken() {
   const tenantId = getEnv("TENANTID");
   const clientId = getEnv("CLIENTID");
@@ -25,6 +32,7 @@ async function getAccessToken() {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
+    timeout: getEmailTimeoutMs(),
   });
 
   const accessToken = response.data?.access_token;
@@ -92,5 +100,6 @@ export async function sendEmail(
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
+    timeout: getEmailTimeoutMs(),
   });
 }
