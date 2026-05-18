@@ -69,7 +69,8 @@ async function loadImageDataURL(url: string) {
   if (!response.ok) throw new Error("Logo nao encontrada");
 
   const blob = await response.blob();
-  const dataUrl = await new Promise<string>((resolve) => {
+
+  const originalDataUrl = await new Promise<string>((resolve) => {
     const fr = new FileReader();
     fr.onloadend = () => resolve(fr.result as string);
     fr.readAsDataURL(blob);
@@ -79,14 +80,47 @@ async function loadImageDataURL(url: string) {
     const image = new Image();
     image.onload = () => resolve(image);
     image.onerror = reject;
-    image.src = dataUrl;
+    image.src = originalDataUrl;
   });
 
-  return { dataUrl, width: img.width, height: img.height };
+  const maxWidth = 420;
+  const maxHeight = 126;
+
+  const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+  const canvas = document.createElement("canvas");
+
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return {
+      dataUrl: originalDataUrl,
+      width: img.width,
+      height: img.height,
+      type: "PNG" as const,
+    };
+  }
+
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const optimizedDataUrl = canvas.toDataURL("image/jpeg", 0.72);
+
+  return {
+    dataUrl: optimizedDataUrl,
+    width: canvas.width,
+    height: canvas.height,
+    type: "JPEG" as const,
+  };
 }
 
 export async function gerarPdfDemissao(data: GerarPdfDemissaoData) {
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const doc = new jsPDF({
+    unit: "pt",
+    format: "a4",
+    compress: true,
+    putOnlyUsedFonts: true,
+  });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 32;
@@ -312,7 +346,7 @@ export async function gerarPdfDemissao(data: GerarPdfDemissaoData) {
     const w = logo.width * scale;
     const h = logo.height * scale;
 
-    doc.addImage(logo.dataUrl, "PNG", margin, y, w, h);
+    doc.addImage(logo.dataUrl, logo.type, margin, y, w, h, undefined, "FAST");
     y += h + 8;
   } catch {
     y += 18;

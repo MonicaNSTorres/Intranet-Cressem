@@ -22,6 +22,7 @@ import {
 import HomeScreenSearch from "@/components/search-home/search-home";
 import { SCREENS } from "@/config/screens";
 import { buscarAniversariantesHoje } from "@/services/home.service";
+import { buscarAcessosSemana } from "@/services/dashboard.service";
 import UserInfo from "@/components/user-info/user-info";
 import {
     buscarPopupPendenteMe,
@@ -93,6 +94,10 @@ export default function HomePage() {
         return String(popup.IMAGEM_BASE64).trim();
     }, [popupConteudo]);
 
+    const [acessosDiarios, setAcessosDiarios] = useState<
+        { dia: string; acessos: number }[]
+    >([]);
+
     useEffect(() => {
         const load = async () => {
             try {
@@ -157,6 +162,29 @@ export default function HomePage() {
         }
 
         loadPopupHome();
+    }, []);
+
+    useEffect(() => {
+        async function loadAcessos() {
+            try {
+                const data = await buscarAcessosSemana();
+
+                setAcessosDiarios(data);
+            } catch (error) {
+                console.error(
+                    "Erro ao carregar acessos:",
+                    error
+                );
+            }
+        }
+
+        loadAcessos();
+
+        const interval = setInterval(() => {
+            loadAcessos();
+        }, 30000);
+
+        return () => clearInterval(interval);
     }, []);
 
     async function handleResponderPopupHome(resposta: "ACEITO" | "RECUSADO") {
@@ -282,7 +310,7 @@ export default function HomePage() {
         },
     ];*/}
 
-    const acessosDiarios = [
+    {/*const acessosDiarios = [
         { dia: "Seg", acessos: 118 },
         { dia: "Ter", acessos: 164 },
         { dia: "Qua", acessos: 142 },
@@ -290,11 +318,25 @@ export default function HomePage() {
         { dia: "Sex", acessos: 176 },
         { dia: "Sáb", acessos: 72 },
         { dia: "Dom", acessos: 54 },
-    ];
+    ];*/}
 
     const screensPermitidas = useMemo(() => {
         return filterScreensByGroups(SCREENS, userGroups);
     }, [userGroups]);
+
+    const totalSemanal = acessosDiarios.reduce(
+        (acc, item) => acc + item.acessos,
+        0
+    );
+
+    const picoDiario = acessosDiarios.length
+        ? Math.max(...acessosDiarios.map((item) => item.acessos))
+        : 0;
+
+    const mediaDiaria = acessosDiarios.length
+        ? Math.round(totalSemanal / acessosDiarios.length)
+        : 0;
+
 
     return (
         <div className="min-h-full bg-linear-to-b from-white via-white to-[#F6FBFA] p-6 lg:p-8">
@@ -627,16 +669,18 @@ export default function HomePage() {
                             </div>
                         </div>*/}
 
-                        {/*<div className="overflow-hidden rounded-[28px] border border-[#00AE9D]/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+                        <div className="overflow-hidden rounded-[28px] border border-[#00AE9D]/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
                             <div className="border-b border-[#EAECF0] px-6 py-5">
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#00AE9D]/10 text-[#00AE9D]">
                                         <FaHistory className="h-5 w-5" />
                                     </div>
+
                                     <div>
                                         <h2 className="text-base font-semibold text-[var(--title)]">
                                             Acessos diários na intranet
                                         </h2>
+
                                         <p className="text-sm text-[var(--paragraph)]">
                                             Visualização simples da quantidade de acessos por dia.
                                         </p>
@@ -650,8 +694,9 @@ export default function HomePage() {
                                         <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-darken)]">
                                             Total semanal
                                         </p>
+
                                         <p className="mt-2 text-2xl font-semibold text-[var(--title)]">
-                                            {acessosDiarios.reduce((acc, item) => acc + item.acessos, 0)}
+                                            {totalSemanal}
                                         </p>
                                     </div>
 
@@ -659,8 +704,9 @@ export default function HomePage() {
                                         <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-darken)]">
                                             Pico diário
                                         </p>
+
                                         <p className="mt-2 text-2xl font-semibold text-[var(--title)]">
-                                            {Math.max(...acessosDiarios.map((item) => item.acessos))}
+                                            {picoDiario}
                                         </p>
                                     </div>
 
@@ -668,44 +714,80 @@ export default function HomePage() {
                                         <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-darken)]">
                                             Média diária
                                         </p>
+
                                         <p className="mt-2 text-2xl font-semibold text-[var(--title)]">
-                                            {Math.round(
-                                                acessosDiarios.reduce((acc, item) => acc + item.acessos, 0) /
-                                                acessosDiarios.length
-                                            )}
+                                            {mediaDiaria}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="h-[280px] w-full rounded-3xl border border-[#EAECF0] bg-[linear-gradient(180deg,#F8FFFE_0%,#FFFFFF_100%)] p-4">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={acessosDiarios} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                        <AreaChart
+                                            data={acessosDiarios}
+                                            margin={{
+                                                top: 10,
+                                                right: 10,
+                                                left: -20,
+                                                bottom: 0,
+                                            }}
+                                        >
                                             <defs>
-                                                <linearGradient id="colorAcessos" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor="#00AE9D" stopOpacity={0.35} />
-                                                    <stop offset="100%" stopColor="#00AE9D" stopOpacity={0.03} />
+                                                <linearGradient
+                                                    id="colorAcessos"
+                                                    x1="0"
+                                                    y1="0"
+                                                    x2="0"
+                                                    y2="1"
+                                                >
+                                                    <stop
+                                                        offset="0%"
+                                                        stopColor="#00AE9D"
+                                                        stopOpacity={0.35}
+                                                    />
+
+                                                    <stop
+                                                        offset="100%"
+                                                        stopColor="#00AE9D"
+                                                        stopOpacity={0.03}
+                                                    />
                                                 </linearGradient>
                                             </defs>
 
-                                            <CartesianGrid strokeDasharray="4 4" stroke="#E4E7EC" vertical={false} />
+                                            <CartesianGrid
+                                                strokeDasharray="4 4"
+                                                stroke="#E4E7EC"
+                                                vertical={false}
+                                            />
+
                                             <XAxis
                                                 dataKey="dia"
                                                 axisLine={false}
                                                 tickLine={false}
-                                                tick={{ fill: "#68727D", fontSize: 12 }}
+                                                tick={{
+                                                    fill: "#68727D",
+                                                    fontSize: 12,
+                                                }}
                                             />
+
                                             <YAxis
                                                 axisLine={false}
                                                 tickLine={false}
-                                                tick={{ fill: "#68727D", fontSize: 12 }}
+                                                tick={{
+                                                    fill: "#68727D",
+                                                    fontSize: 12,
+                                                }}
                                             />
+
                                             <Tooltip
                                                 contentStyle={{
                                                     borderRadius: 16,
                                                     border: "1px solid #E4E7EC",
-                                                    boxShadow: "0 10px 30px rgba(16,24,40,0.08)",
+                                                    boxShadow:
+                                                        "0 10px 30px rgba(16,24,40,0.08)",
                                                 }}
                                             />
+
                                             <Area
                                                 type="monotone"
                                                 dataKey="acessos"
@@ -717,7 +799,7 @@ export default function HomePage() {
                                     </ResponsiveContainer>
                                 </div>
                             </div>
-                        </div>*/}
+                        </div>
 
                         <div className="rounded-[28px] border border-[#79B729]/15 bg-[linear-gradient(135deg,#00AE9D_0%,#79B729_100%)] p-6 text-white shadow-[0_12px_30px_rgba(0,174,157,0.18)]">
                             <div className="flex items-start gap-3">
