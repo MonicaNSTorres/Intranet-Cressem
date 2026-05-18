@@ -102,6 +102,15 @@ function capitalizeWords(value?: string | null) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function normalizeCidade(value?: string | null) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
 const LIMITS = {
   NR_CPF_CNPJ: 14,
   NM_CLIENTE: 100,
@@ -260,6 +269,19 @@ export function ResgateCapitalForm() {
     return parcelas.reduce((acc, item) => acc + parseBRL(item.valor), 0);
   }, [parcelas]);
 
+  function limparBlocosDebito() {
+    setRadioEmprestimo("Nao");
+    setEmprestimos([buildEmprestimo()]);
+
+    setRadioConta("Nao");
+    setNumeroContaCorrente("");
+    setSaldoDevedorConta("");
+    setAmortizacaoConta("");
+    setNumeroCartao("");
+    setSaldoCartao("");
+    setAmortizacaoCartao("");
+  }
+
   async function onBuscar() {
     try {
       setErro("");
@@ -281,9 +303,19 @@ export function ResgateCapitalForm() {
               : parseBRL(String(saldoRaw || ""));
 
         setSaldoCapitalAtual(fmtBRL(saldoNumerico));
-        setInfo("Associado carregado com sucesso.");
+        limparBlocosDebito();
 
-        await carregarEmprestimosAutomaticos();
+        const cidadeAssociado = String((r.data as any).cidade || "").trim();
+        if (cidadeAssociado) {
+          const encontrada = cidades.find(
+            (c) => normalizeCidade(c.NM_CIDADE) === normalizeCidade(cidadeAssociado)
+          );
+          if (encontrada?.NM_CIDADE) {
+            setSecCidade(encontrada.NM_CIDADE);
+          }
+        }
+
+        setInfo("Associado carregado com sucesso.");
       }
     } catch (e) {
       console.error(e);
@@ -298,9 +330,10 @@ export function ResgateCapitalForm() {
       const listaValida = (lista || []).filter((item: EmprestimoAssociadoItem) => {
         const tipo = String(item.DESC_TIPO || "").trim();
         const contrato = String(item.NR_CONTRATO || "").trim();
-        const saldo = Number(item.SALDODEVEDORDIA || 0);
 
-        return tipo !== "" || contrato !== "" || saldo > 0;
+        // Ignora linhas "placeholder" com apenas SALDODEVEDORDIA.
+        // Para entrar como empréstimo automático, precisa existir tipo/contrato real.
+        return tipo !== "" || contrato !== "";
       });
 
       if (listaValida.length === 0) {

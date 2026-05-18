@@ -859,10 +859,24 @@ export function CadastroReembolsoDespesaForm() {
                     Selecionar comprovante
                     <input
                       type="file"
-                      accept="application/pdf,.pdf,image/png,image/jpeg,image/jpg,image/webp"
+                      accept="application/pdf,.pdf"
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0] || null;
+
+                        if (
+                          file &&
+                          file.type !== "application/pdf" &&
+                          !file.name.toLowerCase().endsWith(".pdf")
+                        ) {
+                          alert("Selecione apenas arquivo PDF.");
+                          e.currentTarget.value = "";
+                          setComprovanteFile(null);
+                          setComprovanteNome("Nenhum arquivo selecionado");
+                          setComprovantePath(null);
+                          return;
+                        }
+
                         setComprovanteFile(file);
                         setComprovanteNome(file?.name || "Nenhum arquivo selecionado");
                         setComprovantePath(null);
