@@ -72,6 +72,7 @@ import { estoqueConsumiveisController } from "../controllers/estoque-consumiveis
 import { GlpiService } from "../services/glpi.service";
 import { feriasNotificacaoController } from "../controllers/ferias-notificacao.controller";
 import { contratosNotificacaoController } from "../controllers/contratos-notificacao.controller";
+import { buscarAcessosSemana } from "../controllers/dashboard.controller";
 
 const routes = Router();
 
@@ -1031,6 +1032,9 @@ routes.get(
     "/v1/autorizacao-debito",
     autorizacaoDebitoController.listarContaCorrente
 );
+
+//grafico na home
+routes.get("/v1/dashboard/acessos", buscarAcessosSemana);
 
 export { routes };
 
