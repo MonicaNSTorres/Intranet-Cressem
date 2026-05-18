@@ -74,6 +74,36 @@ function todayISO() {
     return `${yyyy}-${mm}-${dd}`;
 }
 
+function associadoAtivo(associado: any) {
+    const flagsNumericas = [
+        associado?.SN_ATIVO,
+        associado?.ST_ATIVO,
+        associado?.SN_SITUACAO,
+    ];
+
+    for (const flag of flagsNumericas) {
+        if (flag !== undefined && flag !== null && String(flag).trim() !== "") {
+            return Number(flag) === 1;
+        }
+    }
+
+    const statusTexto = String(
+        associado?.ST_INTEGRALIZACAO ||
+            associado?.DESC_SITUACAO ||
+            associado?.SITUACAO ||
+            ""
+    )
+        .trim()
+        .toUpperCase();
+
+    if (statusTexto) {
+        if (statusTexto.includes("INAT")) return false;
+        if (statusTexto.includes("ATIV")) return true;
+    }
+
+    return true;
+}
+
 const inputBase =
     "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
 
@@ -306,6 +336,27 @@ export function CadastroConvenioOdontoForm() {
 
             const associado = await buscarAssociadoBasePorCpf(cpfDigits);
 
+            if (!associadoAtivo(associado)) {
+                setNome("");
+                setNomeMae("");
+                setDataNascimento("");
+                setCidade("");
+                setCodCartao("");
+                setCodAssociado("");
+                setCodPlano("");
+                setConvenio("");
+                setPlanoTitular("");
+                setEmpresas([]);
+                setMatriculaSelecionada("");
+                setEmpresaSelecionada("");
+                setCnpjSelecionado("");
+                setDependentes([]);
+                setModoEdicao(false);
+                setTitularOriginal(null);
+                setErro("Associado inativo. Apenas associados ativos podem ser preenchidos.");
+                return;
+            }
+
             setNome(associado?.NM_CLIENTE || "");
             setNomeMae(associado?.NM_MAE || "");
             setDataNascimento(
@@ -355,9 +406,11 @@ export function CadastroConvenioOdontoForm() {
 
                 await carregarEmpresas(cpfDigits, String(titular.CD_MATRICULA || ""));
 
-                const dependentesApi = (todos || []).filter(
-                    (item) => String(item.DESC_PARENTESCO || "").toUpperCase() !== "TITULAR"
-                );
+                const dependentesApi = (todos || []).filter((item) => {
+                    const parentesco = String(item.DESC_PARENTESCO || "").toUpperCase();
+                    const ativo = Number(item.SN_ATIVO || 0) === 1;
+                    return parentesco !== "TITULAR" && ativo;
+                });
 
                 setDependentes(dependentesApi.map(mapDependenteFromApi));
                 setInfo("Registro carregado para alteração.");

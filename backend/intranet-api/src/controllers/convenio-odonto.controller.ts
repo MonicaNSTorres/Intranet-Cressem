@@ -594,8 +594,20 @@ export const convenioOdontoController = {
             }
 
             const pessoa: any = result.rows[0];
+            const cpfUsuarioRegistro = onlyDigits(pessoa.NR_CPF_USUARIO);
+            const cpfTitularRegistro = onlyDigits(pessoa.NR_CPF_TITULAR);
 
-            if (pessoa.NR_CPF_USUARIO && onlyDigits(pessoa.NR_CPF_USUARIO) !== cpfUsuario) {
+            if (
+                cpfUsuarioRegistro &&
+                cpfUsuarioRegistro === cpfUsuario &&
+                (!cpfTitular || cpfTitularRegistro === cpfTitular)
+            ) {
+                return res.status(404).json({
+                    error: "Mesmo usuário sem conflito.",
+                });
+            }
+
+            if (cpfUsuarioRegistro && cpfUsuarioRegistro !== cpfUsuario) {
                 return res.json({
                     cpf_titular: pessoa.NR_CPF_TITULAR,
                     conflito: true,
@@ -603,8 +615,8 @@ export const convenioOdontoController = {
             }
 
             if (
-                (!pessoa.NR_CPF_USUARIO || String(pessoa.NR_CPF_USUARIO).trim() === "") &&
-                onlyDigits(pessoa.NR_CPF_TITULAR) === cpfTitular &&
+                (!cpfUsuarioRegistro || String(cpfUsuarioRegistro).trim() === "") &&
+                cpfTitularRegistro === cpfTitular &&
                 toUpperTrim(pessoa.NM_USUARIO) === nome
             ) {
                 return res.status(404).json({
@@ -992,12 +1004,12 @@ export const convenioOdontoController = {
             } = req.body || {};
 
             const sql = `
-        INSERT INTO DBACRESSEM.CONVENIO_PESSOAS_HISTORICO (
+        INSERT INTO DBACRESSEM.HISTORICO_CONVENIO_PESSOAS (
           CD_PLANO,
           NR_CPF_TITULAR,
           CD_MATRICULA,
           NM_EMPRESA,
-          NR_CNPJ_EMPRESA,
+          NR_CNPJ_EMPRSA,
           NM_USUARIO,
           NR_CPF_USUARIO,
           DT_INCLUSAO,
