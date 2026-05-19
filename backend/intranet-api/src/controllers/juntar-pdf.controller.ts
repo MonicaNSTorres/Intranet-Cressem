@@ -55,10 +55,10 @@ async function getGhostscriptExecutable(): Promise<string> {
 async function mergeAndCompressWithGhostscript(inputPaths: string[], outputPath: string) {
     const gsExec = await getGhostscriptExecutable();
 
-    const pdfSettings = process.env.GS_PDFSETTINGS || "/ebook";
-    const colorDpi = Number(process.env.GS_COLOR_DPI || 150);
-    const grayDpi = Number(process.env.GS_GRAY_DPI || 150);
-    const monoDpi = Number(process.env.GS_MONO_DPI || 300);
+    const pdfSettings = process.env.GS_PDFSETTINGS || "/screen";
+    const colorDpi = Number(process.env.GS_COLOR_DPI || 120);
+    const grayDpi = Number(process.env.GS_GRAY_DPI || 120);
+    const monoDpi = Number(process.env.GS_MONO_DPI || 200);
 
     const args = [
         "-dSAFER",
@@ -70,6 +70,7 @@ async function mergeAndCompressWithGhostscript(inputPaths: string[], outputPath:
         `-dPDFSETTINGS=${pdfSettings}`,
         "-dDetectDuplicateImages=true",
         "-dCompressFonts=true",
+        "-dFastWebView=true",
         "-dAutoRotatePages=/None",
         "-dDownsampleColorImages=true",
         "-dColorImageDownsampleType=/Bicubic",
@@ -103,7 +104,6 @@ async function mergeWithPdfLib(files: UploadedFile[]): Promise<Buffer> {
 
         const pageIndices = pdf.getPageIndices();
         const copiedPages = await mergedPdf.copyPages(pdf, pageIndices);
-
         copiedPages.forEach((page) => mergedPdf.addPage(page));
     }
 
@@ -173,26 +173,27 @@ export async function juntarPdfController(req: Request, res: Response) {
         try {
             await mergeAndCompressWithGhostscript(inputPaths, outputPath);
 
-            const outputBytes = await fs.readFile(outputPath);
+            const gsBytes = await fs.readFile(outputPath);
+            const mergedBytes = await mergeWithPdfLib(files);
+            const useGs = gsBytes.length <= mergedBytes.length;
+            const outputBytes = useGs ? gsBytes : mergedBytes;
 
-            res.setHeader("X-Compression", "applied_gs");
+            res.setHeader("X-Compression", useGs ? "applied_gs" : "applied_pdf_lib_smaller");
+            res.setHeader("X-Input-Bytes", String(totalSizeBytes));
+            res.setHeader("X-Output-Bytes", String(outputBytes.length));
+            res.setHeader("X-Output-GS-Bytes", String(gsBytes.length));
+            res.setHeader("X-Output-PDFLIB-Bytes", String(mergedBytes.length));
             res.setHeader("Content-Type", "application/pdf");
             res.setHeader("Content-Disposition", 'attachment; filename="pdf_junto.pdf"');
 
             return res.status(200).send(outputBytes);
         } catch (gsError: any) {
             console.warn("Ghostscript indisponivel ou falhou. Fallback pdf-lib:", gsError?.message || gsError);
-
-            const maxFallbackMb = Number(process.env.PDFLIB_FALLBACK_MAX_MB || 40);
-            if (totalSizeBytes > maxFallbackMb * 1024 * 1024) {
-                return res.status(503).json({
-                    error: `Arquivos grandes exigem Ghostscript no servidor. Limite atual sem Ghostscript: ${maxFallbackMb} MB no total.`,
-                });
-            }
-
             const mergedBytes = await mergeWithPdfLib(files);
 
             res.setHeader("X-Compression", "fallback_pdf_lib");
+            res.setHeader("X-Input-Bytes", String(totalSizeBytes));
+            res.setHeader("X-Output-Bytes", String(mergedBytes.length));
             res.setHeader("Content-Type", "application/pdf");
             res.setHeader("Content-Disposition", 'attachment; filename="pdf_junto.pdf"');
 
@@ -212,3 +213,6 @@ export async function juntarPdfController(req: Request, res: Response) {
         }
     }
 }
+
+
+
