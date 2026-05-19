@@ -43,6 +43,17 @@ function hojeBR() {
   return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
+function hojeISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function isoToBr(iso: string) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+  const [ano, mes, dia] = iso.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
 function default12Meses(): MesItem[] {
   const arr: MesItem[] = [];
   const d = new Date();
@@ -81,19 +92,58 @@ function maskBRLOnType(v: string) {
   return fmtBRL(num);
 }
 
+function onlyDigits(v: string) {
+  return (v || "").replace(/\D/g, "");
+}
+
+function formatCpfView(v: string) {
+  const s = onlyDigits(v).slice(0, 11);
+  if (s.length <= 3) return s;
+  if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3)}`;
+  if (s.length <= 9) return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6)}`;
+  return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9)}`;
+}
+
+function formatCnpjView(v: string) {
+  const s = onlyDigits(v).slice(0, 14);
+  if (s.length <= 2) return s;
+  if (s.length <= 5) return `${s.slice(0, 2)}.${s.slice(2)}`;
+  if (s.length <= 8) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5)}`;
+  if (s.length <= 12) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8)}`;
+  return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}`;
+}
+
+function normalizePercentInput(v: string) {
+  const withDot = (v || "").replace(",", ".");
+  const onlyAllowed = withDot.replace(/[^\d.]/g, "");
+  const firstDot = onlyAllowed.indexOf(".");
+
+  if (firstDot < 0) return onlyAllowed;
+
+  return (
+    onlyAllowed.slice(0, firstDot + 1) +
+    onlyAllowed.slice(firstDot + 1).replace(/\./g, "")
+  );
+}
+
+function parsePercent(v: string) {
+  const n = Number(normalizePercentInput(v));
+  return Number.isFinite(n) ? n : 0;
+}
+
 function calcularPercentualTotal(formas: Formas) {
-  return Number(formas.vista || 0) + Number(formas.prazo || 0);
+  return parsePercent(formas.vista) + parsePercent(formas.prazo);
 }
 
 function calcularPercentualMeios(meios: Meios) {
   return (
-    Number(meios.dinheiro || 0) +
-    Number(meios.cheques || 0) +
-    Number(meios.debito || 0) +
-    Number(meios.credito || 0) +
-    Number(meios.duplicatas || 0) +
-    Number(meios.carne || 0) +
-    Number(meios.outros || 0)
+    parsePercent(meios.dinheiro) +
+    parsePercent(meios.cheques) +
+    parsePercent(meios.debito) +
+    parsePercent(meios.credito) +
+    parsePercent(meios.duplicatas) +
+    parsePercent(meios.carne) +
+    parsePercent(meios.outros)
   );
 }
 
@@ -177,7 +227,7 @@ export function FaturamentoFormPJ() {
   });
 
   const [municipioUF, setMunicipioUF] = useState("São José dos Campos - SP");
-  const [data, setData] = useState(hojeBR());
+  const [data, setData] = useState(hojeISO());
 
   const [contNome, setContNome] = useState("");
   const [contCPF, setContCPF] = useState("");
@@ -203,6 +253,14 @@ export function FaturamentoFormPJ() {
 
   const percentualFormas = useMemo(() => calcularPercentualTotal(formas), [formas]);
   const percentualMeios = useMemo(() => calcularPercentualMeios(meios), [meios]);
+  const percentualFormasValido = useMemo(
+    () => Math.abs(percentualFormas - 100) < 0.001,
+    [percentualFormas]
+  );
+  const percentualMeiosValido = useMemo(
+    () => Math.abs(percentualMeios - 100) < 0.001,
+    [percentualMeios]
+  );
 
   const onChangeValor = (i: number, v: string) => {
     setMeses((prev) =>
@@ -217,8 +275,8 @@ export function FaturamentoFormPJ() {
     if (qtdMeses <= 0) return false;
     if (total <= 0) return false;
 
-    if (percentualFormas !== 100) return false;
-    if (percentualMeios !== 100) return false;
+    if (!percentualFormasValido) return false;
+    if (!percentualMeiosValido) return false;
 
     if (!municipioUF.trim()) return false;
     if (!data.trim()) return false;
@@ -235,8 +293,51 @@ export function FaturamentoFormPJ() {
     cnpj,
     qtdMeses,
     total,
+    percentualFormasValido,
+    percentualMeiosValido,
+    municipioUF,
+    data,
+    contNome,
+    contCPF,
+    contCRC,
+    pjVisitada,
+  ]);
+
+  const pendencias = useMemo(() => {
+    const itens: string[] = [];
+
+    if (!razao.trim()) itens.push("Preencha a razão social da empresa.");
+    if (!cnpj.trim()) itens.push("Preencha o CNPJ.");
+    if (qtdMeses <= 0 || total <= 0) {
+      itens.push("Informe faturamento em pelo menos um mês com valor maior que R$ 0,00.");
+    }
+    if (!percentualFormasValido) {
+      itens.push(
+        `A soma da Forma de recebimento deve ser 100% (atual: ${percentualFormas.toFixed(2)}%).`
+      );
+    }
+    if (!percentualMeiosValido) {
+      itens.push(
+        `A soma dos Meios de recebimento deve ser 100% (atual: ${percentualMeios.toFixed(2)}%).`
+      );
+    }
+    if (!municipioUF.trim()) itens.push("Preencha Município / UF.");
+    if (!data.trim()) itens.push("Preencha a data.");
+    if (!contNome.trim()) itens.push("Preencha o nome do contador.");
+    if (!contCPF.trim()) itens.push("Preencha o CPF do contador.");
+    if (!contCRC.trim()) itens.push("Preencha o CRC do contador.");
+    if (!pjVisitada) itens.push("Informe se a PJ foi visitada.");
+
+    return itens;
+  }, [
+    razao,
+    cnpj,
+    qtdMeses,
+    total,
     percentualFormas,
     percentualMeios,
+    percentualFormasValido,
+    percentualMeiosValido,
     municipioUF,
     data,
     contNome,
@@ -256,7 +357,7 @@ export function FaturamentoFormPJ() {
       formas,
       meios,
       municipioUF,
-      data,
+      data: isoToBr(data),
       contNome,
       contCPF,
       contCRC,
@@ -348,10 +449,12 @@ export function FaturamentoFormPJ() {
             <div className="rounded-2xl border border-gray-200 bg-gray-50/80 p-4">
               <Field label="CNPJ">
                 <input
-                  value={cnpj}
-                  onChange={(e) => setCnpj(e.target.value)}
+                  value={formatCnpjView(cnpj)}
+                  onChange={(e) => setCnpj(onlyDigits(e.target.value).slice(0, 14))}
                   className={inputBaseClassName()}
                   placeholder="00.000.000/0000-00"
+                  inputMode="numeric"
+                  maxLength={18}
                 />
               </Field>
             </div>
@@ -476,10 +579,11 @@ export function FaturamentoFormPJ() {
               <input
                 value={formas.vista}
                 onChange={(e) =>
-                  setFormas((prev) => ({ ...prev, vista: e.target.value }))
+                  setFormas((prev) => ({ ...prev, vista: normalizePercentInput(e.target.value) }))
                 }
                 className={inputBaseClassName()}
                 placeholder="Ex: 40"
+                inputMode="decimal"
               />
             </Field>
 
@@ -487,10 +591,11 @@ export function FaturamentoFormPJ() {
               <input
                 value={formas.prazo}
                 onChange={(e) =>
-                  setFormas((prev) => ({ ...prev, prazo: e.target.value }))
+                  setFormas((prev) => ({ ...prev, prazo: normalizePercentInput(e.target.value) }))
                 }
                 className={inputBaseClassName()}
                 placeholder="Ex: 60"
+                inputMode="decimal"
               />
             </Field>
           </div>
@@ -499,12 +604,17 @@ export function FaturamentoFormPJ() {
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-gray-600">Total informado</span>
               <span
-                className={`text-sm font-semibold ${percentualFormas === 100 ? "text-emerald-700" : "text-amber-700"
+                className={`text-sm font-semibold ${percentualFormasValido ? "text-emerald-700" : "text-amber-700"
                   }`}
               >
                 {percentualFormas}%
               </span>
             </div>
+            {!percentualFormasValido && (
+              <p className="mt-2 text-xs text-amber-700">
+                A soma deve fechar em 100% para liberar o PDF.
+              </p>
+            )}
           </div>
         </SectionCard>
 
@@ -521,11 +631,12 @@ export function FaturamentoFormPJ() {
                   onChange={(e) =>
                     setMeios((prev) => ({
                       ...prev,
-                      [field.key]: e.target.value,
+                      [field.key]: normalizePercentInput(e.target.value),
                     }))
                   }
                   className={inputBaseClassName()}
                   placeholder={field.placeholder}
+                  inputMode="decimal"
                 />
               </Field>
             ))}
@@ -535,12 +646,17 @@ export function FaturamentoFormPJ() {
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-gray-600">Total informado</span>
               <span
-                className={`text-sm font-semibold ${percentualMeios === 100 ? "text-emerald-700" : "text-amber-700"
+                className={`text-sm font-semibold ${percentualMeiosValido ? "text-emerald-700" : "text-amber-700"
                   }`}
               >
                 {percentualMeios}%
               </span>
             </div>
+            {!percentualMeiosValido && (
+              <p className="mt-2 text-xs text-amber-700">
+                A soma deve fechar em 100% para liberar o PDF.
+              </p>
+            )}
           </div>
         </SectionCard>
       </div>
@@ -562,10 +678,10 @@ export function FaturamentoFormPJ() {
 
             <Field label="Data">
               <input
+                type="date"
                 value={data}
                 onChange={(e) => setData(e.target.value)}
                 className={inputBaseClassName()}
-                placeholder="dd/mm/aaaa"
               />
             </Field>
           </div>
@@ -589,10 +705,12 @@ export function FaturamentoFormPJ() {
 
             <Field label="CPF">
               <input
-                value={contCPF}
-                onChange={(e) => setContCPF(e.target.value)}
+                value={formatCpfView(contCPF)}
+                onChange={(e) => setContCPF(onlyDigits(e.target.value).slice(0, 11))}
                 className={inputBaseClassName()}
                 placeholder="CPF"
+                inputMode="numeric"
+                maxLength={14}
               />
             </Field>
 
@@ -646,6 +764,16 @@ export function FaturamentoFormPJ() {
             <p className="mt-1 text-sm text-gray-600">
               Revise os dados preenchidos e gere o PDF final da declaração.
             </p>
+            {!formularioValido && (
+              <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                <p className="font-semibold">Ainda faltam ajustes para liberar o PDF:</p>
+                <ul className="mt-1 list-disc pl-5">
+                  {pendencias.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <button

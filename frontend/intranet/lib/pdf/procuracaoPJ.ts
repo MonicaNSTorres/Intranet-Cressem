@@ -60,6 +60,17 @@ export async function gerarPdfProcuracaoPJ(o: PJOpts) {
     const get = (v?: string, ph: string = "________________") =>
         (v && String(v).trim()) || ph;
 
+    try {
+        const logoUrl = "/sicoob-cressem-logo.png?v=2";
+        const logo = await toDataURL(logoUrl);
+        const maxW = 120;
+        const maxH = 34;
+        const scale = Math.min(maxW / logo.width, maxH / logo.height);
+        const w = logo.width * scale;
+        const h = logo.height * scale;
+        doc.addImage(logo.dataUrl, logo.type, pageW - left - w, 32, w, h, undefined, "MEDIUM");
+    } catch { }
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.text("PROCURAÇÃO", pageW / 2, y, { align: "center" });
@@ -106,3 +117,59 @@ export async function gerarPdfProcuracaoPJ(o: PJOpts) {
 function maskCpf(v: string) { const s = v.replace(/\D/g, ""); return s.length === 11 ? `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9)}` : v; }
 function maskCnpj(v: string) { const s = v.replace(/\D/g, ""); return s.length === 14 ? `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}` : v; }
 function maskCep(v: string) { const s = v.replace(/\D/g, ""); return s.length >= 8 ? `${s.slice(0, 5)}-${s.slice(5, 8)}` : v; }
+
+async function toDataURL(url: string): Promise<{
+    dataUrl: string;
+    type: "JPEG" | "PNG";
+    width: number;
+    height: number;
+}> {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("Logo não encontrada");
+
+    const b = await r.blob();
+
+    const originalDataUrl = await new Promise<string>((res, rej) => {
+        const fr = new FileReader();
+        fr.onloadend = () => res(fr.result as string);
+        fr.onerror = rej;
+        fr.readAsDataURL(b);
+    });
+
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = originalDataUrl;
+    });
+
+    const maxWidth = 560;
+    const maxHeight = 174;
+    const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+        return {
+            dataUrl: originalDataUrl,
+            type: "PNG",
+            width: img.width,
+            height: img.height,
+        };
+    }
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    return {
+        dataUrl: canvas.toDataURL("image/png"),
+        type: "PNG",
+        width: canvas.width,
+        height: canvas.height,
+    };
+}

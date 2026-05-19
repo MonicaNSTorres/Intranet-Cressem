@@ -5,6 +5,7 @@ import { useState } from "react";
 import { gerarPdfAssociado } from "@/lib/pdf/gerarPdf";
 import { formatCpfView, monetizarDigitacao } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
+import { getMeAdUser } from "@/services/auth.service";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
@@ -27,6 +28,17 @@ export function ConsultaAssociadoForm() {
 
   const onBuscar = async () => {
     setData(null);
+    if (!atendente.trim()) {
+      try {
+        const me = await getMeAdUser();
+        const nomeAtendente = String(me?.nome_completo || me?.nome || me?.username || "").trim();
+        if (nomeAtendente) {
+          setAtendente(nomeAtendente);
+        }
+      } catch {
+        // mantém manual caso não consiga buscar usuário logado
+      }
+    }
 
     const r = await buscar(cpf);
     if (r.found) {

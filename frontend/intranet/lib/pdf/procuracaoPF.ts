@@ -53,11 +53,14 @@ export async function gerarPdfProcuracaoPF(o: PFOpts) {
         (v && String(v).trim()) || ph;
 
     try {
-        const logoUrl = "/sicoob-cressem-logo.png";
+        const logoUrl = "/sicoob-cressem-logo.png?v=2";
         const logo = await toDataURL(logoUrl);
-        const w = 140;
-        const h = w * (500 / 1000);
-        doc.addImage(logo.dataUrl, logo.type, pageW - left - w, 32, w, h, undefined, "FAST");
+        const maxW = 120;
+        const maxH = 34;
+        const scale = Math.min(maxW / logo.width, maxH / logo.height);
+        const w = logo.width * scale;
+        const h = logo.height * scale;
+        doc.addImage(logo.dataUrl, logo.type, pageW - left - w, 32, w, h, undefined, "MEDIUM");
     } catch { }
 
     doc.setFont("helvetica", "bold");
@@ -117,6 +120,8 @@ function maskCep(v: string) { const s = v.replace(/\D/g, ""); return s.length >=
 async function toDataURL(url: string): Promise<{
     dataUrl: string;
     type: "JPEG" | "PNG";
+    width: number;
+    height: number;
 }> {
     const r = await fetch(url);
     if (!r.ok) throw new Error("Logo não encontrada");
@@ -151,13 +156,19 @@ async function toDataURL(url: string): Promise<{
         return {
             dataUrl: originalDataUrl,
             type: "PNG",
+            width: img.width,
+            height: img.height,
         };
     }
 
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     return {
-        dataUrl: canvas.toDataURL("image/jpeg", 0.72),
-        type: "JPEG",
+        dataUrl: canvas.toDataURL("image/png"),
+        type: "PNG",
+        width: canvas.width,
+        height: canvas.height,
     };
 }
