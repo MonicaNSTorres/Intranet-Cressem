@@ -27,13 +27,18 @@ export async function juntarEComprimirPdfs(files: File[]) {
     const data = error?.response?.data;
 
     if (data instanceof Blob) {
+      const text = await data.text();
+
       try {
-        const text = await data.text();
         const parsed = JSON.parse(text);
         const msg =
           parsed?.error || parsed?.details || "Erro ao processar os PDFs.";
         throw new Error(msg);
-      } catch {
+      } catch (parseError) {
+        if (text) {
+          throw new Error(text);
+        }
+
         throw new Error("Erro ao processar os PDFs.");
       }
     }

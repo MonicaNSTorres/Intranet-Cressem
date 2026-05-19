@@ -24,11 +24,11 @@ export async function gerarPdfAssociado(opts: PdfOpts) {
   } = opts;
 
   const doc = new jsPDF({
-  unit: "pt",
-  format: "a4",
-  compress: true,
-  putOnlyUsedFonts: true,
-});
+    unit: "pt",
+    format: "a4",
+    compress: true,
+    putOnlyUsedFonts: true,
+  });
   const pageW = doc.internal.pageSize.getWidth();
 
   const logoUrl = "/sicoob-cressem-logo.png";
@@ -199,9 +199,15 @@ async function tryFetchAsDataURL(url: string): Promise<{
 
     const maxWidth = 420;
     const maxHeight = 126;
-    const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+
+    const scale = Math.min(
+      maxWidth / img.width,
+      maxHeight / img.height,
+      1
+    );
 
     const canvas = document.createElement("canvas");
+
     canvas.width = Math.round(img.width * scale);
     canvas.height = Math.round(img.height * scale);
 
@@ -213,6 +219,10 @@ async function tryFetchAsDataURL(url: string): Promise<{
         type: "PNG",
       };
     }
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
 
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 

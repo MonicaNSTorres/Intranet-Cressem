@@ -161,6 +161,9 @@ async function tryFetchAsDataURL(url: string): Promise<{
             };
         }
 
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
         return {
