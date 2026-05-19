@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+﻿import jsPDF from "jspdf";
 
 type PdfOpts = {
   nome: string;
@@ -21,7 +21,12 @@ type PdfOpts = {
 };
 
 export async function gerarPdfPrevisul(o: PdfOpts) {
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const doc = new jsPDF({
+    unit: "pt",
+    format: "a4",
+    compress: true,
+    putOnlyUsedFonts: true,
+  });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 32;
@@ -53,7 +58,7 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
     const h = logo.height * scale;
 
     ensureSpace(h + 10);
-    doc.addImage(logo.dataUrl, "PNG", margin, y, w, h);
+    doc.addImage(logo.dataUrl, logo.type, margin, y, w, h, undefined, "MEDIUM");
     y += h + 8;
   } catch {
     y += 22;
@@ -61,7 +66,7 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.text("TERMO DE ADESÃO AO CONTRATO PRESTAMISTA", pageW / 2, y, {
+  doc.text("TERMO DE ADESÃƒO AO CONTRATO PRESTAMISTA", pageW / 2, y, {
     align: "center",
   });
   y += 20;
@@ -139,11 +144,11 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
   ]);
 
   y += 6;
-  drawSectionHeader("Adesão ao seguro");
+  drawSectionHeader("AdesÃ£o ao seguro");
 
   const introChunks: Array<{ text: string; bold: boolean }> = [
     { text: safeText(o.nome), bold: true },
-    { text: ", pessoa física, CPF: ", bold: false },
+    { text: ", pessoa fÃ­sica, CPF: ", bold: false },
     { text: safeText(o.cpf), bold: true },
     { text: ", nascido em ", bold: false },
     { text: safeText(o.nascimento), bold: true },
@@ -151,8 +156,8 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
     { text: safeText(o.idadeTexto), bold: true },
     {
       text:
-        ", associado à SICOOB CRESSEM - COOPERATIVA DE ECONOMIA E CRÉDITO MÚTUO DOS SERVIDORES " +
-    `MUNICIPAIS DA REGIÃO METROPOLITANA DO VALE DO PARAÍBA E LITORAL NORTE, representado nos termos de seus atos ` +
+        ", associado Ã  SICOOB CRESSEM - COOPERATIVA DE ECONOMIA E CRÃ‰DITO MÃšTUO DOS SERVIDORES " +
+    `MUNICIPAIS DA REGIÃƒO METROPOLITANA DO VALE DO PARAÃBA E LITORAL NORTE, representado nos termos de seus atos ` +
         `constitutivos, formaliza pela assinatura do presente Termo, o interesse em aderir ao Contrato de Seguro Prestamista.`,
       bold: false,
     },
@@ -188,13 +193,13 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
   drawSectionHeader("Dados do contrato");
 
   drawFieldsRow([
-    { label: "Proposta nº", value: o.proposta, width: colW * 0.34 },
-    { label: "Valor do empréstimo", value: o.valorEmprestimo, width: colW * 0.33 },
+    { label: "Proposta nÂº", value: o.proposta, width: colW * 0.34 },
+    { label: "Valor do emprÃ©stimo", value: o.valorEmprestimo, width: colW * 0.33 },
     { label: "Total de parcelas", value: o.totalParcelas, width: colW * 0.33 },
   ]);
 
   drawFieldsRow([
-    { label: "Data 1ª parcela do empréstimo", value: o.dataPrimeiraParcelaEmprestimo, width: colW * 0.5 },
+    { label: "Data 1Âª parcela do emprÃ©stimo", value: o.dataPrimeiraParcelaEmprestimo, width: colW * 0.5 },
     { label: "Taxa de juros sobre o seguro", value: o.taxaJuros, width: colW * 0.5 },
   ]);
 
@@ -205,14 +210,14 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
 
   if (o.mostrarCompetencia) {
     drawFieldsRow([
-      { label: "Data 1ª parcela do seguro", value: o.dataPrimeiraParcelaSeguro, width: colW * 0.5 },
-      { label: "Data da última parcela do seguro", value: o.dataUltimaParcelaSeguro, width: colW * 0.5 },
+      { label: "Data 1Âª parcela do seguro", value: o.dataPrimeiraParcelaSeguro, width: colW * 0.5 },
+      { label: "Data da Ãºltima parcela do seguro", value: o.dataUltimaParcelaSeguro, width: colW * 0.5 },
     ]);
 
     y += 6;
-    const competência =
-      "O seguro é pago por competência, ou seja, a partir da contratação, havendo assim a incidência de mais um mês de seguro, pois a primeira parcela do empréstimo vence no mês subsequente, mas tendo de estar segura a partir deste mês.";
-    const compLines = doc.splitTextToSize(competência, colW - 16);
+    const competÃªncia =
+      "O seguro Ã© pago por competÃªncia, ou seja, a partir da contrataÃ§Ã£o, havendo assim a incidÃªncia de mais um mÃªs de seguro, pois a primeira parcela do emprÃ©stimo vence no mÃªs subsequente, mas tendo de estar segura a partir deste mÃªs.";
+    const compLines = doc.splitTextToSize(competÃªncia, colW - 16);
     const compLineH = 10.2;
     const compBoxH = Math.max(30, compLines.length * compLineH + 16);
     ensureSpace(compBoxH + 4);
@@ -230,10 +235,10 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
     y += compBoxH + 8;
   }
 
-  drawSectionHeader("Declaração");
+  drawSectionHeader("DeclaraÃ§Ã£o");
 
   const declaracao =
-    "A formalização da adesão individual ao seguro será realizada por intermédio do preenchimento e assinatura, pelo proponente, da Proposta de Adesão.";
+    "A formalizaÃ§Ã£o da adesÃ£o individual ao seguro serÃ¡ realizada por intermÃ©dio do preenchimento e assinatura, pelo proponente, da Proposta de AdesÃ£o.";
   const declLines = doc.splitTextToSize(declaracao, colW - 16);
   const declLineH = 10.2;
   const declBoxH = Math.max(28, declLines.length * declLineH + 16);
@@ -277,7 +282,7 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
   doc.text(safeText(o.assinaturaAssociado), assinaturaX1 + assinaturaW / 2, y, {
     align: "center",
   });
-  doc.text("Validação", assinaturaX2 + assinaturaW / 2, y, { align: "center" });
+  doc.text("ValidaÃ§Ã£o", assinaturaX2 + assinaturaW / 2, y, { align: "center" });
 
   doc.save(`previsul_${sanitize(o.nome || "associado")}.pdf`);
 }
@@ -333,7 +338,7 @@ async function loadImageDataURL(url: string) {
 
   const b = await r.blob();
 
-  const dataUrl = await new Promise<string>((resolve) => {
+  const originalDataUrl = await new Promise<string>((resolve) => {
     const fr = new FileReader();
     fr.onloadend = () => resolve(fr.result as string);
     fr.readAsDataURL(b);
@@ -343,12 +348,34 @@ async function loadImageDataURL(url: string) {
     const image = new Image();
     image.onload = () => resolve(image);
     image.onerror = reject;
-    image.src = dataUrl;
+    image.src = originalDataUrl;
   });
 
+  const maxWidth = 560;
+  const maxHeight = 174;
+  const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
+
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return {
+      dataUrl: canvas.toDataURL("image/png"),
+      width: canvas.width,
+      height: canvas.height,
+      type: "PNG" as const,
+    };
+  }
+
   return {
-    dataUrl,
+    dataUrl: originalDataUrl,
     width: img.width,
     height: img.height,
+    type: "PNG" as const,
   };
 }

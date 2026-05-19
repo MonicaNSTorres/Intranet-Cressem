@@ -300,7 +300,12 @@ export function ConsultaReciboFinanceiroForm() {
   }
 
   async function imprimirRecibo(recibo: ReciboFinanceiroResponse) {
-    await gerarPdfReciboFinanceiro(recibo);
+    await gerarPdfReciboFinanceiro(recibo, {
+      acao: "download",
+      nomeArquivo: `recibo_financeiro_${String(recibo?.NM_ASSOCIADO || "associado")
+        .replace(/\s+/g, "_")
+        .replace(/[^\w\-_.]/g, "")}_${String(recibo?.ID_RECIBO_CRM || "novo")}.pdf`,
+    });
   }
 
   function renderPaginacao() {

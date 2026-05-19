@@ -6,9 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
     FaArrowRight,
+    FaDownload,
     FaEdit,
     FaPlus,
-    FaPrint,
     FaSave,
     FaSearch,
     FaTimes,
@@ -649,7 +649,7 @@ export function CadastroReciboFinanceiroForm() {
         }
     }
 
-    async function imprimirRecibo() {
+    async function baixarRecibo() {
         try {
             setErro("");
             setInfo("");
@@ -686,7 +686,7 @@ export function CadastroReciboFinanceiroForm() {
                     ...payload,
                 },
                 {
-                    acao: "print",
+                    acao: "download",
                     nomeArquivo: `recibo_financeiro_${(payload.NM_ASSOCIADO || "associado")
                         .replace(/\s+/g, "_")
                         .replace(/[^\w\-_.]/g, "")}_${String(
@@ -1054,11 +1054,11 @@ export function CadastroReciboFinanceiroForm() {
                                 {reciboFoiSalvo && (
                                     <button
                                         type="button"
-                                        onClick={imprimirRecibo}
+                                        onClick={baixarRecibo}
                                         className={buttonSecondary}
                                     >
-                                        <FaPrint />
-                                        Imprimir Recibo
+                                        <FaDownload />
+                                        Baixar Recibo
                                     </button>
                                 )}
                             </div>

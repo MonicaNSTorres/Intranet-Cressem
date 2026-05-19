@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+﻿import jsPDF from "jspdf";
 
 type Linha = {
   label: string;
@@ -57,7 +57,12 @@ export async function gerarPdfSimuladorDesconto(
   o: PdfData,
   options: GerarPdfSimuladorDescontoOptions = {}
 ) {
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const doc = new jsPDF({
+    unit: "pt",
+    format: "a4",
+    compress: true,
+    putOnlyUsedFonts: true,
+  });
 
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -66,13 +71,13 @@ export async function gerarPdfSimuladorDesconto(
   const cursor: Cursor = { y: 22 };
 
   try {
-    const logo = await loadImageDataURL("/sicoob-cressem-logo.png");
+    const logo = await loadImageDataURL("/sicoob-cressem-logo.png?v=2");
     const maxW = 135;
     const maxH = 42;
     const scale = Math.min(maxW / logo.width, maxH / logo.height);
     const w = logo.width * scale;
     const h = logo.height * scale;
-    doc.addImage(logo.dataUrl, "PNG", margin, cursor.y, w, h);
+    doc.addImage(logo.dataUrl, logo.type, margin, cursor.y, w, h, undefined, "MEDIUM");
     cursor.y += h + 8;
   } catch {
     cursor.y += 20;
@@ -451,7 +456,7 @@ async function loadImageDataURL(url: string) {
 
   const b = await r.blob();
 
-  const dataUrl = await new Promise<string>((resolve) => {
+  const originalDataUrl = await new Promise<string>((resolve) => {
     const fr = new FileReader();
     fr.onloadend = () => resolve(fr.result as string);
     fr.readAsDataURL(b);
@@ -461,13 +466,35 @@ async function loadImageDataURL(url: string) {
     const image = new Image();
     image.onload = () => resolve(image);
     image.onerror = reject;
-    image.src = dataUrl;
+    image.src = originalDataUrl;
   });
 
+  const maxWidth = 560;
+  const maxHeight = 174;
+  const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
+
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return {
+      dataUrl: canvas.toDataURL("image/png"),
+      width: canvas.width,
+      height: canvas.height,
+      type: "PNG" as const,
+    };
+  }
+
   return {
-    dataUrl,
+    dataUrl: originalDataUrl,
     width: img.width,
     height: img.height,
+    type: "PNG" as const,
   };
 }
 
@@ -542,3 +569,4 @@ async function printPdf(doc: jsPDF, nomeArquivo: string) {
     document.body.appendChild(iframe);
   });
 }
+

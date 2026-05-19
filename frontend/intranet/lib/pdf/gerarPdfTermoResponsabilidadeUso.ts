@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+﻿import jsPDF from "jspdf";
 
 type PdfOpts = {
     cpf: string;
@@ -12,7 +12,12 @@ type PdfOpts = {
 };
 
 export async function gerarPdfTermoResponsabilidadeUso(o: PdfOpts) {
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const doc = new jsPDF({
+        unit: "pt",
+        format: "a4",
+        compress: true,
+        putOnlyUsedFonts: true,
+    });
 
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -52,11 +57,13 @@ export async function gerarPdfTermoResponsabilidadeUso(o: PdfOpts) {
     };
 
     try {
-        const logoUrl = "/sicoob-cressem-logo.png";
-        const dataUrl = await toDataURL(logoUrl);
-        const w = 90;
-        const h = 50;
-        doc.addImage(dataUrl, "PNG", margin, y, w, h);
+        const logo = await loadImageDataURL("/sicoob-cressem-logo.png?v=2");
+        const maxW = 96;
+        const maxH = 30;
+        const scale = Math.min(maxW / logo.width, maxH / logo.height);
+        const w = logo.width * scale;
+        const h = logo.height * scale;
+        doc.addImage(logo.dataUrl, logo.type, margin, y, w, h, undefined, "MEDIUM");
         y += h + 18;
     } catch {
         y += 12;
@@ -121,7 +128,7 @@ export async function gerarPdfTermoResponsabilidadeUso(o: PdfOpts) {
         writeBullet("Deve comunicar qualquer dano ou perda imediatamente;");
         writeBullet("Poderá arcar com custos em caso de negligência ou imprudência;");
         writeBullet(
-            "O equipamento e acessórios deste termo destina-se exclusivamente ao uso profissional. O empregado compromete-se a utilizar o dispositivo e seus aplicativos de comunicação apenas durante sua jornada de trabalho contratual, sendo vedada a utilização para fins particulares ou fora do horário de expediente, salvo em casos de regime de sobreaviso formalmente estabelecido."
+            "O equipamento e os acessórios deste termo destinam-se exclusivamente ao uso profissional. O empregado compromete-se a utilizar o dispositivo e seus aplicativos de comunicação apenas durante sua jornada de trabalho contratual, sendo vedada a utilização para fins particulares ou fora do horário de expediente, salvo em casos de regime de sobreaviso formalmente estabelecido."
         );
         writeBullet(
             "Em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), o empregado está ciente e concorda de que o dispositivo corporativo está sujeito a monitoramento remoto. O monitoramento visa garantir a segurança das informações da Cooperativa, a integridade dos dados dos cooperados e o cumprimento de políticas de conformidade. Privacidade: Não haverá coleta de dados de natureza estritamente pessoal, reforçando-se a proibição do uso do aparelho para fins particulares."
@@ -192,14 +199,49 @@ function sanitize(s: string) {
     return s.replace(/\s+/g, "_").replace(/[^\w\-_.]/g, "");
 }
 
-async function toDataURL(url: string) {
+async function loadImageDataURL(url: string) {
     const r = await fetch(url);
-    if (!r.ok) throw new Error("Logo não encontrada");
+    if (!r.ok) throw new Error("Logo n�o encontrada");
     const b = await r.blob();
 
-    return await new Promise<string>((resolve) => {
+    const originalDataUrl = await new Promise<string>((resolve) => {
         const fr = new FileReader();
         fr.onloadend = () => resolve(fr.result as string);
         fr.readAsDataURL(b);
     });
+
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = originalDataUrl;
+    });
+
+    const maxWidth = 560;
+    const maxHeight = 174;
+    const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        return {
+            dataUrl: canvas.toDataURL("image/png"),
+            width: canvas.width,
+            height: canvas.height,
+            type: "PNG" as const,
+        };
+    }
+
+    return {
+        dataUrl: originalDataUrl,
+        width: img.width,
+        height: img.height,
+        type: "PNG" as const,
+    };
 }

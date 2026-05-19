@@ -25,6 +25,7 @@ import {
   type SolicitaoListaItem,
   type SolicitacaoDetalheItem,
 } from "@/services/gerenciamento_reembolso_despesa.service";
+import { gerarPdfSolicitacaoReembolso } from "@/lib/pdf/gerarPdfSolicitacaoReembolso";
 
 function capitalizeWords(text: string) {
   const palavrasMinusculas = new Set([
@@ -637,8 +638,54 @@ export function GerenciamentoReembolsoDespesaForm() {
     router.push(`/auth/cadastro_reembolso_despesa?id=${id}`);
   }
 
-  function imprimirSolicitacao() {
-    window.print();
+  async function imprimirSolicitacao() {
+    if (!solicitacaoAtual) return;
+
+    try {
+      const despesas = (solicitacaoAtual.DESPESAS || solicitacaoAtual.despesas || []).map(
+        (item: any) => ({
+          TP_DESPESA: item?.TP_DESPESA || "",
+          DESC_DESPESA: item?.DESC_DESPESA || "",
+          VALOR: Number(item?.VALOR || 0),
+        })
+      );
+
+      await gerarPdfSolicitacaoReembolso(
+        {
+          idSolicitacao: solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA,
+          nomeFuncionario: solicitacaoAtual.NM_FUNCIONARIO || "",
+          cpfFuncionario: solicitacaoAtual.NR_CPF_FUNCIONARIO || "",
+          cidade: solicitacaoAtual.NM_CIDADE || "",
+          dtIda: solicitacaoAtual.DT_IDA || "",
+          dtVolta: solicitacaoAtual.DT_VOLTA || "",
+          justificativa: solicitacaoAtual.DESC_JTF_EVENTO || "",
+          nrBanco: solicitacaoAtual.NR_BANCO || "",
+          agencia: solicitacaoAtual.CD_AGENCIA || "",
+          nrConta: solicitacaoAtual.NR_CONTA || "",
+          andamento: solicitacaoAtual.DESC_ANDAMENTO || "",
+          despesas,
+          nmFinanceiro: solicitacaoAtual.NM_FNC_FINANCEIRO || "",
+          parecerFinanceiro: parecerFinanceiroTexto || solicitacaoAtual.DESC_PRC_FINANCEIRO || "",
+          nmGerencia: solicitacaoAtual.NM_FNC_GERENCIA || "",
+          parecerGerencia: parecerGerenciaTexto || solicitacaoAtual.DESC_PRC_GERENCIA || "",
+          nmGerenciaSup: solicitacaoAtual.NM_FNC_GERENCIA_SUP || "",
+          parecerGerenciaSup:
+            parecerGerenciaSupTexto || solicitacaoAtual.DESC_PRC_GERENCIA_SUP || "",
+          nmDiretoria: solicitacaoAtual.NM_FNC_DIRETORIA || "",
+          parecerDiretoria: parecerDiretoriaTexto || solicitacaoAtual.DESC_PRC_DIRETORIA || "",
+          parecerFinal: parecerFinal || solicitacaoAtual.DESC_ANDAMENTO || "",
+        },
+        {
+          acao: "download",
+          nomeArquivo: `reembolso_${String(
+            solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA || "solicitacao"
+          )}.pdf`,
+        }
+      );
+    } catch (error) {
+      console.error(error);
+      alert("Não foi possível gerar o relatório em PDF.");
+    }
   }
 
   if (loading) {

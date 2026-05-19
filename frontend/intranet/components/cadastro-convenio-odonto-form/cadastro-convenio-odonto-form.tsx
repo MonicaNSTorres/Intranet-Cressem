@@ -278,6 +278,26 @@ export function CadastroConvenioOdontoForm() {
         setInfo("");
     }
 
+    function limparDadosBuscaPreservandoCpf() {
+        setNome("");
+        setNomeMae("");
+        setDataNascimento("");
+        setCidade("");
+        setCodCartao("");
+        setCodAssociado("");
+        setCodPlano("");
+        setConvenio("");
+        setPlanoTitular("");
+        setTitularAtivo(true);
+        setEmpresas([]);
+        setMatriculaSelecionada("");
+        setEmpresaSelecionada("");
+        setCnpjSelecionado("");
+        setDependentes([]);
+        setModoEdicao(false);
+        setTitularOriginal(null);
+    }
+
     function syncEmpresaSelecionada(matricula: string, lista: EmpresaAssociado[]) {
         const empresa = lista.find((item) => String(item.NR_MATRICULA) === String(matricula));
         setMatriculaSelecionada(matricula);
@@ -317,6 +337,7 @@ export function CadastroConvenioOdontoForm() {
 
     async function onBuscar() {
         try {
+            limparDadosBuscaPreservandoCpf();
             setErro("");
             setInfo("");
 

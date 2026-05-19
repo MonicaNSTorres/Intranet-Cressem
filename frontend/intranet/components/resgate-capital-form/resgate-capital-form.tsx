@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useMemo, useState } from "react";
-import { FaPlus, FaPrint, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
+import { FaPlus, FaPrint, FaSearch, FaSave, FaTimes, FaTrash } from "react-icons/fa";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import {
   fmtBRL,
@@ -176,9 +176,11 @@ export function ResgateCapitalForm() {
 
   const [loadingTela, setLoadingTela] = useState(false);
   const [loadingSalvar, setLoadingSalvar] = useState(false);
+  const [loadingImprimir, setLoadingImprimir] = useState(false);
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
   const [nomeAtendente, setNomeAtendente] = useState("ATENDENTE");
+  const [hashFormularioSalvo, setHashFormularioSalvo] = useState("");
 
   const { loading, erro: erroBusca, info: infoBusca, buscar } = useAssociadoPorCpf();
 
@@ -269,6 +271,67 @@ export function ResgateCapitalForm() {
     return parcelas.reduce((acc, item) => acc + parseBRL(item.valor), 0);
   }, [parcelas]);
 
+  const hashFormularioAtual = useMemo(
+    () =>
+      JSON.stringify({
+        cpf,
+        nome,
+        matricula,
+        empresa,
+        saldoCapitalAtual,
+        secMotivo,
+        secAutorizado,
+        radioEmprestimo,
+        emprestimos,
+        radioConta,
+        numeroContaCorrente,
+        saldoDevedorConta,
+        amortizacaoConta,
+        numeroCartao,
+        saldoCartao,
+        amortizacaoCartao,
+        saldoCreditadoConta,
+        banco,
+        agencia,
+        conta,
+        digito,
+        valorPrimeiraParcela,
+        dataPrimeiraParcela,
+        parcelas,
+        secCidade,
+      }),
+    [
+      cpf,
+      nome,
+      matricula,
+      empresa,
+      saldoCapitalAtual,
+      secMotivo,
+      secAutorizado,
+      radioEmprestimo,
+      emprestimos,
+      radioConta,
+      numeroContaCorrente,
+      saldoDevedorConta,
+      amortizacaoConta,
+      numeroCartao,
+      saldoCartao,
+      amortizacaoCartao,
+      saldoCreditadoConta,
+      banco,
+      agencia,
+      conta,
+      digito,
+      valorPrimeiraParcela,
+      dataPrimeiraParcela,
+      parcelas,
+      secCidade,
+    ]
+  );
+
+  const podeImprimir =
+    hashFormularioSalvo !== "" && hashFormularioSalvo === hashFormularioAtual;
+
   function limparBlocosDebito() {
     setRadioEmprestimo("Nao");
     setEmprestimos([buildEmprestimo()]);
@@ -286,6 +349,7 @@ export function ResgateCapitalForm() {
     try {
       setErro("");
       setInfo("");
+      setHashFormularioSalvo("");
 
       const r = await buscar(cpf);
 
@@ -390,6 +454,7 @@ export function ResgateCapitalForm() {
     setSecCidade("");
     setErro("");
     setInfo("");
+    setHashFormularioSalvo("");
   }
 
   function updateEmprestimo(
@@ -669,7 +734,7 @@ export function ResgateCapitalForm() {
     return true;
   }
 
-  async function salvarEImprimir() {
+  async function salvarFormulario() {
     if (!validarFormulario()) return;
 
     try {
@@ -767,6 +832,31 @@ export function ResgateCapitalForm() {
         }
       }
 
+      setHashFormularioSalvo(hashFormularioAtual);
+      setInfo("Resgate salvo com sucesso. Agora você pode imprimir.");
+    } catch (e: any) {
+      console.error(e);
+      setErro(
+        e?.response?.data?.error ||
+        e?.response?.data?.details ||
+        "Não foi possível salvar o resgate."
+      );
+    } finally {
+      setLoadingSalvar(false);
+    }
+  }
+
+  async function imprimirFormulario() {
+    if (!podeImprimir) {
+      setErro("Salve novamente antes de imprimir. O formulário foi alterado.");
+      return;
+    }
+
+    try {
+      setLoadingImprimir(true);
+      setErro("");
+      setInfo("");
+
       await gerarPdfResgateCapital(
         {
           cpfCnpj: formatCpfView(cpf),
@@ -808,21 +898,17 @@ export function ResgateCapitalForm() {
           atendente: nomeAtendente,
         },
         {
-          acao: "print",
+          acao: "download",
           nomeArquivo: `resgate_capital_${onlyDigits(cpf) || "associado"}.pdf`,
         }
       );
 
-      setInfo("Resgate salvo com sucesso. Impressão preparada.");
+      setInfo("PDF gerado e baixado com sucesso.");
     } catch (e: any) {
       console.error(e);
-      setErro(
-        e?.response?.data?.error ||
-        e?.response?.data?.details ||
-        "Não foi possível salvar o resgate."
-      );
+      setErro(e?.message || "Não foi possível gerar o PDF para impressão.");
     } finally {
-      setLoadingSalvar(false);
+      setLoadingImprimir(false);
     }
   }
 
@@ -858,16 +944,28 @@ export function ResgateCapitalForm() {
             </div>
           </div>
 
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button
               type="button"
-              onClick={salvarEImprimir}
+              onClick={salvarFormulario}
               disabled={loadingSalvar || loadingTela}
               className="inline-flex w-full items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto cursor-pointer disabled:opacity-60"
             >
-              <FaPrint />
-              {loadingSalvar ? "Salvando..." : "Salvar e imprimir"}
+              <FaSave />
+              {loadingSalvar ? "Salvando..." : "Salvar"}
             </button>
+
+            {podeImprimir && (
+              <button
+                type="button"
+                onClick={imprimirFormulario}
+                disabled={loadingImprimir || loadingTela}
+                className="inline-flex w-full items-center justify-center gap-2 rounded bg-primary px-5 py-2 font-semibold text-white shadow hover:bg-secondary lg:w-auto cursor-pointer disabled:opacity-60"
+              >
+                <FaPrint />
+                {loadingImprimir ? "Gerando..." : "Baixar PDF"}
+              </button>
+            )}
           </div>
         </div>
 
