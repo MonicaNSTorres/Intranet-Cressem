@@ -10,6 +10,15 @@ import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
 
+function formatCnpjView(v: string) {
+  const s = onlyDigits(v).slice(0, 14);
+  if (s.length <= 2) return s;
+  if (s.length <= 5) return `${s.slice(0, 2)}.${s.slice(2)}`;
+  if (s.length <= 8) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5)}`;
+  if (s.length <= 12) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8)}`;
+  return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}`;
+}
+
 
 type AcaoPF = {
   outorganteNome: string;
@@ -180,7 +189,7 @@ export function ProcuracaoOutorganteForm() {
     setPf((prev) => ({
       ...prev,
       outorganteNome: r.data.nome || "",
-      outorganteCpf: r.data.cpf || clean,
+      outorganteCpf: onlyDigits(r.data.cpf || clean),
       outorganteDocNumero: r.data.rg || "",
 
       outorganteEndereco: r.data.rua || r.data.endereco || "",
@@ -222,7 +231,7 @@ export function ProcuracaoOutorganteForm() {
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
             <SearchInput
               value={formatCpfView(cpfBusca)}
-              onChange={(e) => setCpfBusca(e.target.value)}
+              onChange={(e) => setCpfBusca(onlyDigits(e.target.value).slice(0, 11))}
               placeholder="CPF (somente números)"
               className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
               inputMode="numeric"
@@ -266,7 +275,7 @@ export function ProcuracaoOutorganteForm() {
 
           <Input label="Tipo Doc (RG/CNH)" value={pf.outorganteDocTipo} onChange={(v) => setPf({ ...pf, outorganteDocTipo: v })} />
           <Input label="Nº Doc" value={pf.outorganteDocNumero} onChange={(v) => setPf({ ...pf, outorganteDocNumero: v })} />
-          <Input label="CPF" value={pf.outorganteCpf} onChange={(v) => setPf({ ...pf, outorganteCpf: v })} />
+          <Input label="CPF" value={formatCpfView(pf.outorganteCpf)} onChange={(v) => setPf({ ...pf, outorganteCpf: onlyDigits(v).slice(0, 11) })} />
 
           <Input
             label="Endereço"
@@ -295,7 +304,7 @@ export function ProcuracaoOutorganteForm() {
 
           <Input label="Tipo Doc (RG/CNH)" value={outorgado.outorgadoDocTipo} onChange={(v) => setOutorgado({ ...outorgado, outorgadoDocTipo: v })} />
           <Input label="Nº Doc" value={outorgado.outorgadoDocNumero} onChange={(v) => setOutorgado({ ...outorgado, outorgadoDocNumero: v })} />
-          <Input label="CPF" value={outorgado.outorgadoCpf} onChange={(v) => setOutorgado({ ...outorgado, outorgadoCpf: v })} />
+          <Input label="CPF" value={formatCpfView(outorgado.outorgadoCpf)} onChange={(v) => setOutorgado({ ...outorgado, outorgadoCpf: onlyDigits(v).slice(0, 11) })} />
 
           <Input
             label="Endereço"
@@ -318,7 +327,7 @@ export function ProcuracaoOutorganteForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Input label="Razão Social" value={pj.razaoSocial} onChange={(v) => setPj({ ...pj, razaoSocial: v })} />
-          <Input label="CNPJ" value={pj.cnpj} onChange={(v) => setPj({ ...pj, cnpj: v })} />
+          <Input label="CNPJ" value={formatCnpjView(pj.cnpj)} onChange={(v) => setPj({ ...pj, cnpj: onlyDigits(v).slice(0, 14) })} />
 
           <Input label="Endereço (sede)" value={pj.sedeEndereco} onChange={(v) => setPj({ ...pj, sedeEndereco: v })} className="md:col-span-2" />
           <Input label="Número" value={pj.sedeNumero} onChange={(v) => setPj({ ...pj, sedeNumero: v })} />
@@ -335,7 +344,7 @@ export function ProcuracaoOutorganteForm() {
           <Input label="Profissão" value={pj.representanteProfissao} onChange={(v) => setPj({ ...pj, representanteProfissao: v })} />
           <Input label="Tipo Doc" value={pj.representanteDocTipo} onChange={(v) => setPj({ ...pj, representanteDocTipo: v })} />
           <Input label="Nº Doc" value={pj.representanteDocNumero} onChange={(v) => setPj({ ...pj, representanteDocNumero: v })} />
-          <Input label="CPF" value={pj.representanteCpf} onChange={(v) => setPj({ ...pj, representanteCpf: v })} />
+          <Input label="CPF" value={formatCpfView(pj.representanteCpf)} onChange={(v) => setPj({ ...pj, representanteCpf: onlyDigits(v).slice(0, 11) })} />
 
           <Input label="Endereço (rep.)" value={pj.representanteEnd} onChange={(v) => setPj({ ...pj, representanteEnd: v })} className="md:col-span-2" />
           <Input label="Número" value={pj.representanteNum} onChange={(v) => setPj({ ...pj, representanteNum: v })} />
