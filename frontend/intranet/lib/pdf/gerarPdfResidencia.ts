@@ -23,7 +23,12 @@ export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
         dia, mes, ano
     } = opts;
 
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const doc = new jsPDF({
+        unit: "pt",
+        format: "a4",
+        compress: true,
+        putOnlyUsedFonts: true,
+    });
     const pageW = doc.internal.pageSize.getWidth();
 
     let y = 120;
@@ -31,16 +36,15 @@ export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
     const logoUrl = "/sicoob-cressem-logo.png";
     const logo = await tryFetchAsDataURL(logoUrl);
     if (logo) {
-        const w = 100; // largura
+        const w = 100;
         const h = w * (500 / 1000);
         const marginLeft = 40;
-        doc.addImage(logo, "PNG", marginLeft, 40, w, h);
-        y = 40 + h + 20; // espaço abaixo do logo
+        doc.addImage(logo.dataUrl, logo.type, marginLeft, 40, w, h, undefined, "FAST");
+        y = 40 + h + 20;
     }
 
     y += 40;
 
-    // Título
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.text("DECLARAÇÃO DE RESIDÊNCIA", pageW / 2, y, { align: "center" });
@@ -49,7 +53,6 @@ export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
 
-    // Texto com linhas sublinhadas
     y += 40;
     doc.text(
         `Eu, ${nome || "__________________________"}, `,
@@ -64,7 +67,6 @@ export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
         60, y
     ); y += 26;
     {
-        // monta a parte até "bairro ..." (quebra AQUI)
         const p1: string[] = [];
         p1.push(`que resido no endereço ${endereco || "__________________________"}`);
         if (numero?.trim()) p1.push(`nº ${numero.trim()}`);
@@ -73,9 +75,7 @@ export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
 
         const linha1 = p1.join(" ");
 
-        // monta a parte depois do bairro (cidade/UF e opcionalmente CEP)
         const p2: string[] = [];
-        // vírgula logo após o bairro (se houver), senão depois do endereço/nº/complemento
         const terminaComVirgula = !!(bairro?.trim() || complemento?.trim() || numero?.trim());
         const cidadeUf = `cidade ${cidade || "____________"}, UF ${uf || "___"}`;
         p2.push(terminaComVirgula ? `${cidadeUf}` : `${cidadeUf}`);
@@ -83,20 +83,13 @@ export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
 
         const linha2 = p2.join("");
 
-        // alinhamento e largura úteis (margem 60 dos dois lados)
         const xLeft = 60;
         const maxW = pageW - 120;
 
-        // Se quiser centralizar as linhas, troque por:
-        // doc.text(linha1, pageW / 2, y, { maxWidth: maxW, align: "center" });
-        // y += 22;
-        // doc.text(linha2, pageW / 2, y, { maxWidth: maxW, align: "center" });
-
-        // Mantendo alinhado à esquerda como o resto do documento:
         doc.text(linha1, xLeft, y, { maxWidth: maxW });
         y += 26;
         doc.text(linha2, xLeft, y, { maxWidth: maxW });
-        y += 26; // altura entre as linhas
+        y += 26;//altura entre as linhas
     }
 
 
@@ -109,7 +102,6 @@ export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
 
     y += 60;
 
-    // Data e local
     doc.text(
         `${cidade || "________________"}, ${dia || "___"} de ${mes || "________"} de ${ano || "20__"}.`,
         60, y
@@ -129,16 +121,52 @@ export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
 
 }
 
-async function tryFetchAsDataURL(url: string): Promise<string | null> {
+async function tryFetchAsDataURL(url: string): Promise<{
+    dataUrl: string;
+    type: "JPEG" | "PNG";
+} | null> {
     try {
         const res = await fetch(url);
         if (!res.ok) return null;
+
         const blob = await res.blob();
-        return await new Promise((resolve) => {
+
+        const originalDataUrl = await new Promise<string>((resolve) => {
             const r = new FileReader();
             r.onloadend = () => resolve(r.result as string);
             r.readAsDataURL(blob);
         });
+
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = reject;
+            image.src = originalDataUrl;
+        });
+
+        const maxWidth = 420;
+        const maxHeight = 126;
+        const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+            return {
+                dataUrl: originalDataUrl,
+                type: "PNG",
+            };
+        }
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        return {
+            dataUrl: canvas.toDataURL("image/jpeg", 0.72),
+            type: "JPEG",
+        };
     } catch {
         return null;
     }
