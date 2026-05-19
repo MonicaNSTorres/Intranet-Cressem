@@ -55,7 +55,7 @@ export async function gerarPdfTermoGarantia(o: PdfOpts) {
     const h = logo.height * scale;
 
     ensureSpace(h + 10);
-    doc.addImage(logo.dataUrl, logo.type, margin, y, w, h, undefined, "FAST");
+    doc.addImage(logo.dataUrl, logo.type, margin, y, w, h, undefined, "MEDIUM");
     y += h + 8;
   } catch {
     y += 22;
@@ -390,8 +390,8 @@ async function loadImageDataURL(url: string) {
     image.src = originalDataUrl;
   });
 
-  const maxWidth = 420;
-  const maxHeight = 126;
+  const maxWidth = 560;
+  const maxHeight = 174;
   const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
 
   const canvas = document.createElement("canvas");
@@ -409,12 +409,14 @@ async function loadImageDataURL(url: string) {
     };
   }
 
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
   return {
-    dataUrl: canvas.toDataURL("image/jpeg", 0.72),
+    dataUrl: canvas.toDataURL("image/png"),
     width: canvas.width,
     height: canvas.height,
-    type: "JPEG" as const,
+    type: "PNG" as const,
   };
 }
