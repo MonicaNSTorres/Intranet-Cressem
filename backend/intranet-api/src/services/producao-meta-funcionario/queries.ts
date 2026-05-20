@@ -985,7 +985,7 @@ function sqlContaCorrenteAbertas() {
       NVL(M2.PRODUCAO_MES,0) AS PRODUCAO_FEVEREIRO,
       NVL(M3.PRODUCAO_MES,0) AS PRODUCAO_MARCO,
       NVL(SW.PRODUCAO_SEMANAL,0) AS PRODUCAO_SEMANAL,
-      ROUND(NVL(MA.META_ANO,0)/52) AS META_SEMANAL_52,
+      ROUND(NVL(MA.META_ANO,0)/52,2) AS META_SEMANAL_52,
       CASE
         WHEN ROUND(NVL(MA.META_ANO,0)/52,2) > 0 THEN
           ROUND(
@@ -993,7 +993,7 @@ function sqlContaCorrenteAbertas() {
           ,2)
         ELSE 0
       END AS PORCENTAGEM_SEMANA,
-      NVL(SW.PRODUCAO_SEMANAL,0) - ROUND(NVL(MA.META_ANO,0)/52) AS GAP_SEMANAL,
+      NVL(SW.PRODUCAO_SEMANAL,0) - ROUND(NVL(MA.META_ANO,0)/52,2) AS GAP_SEMANAL,
       NVL(MV.PRODUCAO_MES,0) AS PRODUCAO_MENSAL,
       (NVL(MA.META_ANO,0)/12) AS META_MENSAL,
       CASE
@@ -1240,9 +1240,17 @@ function sqlSeguroVendaNova() {
       , 0) AS META_SEMANAL,
       ROUND(NVL(MA.META_ANO, 0) / 52, 2) AS META_SEMANAL_52,
       CASE
-        WHEN ROUND(NVL(MA.META_ANO, 0) / 52, 2) > 0
+        WHEN NVL(
+          ROUND(
+            NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+          , 2)
+        , 0) > 0
           THEN ROUND(
-            (NVL(SW.PRODUCAO_SEMANAL, 0) / ROUND(NVL(MA.META_ANO, 0) / 52, 2)) * 100
+            (NVL(SW.PRODUCAO_SEMANAL, 0) / NVL(
+              ROUND(
+                NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+              , 2)
+            , 0)) * 100
           , 2)
         ELSE 0
       END AS PORCENTAGEM_SEMANA,
@@ -1467,9 +1475,17 @@ function sqlSeguroRural() {
       NVL(MM.META_MES, 0) AS META_MENSAL,
       ROUND(NVL(MA.META_ANO, 0) / 52, 2) AS META_SEMANAL_52,
       CASE
-        WHEN ROUND(NVL(MA.META_ANO, 0) / 52, 2) > 0
+        WHEN NVL(
+          ROUND(
+            NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+          , 2)
+        , 0) > 0
           THEN ROUND(
-            (NVL(SW.PRODUCAO_SEMANAL,0) / ROUND(NVL(MA.META_ANO, 0) / 52, 2)) * 100
+            (NVL(SW.PRODUCAO_SEMANAL,0) / NVL(
+              ROUND(
+                NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+              , 2)
+            , 0)) * 100
           , 2)
         ELSE 0
       END AS PORCENTAGEM_SEMANA,

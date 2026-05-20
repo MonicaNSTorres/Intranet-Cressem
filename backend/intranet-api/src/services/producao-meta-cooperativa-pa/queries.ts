@@ -933,21 +933,15 @@ ORDER BY P.NR_PA
 
       NVL(SW.PRODUCAO_SEMANAL, 0) AS "producao_semanal",
 
-      ROUND(
-        (M.META_ANO / 12) /
-        CEIL(
-          (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-           - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-        )
-      , 2) AS "meta_semanal_ano",
+      ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
       CASE
-        WHEN M.META_ANO > 0
-          THEN ROUND((NVL(SW.PRODUCAO_SEMANAL,0) / (M.META_ANO / 52)) * 100, 2)
+        WHEN ROUND(M.META_ANO / 52, 2) > 0
+          THEN ROUND((NVL(SW.PRODUCAO_SEMANAL,0) / ROUND(M.META_ANO / 52, 2)) * 100, 2)
         ELSE 0
       END AS "porcentagem_semanal",
 
-      (NVL(SW.PRODUCAO_SEMANAL,0) - (M.META_ANO / 52)) AS "gap_semanal",
+      (NVL(SW.PRODUCAO_SEMANAL,0) - ROUND(M.META_ANO / 52, 2)) AS "gap_semanal",
 
       NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
@@ -1288,13 +1282,7 @@ ORDER BY P.NR_PA
         ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
       END AS "producao_semanal",
 
-      ROUND(
-        (M.META_ANO / 12) /
-        CEIL(
-          (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-           - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-        )
-      , 2) AS "meta_semanal_ano",
+      ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
       CASE
         WHEN ROUND(M.META_ANO / 52, 2) > 0
@@ -1612,12 +1600,37 @@ ORDER BY P.NR_PA
       , 2) AS "meta_semanal_ano",
 
       CASE
-        WHEN ROUND(M.META_ANO / 52, 2) > 0
-          THEN ROUND((NVL(SW.PRODUCAO_SEMANAL, 0) / ROUND(M.META_ANO / 52, 2)) * 100, 2)
+        WHEN ROUND(
+          (NVL(M.META_ANO, 0) / 12) /
+          CEIL(
+            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+          )
+        , 2) > 0
+          THEN ROUND(
+            (NVL(SW.PRODUCAO_SEMANAL, 0) /
+              ROUND(
+                (NVL(M.META_ANO, 0) / 12) /
+                CEIL(
+                  (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+                   - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+                )
+              , 2)
+            ) * 100
+          , 2)
         ELSE 0
       END AS "porcentagem_semanal",
 
-      (NVL(SW.PRODUCAO_SEMANAL, 0) - ROUND(M.META_ANO / 52, 2)) AS "gap_semanal",
+      (
+        NVL(SW.PRODUCAO_SEMANAL, 0) -
+        ROUND(
+          (NVL(M.META_ANO, 0) / 12) /
+          CEIL(
+            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
+             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
+          )
+        , 2)
+      ) AS "gap_semanal",
 
       NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
@@ -1762,37 +1775,14 @@ ORDER BY P.NR_PA
       ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
       CASE
-        WHEN ROUND(
-          (M.META_ANO / 12) /
-          CEIL(
-            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-          )
-        , 2) > 0
+        WHEN ROUND(NVL(M.META_ANO, 0) / 52, 2) > 0
           THEN ROUND(
-            (NVL(SW.PRODUCAO_SEMANAL,0) /
-              ROUND(
-                (M.META_ANO / 12) /
-                CEIL(
-                  (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-                   - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-                )
-              , 2)
-            ) * 100
+            (NVL(SW.PRODUCAO_SEMANAL, 0) / ROUND(NVL(M.META_ANO, 0) / 52, 2)) * 100
           , 2)
         ELSE 0
       END AS "porcentagem_semanal",
 
-      (
-        NVL(SW.PRODUCAO_SEMANAL,0) -
-        ROUND(
-          (M.META_ANO / 12) /
-          CEIL(
-            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-          )
-        , 2)
-      ) AS "gap_semanal",
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - ROUND(NVL(M.META_ANO, 0) / 52, 2)) AS "gap_semanal",
 
       NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
@@ -1954,37 +1944,14 @@ ORDER BY P.NR_PA
       ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
       CASE
-        WHEN ROUND(
-          (M.META_ANO / 12) /
-          CEIL(
-            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-          )
-        , 2) > 0
+        WHEN ROUND(NVL(M.META_ANO, 0) / 52, 2) > 0
           THEN ROUND(
-            (NVL(SW.PRODUCAO_SEMANAL,0) /
-              ROUND(
-                (M.META_ANO / 12) /
-                CEIL(
-                  (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-                   - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-                )
-              , 2)
-            ) * 100
+            (NVL(SW.PRODUCAO_SEMANAL, 0) / ROUND(NVL(M.META_ANO, 0) / 52, 2)) * 100
           , 2)
         ELSE 0
       END AS "porcentagem_semanal",
 
-      (
-        NVL(SW.PRODUCAO_SEMANAL,0) -
-        ROUND(
-          (M.META_ANO / 12) /
-          CEIL(
-            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-          )
-        , 2)
-      ) AS "gap_semanal",
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - ROUND(NVL(M.META_ANO, 0) / 52, 2)) AS "gap_semanal",
 
       NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
@@ -2284,28 +2251,8 @@ ORDER BY P.NR_PA
       (NVL(M.META_ANO, 0) / 52) AS "meta_semanal_ano",
 
       CASE
-        WHEN (
-          (NVL(M.META_ANO, 0) / 12) /
-          CEIL(
-            (
-              LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
-              - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
-            ) / 7
-          )
-        ) > 0
-          THEN (
-            (NVL(SW.PRODUCAO_SEMANAL,0) /
-              (
-                (NVL(M.META_ANO, 0) / 12) /
-                CEIL(
-                  (
-                    LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
-                    - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
-                  ) / 7
-                )
-              )
-            ) * 100
-          )
+        WHEN (NVL(M.META_ANO, 0) / 52) > 0
+          THEN ((NVL(SW.PRODUCAO_SEMANAL,0) / (NVL(M.META_ANO, 0) / 52)) * 100)
         ELSE 0
       END AS "porcentagem_semanal",
 
@@ -2595,12 +2542,12 @@ ORDER BY P.NR_PA
         ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
         CASE
-          WHEN ROUND((M.META_ANO / 12) / 4, 2) > 0
-            THEN ROUND((NVL(SW.PRODUCAO_SEMANAL,0) / ROUND((M.META_ANO / 12) / 4, 2)) * 100, 2)
+          WHEN ROUND(M.META_ANO / 52, 2) > 0
+            THEN ROUND((NVL(SW.PRODUCAO_SEMANAL,0) / ROUND(M.META_ANO / 52, 2)) * 100, 2)
           ELSE 0
         END AS "porcentagem_semanal",
 
-        (NVL(SW.PRODUCAO_SEMANAL,0) - ROUND((M.META_ANO / 12) / 4, 2)) AS "gap_semanal",
+        (NVL(SW.PRODUCAO_SEMANAL,0) - ROUND(M.META_ANO / 52, 2)) AS "gap_semanal",
 
         NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
 
@@ -2763,36 +2710,16 @@ ORDER BY P.NR_PA
       ROUND(M.META_ANO / 52, 2) AS "meta_semanal_ano",
 
       CASE
-        WHEN ROUND(
-          (M.META_ANO / 12) /
-          CEIL(
-            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-          )
-        , 2) > 0
+        WHEN ROUND(M.META_ANO / 52, 2) > 0
         THEN ROUND(
-          (NVL(SW.PRODUCAO_SEMANAL,0) /
-            ROUND(
-              (M.META_ANO / 12) /
-              CEIL(
-                (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-                 - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-              )
-            , 2)
-          ) * 100
+          (NVL(SW.PRODUCAO_SEMANAL,0) / ROUND(M.META_ANO / 52, 2)) * 100
         , 2)
         ELSE 0
       END AS "porcentagem_semanal",
 
       (
         NVL(SW.PRODUCAO_SEMANAL,0) -
-        ROUND(
-          (M.META_ANO / 12) /
-          CEIL(
-            (LAST_DAY(ADD_MONTHS(TRUNC(SYSDATE,'MM'),1))
-             - ADD_MONTHS(TRUNC(SYSDATE,'MM'),1) + 1) / 7
-          )
-        , 2)
+        ROUND(M.META_ANO / 52, 2)
       ) AS "gap_semanal",
 
       NVL(AY.PRODUCAO_ANO, 0) AS "producao_ano",
