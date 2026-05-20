@@ -32,10 +32,10 @@ type NotebookRow = {
     OBS_NOTEBOOKS_SICOOB: string | null;
     ID_FUNCIONARIO: number | string | null;
     NM_FUNCIONARIO_TI: string | null;
+    NM_FUNCIONARIO_RECEBEU: string | null;
     DIR_TERMO_ASSINADO?: string | null;
     DESC_SITUACAO: string | null;
 };
-
 export default function ConsultaNotebookPage() {
     const [q, setQ] = useState("");
     const [loading, setLoading] = useState(true);
@@ -88,7 +88,9 @@ export default function ConsultaNotebookPage() {
     const totalComResponsavel = useMemo(
         () =>
             rows.filter(
-                (r) => !!r.NM_FUNCIONARIO_TI && String(r.NM_FUNCIONARIO_TI).trim() !== ""
+                (r) =>
+                    !!r.NM_FUNCIONARIO_RECEBEU &&
+                    String(r.NM_FUNCIONARIO_RECEBEU).trim() !== ""
             ).length,
         [rows]
     );
@@ -148,7 +150,8 @@ export default function ConsultaNotebookPage() {
             "Modelo",
             "Situação",
             "MAC",
-            "Funcionário TI",
+            "Funcionário que recebeu",
+            "Funcionário TI que cadastrou",
             "Início operação",
             "Garantia",
         ];
@@ -158,6 +161,7 @@ export default function ConsultaNotebookPage() {
             r.NM_MODELO ?? "",
             r.DESC_SITUACAO ?? "",
             r.NR_MAC ?? "",
+            r.NM_FUNCIONARIO_RECEBEU ?? "",
             r.NM_FUNCIONARIO_TI ?? "",
             formatDate(r.DT_INICIO_OPERACAO),
             formatDate(r.DT_GARANTIA),
@@ -242,11 +246,13 @@ export default function ConsultaNotebookPage() {
 
                 <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">Com responsável</span>
+                        <span className="text-sm text-gray-500">Com funcionário vinculado</span>
                         <FaUserTie className="text-secondary" />
                     </div>
                     <p className="mt-3 text-2xl font-semibold text-gray-900">{loading ? "..." : totalComResponsavel}</p>
-                    <p className="mt-1 text-xs text-gray-500">Registros com funcionário informado</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                        Registros com funcionário que recebeu informado
+                    </p>
                 </div>
             </div>
 
@@ -294,6 +300,7 @@ export default function ConsultaNotebookPage() {
                                     {/*<th className="px-3 py-3">IP</th>*/}
                                     <th className="px-3 py-3">MAC</th>
                                     {/*<th className="px-3 py-3">BitLocker</th>*/}
+                                    <th className="px-3 py-3">Funcionário recebeu</th>
                                     <th className="px-3 py-3">Funcionário TI</th>
                                     <th className="px-3 py-3">Início operação</th>
                                     <th className="px-3 py-3">Garantia</th>
@@ -334,6 +341,10 @@ export default function ConsultaNotebookPage() {
                                         <td className="px-3 py-3 text-gray-700">{r.NR_MAC ?? "-"}</td>
 
                                         {/*<td className="px-3 py-3 text-gray-700">{r.NR_BITLOCKER ?? "-"}</td>*/}
+
+                                        <td className="px-3 py-3 text-gray-700">
+                                            {r.NM_FUNCIONARIO_RECEBEU ?? "-"}
+                                        </td>
 
                                         <td className="px-3 py-3 text-gray-700">
                                             {r.NM_FUNCIONARIO_TI ?? "-"}
