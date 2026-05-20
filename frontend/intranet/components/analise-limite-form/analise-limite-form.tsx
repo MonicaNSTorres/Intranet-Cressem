@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -231,12 +231,13 @@ export function AnaliseLimiteForm() {
     const [quaisRestricoes, setQuaisRestricoes] = useState("");
 
 
-    const [sugestaoLimite, setSugestaoLimite] = useState("");
-    const [cartao, setCartao] = useState("");
-    const [cartaoAtual, setCartaoAtual] = useState("");
+    const [sugestaoLimiteCartao, setSugestaoLimiteCartao] = useState("");
+    const [sugestaoLimiteCheque, setSugestaoLimiteCheque] = useState("");
+    const [cartao, setCartao] = useState("0");
+    const [cartaoAtual, setCartaoAtual] = useState(fmtBRL(0));
     const [cartaoAprovado, setCartaoAprovado] = useState("");
-    const [especial, setEspecial] = useState("");
-    const [especialAtual, setEspecialAtual] = useState("");
+    const [especial, setEspecial] = useState("0");
+    const [especialAtual, setEspecialAtual] = useState(fmtBRL(0));
     const [especialAprovado, setEspecialAprovado] = useState("");
 
     const [dataEnvio] = useState(todayISO());
@@ -385,12 +386,13 @@ export function AnaliseLimiteForm() {
         setRestricoes("");
         setQuaisRestricoes("");
 
-        setSugestaoLimite("");
-        setCartao("");
-        setCartaoAtual("");
+        setSugestaoLimiteCartao("");
+        setSugestaoLimiteCheque("");
+        setCartao("0");
+        setCartaoAtual(fmtBRL(0));
         setCartaoAprovado("");
-        setEspecial("");
-        setEspecialAtual("");
+        setEspecial("0");
+        setEspecialAtual(fmtBRL(0));
         setEspecialAprovado("");
 
         setErro("");
@@ -411,7 +413,7 @@ export function AnaliseLimiteForm() {
         if (cessaoCredito === "") return "Cessão de crédito não selecionada.";
         if (cessaoCredito === "1" && !dataPagamento) return "Data de pagamento não preenchida.";
         if (!carteira) return "Nível da carteira não selecionado.";
-        if (iap === "") return "Números de IAP não selecionado.";
+        if (iap === "") return "Número de IAP não selecionado.";
         if (ocorrenciaCRM === "") return "Ocorrência no CRM não preenchida.";
         if (ocorrenciaCRM === "1" && !obsCRM.trim()) return "Detalhes da ocorrência não preenchidos.";
         if (!risco) return "Risco não preenchido.";
@@ -419,7 +421,7 @@ export function AnaliseLimiteForm() {
         if (!crl) return "CRL não preenchido.";
         if (!capital) return "Capital não preenchido.";
         if (!divida) return "Dívida não preenchida.";
-        if (restricoes === "") return "Restrições não selecionado.";
+        if (restricoes === "") return "Restrições não selecionadas.";
         if (restricoes === "1" && !quaisRestricoes.trim()) return "Detalhes das restrições não preenchidos.";
         if (!cartaoAtual) return "Limite do cartão atual não preenchido.";
         if (!especialAtual) return "Limite do cheque especial atual não preenchido.";
@@ -436,7 +438,7 @@ export function AnaliseLimiteForm() {
         if (cessaoCredito === "") return "Cessão de crédito não selecionada.";
         if (cessaoCredito === "1" && !dataPagamento) return "Data de pagamento não preenchida.";
         if (!carteira) return "Nível da carteira não selecionado.";
-        if (iap === "") return "Números de IAP não selecionado.";
+        if (iap === "") return "Número de IAP não selecionado.";
         if (ocorrenciaCRM === "") return "Ocorrência no CRM não preenchida.";
         if (ocorrenciaCRM === "1" && !obsCRM.trim()) return "Detalhes da ocorrência não preenchidos.";
         if (!risco) return "Risco não preenchido.";
@@ -444,7 +446,7 @@ export function AnaliseLimiteForm() {
         if (!crl) return "CRL não preenchido.";
         if (!capital) return "Capital não preenchido.";
         if (!divida) return "Dívida não preenchida.";
-        if (restricoes === "") return "Restrições não selecionado.";
+        if (restricoes === "") return "Restrições não selecionadas.";
         if (restricoes === "1" && !quaisRestricoes.trim()) return "Detalhes das restrições não preenchidos.";
         if (!cartaoAtual) return "Limite do cartão atual não preenchido.";
         if (!especialAtual) return "Limite do cheque especial atual não preenchido.";
@@ -470,7 +472,8 @@ export function AnaliseLimiteForm() {
             DIVIDA: parseBRL(divida),
             RESTRICAO: Number(restricoes || 0),
             DESC_RESTRICAO: quaisRestricoes || null,
-            SG_LIMITE: parseBRL(sugestaoLimite || "0"),
+            SG_LIMITE_CARTAO: parseBRL(sugestaoLimiteCartao || "0"),
+            SG_LIMITE: parseBRL(sugestaoLimiteCheque || "0"),
             CARTAO: Number(cartao || 0),
             LT_ATUAL_CARTAO: parseBRL(cartaoAtual || "0"),
             LT_APROVADO_CARTAO: parseBRL(cartaoAprovado || "0"),
@@ -570,7 +573,8 @@ export function AnaliseLimiteForm() {
                 restricoes,
                 quaisRestricoes,
 
-                sugestaoLimite: parseBRL(sugestaoLimite || "0"),
+                sugestaoLimiteCartao: parseBRL(sugestaoLimiteCartao || "0"),
+                sugestaoLimiteCheque: parseBRL(sugestaoLimiteCheque || "0"),
                 cartao,
                 cartaoAtual: parseBRL(cartaoAtual || "0"),
                 cartaoAprovado: parseBRL(cartaoAprovado || "0"),
@@ -626,7 +630,8 @@ export function AnaliseLimiteForm() {
                 restricoes,
                 quaisRestricoes,
 
-                sugestaoLimite: parseBRL(sugestaoLimite || "0"),
+                sugestaoLimiteCartao: parseBRL(sugestaoLimiteCartao || "0"),
+                sugestaoLimiteCheque: parseBRL(sugestaoLimiteCheque || "0"),
                 cartao,
                 cartaoAtual: parseBRL(cartaoAtual || "0"),
                 cartaoAprovado: parseBRL(cartaoAprovado || "0"),
@@ -893,7 +898,7 @@ export function AnaliseLimiteForm() {
                         </div>
 
                         <div className="md:col-span-4">
-                            <Field label="Números IAP">
+                            <Field label="Número de IAP">
                                 <select
                                     value={iap}
                                     onChange={(e) => setIap(e.target.value)}
@@ -1021,24 +1026,14 @@ export function AnaliseLimiteForm() {
 
                 <Section title="Sugestão de Limite e Aprovações">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                        <div className="md:col-span-12">
-                            <Field label="Sugestão de limite do associado">
-                                <input
-                                    value={sugestaoLimite}
-                                    onChange={(e) => setSugestaoLimite(monetizarDigitacao(e.target.value))}
-                                    className={`${inputBase} text-right`}
-                                />
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-4">
+                        <div className="md:col-span-3">
                             <Field label="Cartão?">
                                 <RadioGroup name="radioCartao" value={cartao} onChange={setCartao} />
                             </Field>
                         </div>
 
-                        <div className="md:col-span-4">
-                            <Field label="Limite Atual">
+                        <div className="md:col-span-3">
+                            <Field label="Limite atual cartão">
                                 <input
                                     value={cartaoAtual}
                                     onChange={(e) => setCartaoAtual(monetizarDigitacao(e.target.value))}
@@ -1047,8 +1042,18 @@ export function AnaliseLimiteForm() {
                             </Field>
                         </div>
 
-                        <div className="md:col-span-4">
-                            <Field label="Limite Aprovado">
+                        <div className="md:col-span-3">
+                            <Field label="Sugestão de limite do cartão">
+                                <input
+                                    value={sugestaoLimiteCartao}
+                                    onChange={(e) => setSugestaoLimiteCartao(monetizarDigitacao(e.target.value))}
+                                    className={`${inputBase} text-right`}
+                                />
+                            </Field>
+                        </div>
+
+                        <div className="md:col-span-3">
+                            <Field label="Limite aprovado cartão">
                                 <input
                                     value={cartaoAprovado}
                                     onChange={(e) => setCartaoAprovado(monetizarDigitacao(e.target.value))}
@@ -1057,14 +1062,14 @@ export function AnaliseLimiteForm() {
                             </Field>
                         </div>
 
-                        <div className="md:col-span-4">
+                        <div className="md:col-span-3">
                             <Field label="Cheque Especial?">
                                 <RadioGroup name="radioEspecial" value={especial} onChange={setEspecial} />
                             </Field>
                         </div>
 
-                        <div className="md:col-span-4">
-                            <Field label="Limite Atual">
+                        <div className="md:col-span-3">
+                            <Field label="Limite atual cheque">
                                 <input
                                     value={especialAtual}
                                     onChange={(e) => setEspecialAtual(monetizarDigitacao(e.target.value))}
@@ -1073,8 +1078,18 @@ export function AnaliseLimiteForm() {
                             </Field>
                         </div>
 
-                        <div className="md:col-span-4">
-                            <Field label="Limite Aprovado">
+                        <div className="md:col-span-3">
+                            <Field label="Sugestão de limite do cheque especial">
+                                <input
+                                    value={sugestaoLimiteCheque}
+                                    onChange={(e) => setSugestaoLimiteCheque(monetizarDigitacao(e.target.value))}
+                                    className={`${inputBase} text-right`}
+                                />
+                            </Field>
+                        </div>
+
+                        <div className="md:col-span-3">
+                            <Field label="Limite aprovado cheque">
                                 <input
                                     value={especialAprovado}
                                     onChange={(e) => setEspecialAprovado(monetizarDigitacao(e.target.value))}
@@ -1157,10 +1172,10 @@ export function AnaliseLimiteForm() {
                                     : []),
                                 { label: "Cessão de Crédito", value: yesNoText(cessaoCredito) },
                                 ...(cessaoCredito === "1"
-                                    ? [{ label: "Data Pagamento", value: formatDateBR(dataPagamento) }]
+                                    ? [{ label: "Data de Pagamento", value: formatDateBR(dataPagamento) }]
                                     : []),
-                                { label: "Nível Carteira", value: carteira },
-                                { label: "Números IAP", value: iap },
+                                { label: "Nível da Carteira", value: carteira },
+                                { label: "Número de IAP", value: iap },
                             ]}
                         />
                     </PrintSection>
@@ -1187,7 +1202,8 @@ export function AnaliseLimiteForm() {
                     <PrintSection title="Sugestão de Limite e Aprovações">
                         <PrintGrid
                             items={[
-                                { label: "Sugestão Limite", value: sugestaoLimite },
+                                { label: "Sugestão de Limite do Cartão", value: sugestaoLimiteCartao },
+                                { label: "Sugestão de Limite do Cheque", value: sugestaoLimiteCheque },
                                 { label: "Cartão", value: yesNoText(cartao) },
                                 { label: "Limite Cartão Atual", value: cartaoAtual },
                                 { label: "Limite Cartão Aprovado", value: cartaoAprovado },
@@ -1205,7 +1221,7 @@ export function AnaliseLimiteForm() {
                     </div>
 
                     <div className="mt-8 text-right text-sm">
-                        Data Análise: {formatDateBR(dataEnvio)}
+                        Data da Análise: {formatDateBR(dataEnvio)}
                     </div>
                 </div>
             </div>
@@ -1262,3 +1278,4 @@ function Signature({ label }: { label: string }) {
         </div>
     );
 }
+

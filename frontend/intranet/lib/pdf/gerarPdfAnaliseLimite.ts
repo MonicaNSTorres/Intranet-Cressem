@@ -30,7 +30,9 @@ type Opts = {
   restricoes: string;
   quaisRestricoes?: string;
 
-  sugestaoLimite: number;
+  sugestaoLimite?: number;
+  sugestaoLimiteCartao?: number;
+  sugestaoLimiteCheque?: number;
   cartao: string;
   cartaoAtual: number;
   cartaoAprovado: number;
@@ -57,7 +59,7 @@ export async function gerarPdfAnaliseLimite(
   o: Opts,
   options: GerarPdfAnaliseLimiteOptions = {}
 ) {
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
 
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -75,7 +77,7 @@ export async function gerarPdfAnaliseLimite(
     const w = logo.width * scale;
     const h = logo.height * scale;
 
-    doc.addImage(logo.dataUrl, "PNG", margin, y, w, h);
+    doc.addImage(logo.dataUrl, logo.type || "PNG", margin, y, w, h);
     y += h + 8;
   } catch {
     y += 20;
@@ -206,23 +208,27 @@ export async function gerarPdfAnaliseLimite(
   drawSectionHeader(doc, "Sugestão de limite e aprovações", margin, y, contentW);
   y += 18;
 
+  const sugestaoCartao =
+    typeof o.sugestaoLimiteCartao === "number"
+      ? o.sugestaoLimiteCartao
+      : (o.sugestaoLimite ?? 0);
+  const sugestaoCheque =
+    typeof o.sugestaoLimiteCheque === "number"
+      ? o.sugestaoLimiteCheque
+      : (o.sugestaoLimite ?? 0);
+
   y = drawFieldsRow(doc, y, margin, contentW, [
-    { label: "Sugestão de Limite", value: fmtBRL(o.sugestaoLimite), width: contentW * 0.5 },
-    { label: "Cartão", value: yesNoText(o.cartao), width: contentW * 0.5 },
+    { label: "Cartão", value: yesNoText(o.cartao), width: contentW * 0.25 },
+    { label: "Limite Cartão Atual", value: fmtBRL(o.cartaoAtual), width: contentW * 0.25 },
+    { label: "Sugestão Limite Cartão", value: fmtBRL(sugestaoCartao), width: contentW * 0.25 },
+    { label: "Limite Cartão Aprovado", value: fmtBRL(o.cartaoAprovado), width: contentW * 0.25 },
   ]);
 
   y = drawFieldsRow(doc, y, margin, contentW, [
-    { label: "Limite Cartão Atual", value: fmtBRL(o.cartaoAtual), width: contentW * 0.5 },
-    { label: "Limite Cartão Aprovado", value: fmtBRL(o.cartaoAprovado), width: contentW * 0.5 },
-  ]);
-
-  y = drawFieldsRow(doc, y, margin, contentW, [
-    { label: "Cheque Especial", value: yesNoText(o.especial), width: contentW * 0.5 },
-    { label: "Limite Especial Atual", value: fmtBRL(o.especialAtual), width: contentW * 0.5 },
-  ]);
-
-  y = drawFieldsRow(doc, y, margin, contentW, [
-    { label: "Limite Especial Aprovado", value: fmtBRL(o.especialAprovado), width: contentW },
+    { label: "Cheque Especial", value: yesNoText(o.especial), width: contentW * 0.25 },
+    { label: "Limite Especial Atual", value: fmtBRL(o.especialAtual), width: contentW * 0.25 },
+    { label: "Sugestão Limite Cheque", value: fmtBRL(sugestaoCheque), width: contentW * 0.25 },
+    { label: "Limite Especial Aprovado", value: fmtBRL(o.especialAprovado), width: contentW * 0.25 },
   ]);
 
   y += 6;
@@ -412,7 +418,7 @@ async function loadImageDataURL(url: string) {
 
   const b = await r.blob();
 
-  const dataUrl = await new Promise<string>((resolve) => {
+  const originalDataUrl = await new Promise<string>((resolve) => {
     const fr = new FileReader();
     fr.onloadend = () => resolve(fr.result as string);
     fr.readAsDataURL(b);
@@ -422,13 +428,37 @@ async function loadImageDataURL(url: string) {
     const image = new Image();
     image.onload = () => resolve(image);
     image.onerror = reject;
-    image.src = dataUrl;
+    image.src = originalDataUrl;
   });
 
+  // Mantém transparência (PNG) e reduz com folga menor para preservar mais nitidez.
+  // Ainda otimiza tamanho, mas com melhor qualidade visual do logo.
+  const maxWidth = 720;
+  const maxHeight = 224;
+  const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
+
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return {
+      dataUrl: canvas.toDataURL("image/png"),
+      width: canvas.width,
+      height: canvas.height,
+      type: "PNG" as const,
+    };
+  }
+
   return {
-    dataUrl,
+    dataUrl: originalDataUrl,
     width: img.width,
     height: img.height,
+    type: "PNG" as const,
   };
 }
 
@@ -446,35 +476,58 @@ async function printPdf(doc: jsPDF, nomeArquivo: string) {
     iframe.style.position = "fixed";
     iframe.style.right = "0";
     iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
+    iframe.style.width = "1px";
+    iframe.style.height = "1px";
     iframe.style.opacity = "0";
     iframe.style.border = "0";
+    iframe.style.pointerEvents = "none";
 
-    const cleanup = () => {
+    let done = false;
+    let fallbackTimer: number | undefined;
+
+    const finalize = () => {
+      if (done) return;
+      done = true;
+      if (fallbackTimer) {
+        window.clearTimeout(fallbackTimer);
+      }
       try {
         if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
       } catch {}
       window.URL.revokeObjectURL(blobUrl);
+      resolve();
     };
 
     iframe.onload = () => {
       const frameWindow = iframe.contentWindow;
       if (!frameWindow) {
-        cleanup();
-        resolve();
+        finalize();
         return;
       }
 
-      setTimeout(() => {
-        frameWindow.focus();
-        frameWindow.print();
+      const onAfterPrint = () => {
+        finalize();
+      };
 
-        setTimeout(() => {
-          cleanup();
-          resolve();
-        }, 1500);
-      }, 120);
+      try {
+        frameWindow.addEventListener("afterprint", onAfterPrint, { once: true });
+      } catch {
+        // ignore
+      }
+
+      // Fallback de segurança para navegadores que não disparam afterprint.
+      fallbackTimer = window.setTimeout(() => {
+        finalize();
+      }, 120000);
+
+      setTimeout(() => {
+        try {
+          frameWindow.focus();
+          frameWindow.print();
+        } catch {
+          finalize();
+        }
+      }, 250);
     };
 
     iframe.src = blobUrl;
