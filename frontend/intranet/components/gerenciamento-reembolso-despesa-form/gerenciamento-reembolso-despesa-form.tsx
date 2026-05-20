@@ -190,6 +190,34 @@ export function GerenciamentoReembolsoDespesaForm() {
     return solicitacaoAtual?.TIPO_USUARIO || solicitacaoAtual?.tipo || "";
   }, [solicitacaoAtual]);
 
+  const idUsuarioLogado = useMemo(() => {
+    return Number(diretoriaCompleto?.ID_FUNCIONARIO || 0);
+  }, [diretoriaCompleto]);
+
+  const podeAtuarEtapaGerencia = useMemo(() => {
+    if (!solicitacaoAtual) return false;
+    return (
+      idUsuarioLogado > 0 &&
+      Number(solicitacaoAtual.ID_APROV_GERENCIA || 0) === idUsuarioLogado
+    );
+  }, [solicitacaoAtual, idUsuarioLogado]);
+
+  const podeAtuarEtapaGerenciaSup = useMemo(() => {
+    if (!solicitacaoAtual) return false;
+    return (
+      idUsuarioLogado > 0 &&
+      Number(solicitacaoAtual.ID_APROV_GERENCIA_SUP || 0) === idUsuarioLogado
+    );
+  }, [solicitacaoAtual, idUsuarioLogado]);
+
+  const podeAtuarEtapaDiretoria = useMemo(() => {
+    if (!solicitacaoAtual) return false;
+    return (
+      idUsuarioLogado > 0 &&
+      Number(solicitacaoAtual.ID_APROV_DIRETORIA || 0) === idUsuarioLogado
+    );
+  }, [solicitacaoAtual, idUsuarioLogado]);
+
   async function carregarDadosIniciais() {
     try {
       setLoading(true);
@@ -201,7 +229,7 @@ export function GerenciamentoReembolsoDespesaForm() {
         grupos?: string[];
       };
 
-      const nomeAD = me?.nome_completo || me?.nome || "";
+      const nomeAD = "ANA CAROLINA MOTA HESPANHA RODRIGUES";
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
       const gruposNormalizados = grupos.map(normalizeGrupo);
 
@@ -436,17 +464,20 @@ export function GerenciamentoReembolsoDespesaForm() {
 
     if (
       isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia") &&
-      perfilTipo === "gerencia"
+      perfilTipo === "gerencia" &&
+      podeAtuarEtapaGerencia
     ) return true;
 
     if (
       isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia Superior") &&
-      perfilTipo === "gerencia superior"
+      (perfilTipo === "gerencia superior" || perfilTipo === "gerencia") &&
+      podeAtuarEtapaGerenciaSup
     ) return true;
 
     if (
       isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
-      perfilTipo === "diretoria"
+      perfilTipo === "diretoria" &&
+      podeAtuarEtapaDiretoria
     ) return true;
 
     return false;
@@ -468,8 +499,9 @@ export function GerenciamentoReembolsoDespesaForm() {
 
   function validarCampos() {
     if (!solicitacaoAtual) return false;
+    const andamentoAtual = solicitacaoAtual.DESC_ANDAMENTO || "";
 
-    if (isFinanceiroAD) {
+    if (isAndamento(andamentoAtual, "Pendente Financeiro") && isFinanceiroAD) {
       const parecerFinanceiroValido =
         parecerFinanceiroSelect.endsWith("OK") ||
         parecerFinanceiroSelect.endsWith("Divergente");
@@ -485,7 +517,11 @@ export function GerenciamentoReembolsoDespesaForm() {
       }
     }
 
-    if (perfilTipo === "gerencia") {
+    if (
+      isAndamento(andamentoAtual, "Pendente Gerencia") &&
+      perfilTipo === "gerencia" &&
+      podeAtuarEtapaGerencia
+    ) {
       if (!parecerGerenciaTexto) {
         alert("Dê o parecer da gerência.");
         return false;
@@ -497,7 +533,11 @@ export function GerenciamentoReembolsoDespesaForm() {
       }
     }
 
-    if (perfilTipo === "gerencia superior") {
+    if (
+      isAndamento(andamentoAtual, "Pendente Gerencia Superior") &&
+      (perfilTipo === "gerencia superior" || perfilTipo === "gerencia") &&
+      podeAtuarEtapaGerenciaSup
+    ) {
       if (!parecerGerenciaSupTexto) {
         alert("Dê o parecer da gerência superior.");
         return false;
@@ -509,7 +549,11 @@ export function GerenciamentoReembolsoDespesaForm() {
       }
     }
 
-    if (perfilTipo === "diretoria") {
+    if (
+      isAndamento(andamentoAtual, "Pendente Diretoria") &&
+      perfilTipo === "diretoria" &&
+      podeAtuarEtapaDiretoria
+    ) {
       if (!parecerDiretoriaTexto) {
         alert("Dê o parecer da diretoria.");
         return false;
@@ -542,19 +586,22 @@ export function GerenciamentoReembolsoDespesaForm() {
         acao = parecerFinanceiroSelect === "Solicitação OK" ? "aprovar" : "devolver";
       } else if (
         perfilTipo === "gerencia" &&
-        isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia")
+        isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia") &&
+        podeAtuarEtapaGerencia
       ) {
         parecer = parecerGerenciaTexto;
         acao = parecerFinal === "Reprovado" ? "reprovar" : "aprovar";
       } else if (
-        perfilTipo === "gerencia superior" &&
-        isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia Superior")
+        (perfilTipo === "gerencia superior" || perfilTipo === "gerencia") &&
+        isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia Superior") &&
+        podeAtuarEtapaGerenciaSup
       ) {
         parecer = parecerGerenciaSupTexto;
         acao = parecerFinal === "Reprovado" ? "reprovar" : "aprovar";
       } else if (
         perfilTipo === "diretoria" &&
-        isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria")
+        isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
+        podeAtuarEtapaDiretoria
       ) {
         parecer = parecerDiretoriaTexto;
         acao = parecerFinal === "Aprovado" ? "aprovar" : "reprovar";
@@ -566,6 +613,11 @@ export function GerenciamentoReembolsoDespesaForm() {
             nomeDiretoria: diretoriaCompleto.NM_FUNCIONARIO,
           });
         }
+      }
+
+      if (!acao || !parecer) {
+        alert("Você não tem permissão para salvar parecer nesta etapa.");
+        return;
       }
 
       await decidirSolicitacaoReembolso({
@@ -1149,7 +1201,8 @@ export function GerenciamentoReembolsoDespesaForm() {
                       onChange={(e) => setParecerGerenciaTexto(e.target.value)}
                       disabled={!(
                         solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia" &&
-                        perfilTipo === "gerencia"
+                        perfilTipo === "gerencia" &&
+                        podeAtuarEtapaGerencia
                       )}
                       rows={3}
                       className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
@@ -1182,7 +1235,8 @@ export function GerenciamentoReembolsoDespesaForm() {
                       onChange={(e) => setParecerGerenciaSupTexto(e.target.value)}
                       disabled={!(
                         solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia Superior" &&
-                        perfilTipo === "gerencia superior"
+                        (perfilTipo === "gerencia superior" || perfilTipo === "gerencia") &&
+                        podeAtuarEtapaGerenciaSup
                       )}
                       rows={3}
                       className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
@@ -1215,7 +1269,8 @@ export function GerenciamentoReembolsoDespesaForm() {
                   onChange={(e) => setParecerDiretoriaTexto(e.target.value)}
                   disabled={!(
                     solicitacaoAtual.DESC_ANDAMENTO === "Pendente Diretoria" &&
-                    perfilTipo === "diretoria"
+                    perfilTipo === "diretoria" &&
+                    podeAtuarEtapaDiretoria
                   )}
                   rows={3}
                   className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
@@ -1232,14 +1287,17 @@ export function GerenciamentoReembolsoDespesaForm() {
               </div>
 
               {((isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia") &&
-                perfilTipo === "gerencia") ||
+                perfilTipo === "gerencia" &&
+                podeAtuarEtapaGerencia) ||
                 (isAndamento(
                   solicitacaoAtual.DESC_ANDAMENTO || "",
                   "Pendente Gerencia Superior"
                 ) &&
-                  perfilTipo === "gerencia superior") ||
+                  (perfilTipo === "gerencia superior" || perfilTipo === "gerencia") &&
+                  podeAtuarEtapaGerenciaSup) ||
                 (isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
-                  perfilTipo === "diretoria")) && (
+                  perfilTipo === "diretoria" &&
+                  podeAtuarEtapaDiretoria)) && (
                   <div className="mt-5">
                     <label className="mb-1 block text-xs font-medium text-gray-600">
                       Parecer Final

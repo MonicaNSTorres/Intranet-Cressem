@@ -27,11 +27,17 @@ function parseVerTodos(value: any) {
 
 async function buscarTipoUsuarioPorNome(nome: string, verTodos: boolean) {
   const nomeLimpo = String(nome || "").trim();
-  if (!nomeLimpo) return verTodos ? "suporte" : "funcionario";
+  if (!nomeLimpo) {
+    return {
+      tipoUsuario: verTodos ? "suporte" : "funcionario",
+      idFuncionario: 0,
+    };
+  }
 
   const result = await oracleExecute(
     `
       SELECT
+        f.ID_FUNCIONARIO,
         f.NM_FUNCIONARIO,
         f.ID_SETOR,
         c.NM_NIVEL
@@ -46,18 +52,18 @@ async function buscarTipoUsuarioPorNome(nome: string, verTodos: boolean) {
   );
 
   const row: any = result.rows?.[0];
+  const idFuncionario = Number(row?.ID_FUNCIONARIO || 0);
   const idSetor = Number(row?.ID_SETOR || 0);
   const nivelUpper = String(row?.NM_NIVEL || "").toUpperCase();
 
   // Mesmo com ver_todos=0, usuário do financeiro enxerga tudo.
-  if (idSetor === 26) return "financeiro";
+  if (idSetor === 26) return { tipoUsuario: "financeiro", idFuncionario };
 
-  if (nivelUpper === "DIRETORIA") return "diretoria";
-  if (nivelUpper === "GERENCIA SUPERIOR") return "gerencia superior";
-  if (nivelUpper === "GERENCIA") return "gerencia";
-  return "funcionario";
+  if (nivelUpper === "DIRETORIA") return { tipoUsuario: "diretoria", idFuncionario };
+  if (nivelUpper === "GERENCIA SUPERIOR") return { tipoUsuario: "gerencia superior", idFuncionario };
+  if (nivelUpper === "GERENCIA") return { tipoUsuario: "gerencia", idFuncionario };
+  return { tipoUsuario: "funcionario", idFuncionario };
 }
-
 export const solicitacaoReembolsoDespesaPaginadoController = {
   async listar(req: Request, res: Response) {
     try {
@@ -80,29 +86,24 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
 
       const pesquisaUpper = pesquisa.toUpperCase();
       const pesquisaCpf = onlyDigits(pesquisa);
-      const tipoUsuario = await buscarTipoUsuarioPorNome(nome, verTodos);
+      const { tipoUsuario, idFuncionario } = await buscarTipoUsuarioPorNome(nome, verTodos);
 
       let wherePerfilSql = "1 = 1";
 
       if (!verTodos) {
-        if (tipoUsuario === "funcionario") {
-          wherePerfilSql = `UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)`;
-        } else if (tipoUsuario === "gerencia" || tipoUsuario === "gerencia superior") {
+        if (tipoUsuario === "financeiro" || tipoUsuario === "suporte") {
+          wherePerfilSql = "1 = 1";
+        } else if (idFuncionario > 0) {
           wherePerfilSql = `
             (
-              UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)
-              OR UPPER(NVL(s.NM_FUNCIONARIO, ' ')) IN (
-                SELECT UPPER(TRIM(f.NM_FUNCIONARIO))
-                FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
-                WHERE f.CD_GERENCIA = (
-                  SELECT fg.ID_FUNCIONARIO
-                  FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
-                  WHERE UPPER(TRIM(fg.NM_FUNCIONARIO)) = UPPER(:nomePerfil)
-                  FETCH FIRST 1 ROWS ONLY
-                )
-              )
+              s.ID_SOLICITANTE = :idFuncionarioPerfil
+              OR s.ID_APROV_GERENCIA = :idFuncionarioPerfil
+              OR s.ID_APROV_GERENCIA_SUP = :idFuncionarioPerfil
+              OR s.ID_APROV_DIRETORIA = :idFuncionarioPerfil
             )
           `;
+        } else {
+          wherePerfilSql = `UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)`;
         }
       }
 
@@ -121,6 +122,9 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
 
       if (wherePerfilSql.includes(":nomePerfil")) {
         bindsBase.nomePerfil = nome;
+      }
+      if (wherePerfilSql.includes(":idFuncionarioPerfil")) {
+        bindsBase.idFuncionarioPerfil = idFuncionario;
       }
 
       const whereSql = `
@@ -197,23 +201,23 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           s.ID_APROV_DIRETORIA,
 
           CASE
-            WHEN NVL(TRIM(s.NM_FNC_GERENCIA), '') <> ''
+            WHEN TRIM(s.NM_FNC_GERENCIA) IS NOT NULL
               OR s.ID_APROV_GERENCIA IS NOT NULL
-              OR NVL(TRIM(s.DESC_PRC_GERENCIA), '') <> ''
+              OR TRIM(s.DESC_PRC_GERENCIA) IS NOT NULL
             THEN 1
             ELSE 0
           END AS HAS_GERENCIA,
 
           CASE
             WHEN s.ID_APROV_GERENCIA_SUP IS NOT NULL
-              OR NVL(TRIM(s.NM_FNC_GERENCIA_SUP), '') <> ''
-              OR NVL(TRIM(s.DESC_PRC_GERENCIA_SUP), '') <> ''
+              OR TRIM(s.NM_FNC_GERENCIA_SUP) IS NOT NULL
+              OR TRIM(s.DESC_PRC_GERENCIA_SUP) IS NOT NULL
             THEN 1
             ELSE 0
           END AS HAS_GERENCIA_SUP,
 
           CASE
-            WHEN NVL(TRIM(s.NM_FNC_GERENCIA), '') <> '' THEN s.NM_FNC_GERENCIA
+            WHEN TRIM(s.NM_FNC_GERENCIA) IS NOT NULL THEN s.NM_FNC_GERENCIA
             ELSE (
               SELECT fg.NM_FUNCIONARIO
               FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
@@ -223,7 +227,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           END AS APROV_GERENCIA_NOME,
 
           CASE
-            WHEN NVL(TRIM(s.NM_FNC_GERENCIA_SUP), '') <> '' THEN s.NM_FNC_GERENCIA_SUP
+            WHEN TRIM(s.NM_FNC_GERENCIA_SUP) IS NOT NULL THEN s.NM_FNC_GERENCIA_SUP
             ELSE (
               SELECT fgs.NM_FUNCIONARIO
               FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fgs
@@ -233,7 +237,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           END AS APROV_GERENCIA_SUP_NOME,
 
           CASE
-            WHEN NVL(TRIM(s.NM_FNC_DIRETORIA), '') <> '' THEN s.NM_FNC_DIRETORIA
+            WHEN TRIM(s.NM_FNC_DIRETORIA) IS NOT NULL THEN s.NM_FNC_DIRETORIA
             ELSE (
               SELECT fd.NM_FUNCIONARIO
               FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fd
@@ -338,6 +342,10 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           NM_FNC_GERENCIA_SUP: item.NM_FNC_GERENCIA_SUP || "",
           DESC_PRC_DIRETORIA: item.DESC_PRC_DIRETORIA || "",
           NM_FNC_DIRETORIA: item.NM_FNC_DIRETORIA || "",
+          ID_SOLICITANTE: Number(item.ID_SOLICITANTE || 0),
+          ID_APROV_GERENCIA: Number(item.ID_APROV_GERENCIA || 0),
+          ID_APROV_GERENCIA_SUP: Number(item.ID_APROV_GERENCIA_SUP || 0),
+          ID_APROV_DIRETORIA: Number(item.ID_APROV_DIRETORIA || 0),
 
           HAS_GERENCIA: Number(item.HAS_GERENCIA || 0),
           HAS_GERENCIA_SUP: Number(item.HAS_GERENCIA_SUP || 0),
@@ -361,7 +369,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
         total_pages: totalPages,
       });
     } catch (err: any) {
-      console.error("listar solicitacao_reembolso_despesa_paginado erro:", err);
+      console.error("Erro ao listar solicitação de reembolso paginada:", err);
       return res.status(500).json({
         error: "Falha ao listar solicitações de reembolso.",
         details: String(err?.message || err),

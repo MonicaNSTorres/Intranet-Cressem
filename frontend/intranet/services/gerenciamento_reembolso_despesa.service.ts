@@ -42,6 +42,10 @@ export type SolicitaoListaItem = {
   NM_FNC_GERENCIA_SUP?: string;
   DESC_PRC_DIRETORIA?: string;
   NM_FNC_DIRETORIA?: string;
+  ID_SOLICITANTE?: number;
+  ID_APROV_GERENCIA?: number;
+  ID_APROV_GERENCIA_SUP?: number;
+  ID_APROV_DIRETORIA?: number;
   NR_BANCO?: string;
   CD_AGENCIA?: string;
   NR_CONTA?: string;
