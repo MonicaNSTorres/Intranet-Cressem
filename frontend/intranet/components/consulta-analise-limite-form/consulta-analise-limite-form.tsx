@@ -114,7 +114,7 @@ function boolToSimNao(value: any) {
   ) {
     return "Sim";
   }
-  return "NÃ£o";
+  return "Não";
 }
 
 function capitalizeWords(text?: string) {
@@ -242,8 +242,9 @@ function Field({
         {label}
       </label>
       <div
-        className={`rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm ${multiline ? "min-h-[90px] whitespace-pre-wrap" : ""
-          }`}
+        className={`rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm ${
+          multiline ? "min-h-[90px] whitespace-pre-wrap" : ""
+        }`}
       >
         {value || "-"}
       </div>
@@ -319,7 +320,7 @@ export function ConsultaAnaliseLimiteForm() {
       setTotalPages(response.total_pages || 0);
       setTotalItems(txtDia ? items.length : response.total_items || 0);
     } catch (error) {
-      console.error("Erro ao buscar anÃ¡lises:", error);
+      console.error("Erro ao buscar análises:", error);
       setAnalises([]);
       setPaginaAtual(1);
       setTotalPages(0);
@@ -344,7 +345,7 @@ export function ConsultaAnaliseLimiteForm() {
       setSelectedAnalise(detalhada);
       setOpenInfoModal(true);
     } catch (error) {
-      console.error("Erro ao buscar detalhes da anÃ¡lise:", error);
+      console.error("Erro ao buscar detalhes da análise:", error);
       setSelectedAnalise(analise);
       setOpenInfoModal(true);
     }
@@ -358,7 +359,7 @@ export function ConsultaAnaliseLimiteForm() {
 
   async function baixarArquivo(caminho?: string) {
     if (!API_URL) {
-      alert("NEXT_PUBLIC_API_URL nÃ£o definido.");
+      alert("NEXT_PUBLIC_API_URL não definido.");
       return;
     }
 
@@ -402,7 +403,7 @@ export function ConsultaAnaliseLimiteForm() {
 
   async function salvarAssinatura() {
     if (!API_URL) {
-      alert("NEXT_PUBLIC_API_URL nÃ£o definido.");
+      alert("NEXT_PUBLIC_API_URL não definido.");
       return;
     }
 
@@ -473,6 +474,7 @@ export function ConsultaAnaliseLimiteForm() {
           nome: String(detalhada.NM_ASSOCIADO || ""),
           celular: String(detalhada.NR_CELULAR || ""),
           empresa: String(detalhada.NM_EMPRESA || ""),
+
           contaCorrente: String(detalhada.NR_CONTA_CORRENTE || ""),
           salarioBruto: ehPJ
             ? toNumberValue(detalhada.VL_FATURAMENTO_MENSAL)
@@ -486,8 +488,10 @@ export function ConsultaAnaliseLimiteForm() {
           dataPagamento: String(detalhada.DT_PAGAMENTO || ""),
           carteira: String(detalhada.NV_CARTEIRA || ""),
           iap: String(detalhada.NR_IAP ?? ""),
+
           ocorrenciaCRM: toFlag(detalhada.OCORRENCIA_CRM),
           obsCRM: String(detalhada.OBS_CRM || ""),
+
           risco: String(detalhada.RISCO || ""),
           pd: String(detalhada.PD || ""),
           crl: toNumberValue(detalhada.NR_CRL),
@@ -495,6 +499,7 @@ export function ConsultaAnaliseLimiteForm() {
           divida: toNumberValue(detalhada.DIVIDA),
           restricoes: toFlag(detalhada.RESTRICAO),
           quaisRestricoes: String(detalhada.DESC_RESTRICAO || ""),
+
           sugestaoLimiteCartao: toNumberValue(
             detalhada.SG_LIMITE_CARTAO ?? detalhada.SG_LIMITE
           ),
@@ -505,13 +510,14 @@ export function ConsultaAnaliseLimiteForm() {
           especial: toFlag(detalhada.CHEQUE_ESPECIAL),
           especialAtual: toNumberValue(detalhada.LT_ATUAL_CH),
           especialAprovado: toNumberValue(detalhada.LT_APROVADO_CH),
+
           dataEnvio: String(detalhada.DT || "").slice(0, 10),
         },
         { acao: "print" }
       );
     } catch (error) {
-      console.error("Erro ao imprimir anÃ¡lise:", error);
-      alert("NÃ£o foi possÃ­vel imprimir a anÃ¡lise.");
+      console.error("Erro ao imprimir análise:", error);
+      alert("Não foi possível imprimir a análise.");
     }
   }
 
@@ -536,10 +542,10 @@ export function ConsultaAnaliseLimiteForm() {
         <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-2xl font-bold text-slate-800">
-              Consulta de AnÃ¡lise de Limite
+              Consulta de Análise de Limite
             </h2>
             <p className="text-sm text-slate-500">
-              Busque anÃ¡lises cadastradas, visualize detalhes e gerencie assinaturas.
+              Busque análises cadastradas, visualize detalhes e gerencie assinaturas.
             </p>
           </div>
         </div>
@@ -547,7 +553,7 @@ export function ConsultaAnaliseLimiteForm() {
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px_auto]">
           <div>
             <label className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.03em] text-slate-600">
-              Nome, CPF/CNPJ ou FuncionÃ¡rio
+              Nome, CPF/CNPJ ou Funcionário
             </label>
             <input
               type="text"
@@ -615,7 +621,7 @@ export function ConsultaAnaliseLimiteForm() {
             </div>
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                PÃ¡gina atual
+                Página atual
               </p>
               <p className="text-2xl font-bold text-slate-900">{paginaAtual}</p>
             </div>
@@ -629,7 +635,7 @@ export function ConsultaAnaliseLimiteForm() {
             </div>
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                Total de pÃ¡ginas
+                Total de páginas
               </p>
               <p className="text-2xl font-bold text-slate-900">{totalPages}</p>
             </div>
@@ -643,7 +649,7 @@ export function ConsultaAnaliseLimiteForm() {
             Resultados da consulta
           </h3>
           <p className="text-sm text-slate-500">
-            Visualize os dados e acesse as aÃ§Ãµes disponÃ­veis para cada anÃ¡lise.
+            Visualize os dados e acesse as ações disponíveis para cada análise.
           </p>
         </div>
 
@@ -658,10 +664,10 @@ export function ConsultaAnaliseLimiteForm() {
                   Dia
                 </th>
                 <th className="px-4 py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
-                  FuncionÃ¡rio
+                  Funcionário
                 </th>
                 <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wide text-slate-500">
-                  InformaÃ§Ãµes
+                  Informações
                 </th>
                 <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wide text-slate-500">
                   Imprimir
@@ -679,7 +685,7 @@ export function ConsultaAnaliseLimiteForm() {
                     colSpan={6}
                     className="px-4 py-10 text-center text-sm text-slate-500"
                   >
-                    Carregando anÃ¡lises...
+                    Carregando análises...
                   </td>
                 </tr>
               ) : analises.length === 0 ? (
@@ -767,10 +773,11 @@ export function ConsultaAnaliseLimiteForm() {
                 <button
                   key={item}
                   onClick={() => buscarAlteracoes(Number(item), 10)}
-                  className={`h-10 min-w-[40px] rounded-xl px-3 text-sm font-semibold transition ${paginaAtual === item
+                  className={`h-10 min-w-[40px] rounded-xl px-3 text-sm font-semibold transition ${
+                    paginaAtual === item
                       ? "bg-[#79B729] text-white"
                       : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
+                  }`}
                 >
                   {item}
                 </button>
@@ -784,7 +791,7 @@ export function ConsultaAnaliseLimiteForm() {
               disabled={paginaAtual === totalPages}
               className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              PrÃ³xima
+              Próxima
             </button>
           </div>
         )}
@@ -796,10 +803,10 @@ export function ConsultaAnaliseLimiteForm() {
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">
-                  Detalhes da AnÃ¡lise
+                  Detalhes da Análise
                 </h3>
                 <p className="text-sm text-slate-500">
-                  AnÃ¡lise feita por{" "}
+                  Análise feita por{" "}
                   {primeiroUltimoNome(
                     capitalizeWords(selectedAnalise.NM_FUNCIONARIO)
                   )}{" "}
@@ -828,11 +835,11 @@ export function ConsultaAnaliseLimiteForm() {
                   </FieldGrid>
                 </Section>
 
-                <Section title="InformaÃ§Ãµes BancÃ¡rias e Salariais">
+                <Section title="Informações Bancárias e Salariais">
                   <FieldGrid>
                     <Field label="Conta Corrente" value={selectedAnalise.NR_CONTA_CORRENTE} />
                     <Field
-                      label={ehPJSelecionado ? "Faturamento Mensal" : "SalÃ¡rio Bruto"}
+                      label={ehPJSelecionado ? "Faturamento Mensal" : "Salário Bruto"}
                       value={
                         ehPJSelecionado
                           ? formatMoney(selectedAnalise.VL_FATURAMENTO_MENSAL)
@@ -840,7 +847,7 @@ export function ConsultaAnaliseLimiteForm() {
                       }
                     />
                     <Field
-                      label={ehPJSelecionado ? "Faturamento Anual" : "SalÃ¡rio LÃ­quido"}
+                      label={ehPJSelecionado ? "Faturamento Anual" : "Salário Líquido"}
                       value={
                         ehPJSelecionado
                           ? formatMoney(selectedAnalise.VL_FATURAMENTO_ANUAL)
@@ -851,26 +858,26 @@ export function ConsultaAnaliseLimiteForm() {
                     {!ehPJSelecionado && (
                       <>
                         <Field label="Possui Portabilidade?" value={boolToSimNao(selectedAnalise.PORTABILIDADE)} />
-                        <Field label="FuncionÃ¡rio Efetivo?" value={boolToSimNao(selectedAnalise.FUNCIONARIO_EFETIVO)} />
+                        <Field label="Funcionário Efetivo?" value={boolToSimNao(selectedAnalise.FUNCIONARIO_EFETIVO)} />
                       </>
                     )}
 
-                    <Field label="CessÃ£o de CrÃ©dito?" value={boolToSimNao(selectedAnalise.CESSAO_CREDITO)} />
+                    <Field label="Cessão de Crédito?" value={boolToSimNao(selectedAnalise.CESSAO_CREDITO)} />
 
                     {!!selectedAnalise.CESSAO_CREDITO && (
-                      <Field label="Data Pagamento" value={formatDateBR(selectedAnalise.DT_PAGAMENTO)} />
+                      <Field label="Data de Pagamento" value={formatDateBR(selectedAnalise.DT_PAGAMENTO)} />
                     )}
 
-                    <Field label="NÃ­vel Carteira" value={selectedAnalise.NV_CARTEIRA} />
-                    <Field label="NÃºmeros IAP" value={selectedAnalise.NR_IAP} />
+                    <Field label="Nível Carteira" value={selectedAnalise.NV_CARTEIRA} />
+                    <Field label="Números IAP" value={selectedAnalise.NR_IAP} />
                   </FieldGrid>
                 </Section>
 
-                <Section title="Status CRM e ObservaÃ§Ãµes">
+                <Section title="Status CRM e Observações">
                   <FieldGrid>
-                    <Field label="OcorrÃªncia CRM" value={boolToSimNao(selectedAnalise.OCORRENCIA_CRM)} />
+                    <Field label="Ocorrência CRM" value={boolToSimNao(selectedAnalise.OCORRENCIA_CRM)} />
                     <Field
-                      label="ObservaÃ§Ã£o"
+                      label="Observação"
                       value={selectedAnalise.OBS_CRM}
                       colSpan="lg:col-span-2"
                       multiline
@@ -884,8 +891,8 @@ export function ConsultaAnaliseLimiteForm() {
                     <Field label="PD" value={selectedAnalise.PD} />
                     <Field label="CRL" value={formatMoney(selectedAnalise.NR_CRL)} />
                     <Field label="Capital" value={formatMoney(selectedAnalise.CAPITAL)} />
-                    <Field label="DÃ­vida" value={formatMoney(selectedAnalise.DIVIDA)} />
-                    <Field label="RestriÃ§Ãµes?" value={boolToSimNao(selectedAnalise.RESTRICAO)} />
+                    <Field label="Dívida" value={formatMoney(selectedAnalise.DIVIDA)} />
+                    <Field label="Restrições?" value={boolToSimNao(selectedAnalise.RESTRICAO)} />
                     <Field
                       label="Quais?"
                       value={selectedAnalise.DESC_RESTRICAO}
@@ -894,7 +901,7 @@ export function ConsultaAnaliseLimiteForm() {
                   </FieldGrid>
                 </Section>
 
-                                <Section title="Sugestão de Limite e Aprovações">
+                <Section title="Sugestão de Limite e Aprovações">
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <Field label="Cartão?" value={boolToSimNao(selectedAnalise.CARTAO)} />
                     <Field label="Limite Atual Cartão" value={formatMoney(selectedAnalise.LT_ATUAL_CARTAO)} />
@@ -922,10 +929,10 @@ export function ConsultaAnaliseLimiteForm() {
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">
-                  Assinatura da AnÃ¡lise
+                  Assinatura da Análise
                 </h3>
                 <p className="text-sm text-slate-500">
-                  Gerencie o arquivo assinado desta anÃ¡lise.
+                  Gerencie o arquivo assinado desta análise.
                 </p>
               </div>
 
