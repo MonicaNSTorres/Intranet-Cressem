@@ -13,6 +13,8 @@ export type NotebookRow = {
   OBS_NOTEBOOKS_SICOOB: string | null;
   ID_FUNCIONARIO: number | string | null;
   NM_FUNCIONARIO_TI: string | null;
+  NM_FUNCIONARIO_RECEBEU: string | null;
+  DIR_TERMO_ASSINADO?: string | null;
   DESC_SITUACAO: string | null;
 };
 

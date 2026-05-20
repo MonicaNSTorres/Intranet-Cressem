@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { FaList } from "react-icons/fa";
 import BackButton from "@/components/back-button/back-button";
 import { FaLaptop, FaSave, FaUser } from "react-icons/fa";
 import {
@@ -25,9 +27,12 @@ type NotebookFormData = {
     NR_IP: string;
     NR_BITLOCKER: string;
     OBS_NOTEBOOKS_SICOOB: string;
-    ID_FUNCIONARIO: string;
-    NM_FUNCIONARIO_TI: string;
     DESC_SITUACAO: string;
+
+    ID_FUNCIONARIO: string;
+    NM_FUNCIONARIO: string;
+
+    NM_FUNCIONARIO_TI: string;
 };
 
 const initialState: NotebookFormData = {
@@ -41,9 +46,17 @@ const initialState: NotebookFormData = {
     NR_BITLOCKER: "",
     OBS_NOTEBOOKS_SICOOB: "",
     ID_FUNCIONARIO: "",
+    NM_FUNCIONARIO: "",
     NM_FUNCIONARIO_TI: "",
     DESC_SITUACAO: "",
 };
+
+const funcionariosTI = [
+    "Fabio da Silva Prado",
+    "Monica Nathalia Sousa Torres",
+    "Ricardo Henrique Guilhem da Silva",
+    "Thiago Moreira Santos",
+];
 
 export default function CadastroNotebookPage() {
     const [form, setForm] = useState<NotebookFormData>(initialState);
@@ -55,11 +68,13 @@ export default function CadastroNotebookPage() {
     const [loadingFuncionarios, setLoadingFuncionarios] = useState(false);
     const [showFuncionarios, setShowFuncionarios] = useState(false);
 
-    const debouncedFuncionario = useDebouncedValue(form.NM_FUNCIONARIO_TI, 300);
+    const debouncedFuncionario = useDebouncedValue(form.NM_FUNCIONARIO, 300);
     const funcionarioBoxRef = useRef<HTMLDivElement | null>(null);
 
     const [loadingAccess, setLoadingAccess] = useState(true);
     const [allowed, setAllowed] = useState(false);
+
+    const [showTiOptions, setShowTiOptions] = useState(false);
 
     function handleChange<K extends keyof NotebookFormData>(field: K, value: NotebookFormData[K]) {
         setForm((prev) => ({
@@ -129,11 +144,12 @@ export default function CadastroNotebookPage() {
     function handleSelectFuncionario(funcionario: FuncionarioOption) {
         setForm((prev) => ({
             ...prev,
-            NM_FUNCIONARIO_TI: funcionario.NM_FUNCIONARIO || "",
+            NM_FUNCIONARIO: funcionario.NM_FUNCIONARIO || "",
             ID_FUNCIONARIO: funcionario.ID_FUNCIONARIO
                 ? String(funcionario.ID_FUNCIONARIO)
                 : "",
         }));
+
         setShowFuncionarios(false);
     }
 
@@ -154,9 +170,15 @@ export default function CadastroNotebookPage() {
                 NR_IP: form.NR_IP || null,
                 NR_BITLOCKER: form.NR_BITLOCKER || null,
                 OBS_NOTEBOOKS_SICOOB: form.OBS_NOTEBOOKS_SICOOB || null,
-                ID_FUNCIONARIO: form.ID_FUNCIONARIO ? Number(form.ID_FUNCIONARIO) : null,
-                NM_FUNCIONARIO_TI: form.NM_FUNCIONARIO_TI || null,
                 DESC_SITUACAO: form.DESC_SITUACAO || null,
+
+                // quem recebeu
+                ID_FUNCIONARIO: form.ID_FUNCIONARIO
+                    ? Number(form.ID_FUNCIONARIO)
+                    : null,
+
+                // quem cadastrou
+                NM_FUNCIONARIO_TI: form.NM_FUNCIONARIO_TI || null,
             });
 
             setSuccess("Notebook cadastrado com sucesso.");
@@ -191,23 +213,33 @@ export default function CadastroNotebookPage() {
     return (
         <div className="p-6 lg:p-8">
             <div className="flex flex-col gap-4">
-                <div className="min-w-0">
-                    <BackButton />
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                        <BackButton />
 
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
-                            <FaLaptop size={16} />
-                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
+                                <FaLaptop size={16} />
+                            </div>
 
-                        <div className="min-w-0">
-                            <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                                Cadastro de Notebook
-                            </h1>
-                            <p className="text-sm text-gray-600 mt-1">
-                                Preencha os dados abaixo para cadastrar um novo notebook.
-                            </p>
+                            <div className="min-w-0">
+                                <h1 className="text-2xl font-semibold text-gray-900 truncate">
+                                    Cadastro de Notebook
+                                </h1>
+
+                                <p className="text-sm text-gray-600 mt-1">
+                                    Preencha os dados abaixo para cadastrar um novo notebook.
+                                </p>
+                            </div>
                         </div>
                     </div>
+
+                    <Link
+                        href="/auth/consulta_notebook"
+                        className="rounded-lg bg-secondary px-6 py-2 text-md font-semibold text-white hover:bg-primary cursor-pointer"
+                    >
+                        Consultar notebooks cadastrados
+                    </Link>
                 </div>
             </div>
 
@@ -290,29 +322,17 @@ export default function CadastroNotebookPage() {
                         Responsável / vínculo
                     </h2>
 
-                    {/*<p className="mt-3 text-xs text-gray-500">
-                        * Preencha primeiro o nome do funcionário.
-                    </p>*/}
-
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {/*<Field
-                            label="ID Funcionário"
-                            value={form.ID_FUNCIONARIO}
-                            onChange={(v) => handleChange("ID_FUNCIONARIO", v)}
-                            placeholder="Preenchido ao selecionar o nome"
-                            type="number"
-                        />*/}
-
                         <div className="relative" ref={funcionarioBoxRef}>
                             <label className="text-xs font-medium text-gray-600">
-                                Funcionário TI
+                                Funcionário que recebeu
                             </label>
 
                             <div className="relative">
                                 <input
-                                    value={form.NM_FUNCIONARIO_TI}
+                                    value={form.NM_FUNCIONARIO}
                                     onChange={(e) => {
-                                        handleChange("NM_FUNCIONARIO_TI", e.target.value);
+                                        handleChange("NM_FUNCIONARIO", e.target.value);
                                         handleChange("ID_FUNCIONARIO", "");
                                         setShowFuncionarios(true);
                                     }}
@@ -321,14 +341,14 @@ export default function CadastroNotebookPage() {
                                             setShowFuncionarios(true);
                                         }
                                     }}
-                                    placeholder="Digite o nome do funcionário"
+                                    placeholder="Digite o nome do funcionário que recebeu"
                                     className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none shadow-sm placeholder:text-gray-400"
                                 />
 
                                 <FaUser className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 mt-0.5" />
                             </div>
 
-                            {showFuncionarios && form.NM_FUNCIONARIO_TI.trim() ? (
+                            {showFuncionarios && form.NM_FUNCIONARIO.trim() ? (
                                 <div className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
                                     {loadingFuncionarios ? (
                                         <div className="px-3 py-3 text-sm text-gray-500">
@@ -357,6 +377,41 @@ export default function CadastroNotebookPage() {
                                     )}
                                 </div>
                             ) : null}
+                        </div>
+
+                        <div className="relative">
+                            <label className="text-xs font-medium text-gray-600">
+                                Funcionário TI que cadastrou
+                            </label>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowTiOptions((prev) => !prev)}
+                                className="mt-1 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm"
+                            >
+                                <span>
+                                    {form.NM_FUNCIONARIO_TI || "Selecione o funcionário da TI"}
+                                </span>
+                                <FaUser className="text-gray-400" />
+                            </button>
+
+                            {showTiOptions && (
+                                <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
+                                    {funcionariosTI.map((nome) => (
+                                        <button
+                                            key={nome}
+                                            type="button"
+                                            onClick={() => {
+                                                handleChange("NM_FUNCIONARIO_TI", nome);
+                                                setShowTiOptions(false);
+                                            }}
+                                            className="block w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                        >
+                                            {nome}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

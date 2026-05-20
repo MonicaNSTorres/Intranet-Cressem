@@ -22,6 +22,7 @@ export type NotebookRow = {
     OBS_NOTEBOOKS_SICOOB: string | null;
     ID_FUNCIONARIO: number | string | null;
     NM_FUNCIONARIO_TI: string | null;
+    NM_FUNCIONARIO_RECEBEU?: string | null;
     DESC_SITUACAO: string | null;
 };
 
@@ -44,6 +45,7 @@ type NotebookFormData = {
     OBS_NOTEBOOKS_SICOOB: string;
     ID_FUNCIONARIO: string;
     NM_FUNCIONARIO_TI: string;
+    NM_FUNCIONARIO: string;
     DESC_SITUACAO: string;
 };
 
@@ -59,6 +61,7 @@ const initialState: NotebookFormData = {
     OBS_NOTEBOOKS_SICOOB: "",
     ID_FUNCIONARIO: "",
     NM_FUNCIONARIO_TI: "",
+    NM_FUNCIONARIO: "",
     DESC_SITUACAO: "",
 };
 
@@ -77,7 +80,7 @@ export default function ModalEditarNotebook({
     const [loadingFuncionarios, setLoadingFuncionarios] = useState(false);
     const [showFuncionarios, setShowFuncionarios] = useState(false);
 
-    const debouncedFuncionario = useDebouncedValue(form.NM_FUNCIONARIO_TI, 300);
+    const debouncedFuncionario = useDebouncedValue(form.NM_FUNCIONARIO, 300);
     const funcionarioBoxRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -101,6 +104,7 @@ export default function ModalEditarNotebook({
                     ? String(notebook.ID_FUNCIONARIO)
                     : "",
             NM_FUNCIONARIO_TI: notebook.NM_FUNCIONARIO_TI ?? "",
+            NM_FUNCIONARIO: notebook.NM_FUNCIONARIO_RECEBEU ?? "",
             DESC_SITUACAO: notebook.DESC_SITUACAO ?? "",
         });
 
@@ -163,7 +167,7 @@ export default function ModalEditarNotebook({
     function handleSelectFuncionario(funcionario: FuncionarioOption) {
         setForm((prev) => ({
             ...prev,
-            NM_FUNCIONARIO_TI: funcionario.NM_FUNCIONARIO || "",
+            NM_FUNCIONARIO: funcionario.NM_FUNCIONARIO || "",
             ID_FUNCIONARIO: funcionario.ID_FUNCIONARIO
                 ? String(funcionario.ID_FUNCIONARIO)
                 : "",
@@ -231,7 +235,7 @@ export default function ModalEditarNotebook({
                         onClick={onClose}
                         className="rounded-xl border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 cursor-pointer"
                     >
-                        <FaTimes size={14} className="hover:text-secondary"/>
+                        <FaTimes size={14} className="hover:text-secondary" />
                     </button>
                 </div>
 
@@ -307,28 +311,17 @@ export default function ModalEditarNotebook({
                             Responsável / vínculo
                         </h3>
 
-                        {/*<p className="mt-3 text-xs text-gray-500">
-                            * Preencha primeiro o nome do funcionário.
-                        </p>*/}
-
                         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {/*<Field
-                                label="ID Funcionário"
-                                value={form.ID_FUNCIONARIO}
-                                onChange={(v) => handleChange("ID_FUNCIONARIO", v)}
-                                type="number"
-                            />*/}
-
                             <div className="relative" ref={funcionarioBoxRef}>
                                 <label className="text-xs font-medium text-gray-600">
-                                    Funcionário TI
+                                    Funcionário que recebeu
                                 </label>
 
                                 <div className="relative">
                                     <input
-                                        value={form.NM_FUNCIONARIO_TI}
+                                        value={form.NM_FUNCIONARIO}
                                         onChange={(e) => {
-                                            handleChange("NM_FUNCIONARIO_TI", e.target.value);
+                                            handleChange("NM_FUNCIONARIO", e.target.value);
                                             handleChange("ID_FUNCIONARIO", "");
                                             setShowFuncionarios(true);
                                         }}
@@ -337,14 +330,14 @@ export default function ModalEditarNotebook({
                                                 setShowFuncionarios(true);
                                             }
                                         }}
-                                        placeholder="Digite o nome do funcionário"
+                                        placeholder="Digite o nome do funcionário que recebeu"
                                         className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none shadow-sm placeholder:text-gray-400"
                                     />
 
                                     <FaUser className="absolute right-3 top-1/2 mt-0.5 -translate-y-1/2 text-gray-400" />
                                 </div>
 
-                                {showFuncionarios && form.NM_FUNCIONARIO_TI.trim() ? (
+                                {showFuncionarios && form.NM_FUNCIONARIO.trim() ? (
                                     <div className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
                                         {loadingFuncionarios ? (
                                             <div className="px-3 py-3 text-sm text-gray-500">
@@ -374,6 +367,12 @@ export default function ModalEditarNotebook({
                                     </div>
                                 ) : null}
                             </div>
+
+                            <Field
+                                label="Funcionário TI que cadastrou"
+                                value={form.NM_FUNCIONARIO_TI}
+                                onChange={(v) => handleChange("NM_FUNCIONARIO_TI", v)}
+                            />
                         </div>
                     </div>
 

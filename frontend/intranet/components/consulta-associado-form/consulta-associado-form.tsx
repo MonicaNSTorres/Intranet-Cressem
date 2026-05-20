@@ -31,7 +31,7 @@ export function ConsultaAssociadoForm() {
     if (!atendente.trim()) {
       try {
         const me = await getMeAdUser();
-        const nomeAtendente = String(me?.nome_completo || me?.nome || me?.username || "").trim();
+        const nomeAtendente = String(me?.nome_completo || me?.username || "").trim();
         if (nomeAtendente) {
           setAtendente(nomeAtendente);
         }

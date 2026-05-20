@@ -241,9 +241,8 @@ function Field({
         {label}
       </label>
       <div
-        className={`rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm ${
-          multiline ? "min-h-[90px] whitespace-pre-wrap" : ""
-        }`}
+        className={`rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm ${multiline ? "min-h-[90px] whitespace-pre-wrap" : ""
+          }`}
       >
         {value || "-"}
       </div>
@@ -473,7 +472,6 @@ export function ConsultaAnaliseLimiteForm() {
           nome: String(detalhada.NM_ASSOCIADO || ""),
           celular: String(detalhada.NR_CELULAR || ""),
           empresa: String(detalhada.NM_EMPRESA || ""),
-
           contaCorrente: String(detalhada.NR_CONTA_CORRENTE || ""),
           salarioBruto: ehPJ
             ? toNumberValue(detalhada.VL_FATURAMENTO_MENSAL)
@@ -487,10 +485,8 @@ export function ConsultaAnaliseLimiteForm() {
           dataPagamento: String(detalhada.DT_PAGAMENTO || ""),
           carteira: String(detalhada.NV_CARTEIRA || ""),
           iap: String(detalhada.NR_IAP ?? ""),
-
           ocorrenciaCRM: toFlag(detalhada.OCORRENCIA_CRM),
           obsCRM: String(detalhada.OBS_CRM || ""),
-
           risco: String(detalhada.RISCO || ""),
           pd: String(detalhada.PD || ""),
           crl: toNumberValue(detalhada.NR_CRL),
@@ -498,7 +494,6 @@ export function ConsultaAnaliseLimiteForm() {
           divida: toNumberValue(detalhada.DIVIDA),
           restricoes: toFlag(detalhada.RESTRICAO),
           quaisRestricoes: String(detalhada.DESC_RESTRICAO || ""),
-
           sugestaoLimite: toNumberValue(detalhada.SG_LIMITE),
           cartao: toFlag(detalhada.CARTAO),
           cartaoAtual: toNumberValue(detalhada.LT_ATUAL_CARTAO),
@@ -506,7 +501,6 @@ export function ConsultaAnaliseLimiteForm() {
           especial: toFlag(detalhada.CHEQUE_ESPECIAL),
           especialAtual: toNumberValue(detalhada.LT_ATUAL_CH),
           especialAprovado: toNumberValue(detalhada.LT_APROVADO_CH),
-
           dataEnvio: String(detalhada.DT || "").slice(0, 10),
         },
         { acao: "print" }
@@ -769,11 +763,10 @@ export function ConsultaAnaliseLimiteForm() {
                 <button
                   key={item}
                   onClick={() => buscarAlteracoes(Number(item), 10)}
-                  className={`h-10 min-w-[40px] rounded-xl px-3 text-sm font-semibold transition ${
-                    paginaAtual === item
+                  className={`h-10 min-w-[40px] rounded-xl px-3 text-sm font-semibold transition ${paginaAtual === item
                       ? "bg-[#79B729] text-white"
                       : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   {item}
                 </button>

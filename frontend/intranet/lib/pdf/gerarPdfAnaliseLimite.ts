@@ -441,43 +441,38 @@ async function printPdf(doc: jsPDF, nomeArquivo: string) {
   const blob = doc.output("blob");
   const blobUrl = window.URL.createObjectURL(blob);
 
-  await new Promise<void>((resolve) => {
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.opacity = "0";
-    iframe.style.border = "0";
+  const iframe = document.createElement("iframe");
 
-    const cleanup = () => {
-      try {
-        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-      } catch {}
-      window.URL.revokeObjectURL(blobUrl);
-    };
+  iframe.style.position = "fixed";
+  iframe.style.left = "-9999px";
+  iframe.style.top = "0";
+  iframe.style.width = "800px";
+  iframe.style.height = "1000px";
+  iframe.style.border = "0";
 
-    iframe.onload = () => {
+  iframe.src = blobUrl;
+
+  document.body.appendChild(iframe);
+
+  iframe.onload = () => {
+    setTimeout(() => {
       const frameWindow = iframe.contentWindow;
+
       if (!frameWindow) {
-        cleanup();
-        resolve();
+        window.open(blobUrl, "_blank");
         return;
       }
 
+      frameWindow.focus();
+      frameWindow.print();
+
       setTimeout(() => {
-        frameWindow.focus();
-        frameWindow.print();
+        try {
+          document.body.removeChild(iframe);
+        } catch { }
 
-        setTimeout(() => {
-          cleanup();
-          resolve();
-        }, 1500);
-      }, 120);
-    };
-
-    iframe.src = blobUrl;
-    document.body.appendChild(iframe);
-  });
+        window.URL.revokeObjectURL(blobUrl);
+      }, 10000);
+    }, 2000);
+  };
 }
