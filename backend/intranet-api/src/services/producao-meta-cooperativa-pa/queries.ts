@@ -21,228 +21,211 @@ export function getSql(tema: Tema) {
     case "entrada_cooperados":
       return `
         WITH
-        PARAMS AS (
-          SELECT
-            TO_DATE(:dt_inicio, 'DD/MM/YYYY') AS DT_INI_SEMANA,
-            TO_DATE(:dt_fim, 'DD/MM/YYYY') AS DT_FIM_SEMANA
-          FROM DUAL
-        ),
+  PARAMS AS (
+    SELECT
+      TO_DATE(:dt_inicio, 'DD/MM/YYYY') AS DT_INI_SEMANA,
+      TO_DATE(:dt_fim, 'DD/MM/YYYY') AS DT_FIM_SEMANA
+    FROM DUAL
+  ),
 
-        PERIODO_REF AS (
-          SELECT
-            CASE
-              WHEN PR.DT_INI_SEMANA IS NOT NULL AND PR.DT_FIM_SEMANA IS NOT NULL
-                THEN TRUNC(PR.DT_INI_SEMANA)
-              ELSE TRUNC(SYSDATE, 'IW')
-            END AS DT_INI_CORTE,
-            CASE
-              WHEN PR.DT_INI_SEMANA IS NOT NULL AND PR.DT_FIM_SEMANA IS NOT NULL
-                THEN TRUNC(PR.DT_FIM_SEMANA)
-              ELSE TRUNC(SYSDATE, 'IW') + 6
-            END AS DT_FIM_CORTE,
-            NVL(TRUNC(PR.DT_FIM_SEMANA), TRUNC(SYSDATE)) AS DT_REF_FIM
-          FROM PARAMS PR
-        ),
+  PERIODO_REF AS (
+    SELECT
+      CASE
+        WHEN PR.DT_INI_SEMANA IS NOT NULL AND PR.DT_FIM_SEMANA IS NOT NULL
+          THEN TRUNC(PR.DT_INI_SEMANA)
+        ELSE TRUNC(SYSDATE, 'IW')
+      END AS DT_INI_CORTE,
+      CASE
+        WHEN PR.DT_INI_SEMANA IS NOT NULL AND PR.DT_FIM_SEMANA IS NOT NULL
+          THEN TRUNC(PR.DT_FIM_SEMANA)
+        ELSE TRUNC(SYSDATE, 'IW') + 6
+      END AS DT_FIM_CORTE,
+      NVL(TRUNC(PR.DT_FIM_SEMANA), TRUNC(SYSDATE)) AS DT_REF_FIM
+    FROM PARAMS PR
+  ),
 
-        AA_BASE_RAW AS (
-          SELECT
-            AA.NR_PA,
-            AA.NR_COOPERATIVA,
-            TRUNC(AA.DT_MATRICULA) AS DT_MOV,
-            AA.NR_CONTA_CAPITAL,
-            TRIM(UPPER(AA.SN_CONTA_CAPITAL)) AS SN_CONTA_CAPITAL,
-            CASE
-              WHEN AA.DT_MOVIMENTO IS NULL THEN NULL
-              WHEN REGEXP_LIKE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), '^\\d{2}/\\d{2}/\\d{4}$')
-                THEN TRUNC(TO_DATE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), 'DD/MM/YYYY'))
-              WHEN REGEXP_LIKE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), '^\\d{2}/\\d{2}/\\d{4}\\s\\d{2}:\\d{2}:\\d{2}$')
-                THEN TRUNC(TO_DATE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), 'DD/MM/YYYY HH24:MI:SS'))
-              WHEN REGEXP_LIKE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), '^\\d{4}-\\d{2}-\\d{2}$')
-                THEN TRUNC(TO_DATE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), 'YYYY-MM-DD'))
-              WHEN REGEXP_LIKE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), '^\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}$')
-                THEN TRUNC(TO_DATE(TRIM(TO_CHAR(AA.DT_MOVIMENTO)), 'YYYY-MM-DD HH24:MI:SS'))
-              ELSE NULL
-            END AS DT_MOVIMENTO_REF
-          FROM DBACRESSEM.CONTA_CAPITAL_DIARIO_NOVO_NORMALIZADO AA
-          WHERE AA.DT_MATRICULA IS NOT NULL
-            AND AA.NR_CONTA_CAPITAL IS NOT NULL
-        ),
+AA_BASE_RAW AS (
+  SELECT
+    AA.NR_PA,
+    AA.NR_COOPERATIVA,
+    TRUNC(AA.DT_MATRICULA) AS DT_MOV,
+    AA.NR_CONTA_CAPITAL,
+    TRIM(UPPER(AA.SN_CONTA_CAPITAL)) AS SN_CONTA_CAPITAL,
+    /* Evita inconsistência de tipo em DT_MOVIMENTO e mantém corte pelo próprio evento */
+    TRUNC(AA.DT_MATRICULA) AS DT_MOVIMENTO_REF
+  FROM DBACRESSEM.CONTA_CAPITAL_DIARIO_NOVO_NORMALIZADO AA
+  WHERE AA.DT_MATRICULA IS NOT NULL
+    AND AA.NR_CONTA_CAPITAL IS NOT NULL
+),
 
-        AA_MOV_REF AS (
-          SELECT
-            COALESCE(
-              MAX(CASE WHEN B.DT_MOVIMENTO_REF <= PR.DT_REF_FIM THEN B.DT_MOVIMENTO_REF END),
-              MAX(CASE WHEN TRUNC(B.DT_MOVIMENTO_REF, 'MM') = TRUNC(PR.DT_REF_FIM, 'MM') THEN B.DT_MOVIMENTO_REF END),
-              MAX(B.DT_MOVIMENTO_REF)
-            ) AS DT_MOV_REF_ESCOLHIDA
-          FROM AA_BASE_RAW B
-          CROSS JOIN PERIODO_REF PR
-          WHERE B.DT_MOVIMENTO_REF IS NOT NULL
-        ),
+ AA_MOV_REF AS (
+  SELECT PR.DT_REF_FIM AS DT_MOV_REF_ESCOLHIDA
+  FROM PERIODO_REF PR
+),
 
-        AA_BASE_SNAPSHOT AS (
-          SELECT
-            X.NR_PA,
-            X.NR_COOPERATIVA,
-            X.DT_MOV,
-            X.NR_CONTA_CAPITAL
-          FROM (
-            SELECT
-              B.NR_PA,
-              B.NR_COOPERATIVA,
-              B.DT_MOV,
-              B.NR_CONTA_CAPITAL,
-              B.SN_CONTA_CAPITAL,
-              B.DT_MOVIMENTO_REF,
-              ROW_NUMBER() OVER (
-                PARTITION BY B.NR_CONTA_CAPITAL
-                ORDER BY B.DT_MOVIMENTO_REF DESC NULLS LAST
-              ) AS RN
-            FROM AA_BASE_RAW B
-            CROSS JOIN AA_MOV_REF R
-            WHERE B.DT_MOVIMENTO_REF = R.DT_MOV_REF_ESCOLHIDA
-          ) X
-          WHERE X.RN = 1
-            AND X.SN_CONTA_CAPITAL = 'ATIVO'
-        ),
+ AA_BASE_SNAPSHOT AS (
+  SELECT
+    X.NR_PA,
+    X.NR_COOPERATIVA,
+    X.DT_MOV,
+    X.NR_CONTA_CAPITAL
+  FROM (
+    SELECT
+      B.NR_PA,
+      B.NR_COOPERATIVA,
+      B.DT_MOV,
+      B.NR_CONTA_CAPITAL,
+      B.SN_CONTA_CAPITAL,
+      B.DT_MOVIMENTO_REF,
+      ROW_NUMBER() OVER (
+        PARTITION BY B.NR_CONTA_CAPITAL
+        ORDER BY B.DT_MOVIMENTO_REF DESC, B.DT_MOV DESC
+      ) AS RN
+    FROM AA_BASE_RAW B
+    CROSS JOIN AA_MOV_REF R
+    WHERE B.DT_MOVIMENTO_REF <= R.DT_MOV_REF_ESCOLHIDA
+  ) X
+  WHERE X.RN = 1
+    AND X.SN_CONTA_CAPITAL = 'ATIVO'
+),
 
-        AA_BASE_ALL AS (
-          SELECT
-            B.NR_PA,
-            B.DT_MOV,
-            B.NR_CONTA_CAPITAL
-          FROM AA_BASE_SNAPSHOT B
+  AA_BASE_ALL AS (
+    SELECT
+      B.NR_PA,
+      B.DT_MOV,
+      B.NR_CONTA_CAPITAL
+    FROM AA_BASE_SNAPSHOT B
 
-          UNION ALL
+    UNION ALL
 
-          SELECT
-            4317 AS NR_PA,
-            B.DT_MOV,
-            B.NR_CONTA_CAPITAL
-          FROM AA_BASE_SNAPSHOT B
-          WHERE REGEXP_LIKE(TRIM(B.NR_COOPERATIVA), '^[0-9]+$')
-            AND TO_NUMBER(TRIM(B.NR_COOPERATIVA)) = 4317
-        ),
+    SELECT
+      4317 AS NR_PA,
+      B.DT_MOV,
+      B.NR_CONTA_CAPITAL
+    FROM AA_BASE_SNAPSHOT B
+    WHERE REGEXP_LIKE(TRIM(TO_CHAR(B.NR_COOPERATIVA)), '^[0-9]+$')
+      AND TO_NUMBER(TRIM(TO_CHAR(B.NR_COOPERATIVA))) = 4317
+  ),
 
-        AA_BASE_PERIODO AS (
-          SELECT
-            B.*
-          FROM AA_BASE_ALL B
-          CROSS JOIN PERIODO_REF PR
-          WHERE B.DT_MOV BETWEEN PR.DT_INI_CORTE AND PR.DT_FIM_CORTE
-        ),
+  AA_BASE_PERIODO AS (
+    SELECT
+      B.*
+    FROM AA_BASE_ALL B
+    CROSS JOIN PERIODO_REF PR
+    WHERE B.DT_MOV BETWEEN PR.DT_INI_CORTE AND PR.DT_FIM_CORTE
+  ),
 
-        AA_ANO AS (
-          SELECT
-            B.NR_PA,
-            EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
-            COUNT(DISTINCT B.NR_CONTA_CAPITAL) AS PRODUCAO_ANO
-          FROM AA_BASE_ALL B
-          CROSS JOIN PERIODO_REF PR
-          WHERE B.DT_MOV BETWEEN TRUNC(PR.DT_REF_FIM, 'YYYY') AND PR.DT_REF_FIM
-          GROUP BY
-            B.NR_PA,
-            EXTRACT(YEAR FROM PR.DT_REF_FIM)
-        ),
+  AA_ANO AS (
+    SELECT
+      B.NR_PA,
+      EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
+      COUNT(DISTINCT B.NR_CONTA_CAPITAL) AS PRODUCAO_ANO
+    FROM AA_BASE_ALL B
+    CROSS JOIN PERIODO_REF PR
+    WHERE B.DT_MOV BETWEEN TRUNC(PR.DT_REF_FIM, 'YYYY') AND PR.DT_REF_FIM
+    GROUP BY
+      B.NR_PA,
+      EXTRACT(YEAR FROM PR.DT_REF_FIM)
+  ),
 
-        AA_PERIODO AS (
-          SELECT
-            B.NR_PA,
-            EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
-            COUNT(DISTINCT B.NR_CONTA_CAPITAL) AS PRODUCAO_PERIODO
-          FROM AA_BASE_PERIODO B
-          CROSS JOIN PERIODO_REF PR
-          GROUP BY
-            B.NR_PA,
-            EXTRACT(YEAR FROM PR.DT_REF_FIM)
-        ),
+  AA_PERIODO AS (
+    SELECT
+      B.NR_PA,
+      EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO,
+      COUNT(DISTINCT B.NR_CONTA_CAPITAL) AS PRODUCAO_PERIODO
+    FROM AA_BASE_PERIODO B
+    CROSS JOIN PERIODO_REF PR
+    GROUP BY
+      B.NR_PA,
+      EXTRACT(YEAR FROM PR.DT_REF_FIM)
+  ),
 
-        META AS (
-          SELECT
-            MT.NR_PA,
-            TO_NUMBER(MT.DT_ANO_META) AS ANO,
-            SUM(MT.QTD_META) AS META_ANO
-          FROM DBACRESSEM.META_TOTAL_NOVA MT
-          CROSS JOIN PERIODO_REF PR
-          WHERE UPPER(MT.NM_PRODUTO) IN ('COOPERADOS NOVOS')
-            AND TO_NUMBER(MT.DT_ANO_META) = EXTRACT(YEAR FROM PR.DT_REF_FIM)
-          GROUP BY
-            MT.NR_PA,
-            TO_NUMBER(MT.DT_ANO_META)
-        )
+  META AS (
+    SELECT
+      MT.NR_PA,
+      TO_NUMBER(MT.DT_ANO_META) AS ANO,
+      SUM(MT.QTD_META) AS META_ANO
+    FROM DBACRESSEM.META_TOTAL_NOVA MT
+    CROSS JOIN PERIODO_REF PR
+    WHERE UPPER(MT.NM_PRODUTO) IN ('COOPERADOS NOVOS')
+      AND TO_NUMBER(MT.DT_ANO_META) = EXTRACT(YEAR FROM PR.DT_REF_FIM)
+    GROUP BY
+      MT.NR_PA,
+      TO_NUMBER(MT.DT_ANO_META)
+  )
 
-        SELECT
-          P.NR_PA AS "numero_pa",
-          P.NM_FANTANSIA AS "nome_pa",
+SELECT
+  P.NR_PA AS "numero_pa",
+  P.NM_FANTANSIA AS "nome_pa",
 
-          CASE
-            WHEN P.NR_PA = 95 THEN 0
-            ELSE NVL(PRD.PRODUCAO_PERIODO, 0)
-          END AS "producao_semanal",
+  CASE
+    WHEN P.NR_PA = 95 THEN 0
+    ELSE NVL(PRD.PRODUCAO_PERIODO, 0)
+  END AS "producao_semanal",
 
-          ROUND(NVL(M.META_ANO, 0) / 52, 2) AS "meta_semanal",
+  ROUND(NVL(M.META_ANO, 0) / 52, 2) AS "meta_semanal",
 
-          CASE
-            WHEN P.NR_PA = 95 THEN 0
-            WHEN NVL(M.META_ANO, 0) > 0
-              THEN ROUND((NVL(PRD.PRODUCAO_PERIODO, 0) / (M.META_ANO / 52)) * 100, 2)
-            ELSE 0
-          END AS "porcentagem_semanal",
+  CASE
+    WHEN P.NR_PA = 95 THEN 0
+    WHEN NVL(M.META_ANO, 0) > 0
+      THEN ROUND((NVL(PRD.PRODUCAO_PERIODO, 0) / (M.META_ANO / 52)) * 100, 2)
+    ELSE 0
+  END AS "porcentagem_semanal",
 
-          CASE
-            WHEN P.NR_PA = 95 THEN 0
-            ELSE (NVL(PRD.PRODUCAO_PERIODO, 0) - ROUND(NVL(M.META_ANO, 0) / 52, 2))
-          END AS "gap_semanal",
+  CASE
+    WHEN P.NR_PA = 95 THEN 0
+    ELSE (NVL(PRD.PRODUCAO_PERIODO, 0) - ROUND(NVL(M.META_ANO, 0) / 52, 2))
+  END AS "gap_semanal",
 
-          CASE
-            WHEN P.NR_PA = 95 THEN 0
-            ELSE NVL(AY.PRODUCAO_ANO, 0)
-          END AS "producao_ano",
+  CASE
+    WHEN P.NR_PA = 95 THEN 0
+    ELSE NVL(AY.PRODUCAO_ANO, 0)
+  END AS "producao_ano",
 
-          NVL(M.META_ANO, 0) AS "meta_2026",
+  NVL(M.META_ANO, 0) AS "meta_2026",
 
-          CASE
-            WHEN P.NR_PA = 95 THEN 0
-            ELSE (NVL(M.META_ANO, 0) / 12)
-          END AS "meta_mensal",
+  CASE
+    WHEN P.NR_PA = 95 THEN 0
+    ELSE (NVL(M.META_ANO, 0) / 12)
+  END AS "meta_mensal",
 
-          CASE
-            WHEN P.NR_PA = 95 THEN 0
-            WHEN (NVL(M.META_ANO, 0) / 12) > 0
-              THEN (NVL(PRD.PRODUCAO_PERIODO, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
-            ELSE 0
-          END AS "perc_meta_realizada_mensal",
+  CASE
+    WHEN P.NR_PA = 95 THEN 0
+    WHEN (NVL(M.META_ANO, 0) / 12) > 0
+      THEN (NVL(PRD.PRODUCAO_PERIODO, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+    ELSE 0
+  END AS "perc_meta_realizada_mensal",
 
-          CASE
-            WHEN P.NR_PA = 95 THEN 0
-            ELSE NVL(PRD.PRODUCAO_PERIODO, 0) - (NVL(M.META_ANO, 0) / 12)
-          END AS "falta_para_meta_mensal",
+  CASE
+    WHEN P.NR_PA = 95 THEN 0
+    ELSE NVL(PRD.PRODUCAO_PERIODO, 0) - (NVL(M.META_ANO, 0) / 12)
+  END AS "falta_para_meta_mensal",
 
-          CASE
-            WHEN P.NR_PA = 95 THEN 0
-            WHEN NVL(M.META_ANO, 0) > 0
-              THEN ROUND((NVL(AY.PRODUCAO_ANO, 0) / M.META_ANO) * 100, 2)
-            ELSE 0
-          END AS "perc_meta_realizada",
+  CASE
+    WHEN P.NR_PA = 95 THEN 0
+    WHEN NVL(M.META_ANO, 0) > 0
+      THEN ROUND((NVL(AY.PRODUCAO_ANO, 0) / M.META_ANO) * 100, 2)
+    ELSE 0
+  END AS "perc_meta_realizada",
 
-          CASE
-            WHEN P.NR_PA = 95 THEN 0
-            ELSE NVL(AY.PRODUCAO_ANO, 0) - NVL(M.META_ANO, 0)
-          END AS "falta_para_meta"
+  CASE
+    WHEN P.NR_PA = 95 THEN 0
+    ELSE NVL(AY.PRODUCAO_ANO, 0) - NVL(M.META_ANO, 0)
+  END AS "falta_para_meta"
 
-        FROM META M
-        JOIN DBACRESSEM.PA P
-          ON P.NR_PA = M.NR_PA
+FROM META M
+JOIN DBACRESSEM.PA P
+  ON P.NR_PA = M.NR_PA
 
-        LEFT JOIN AA_ANO AY
-          ON AY.NR_PA = M.NR_PA
-         AND AY.ANO = M.ANO
+LEFT JOIN AA_ANO AY
+  ON AY.NR_PA = M.NR_PA
+ AND AY.ANO = M.ANO
 
-        LEFT JOIN AA_PERIODO PRD
-          ON PRD.NR_PA = M.NR_PA
-         AND PRD.ANO = M.ANO
+LEFT JOIN AA_PERIODO PRD
+  ON PRD.NR_PA = M.NR_PA
+ AND PRD.ANO = M.ANO
 
-        ORDER BY P.NR_PA
+ORDER BY P.NR_PA
       `;
     case "conta_corrente_abertas":
       return `
