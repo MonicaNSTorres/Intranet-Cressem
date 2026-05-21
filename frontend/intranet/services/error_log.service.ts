@@ -22,7 +22,6 @@ export async function registrarErroTela(payload: ErrorLogPayload) {
   try {
     await api.post("/v1/error-logs", payload);
   } catch {
-    // Evita loop infinito caso a própria rota de log falhe
   }
 }
 
