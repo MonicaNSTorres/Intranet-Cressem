@@ -21,7 +21,6 @@ import {
   decidirSolicitacaoReembolso,
   concluirSolicitacaoReembolso,
   baixarComprovanteGerenciamentoReembolso,
-  atualizarDiretoriaSolicitacaoReembolso,
   type SolicitaoListaItem,
   type SolicitacaoDetalheItem,
 } from "@/services/gerenciamento_reembolso_despesa.service";
@@ -592,14 +591,6 @@ export function GerenciamentoReembolsoDespesaForm() {
       ) {
         parecer = parecerDiretoriaTexto;
         acao = parecerFinal === "Aprovado" ? "aprovar" : "reprovar";
-
-        if (diretoriaCompleto?.ID_FUNCIONARIO) {
-          await atualizarDiretoriaSolicitacaoReembolso({
-            idSolicitacao: solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA,
-            idDiretoria: diretoriaCompleto.ID_FUNCIONARIO,
-            nomeDiretoria: diretoriaCompleto.NM_FUNCIONARIO,
-          });
-        }
       }
 
       if (!acao || !parecer) {
@@ -1264,7 +1255,19 @@ export function GerenciamentoReembolsoDespesaForm() {
               <div className="mt-3">
                 <label className="mb-1 block text-xs font-medium text-gray-600">Diretoria</label>
                 <input
-                  value={solicitacaoAtual.NM_FNC_DIRETORIA || ""}
+                  value={
+                    solicitacaoAtual.NM_FNC_DIRETORIA ||
+                    (isAndamento(
+                      solicitacaoAtual.DESC_ANDAMENTO || "",
+                      "Pendente Diretoria"
+                    ) &&
+                    podeAtuarEtapaDiretoria
+                      ? diretoriaCompleto?.NM_FUNCIONARIO ||
+                        nomeUsuarioLogado ||
+                        nomeResponsavelAD ||
+                        ""
+                      : "")
+                  }
                   readOnly
                   className="w-full rounded border bg-gray-50 px-3 py-2"
                 />

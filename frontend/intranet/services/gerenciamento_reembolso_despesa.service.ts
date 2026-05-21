@@ -120,19 +120,6 @@ export async function concluirSolicitacaoReembolso(id: number | string) {
   return data;
 }
 
-export async function atualizarDiretoriaSolicitacaoReembolso(params: {
-  idSolicitacao: number | string;
-  nomeDiretoria: string;
-  idDiretoria: number | string;
-}) {
-  const { data } = await api.put(
-    `/v1/solicitacao_reembolso_despesa/solicitacao/${params.idSolicitacao}/nome_diretoria/${encodeURIComponent(
-      params.nomeDiretoria
-    )}/id_diretoria/${params.idDiretoria}`
-  );
-  return data;
-}
-
 export async function baixarComprovanteGerenciamentoReembolso(oficio: string) {
   const { data } = await api.post(
     "/v1/solicitacao_reembolso_despesa/download",
