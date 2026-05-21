@@ -66,7 +66,7 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.text("TERMO DE ADESÃƒO AO CONTRATO PRESTAMISTA", pageW / 2, y, {
+  doc.text("TERMO DE ADESÃO AO CONTRATO PRESTAMISTA", pageW / 2, y, {
     align: "center",
   });
   y += 20;
@@ -144,11 +144,11 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
   ]);
 
   y += 6;
-  drawSectionHeader("AdesÃ£o ao seguro");
+  drawSectionHeader("Adesão ao seguro");
 
   const introChunks: Array<{ text: string; bold: boolean }> = [
     { text: safeText(o.nome), bold: true },
-    { text: ", pessoa fÃ­sica, CPF: ", bold: false },
+    { text: ", pessoa física, CPF: ", bold: false },
     { text: safeText(o.cpf), bold: true },
     { text: ", nascido em ", bold: false },
     { text: safeText(o.nascimento), bold: true },
@@ -156,8 +156,8 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
     { text: safeText(o.idadeTexto), bold: true },
     {
       text:
-        ", associado Ã  SICOOB CRESSEM - COOPERATIVA DE ECONOMIA E CRÃ‰DITO MÃšTUO DOS SERVIDORES " +
-    `MUNICIPAIS DA REGIÃƒO METROPOLITANA DO VALE DO PARAÃBA E LITORAL NORTE, representado nos termos de seus atos ` +
+        ", associado à SICOOB CRESSEM - COOPERATIVA DE ECONOMIA E CRÉDITO MÚTUO DOS SERVIDORES " +
+        `MUNICIPAIS DA REGIÃO METROPOLITANA DO VALE DO PARAÍBA E LITORAL NORTE, representado nos termos de seus atos ` +
         `constitutivos, formaliza pela assinatura do presente Termo, o interesse em aderir ao Contrato de Seguro Prestamista.`,
       bold: false,
     },
@@ -193,13 +193,13 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
   drawSectionHeader("Dados do contrato");
 
   drawFieldsRow([
-    { label: "Proposta nÂº", value: o.proposta, width: colW * 0.34 },
-    { label: "Valor do emprÃ©stimo", value: o.valorEmprestimo, width: colW * 0.33 },
+    { label: "Proposta nº", value: o.proposta, width: colW * 0.34 },
+    { label: "Valor do empréstimo", value: o.valorEmprestimo, width: colW * 0.33 },
     { label: "Total de parcelas", value: o.totalParcelas, width: colW * 0.33 },
   ]);
 
   drawFieldsRow([
-    { label: "Data 1Âª parcela do emprÃ©stimo", value: o.dataPrimeiraParcelaEmprestimo, width: colW * 0.5 },
+    { label: "Data 1ª parcela do empréstimo", value: o.dataPrimeiraParcelaEmprestimo, width: colW * 0.5 },
     { label: "Taxa de juros sobre o seguro", value: o.taxaJuros, width: colW * 0.5 },
   ]);
 
@@ -210,14 +210,14 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
 
   if (o.mostrarCompetencia) {
     drawFieldsRow([
-      { label: "Data 1Âª parcela do seguro", value: o.dataPrimeiraParcelaSeguro, width: colW * 0.5 },
-      { label: "Data da Ãºltima parcela do seguro", value: o.dataUltimaParcelaSeguro, width: colW * 0.5 },
+      { label: "Data 1ª parcela do seguro", value: o.dataPrimeiraParcelaSeguro, width: colW * 0.5 },
+      { label: "Data da última parcela do seguro", value: o.dataUltimaParcelaSeguro, width: colW * 0.5 },
     ]);
 
     y += 6;
-    const competÃªncia =
-      "O seguro Ã© pago por competÃªncia, ou seja, a partir da contrataÃ§Ã£o, havendo assim a incidÃªncia de mais um mÃªs de seguro, pois a primeira parcela do emprÃ©stimo vence no mÃªs subsequente, mas tendo de estar segura a partir deste mÃªs.";
-    const compLines = doc.splitTextToSize(competÃªncia, colW - 16);
+    const competência =
+      "O seguro é pago por competência, ou seja, a partir da contratação, havendo assim a incidência de mais um mês de seguro, pois a primeira parcela do empréstimo vence no mês subsequente, mas tendo de estar segura a partir deste mês.";
+    const compLines = doc.splitTextToSize(competência, colW - 16);
     const compLineH = 10.2;
     const compBoxH = Math.max(30, compLines.length * compLineH + 16);
     ensureSpace(compBoxH + 4);
@@ -235,10 +235,10 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
     y += compBoxH + 8;
   }
 
-  drawSectionHeader("DeclaraÃ§Ã£o");
+  drawSectionHeader("Declaração");
 
   const declaracao =
-    "A formalizaÃ§Ã£o da adesÃ£o individual ao seguro serÃ¡ realizada por intermÃ©dio do preenchimento e assinatura, pelo proponente, da Proposta de AdesÃ£o.";
+    "A formalização da adesão individual ao seguro será realizada por intermédio do preenchimento e assinatura, pelo proponente, da Proposta de Adesão.";
   const declLines = doc.splitTextToSize(declaracao, colW - 16);
   const declLineH = 10.2;
   const declBoxH = Math.max(28, declLines.length * declLineH + 16);
@@ -282,7 +282,7 @@ export async function gerarPdfPrevisul(o: PdfOpts) {
   doc.text(safeText(o.assinaturaAssociado), assinaturaX1 + assinaturaW / 2, y, {
     align: "center",
   });
-  doc.text("ValidaÃ§Ã£o", assinaturaX2 + assinaturaW / 2, y, { align: "center" });
+  doc.text("Validação", assinaturaX2 + assinaturaW / 2, y, { align: "center" });
 
   doc.save(`previsul_${sanitize(o.nome || "associado")}.pdf`);
 }

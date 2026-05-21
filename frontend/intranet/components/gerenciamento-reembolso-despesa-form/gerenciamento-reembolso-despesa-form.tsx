@@ -737,10 +737,43 @@ export function GerenciamentoReembolsoDespesaForm() {
     );
   }
 
+  function executarBusca() {
+    buscarDespesas(1, pesquisa, nomeResponsavel, podeVerTodos, {
+      cpf: filtroCpf,
+      cidade: filtroCidade,
+      status: filtroStatus,
+    });
+
+    carregarContadores(nomeResponsavel, podeVerTodos, {
+      pesquisa,
+      cpf: filtroCpf,
+      cidade: filtroCidade,
+      status: filtroStatus,
+    });
+  }
+
   return (
     <>
       <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-        <div className="grid grid-cols-1 gap-3">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+
+            buscarDespesas(1, pesquisa, nomeResponsavel, podeVerTodos, {
+              cpf: filtroCpf,
+              cidade: filtroCidade,
+              status: filtroStatus,
+            });
+
+            carregarContadores(nomeResponsavel, podeVerTodos, {
+              pesquisa,
+              cpf: filtroCpf,
+              cidade: filtroCidade,
+              status: filtroStatus,
+            });
+          }}
+          className="grid grid-cols-1 gap-3"
+        >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr_auto_auto]">
             <input
               type="text"
@@ -782,22 +815,8 @@ export function GerenciamentoReembolsoDespesaForm() {
             </select>
 
             <button
-              type="button"
-              onClick={() => {
-                buscarDespesas(1, pesquisa, nomeResponsavel, podeVerTodos, {
-                  cpf: filtroCpf,
-                  cidade: filtroCidade,
-                  status: filtroStatus,
-                });
-
-                carregarContadores(nomeResponsavel, podeVerTodos, {
-                  pesquisa,
-                  cpf: filtroCpf,
-                  cidade: filtroCidade,
-                  status: filtroStatus,
-                });
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              type="submit"
+              className="inline-flex items-center justify-center gap-2 rounded border bg-secondary border-secondary px-4 py-2 text-sm font-medium text-white cursor-pointer"
             >
               <FaSearch size={12} />
               Buscar
@@ -806,24 +825,12 @@ export function GerenciamentoReembolsoDespesaForm() {
             <button
               type="button"
               onClick={limparBusca}
-              className="inline-flex items-center justify-center gap-2 rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center justify-center gap-2 rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
             >
               Limpar
             </button>
           </div>
-
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-            <div />
-            <button
-              type="button"
-              onClick={() => router.push("/auth/cadastro_reembolso_despesa")}
-              className="inline-flex items-center justify-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary"
-            >
-              <FaPlus size={12} />
-              Cadastrar
-            </button>
-          </div>
-        </div>
+        </form>
 
         <div className="mt-6 overflow-x-auto">
           <table className="min-w-full overflow-hidden rounded-lg border border-gray-200">
@@ -897,7 +904,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                       <button
                         type="button"
                         onClick={() => abrirSolicitacao(item)}
-                        className={`rounded px-3 py-1.5 text-xs font-semibold text-white ${item.SN_FINALIZADO ? "bg-green-600" : "bg-blue-600"
+                        className={`rounded px-3 py-1.5 text-xs font-semibold cursor-pointer text-white ${item.SN_FINALIZADO ? "bg-green-600" : "bg-blue-600"
                           }`}
                       >
                         {item.SN_FINALIZADO ? "Concluído" : "Informações"}
@@ -1261,11 +1268,11 @@ export function GerenciamentoReembolsoDespesaForm() {
                       solicitacaoAtual.DESC_ANDAMENTO || "",
                       "Pendente Diretoria"
                     ) &&
-                    podeAtuarEtapaDiretoria
+                      podeAtuarEtapaDiretoria
                       ? diretoriaCompleto?.NM_FUNCIONARIO ||
-                        nomeUsuarioLogado ||
-                        nomeResponsavelAD ||
-                        ""
+                      nomeUsuarioLogado ||
+                      nomeResponsavelAD ||
+                      ""
                       : "")
                   }
                   readOnly
@@ -1366,4 +1373,3 @@ function ResumoCard({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
-
