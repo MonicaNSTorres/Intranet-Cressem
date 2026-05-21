@@ -22,20 +22,35 @@ export const consultaNotebookController = {
           NS.ID_FUNCIONARIO,
           NS.NM_FUNCIONARIO_TI,
           NS.DIR_TERMO_ASSINADO,
-          NS.DESC_SITUACAO
+          NS.DESC_SITUACAO,
+
+          F.NM_FUNCIONARIO AS NM_FUNCIONARIO_RECEBEU
+
         FROM DBACRESSEM.NOTEBOOKS_SICOOB NS
+
+        LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM F
+          ON F.ID_FUNCIONARIO = NS.ID_FUNCIONARIO
+
         WHERE (:q IS NULL OR :q = '' OR (
           UPPER(NS.NM_NOTEBOOK) LIKE '%' || UPPER(:q) || '%'
           OR UPPER(NS.NM_MODELO) LIKE '%' || UPPER(:q) || '%'
           OR UPPER(NS.NR_MAC) LIKE '%' || UPPER(:q) || '%'
           OR UPPER(NS.NR_IP) LIKE '%' || UPPER(:q) || '%'
           OR UPPER(NS.NR_BITLOCKER) LIKE '%' || UPPER(:q) || '%'
+
+          -- quem cadastrou o notebook na TI
           OR UPPER(NS.NM_FUNCIONARIO_TI) LIKE '%' || UPPER(:q) || '%'
+
+          -- quem recebeu o notebook
+          OR UPPER(F.NM_FUNCIONARIO) LIKE '%' || UPPER(:q) || '%'
+
           OR UPPER(NS.DESC_SITUACAO) LIKE '%' || UPPER(:q) || '%'
           OR UPPER(NS.OBS_NOTEBOOKS_SICOOB) LIKE '%' || UPPER(:q) || '%'
           OR TO_CHAR(NS.CD_PATRIMONIO) LIKE '%' || :q || '%'
           OR TO_CHAR(NS.ID_NOTEBOOKS_SICOOB) LIKE '%' || :q || '%'
+          OR TO_CHAR(NS.ID_FUNCIONARIO) LIKE '%' || :q || '%'
         ))
+
         ORDER BY NS.ID_NOTEBOOKS_SICOOB DESC
       `;
 
@@ -48,6 +63,7 @@ export const consultaNotebookController = {
       return res.json({ data: result.rows || [] });
     } catch (err: any) {
       console.error("consulta notebook listar erro:", err);
+
       return res.status(500).json({
         error: "Falha ao listar notebooks.",
         details: String(err?.message || err),

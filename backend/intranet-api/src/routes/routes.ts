@@ -73,6 +73,7 @@ import { GlpiService } from "../services/glpi.service";
 import { feriasNotificacaoController } from "../controllers/ferias-notificacao.controller";
 import { contratosNotificacaoController } from "../controllers/contratos-notificacao.controller";
 import { buscarAcessosSemana } from "../controllers/dashboard.controller";
+import { errorLogController } from "../controllers/errorlog.controller";
 
 const routes = Router();
 
@@ -1035,6 +1036,9 @@ routes.get(
 
 //grafico na home
 routes.get("/v1/dashboard/acessos", buscarAcessosSemana);
+
+//erros
+routes.post("/v1/error-logs", errorLogController.criar);
 
 export { routes };
 
