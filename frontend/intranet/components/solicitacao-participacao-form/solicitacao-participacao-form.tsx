@@ -123,6 +123,7 @@ export function SolicitacaoParticipacaoForm() {
     const [erro, setErro] = useState("");
     const [info, setInfo] = useState("");
     const alertRef = useRef<HTMLDivElement | null>(null);
+    const oficioInputRef = useRef<HTMLInputElement | null>(null);
     const subirParaAlerta = () => {
         window.requestAnimationFrame(() => {
             alertRef.current?.scrollIntoView({
@@ -537,6 +538,9 @@ export function SolicitacaoParticipacaoForm() {
         setEventoAnterior("0");
         setRetornoUltimoEvento("");
         setOficio(null);
+        if (oficioInputRef.current) {
+            oficioInputRef.current.value = "";
+        }
         setDiaSolicitacao(hojeISO());
         limparAuditorio();
     };
@@ -1323,6 +1327,7 @@ export function SolicitacaoParticipacaoForm() {
                                 Adicionar Ofício
                             </label>
                             <input
+                                ref={oficioInputRef}
                                 type="file"
                                 accept="application/pdf,.pdf"
                                 onChange={(e) => setOficio(e.target.files?.[0] || null)}
