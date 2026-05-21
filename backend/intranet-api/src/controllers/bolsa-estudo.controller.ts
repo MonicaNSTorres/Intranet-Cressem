@@ -21,9 +21,10 @@ export const bolsaEstudoController = {
         SELECT
           f.NM_FUNCIONARIO,
           TO_CHAR(f.DT_ADMISSAO, 'YYYY-MM-DD') AS DT_ADMISSAO,
-          f.CD_GERENCIA
+          f.CD_GERENCIA,
+          f.ID_FUNCIONARIO
         FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
-        WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) = UPPER(TRIM(:nome))
+        WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) LIKE '%' || UPPER(TRIM(:nome)) || '%'
         FETCH FIRST 1 ROWS ONLY
       `;
 
@@ -45,6 +46,7 @@ export const bolsaEstudoController = {
         NM_FUNCIONARIO: row.NM_FUNCIONARIO || "",
         DT_ADMISSAO: row.DT_ADMISSAO || "",
         CD_GERENCIA: row.CD_GERENCIA || "",
+        ID_FUNCIONARIO: row.ID_FUNCIONARIO || "",
       });
     } catch (error: any) {
       console.error("Erro ao buscar funcionário por nome:", error);

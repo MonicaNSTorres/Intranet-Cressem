@@ -186,10 +186,6 @@ export function GerenciamentoReembolsoDespesaForm() {
     calcularTotais(listaContador);
   }, [listaContador]);
 
-  const perfilTipo = useMemo(() => {
-    return solicitacaoAtual?.TIPO_USUARIO || solicitacaoAtual?.tipo || "";
-  }, [solicitacaoAtual]);
-
   const idUsuarioLogado = useMemo(() => {
     return Number(diretoriaCompleto?.ID_FUNCIONARIO || 0);
   }, [diretoriaCompleto]);
@@ -229,7 +225,7 @@ export function GerenciamentoReembolsoDespesaForm() {
         grupos?: string[];
       };
 
-      const nomeAD = "ANA CAROLINA MOTA HESPANHA RODRIGUES";
+      const nomeAD = me?.nome_completo || me?.nome || "";
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
       const gruposNormalizados = grupos.map(normalizeGrupo);
 
@@ -464,19 +460,16 @@ export function GerenciamentoReembolsoDespesaForm() {
 
     if (
       isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia") &&
-      perfilTipo === "gerencia" &&
       podeAtuarEtapaGerencia
     ) return true;
 
     if (
       isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia Superior") &&
-      (perfilTipo === "gerencia superior" || perfilTipo === "gerencia") &&
       podeAtuarEtapaGerenciaSup
     ) return true;
 
     if (
       isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
-      perfilTipo === "diretoria" &&
       podeAtuarEtapaDiretoria
     ) return true;
 
@@ -519,7 +512,6 @@ export function GerenciamentoReembolsoDespesaForm() {
 
     if (
       isAndamento(andamentoAtual, "Pendente Gerencia") &&
-      perfilTipo === "gerencia" &&
       podeAtuarEtapaGerencia
     ) {
       if (!parecerGerenciaTexto) {
@@ -535,7 +527,6 @@ export function GerenciamentoReembolsoDespesaForm() {
 
     if (
       isAndamento(andamentoAtual, "Pendente Gerencia Superior") &&
-      (perfilTipo === "gerencia superior" || perfilTipo === "gerencia") &&
       podeAtuarEtapaGerenciaSup
     ) {
       if (!parecerGerenciaSupTexto) {
@@ -551,7 +542,6 @@ export function GerenciamentoReembolsoDespesaForm() {
 
     if (
       isAndamento(andamentoAtual, "Pendente Diretoria") &&
-      perfilTipo === "diretoria" &&
       podeAtuarEtapaDiretoria
     ) {
       if (!parecerDiretoriaTexto) {
@@ -585,21 +575,18 @@ export function GerenciamentoReembolsoDespesaForm() {
         parecer = parecerFinanceiroTexto;
         acao = parecerFinanceiroSelect === "Solicitação OK" ? "aprovar" : "devolver";
       } else if (
-        perfilTipo === "gerencia" &&
         isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia") &&
         podeAtuarEtapaGerencia
       ) {
         parecer = parecerGerenciaTexto;
         acao = parecerFinal === "Reprovado" ? "reprovar" : "aprovar";
       } else if (
-        (perfilTipo === "gerencia superior" || perfilTipo === "gerencia") &&
         isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia Superior") &&
         podeAtuarEtapaGerenciaSup
       ) {
         parecer = parecerGerenciaSupTexto;
         acao = parecerFinal === "Reprovado" ? "reprovar" : "aprovar";
       } else if (
-        perfilTipo === "diretoria" &&
         isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
         podeAtuarEtapaDiretoria
       ) {
@@ -1201,7 +1188,6 @@ export function GerenciamentoReembolsoDespesaForm() {
                       onChange={(e) => setParecerGerenciaTexto(e.target.value)}
                       disabled={!(
                         solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia" &&
-                        perfilTipo === "gerencia" &&
                         podeAtuarEtapaGerencia
                       )}
                       rows={3}
@@ -1235,7 +1221,6 @@ export function GerenciamentoReembolsoDespesaForm() {
                       onChange={(e) => setParecerGerenciaSupTexto(e.target.value)}
                       disabled={!(
                         solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia Superior" &&
-                        (perfilTipo === "gerencia superior" || perfilTipo === "gerencia") &&
                         podeAtuarEtapaGerenciaSup
                       )}
                       rows={3}
@@ -1269,7 +1254,6 @@ export function GerenciamentoReembolsoDespesaForm() {
                   onChange={(e) => setParecerDiretoriaTexto(e.target.value)}
                   disabled={!(
                     solicitacaoAtual.DESC_ANDAMENTO === "Pendente Diretoria" &&
-                    perfilTipo === "diretoria" &&
                     podeAtuarEtapaDiretoria
                   )}
                   rows={3}
@@ -1287,16 +1271,13 @@ export function GerenciamentoReembolsoDespesaForm() {
               </div>
 
               {((isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia") &&
-                perfilTipo === "gerencia" &&
                 podeAtuarEtapaGerencia) ||
                 (isAndamento(
                   solicitacaoAtual.DESC_ANDAMENTO || "",
                   "Pendente Gerencia Superior"
                 ) &&
-                  (perfilTipo === "gerencia superior" || perfilTipo === "gerencia") &&
                   podeAtuarEtapaGerenciaSup) ||
                 (isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
-                  perfilTipo === "diretoria" &&
                   podeAtuarEtapaDiretoria)) && (
                   <div className="mt-5">
                     <label className="mb-1 block text-xs font-medium text-gray-600">

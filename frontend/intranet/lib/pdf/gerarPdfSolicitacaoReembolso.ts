@@ -116,8 +116,8 @@ export async function gerarPdfSolicitacaoReembolso(
     y,
     margin,
     contentW,
-    [{ label: "Justificativa", value: o.justificativa || "", width: contentW, maxLines: 3 }],
-    36
+    [{ label: "Justificativa", value: o.justificativa || "", width: contentW, maxLines: 6 }],
+    64
   );
 
   y += 4;
@@ -134,6 +134,12 @@ export async function gerarPdfSolicitacaoReembolso(
   let total = 0;
 
   if (!despesas.length) {
+    const rowH = getExpenseDataRowHeight(
+      doc,
+      [colTipoW, colDescW, colValorW],
+      ["-", "Sem despesas informadas", "-"]
+    );
+    y = ensureSpace(doc, { currentY: y, needed: rowH + 2, margin, pageH });
     y = drawExpenseDataRow(
       doc,
       y,
@@ -143,7 +149,12 @@ export async function gerarPdfSolicitacaoReembolso(
     );
   } else {
     for (const d of despesas) {
-      y = ensureSpace(doc, { currentY: y, needed: 28, margin, pageH });
+      const rowH = getExpenseDataRowHeight(
+        doc,
+        [colTipoW, colDescW, colValorW],
+        [safeText(d?.TP_DESPESA), safeText(d?.DESC_DESPESA), fmtBRL(toNumber(d?.VALOR))]
+      );
+      y = ensureSpace(doc, { currentY: y, needed: rowH + 2, margin, pageH });
       y = drawExpenseDataRow(
         doc,
         y,
@@ -294,7 +305,7 @@ function drawFieldBox(
   if (opts.label.trim()) doc.text(opts.label.toUpperCase(), opts.x + 4, opts.y + 7.2);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.8);
+  doc.setFontSize(8.2);
   doc.setTextColor(15, 23, 42);
 
   const lines = splitWithEllipsis(doc, safeText(opts.value), opts.w - 8, opts.maxLines || 1);
@@ -342,7 +353,17 @@ function drawExpenseDataRow(
   colWidths: number[],
   values: [string, string, string]
 ) {
-  const h = 24;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.2);
+
+  const typeLines = splitWithEllipsis(doc, safeText(values[0]), colWidths[0] - 10, 2);
+  const descLines = splitWithEllipsis(doc, safeText(values[1]), colWidths[1] - 10, 4);
+  const valueText = fitText(doc, safeText(values[2]), colWidths[2] - 10, false);
+  const lineHeight = 9.4;
+  const textTop = y + 14;
+  const rowLines = Math.max(typeLines.length, descLines.length, 1);
+  const h = Math.max(24, 14 + (rowLines - 1) * lineHeight + 6);
+
   let cursor = x;
   for (let i = 0; i < colWidths.length; i++) {
     const w = colWidths[i];
@@ -351,19 +372,36 @@ function drawExpenseDataRow(
     doc.setLineWidth(0.45);
     doc.rect(cursor, y, w, h, "FD");
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.8);
+    doc.setFontSize(8.2);
     doc.setTextColor(15, 23, 42);
-    const text = safeText(values[i]);
-    const lines = splitWithEllipsis(doc, text, w - 10, 2);
-    if (i === 2 && lines.length === 1) {
-      doc.text(lines[0], cursor + w - 6, y + 16, { align: "right" });
+
+    if (i === 0) {
+      doc.text(typeLines, cursor + 5, textTop);
+    } else if (i === 1) {
+      doc.text(descLines, cursor + 5, textTop);
     } else {
-      doc.text(lines, cursor + 5, y + 16);
+      doc.text(valueText, cursor + w - 6, textTop, { align: "right" });
     }
+
     cursor += w;
   }
   doc.setTextColor(0, 0, 0);
   return y + h;
+}
+
+function getExpenseDataRowHeight(
+  doc: jsPDF,
+  colWidths: number[],
+  values: [string, string, string]
+) {
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.2);
+
+  const typeLines = splitWithEllipsis(doc, safeText(values[0]), colWidths[0] - 10, 2);
+  const descLines = splitWithEllipsis(doc, safeText(values[1]), colWidths[1] - 10, 4);
+  const lineHeight = 9.4;
+  const rowLines = Math.max(typeLines.length, descLines.length, 1);
+  return Math.max(24, 14 + (rowLines - 1) * lineHeight + 6);
 }
 
 function drawExpenseTotalRow(
