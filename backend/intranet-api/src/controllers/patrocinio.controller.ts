@@ -126,6 +126,48 @@ function getShareRoot() {
     return `\\\\${server}\\${share}`;
 }
 
+function toSlashUncPath(value: string) {
+    const normalized = String(value || "").trim().replace(/\\/g, "/");
+    if (!normalized) return normalized;
+    if (normalized.startsWith("//")) return normalized;
+    if (normalized.startsWith("/")) return `/${normalized}`;
+    return `//${normalized}`;
+}
+
+function toWindowsUncPath(value: string) {
+    const normalized = String(value || "").trim();
+    if (!normalized) return normalized;
+    return normalized.replace(/\//g, "\\");
+}
+
+async function readFileByPossibleUncPaths(caminhoOriginal: string) {
+    const caminho = String(caminhoOriginal || "").trim();
+    const candidatos = Array.from(
+        new Set([
+            caminho,
+            toWindowsUncPath(caminho),
+            toSlashUncPath(caminho),
+        ].filter(Boolean))
+    );
+
+    let lastError: any = null;
+
+    for (const candidato of candidatos) {
+        try {
+            const buffer = await fs.readFile(candidato);
+            return { buffer, caminhoResolvido: candidato };
+        } catch (error: any) {
+            lastError = error;
+        }
+    }
+
+    throw new Error(
+        `Arquivo não encontrado nos caminhos tentados: ${candidatos.join(" | ")}. Detalhes: ${String(
+            lastError?.message || lastError
+        )}`
+    );
+}
+
 async function conectarShareWindows() {
     const { server, share, user, password, domain } = getSmbConfig();
     const remote = `\\\\${server}\\${share}`;
@@ -188,7 +230,21 @@ async function salvarArquivoPatrocinioNoServidorSMB(
     const shareRoot = getShareRoot();
     const solicitanteSafe = sanitizeFolderName(solicitante);
     const fileName = sanitizeFileName(arquivo.name || "arquivo.pdf");
-    const fileData = arquivo.data;
+    let fileData = arquivo.data;
+
+    // Quando express-fileupload está com useTempFiles=true, o buffer pode vir vazio.
+    if (!fileData || fileData.length === 0) {
+        const tmpPath = String((arquivo as any)?.tempFilePath || "").trim();
+        if (tmpPath) {
+            fileData = await fs.readFile(tmpPath);
+        }
+    }
+
+    if (!fileData || fileData.length === 0) {
+        throw new Error(
+            `Arquivo "${fileName}" veio vazio no upload (0 bytes).`
+        );
+    }
 
     await conectarShareWindows();
 
@@ -204,7 +260,7 @@ async function salvarArquivoPatrocinioNoServidorSMB(
     try {
         await fs.mkdir(diretorioDestino, { recursive: true });
         await fs.writeFile(caminhoCompleto, fileData);
-        return caminhoCompleto;
+        return toSlashUncPath(caminhoCompleto);
     } catch (error: any) {
         throw new Error(
             `Falha ao gravar arquivo no caminho ${caminhoCompleto}. Detalhes: ${String(
@@ -951,9 +1007,10 @@ export const patrocinioController = {
 
             await conectarShareWindows();
 
-            const arquivoBuffer = await fs.readFile(caminho);
-            const fileName = path.win32.basename(caminho);
-            const contentType = getMimeTypeByFileName(caminho);
+            const { buffer: arquivoBuffer, caminhoResolvido } =
+                await readFileByPossibleUncPaths(caminho);
+            const fileName = path.win32.basename(caminhoResolvido);
+            const contentType = getMimeTypeByFileName(caminhoResolvido);
 
             res.setHeader("Content-Type", contentType);
             res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);

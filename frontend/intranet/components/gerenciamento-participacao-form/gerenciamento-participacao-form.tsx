@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -306,6 +306,7 @@ export function GerenciamentoParticipacaoForm() {
 
     return true;
   }
+
   async function salvarParecer() {
     if (!selected || !funcionarioTipo) return;
     if (!validaCampos()) return;
@@ -557,7 +558,7 @@ export function GerenciamentoParticipacaoForm() {
                       Cidade
                     </th>
                     <th className="bg-gray-50 border-b px-3 py-3 text-left text-xs font-semibold text-gray-600">
-                      Funcionario
+                      Funcionário
                     </th>
                     <th className="bg-gray-50 border-b px-3 py-3 text-left text-xs font-semibold text-gray-600">
                       Dia
@@ -566,7 +567,7 @@ export function GerenciamentoParticipacaoForm() {
                       Status
                     </th>
                     <th className="bg-gray-50 border-b px-3 py-3 text-center text-xs font-semibold text-gray-600">
-                      Acao
+                      Ação
                     </th>
                   </tr>
                 </thead>
@@ -706,9 +707,10 @@ export function GerenciamentoParticipacaoForm() {
                   <label className="mb-1 block text-xs font-medium text-gray-600">Ofício</label>
                   <button
                     onClick={() => visualizarArquivo(selected.DIR_OFICIO)}
-                    className="w-full rounded border px-3 py-2 text-left hover:bg-gray-50"
+                    disabled={!selected.DIR_OFICIO}
+                    className="w-full rounded bg-secondary px-3 py-2 text-center text-white hover:bg-primary disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                   >
-                    Visualizar
+                    {selected.DIR_OFICIO ? "Visualizar" : "Não enviado"}
                   </button>
                 </div>
               </div>
@@ -716,27 +718,30 @@ export function GerenciamentoParticipacaoForm() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <CampoInput label="É insumo?" value={selected.QTD_INSUMO ? "Sim" : "Não"} readOnly />
                 <CampoInput label="Estimado" value={fmtBRL(selected.VL_ESTIMATIVA)} readOnly />
+                <CampoInput label="Data da Solicitação" value={formatarDataBR(selected.DT_SOLICITACAO)} readOnly />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <CampoInput label="Cidade" value={selected.NM_CIDADE} readOnly />
+                <div />
+                <div />
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <CampoInput label="Auditório Sede" value={selected.CD_AUDITORIO_SEDE ? "Sim" : "Não"} readOnly />
                 <CampoInput label="Auditório Centro de Convivência" value={selected.CD_AUDITORIO_CENTRO ? "Sim" : "Não"} readOnly />
-                {selected.DIR_DOC_SEM_FINS_LUCRATIVO ? (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Declaração de Utilidade Pública
-                    </label>
-                    <button
-                      onClick={() => visualizarArquivo(selected.DIR_DOC_SEM_FINS_LUCRATIVO)}
-                      className="w-full rounded border px-3 py-2 text-left hover:bg-gray-50"
-                    >
-                      Visualizar
-                    </button>
-                  </div>
-                ) : (
-                  <CampoInput label="Declaração de Utilidade Pública" value="Não enviada" readOnly />
-                )}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Declaração de Utilidade Pública
+                  </label>
+                  <button
+                    onClick={() => visualizarArquivo(selected.DIR_DOC_SEM_FINS_LUCRATIVO)}
+                    disabled={!selected.DIR_DOC_SEM_FINS_LUCRATIVO}
+                    className="w-full rounded bg-secondary px-3 py-2 text-center text-white hover:bg-primary disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+                  >
+                    {selected.DIR_DOC_SEM_FINS_LUCRATIVO ? "Visualizar" : "Não enviada"}
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -757,7 +762,7 @@ export function GerenciamentoParticipacaoForm() {
               <div className="space-y-3">
                 {selected.DIAS?.map((dia, index) => (
                   <div key={`${dia.DT_DIA}-${index}`} className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <CampoInput label="Dia(s)" value={dia.DT_DIA} readOnly />
+                    <CampoInput label="Dia(s)" value={formatarDataBR(dia.DT_DIA)} readOnly />
                     <CampoInput label="Início" value={dia.HR_INICIO} readOnly />
                     <CampoInput label="Fim" value={dia.HR_FIM} readOnly />
                   </div>

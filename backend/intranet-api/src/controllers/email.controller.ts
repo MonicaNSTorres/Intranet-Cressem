@@ -29,6 +29,31 @@ function getParamAsNumber(value: string | string[] | undefined) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function getParticipacaoDebugEmail() {
+  const raw =
+    process.env.PARTICIPACAO_DEBUG_EMAIL ||
+    process.env.REEMBOLSO_DEBUG_EMAIL ||
+    "";
+
+  return String(raw)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function aplicarParticipacaoDebugDestinatarios(destinatarios: string | string[]) {
+  const debugEmails = getParticipacaoDebugEmail();
+  if (debugEmails.length) return debugEmails;
+
+  if (Array.isArray(destinatarios)) {
+    return destinatarios
+      .map((email) => String(email || "").trim())
+      .filter(Boolean);
+  }
+
+  return [String(destinatarios || "").trim()].filter(Boolean);
+}
+
 function simNao(value: any) {
   return Number(value || 0) === 1 ? "SIM" : "NÃO";
 }
@@ -190,7 +215,11 @@ export const emailController = {
         });
       }
 
-      await sendEmail(gerenteEmail, subject, body);
+      await sendEmail(
+        aplicarParticipacaoDebugDestinatarios(gerenteEmail),
+        subject,
+        body
+      );
 
       if (Number(patrocinio.CD_AUDITORIO_SEDE || 0) === 1) {
         const auditorioResult = await oracleExecute(
@@ -291,13 +320,20 @@ export const emailController = {
           "Nova Solicitação de Reserva do Auditório Sede Recebida";
 
         await sendEmail(
-          ["informatica.cressem@sicoob.com.br", "luiz.gerhard@sicoob.com.br", "fabio.sprado@sicoob.com.br"],
+          aplicarParticipacaoDebugDestinatarios([
+            "informatica.cressem@sicoob.com.br",
+            "luiz.gerhard@sicoob.com.br",
+            "fabio.sprado@sicoob.com.br",
+          ]),
           subjectAuditorio,
           bodyAuditorio
         );
       }
 
-      return res.json({ message: "Email enviado para gerência" });
+      return res.json({
+        message: "Email enviado para gerência",
+        debug_email_ativo: getParticipacaoDebugEmail().length > 0,
+      });
     } catch (error: any) {
       console.error(error);
 
@@ -351,11 +387,16 @@ export const emailController = {
       <p>Atenciosamente<br/>E-mail automático</p>
       `;
 
-      const emails = ["paulo.tarso@sicoob.com.br"];
+      const emails = aplicarParticipacaoDebugDestinatarios([
+        "paulo.tarso@sicoob.com.br",
+      ]);
 
       await sendEmail(emails, subject, body);
 
-      return res.json({ message: "Email enviado para diretoria" });
+      return res.json({
+        message: "Email enviado para diretoria",
+        debug_email_ativo: getParticipacaoDebugEmail().length > 0,
+      });
     } catch (error: any) {
       console.error(error);
 
@@ -405,14 +446,17 @@ export const emailController = {
       <p>Atenciosamente<br/>E-mail automático</p>
       `;
 
-      const emailsConselho = [
+      const emailsConselho = aplicarParticipacaoDebugDestinatarios([
         "janainag@sicoob.com.br",
         "isabeli.cmartins@sicoob.com.br"
-      ];
+      ]);
 
       await sendEmail(emailsConselho, subject, body);
 
-      return res.json({ message: "Email enviado para conselho" });
+      return res.json({
+        message: "Email enviado para conselho",
+        debug_email_ativo: getParticipacaoDebugEmail().length > 0,
+      });
     } catch (error: any) {
       console.error(error);
 
@@ -543,7 +587,9 @@ export const emailController = {
         addEmail("fabio.sprado@sicoob.com.br");
       }
 
-      const emails = Array.from(destinatarios);
+      const emails = aplicarParticipacaoDebugDestinatarios(
+        Array.from(destinatarios)
+      );
 
       if (!emails.length) {
         return res.status(404).json({
@@ -556,6 +602,7 @@ export const emailController = {
       return res.json({
         message: "Email final enviado",
         destinatarios: emails,
+        debug_email_ativo: getParticipacaoDebugEmail().length > 0,
       });
     } catch (error: any) {
       console.error(error);
