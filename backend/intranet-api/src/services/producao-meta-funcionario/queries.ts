@@ -140,7 +140,18 @@ function sqlConsorcio() {
             END AS NR_PA,
             ROW_NUMBER() OVER (
               PARTITION BY B.NM_VENDEDOR
-              ORDER BY B.DT_MOV DESC
+              ORDER BY
+                B.DT_MOV DESC,
+                CASE
+                  WHEN B.NR_PA = 0
+                   AND EXISTS (
+                     SELECT 1
+                     FROM VENDEDORES_95 V
+                     WHERE UPPER(TRIM(V.NM)) = B.NM_VENDEDOR
+                   )
+                  THEN 95
+                  ELSE B.NR_PA
+                END DESC
             ) AS RN
           FROM CDN_BASE_ALL B
           WHERE B.NM_VENDEDOR IS NOT NULL
@@ -369,7 +380,7 @@ function sqlSeguroGeraisNovo() {
           END AS NR_PA,
           ROW_NUMBER() OVER (
             PARTITION BY B.NM_FUNCIONARIO
-            ORDER BY B.DT_MOV DESC
+            ORDER BY B.DT_MOV DESC, NVL(B.NR_PA, -1) DESC
           ) AS RN
         FROM SGPD_BASE_ALL B
         WHERE B.NM_FUNCIONARIO IS NOT NULL
@@ -669,7 +680,7 @@ function sqlEntradaCooperados() {
             B.NR_PA,
             ROW_NUMBER() OVER (
               PARTITION BY B.NM_FUNCIONARIO
-              ORDER BY B.DT_MOV DESC
+              ORDER BY B.DT_MOV DESC, NVL(B.NR_PA, -1) DESC
             ) AS RN
           FROM AA_BASE_ALL B
           WHERE B.NM_FUNCIONARIO IS NOT NULL
@@ -1348,7 +1359,7 @@ function sqlSeguroRural() {
             B.NR_PA,
             ROW_NUMBER() OVER (
               PARTITION BY B.NM_FUNCIONARIO
-              ORDER BY B.DT_MOV DESC
+              ORDER BY B.DT_MOV DESC, NVL(B.NR_PA, -1) DESC
             ) AS RN
           FROM SRC_BASE_ALL B
           WHERE B.NM_FUNCIONARIO IS NOT NULL
@@ -1611,7 +1622,7 @@ function sqlSaldoPrevidenciaMi() {
             B.NR_PA,
             ROW_NUMBER() OVER (
               PARTITION BY B.NM_FUNCIONARIO
-              ORDER BY B.DT_MOV DESC
+              ORDER BY B.DT_MOV DESC, NVL(B.NR_PA, -1) DESC
             ) AS RN
           FROM PMDN_BASE_ALL B
           WHERE B.NM_FUNCIONARIO IS NOT NULL
@@ -1864,7 +1875,7 @@ function sqlSaldoPrevidenciaVgbl() {
             B.NR_PA,
             ROW_NUMBER() OVER (
               PARTITION BY B.NM_FUNCIONARIO
-              ORDER BY B.DT_MOV DESC
+              ORDER BY B.DT_MOV DESC, NVL(B.NR_PA, -1) DESC
             ) AS RN
           FROM PVPD_BASE_ALL B
           WHERE B.NM_FUNCIONARIO IS NOT NULL
