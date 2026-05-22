@@ -50,6 +50,7 @@ AA_BASE_RAW AS (
     AA.NR_COOPERATIVA,
     TRUNC(AA.DT_MATRICULA) AS DT_MOV,
     AA.NR_CONTA_CAPITAL,
+    AA.ROWID AS RID_ORIGEM,
     TRIM(UPPER(AA.SN_CONTA_CAPITAL)) AS SN_CONTA_CAPITAL,
     /* Evita inconsistência de tipo em DT_MOVIMENTO e mantém corte pelo próprio evento */
     TRUNC(AA.DT_MATRICULA) AS DT_MOVIMENTO_REF
@@ -77,9 +78,15 @@ AA_BASE_RAW AS (
       B.NR_CONTA_CAPITAL,
       B.SN_CONTA_CAPITAL,
       B.DT_MOVIMENTO_REF,
+      B.RID_ORIGEM,
       ROW_NUMBER() OVER (
         PARTITION BY B.NR_CONTA_CAPITAL
-        ORDER BY B.DT_MOVIMENTO_REF DESC, B.DT_MOV DESC
+        ORDER BY
+          B.DT_MOVIMENTO_REF DESC,
+          B.DT_MOV DESC,
+          CASE WHEN NVL(B.NR_PA, 0) = 0 THEN 0 ELSE 1 END,
+          NVL(B.NR_PA, 999999),
+          B.RID_ORIGEM
       ) AS RN
     FROM AA_BASE_RAW B
     CROSS JOIN AA_MOV_REF R
@@ -271,7 +278,11 @@ ORDER BY P.NR_PA
                 PARTITION BY
                   C.NR_CONTA_CORRENTE,
                   TRUNC(C.DT_ABERTURA_CONTA)
-                ORDER BY TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY') DESC
+                ORDER BY
+                  TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY') DESC,
+                  NVL(C.NR_PA, 999999),
+                  NVL(C.NR_COOPERATIVA, 999999),
+                  C.ROWID
               ) AS RN
             FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO_NORMALIZADO C
             WHERE C.DT_MOVIMENTO IS NOT NULL
