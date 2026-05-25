@@ -5,10 +5,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export type SisbrRow = {
   FW: string | number | null;
   LOCAL: string | null;
-  SISBR: string | null;
   IP: string | null;
   PROVEDOR: string | null;
-  LINK_SISBR: string | null;
+  ANTIGO_PA: string | null;
+  CNPJ: string | number | null;
 };
 
 export type BuscarTabelaSisbrTiResponse = SisbrRow[];

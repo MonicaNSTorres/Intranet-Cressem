@@ -14,10 +14,10 @@ import { getMeAdUser } from "@/services/auth.service";
 type SisbrRow = {
   FW: string | number | null;
   LOCAL: string | null;
-  SISBR: string | null;
   IP: string | null;
   PROVEDOR: string | null;
-  LINK_SISBR: string | null;
+  ANTIGO_PA: string | null;
+  CNPJ: string | number | null;
 };
 
 export default function TabelaSisbrTiPage() {
@@ -170,7 +170,8 @@ export default function TabelaSisbrTiPage() {
                   <th className="py-3 px-3">SISBR</th>
                   <th className="py-3 px-3">IP</th>
                   <th className="py-3 px-3">Provedor</th>
-                  <th className="py-3 px-3">Link SISBR</th>
+                  <th className="py-3 px-3">Antigo PA</th>
+                  <th className="py-3 px-3">CNPJ</th>
                 </tr>
               </thead>
               <tbody>
@@ -185,10 +186,6 @@ export default function TabelaSisbrTiPage() {
 
                     <td className="py-3 px-3 text-gray-900">{r.LOCAL ?? "-"}</td>
 
-                    <td className="py-3 px-3 text-gray-700">
-                      {r.SISBR ?? "-"}
-                    </td>
-
                     <td className="py-3 px-3 text-gray-700">{r.IP ?? "-"}</td>
 
                     <td className="py-3 px-3 text-gray-700">
@@ -196,7 +193,11 @@ export default function TabelaSisbrTiPage() {
                     </td>
 
                     <td className="py-3 px-3 text-gray-700">
-                      {r.LINK_SISBR ?? "-"}
+                      {r.ANTIGO_PA ?? "-"}
+                    </td>
+
+                    <td className="py-3 px-3 text-gray-700">
+                      {r.CNPJ ?? "-"}
                     </td>
                   </tr>
                 ))}
