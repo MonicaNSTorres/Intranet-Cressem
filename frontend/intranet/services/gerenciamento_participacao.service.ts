@@ -1,3 +1,5 @@
+import { registrarErroTela } from "./error_log.service";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export type PatrocinioDia = {
@@ -62,174 +64,334 @@ function ensureApiUrl() {
   return API_URL;
 }
 
+async function registrarErroGerenciamentoParticipacao(
+  error: any,
+  detail: Record<string, any>,
+  source: string
+) {
+  await registrarErroTela({
+    PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
+    ERROR_MESSAGE:
+      error?.message || "Erro no service de gerenciamento de participação",
+    ERROR_STACK: error?.stack || null,
+    ERROR_DETAIL: detail,
+    SOURCE: source,
+  });
+}
+
 export async function buscarPatrociniosPaginado(params: {
   nome: string;
   pesquisa: string;
   page?: number;
   limit?: number;
 }): Promise<PatrocinioPaginadoResponse> {
-  const api = ensureApiUrl();
+  try {
+    const api = ensureApiUrl();
 
-  const url = new URL(`${api}/v1/funcionarios_sicoob_cressem_patrocinio_paginado`);
-  url.searchParams.set("nome", params.nome);
-  url.searchParams.set("pesquisa", params.pesquisa || " ");
-  url.searchParams.set("page", String(params.page || 1));
-  url.searchParams.set("limit", String(params.limit || 10));
+    const url = new URL(`${api}/v1/funcionarios_sicoob_cressem_patrocinio_paginado`);
+    url.searchParams.set("nome", params.nome);
+    url.searchParams.set("pesquisa", params.pesquisa || " ");
+    url.searchParams.set("page", String(params.page || 1));
+    url.searchParams.set("limit", String(params.limit || 10));
 
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    credentials: "include",
-    cache: "no-store",
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(json?.error || "Falha ao buscar patrocínios.");
-  }
-
-  return json as PatrocinioPaginadoResponse;
-}
-
-export async function buscarFuncionarioTipo(nome: string): Promise<FuncionarioTipoResponse> {
-  const api = ensureApiUrl();
-
-  const res = await fetch(
-    `${api}/v1/funcionarios_sicoob_cressem/nome_tipo/${encodeURIComponent(nome)}`,
-    {
+    const res = await fetch(url.toString(), {
       method: "GET",
       credentials: "include",
       cache: "no-store",
+    });
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(json?.error || "Falha ao buscar patrocínios.");
     }
-  );
 
-  const json = await res.json().catch(() => ({}));
+    return json as PatrocinioPaginadoResponse;
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: "/v1/funcionarios_sicoob_cressem_patrocinio_paginado",
+        method: "GET",
+        params,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_LISTAR"
+    );
 
-  if (!res.ok) {
-    throw new Error(json?.error || "Falha ao buscar tipo do funcionário.");
+    throw error;
   }
+}
 
-  return json as FuncionarioTipoResponse;
+export async function buscarFuncionarioTipo(nome: string): Promise<FuncionarioTipoResponse> {
+  try {
+    const api = ensureApiUrl();
+
+    const res = await fetch(
+      `${api}/v1/funcionarios_sicoob_cressem/nome_tipo/${encodeURIComponent(nome)}`,
+      {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      }
+    );
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(json?.error || "Falha ao buscar tipo do funcionário.");
+    }
+
+    return json as FuncionarioTipoResponse;
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: "/v1/funcionarios_sicoob_cressem/nome_tipo",
+        method: "GET",
+        nome,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_FUNCIONARIO_TIPO"
+    );
+
+    throw error;
+  }
 }
 
 export async function buscarPatrocinioPorId(id: number): Promise<PatrocinioItem> {
-  const api = ensureApiUrl();
+  try {
+    const api = ensureApiUrl();
 
-  const res = await fetch(`${api}/v1/patrocinio_cressem/${id}`, {
-    method: "GET",
-    credentials: "include",
-    cache: "no-store",
-  });
+    const res = await fetch(`${api}/v1/patrocinio_cressem/${id}`, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
 
-  const json = await res.json().catch(() => ({}));
+    const json = await res.json().catch(() => ({}));
 
-  if (!res.ok) {
-    throw new Error(json?.error || "Falha ao buscar solicitação.");
+    if (!res.ok) {
+      throw new Error(json?.error || "Falha ao buscar solicitação.");
+    }
+
+    return json as PatrocinioItem;
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: `/v1/patrocinio_cressem/${id}`,
+        method: "GET",
+        id,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_BUSCAR_ID"
+    );
+
+    throw error;
   }
-
-  return json as PatrocinioItem;
 }
 
 export async function atualizarPatrocinio(id: number, payload: Record<string, any>) {
-  const api = ensureApiUrl();
+  try {
+    const api = ensureApiUrl();
 
-  const res = await fetch(`${api}/v1/patrocinio_cressem/${id}`, {
-    method: "PUT",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+    const res = await fetch(`${api}/v1/patrocinio_cressem/${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-  const json = await res.json().catch(() => ({}));
+    const json = await res.json().catch(() => ({}));
 
-  if (!res.ok) {
-    throw new Error(json?.error || "Falha ao atualizar solicitação.");
+    if (!res.ok) {
+      throw new Error(json?.error || "Falha ao atualizar solicitação.");
+    }
+
+    return json;
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: `/v1/patrocinio_cressem/${id}`,
+        method: "PUT",
+        id,
+        payload,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_ATUALIZAR"
+    );
+
+    throw error;
   }
-
-  return json;
 }
 
 export async function baixarArquivoPatrocinio(caminho: string): Promise<Blob> {
-  const api = ensureApiUrl();
+  try {
+    const api = ensureApiUrl();
 
-  const res = await fetch(`${api}/v1/patrocinio/download`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ oficio: caminho }),
-  });
+    const res = await fetch(`${api}/v1/patrocinio/download`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ oficio: caminho }),
+    });
 
-  if (!res.ok) {
-    throw new Error("Falha ao baixar arquivo.");
+    if (!res.ok) {
+      throw new Error("Falha ao baixar arquivo.");
+    }
+
+    return await res.blob();
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: "/v1/patrocinio/download",
+        method: "POST",
+        caminho,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_BAIXAR_ARQUIVO"
+    );
+
+    throw error;
   }
-
-  return await res.blob();
 }
 
 export async function baixarRelatorioPatrocinios(): Promise<Blob> {
-  const api = ensureApiUrl();
+  try {
+    const api = ensureApiUrl();
 
-  const res = await fetch(`${api}/v1/download_patrocinios`, {
-    method: "GET",
-    credentials: "include",
-  });
+    const res = await fetch(`${api}/v1/download_patrocinios`, {
+      method: "GET",
+      credentials: "include",
+    });
 
-  if (!res.ok) {
-    throw new Error("Falha ao baixar relatório.");
+    if (!res.ok) {
+      throw new Error("Falha ao baixar relatório.");
+    }
+
+    return await res.blob();
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: "/v1/download_patrocinios",
+        method: "GET",
+      },
+      "GERENCIAMENTO_PARTICIPACAO_BAIXAR_RELATORIO"
+    );
+
+    throw error;
   }
-
-  return await res.blob();
 }
 
 export async function enviarEmailGerencia(funcionario: string, empresa: string, id: number) {
-  const api = ensureApiUrl();
-  const res = await fetch(
-    `${api}/v1/email_informativo_gerencia/funcionario/${encodeURIComponent(funcionario)}/empresa/${encodeURIComponent(empresa)}/patrocinio/${id}`,
-    {
-      method: "GET",
-      credentials: "include",
-    }
-  );
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json?.error || "Falha ao enviar email para gerência.");
+  try {
+    const api = ensureApiUrl();
+    const res = await fetch(
+      `${api}/v1/email_informativo_gerencia/funcionario/${encodeURIComponent(funcionario)}/empresa/${encodeURIComponent(empresa)}/patrocinio/${id}`,
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error || "Falha ao enviar email para gerência.");
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: "/v1/email_informativo_gerencia",
+        method: "GET",
+        funcionario,
+        empresa,
+        id,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_EMAIL_GERENCIA"
+    );
+
+    throw error;
+  }
 }
 
 export async function enviarEmailDiretoria(funcionario: string, empresa: string, id: number) {
-  const api = ensureApiUrl();
-  const res = await fetch(
-    `${api}/v1/email_informativo_diretoria/funcionario/${encodeURIComponent(funcionario)}/empresa/${encodeURIComponent(empresa)}/patrocinio/${id}`,
-    {
-      method: "GET",
-      credentials: "include",
-    }
-  );
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json?.error || "Falha ao enviar email para diretoria.");
+  try {
+    const api = ensureApiUrl();
+    const res = await fetch(
+      `${api}/v1/email_informativo_diretoria/funcionario/${encodeURIComponent(funcionario)}/empresa/${encodeURIComponent(empresa)}/patrocinio/${id}`,
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error || "Falha ao enviar email para diretoria.");
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: "/v1/email_informativo_diretoria",
+        method: "GET",
+        funcionario,
+        empresa,
+        id,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_EMAIL_DIRETORIA"
+    );
+
+    throw error;
+  }
 }
 
 export async function enviarEmailConselho(id: number) {
-  const api = ensureApiUrl();
-  const res = await fetch(`${api}/v1/email_informativo_conselho/patrocinio/${id}`, {
-    method: "GET",
-    credentials: "include",
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json?.error || "Falha ao enviar email para conselho.");
+  try {
+    const api = ensureApiUrl();
+    const res = await fetch(`${api}/v1/email_informativo_conselho/patrocinio/${id}`, {
+      method: "GET",
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error || "Falha ao enviar email para conselho.");
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: `/v1/email_informativo_conselho/patrocinio/${id}`,
+        method: "GET",
+        id,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_EMAIL_CONSELHO"
+    );
+
+    throw error;
+  }
 }
 
 export async function enviarEmailParecerFinal(tipo: string, id: number) {
-  const api = ensureApiUrl();
-  const res = await fetch(
-    `${api}/v1/email_informativo_parecer_final/tipo_funcionario/${encodeURIComponent(tipo)}/patrocinio/${id}`,
-    {
-      method: "GET",
-      credentials: "include",
-    }
-  );
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json?.error || "Falha ao enviar email final.");
+  try {
+    const api = ensureApiUrl();
+    const res = await fetch(
+      `${api}/v1/email_informativo_parecer_final/tipo_funcionario/${encodeURIComponent(tipo)}/patrocinio/${id}`,
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error || "Falha ao enviar email final.");
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: "/v1/email_informativo_parecer_final",
+        method: "GET",
+        tipo,
+        id,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_EMAIL_PARECER_FINAL"
+    );
+
+    throw error;
+  }
 }

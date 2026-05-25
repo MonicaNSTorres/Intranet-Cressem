@@ -1,4 +1,5 @@
 import axios from "axios";
+import { registrarErroTela } from "./error_log.service";
 
 export type AssociadoAntecipacaoResponse = {
   NOME?: string;
@@ -17,6 +18,39 @@ const api = axios.create({
   withCredentials: true,
   timeout: 15000,
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    try {
+      await registrarErroTela({
+        PAGE_URL:
+          typeof window !== "undefined" ? window.location.href : null,
+
+        ERROR_MESSAGE:
+          error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Erro no service de antecipação capital",
+
+        ERROR_STACK: error?.stack || null,
+
+        ERROR_DETAIL: {
+          status: error?.response?.status,
+          url: error?.config?.url,
+          method: error?.config?.method,
+          responseData: error?.response?.data,
+        },
+
+        SOURCE: "ANTECIPACAO_CAPITAL_AXIOS",
+      });
+    } catch {
+      //evita loop infinito
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 function onlyDigits(value: string) {
   return (value || "").replace(/\D/g, "");

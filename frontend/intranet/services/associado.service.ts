@@ -46,7 +46,7 @@ export async function buscarFuncionarioPorCpf(
     const clean = onlyDigits(cpf);
 
     const res = await fetch(
-      `${API_URL}/associados/buscar-por-cpf?cpf=${clean}`,
+      `${API_URL}/v1/associados/buscar-por-cpf?cpf=${clean}`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },

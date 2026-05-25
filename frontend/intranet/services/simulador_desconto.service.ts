@@ -1,6 +1,27 @@
 import { onlyDigits } from "@/utils/br";
+import { registrarErroTela } from "./error_log.service";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+async function registrarErroSimuladorDesconto(
+  error: any,
+  detail: Record<string, any>,
+  source: string
+) {
+  await registrarErroTela({
+    PAGE_URL:
+      typeof window !== "undefined" ? window.location.href : null,
+
+    ERROR_MESSAGE:
+      error?.message || "Erro no service de simulador desconto",
+
+    ERROR_STACK: error?.stack || null,
+
+    ERROR_DETAIL: detail,
+
+    SOURCE: source,
+  });
+}
 
 async function getJson<T>(path: string): Promise<T> {
   if (!API_URL) {

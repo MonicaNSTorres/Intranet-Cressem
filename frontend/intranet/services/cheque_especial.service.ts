@@ -1,4 +1,5 @@
 import axios from "axios";
+import { registrarErroTela } from "./error_log.service";
 
 export type ChequeEspecialItem = {
   ID_ATUALIZACAO_BENEFICIO_CHEQUE_ESPECIAL: number;
@@ -38,6 +39,53 @@ const api = axios.create({
   withCredentials: true,
   timeout: 20000,
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    try {
+      const url = error?.config?.url || "";
+
+      const deveIgnorar = String(url).includes("/v1/me");
+
+      if (!deveIgnorar) {
+        await registrarErroTela({
+          PAGE_URL:
+            typeof window !== "undefined"
+              ? window.location.href
+              : null,
+
+          ERROR_MESSAGE:
+            error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            error?.response?.data?.details ||
+            error?.message ||
+            "Erro no service de cheque especial",
+
+          ERROR_STACK: error?.stack || null,
+
+          ERROR_DETAIL: {
+            status: error?.response?.status,
+            url,
+            baseURL: error?.config?.baseURL,
+            method: error?.config?.method,
+            responseType: error?.config?.responseType,
+            responseData:
+              error?.config?.responseType === "blob"
+                ? "Resposta blob não registrada"
+                : error?.response?.data,
+          },
+
+          SOURCE: "CHEQUE_ESPECIAL_AXIOS",
+        });
+      }
+    } catch {
+      //evita loop infinito
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export async function buscarChequeEspecialPaginado(
   params: BuscarChequeEspecialParams

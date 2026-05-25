@@ -1,4 +1,5 @@
 import axios from "axios";
+import { registrarErroTela } from "./error_log.service";
 
 export type DemissaoAssociadoResponse = {
   NOME?: string;
@@ -31,6 +32,51 @@ const api = axios.create({
   withCredentials: true,
   timeout: 15000,
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    try {
+      const url = error?.config?.url || "";
+      const status = error?.response?.status;
+
+      const convenio404Esperado =
+        String(url).includes("/v1/demissao/convenio/") && status === 404;
+
+      if (!convenio404Esperado) {
+        await registrarErroTela({
+          PAGE_URL:
+            typeof window !== "undefined"
+              ? window.location.href
+              : null,
+
+          ERROR_MESSAGE:
+            error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            error?.response?.data?.details ||
+            error?.message ||
+            "Erro no service de demissão",
+
+          ERROR_STACK: error?.stack || null,
+
+          ERROR_DETAIL: {
+            status,
+            url,
+            baseURL: error?.config?.baseURL,
+            method: error?.config?.method,
+            responseData: error?.response?.data,
+          },
+
+          SOURCE: "DEMISSAO_AXIOS",
+        });
+      }
+    } catch {
+      //evita loop infinito
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 function onlyDigits(value: string) {
   return (value || "").replace(/\D/g, "");

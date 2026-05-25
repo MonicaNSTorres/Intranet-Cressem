@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 import { buscarFuncionarioPorCpf } from "./associado.service";
+import { registrarErroTela } from "./error_log.service";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
@@ -10,6 +11,47 @@ const api = axios.create({
   baseURL: API_BASE,
   withCredentials: true,
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    try {
+      const url = error?.config?.url || "";
+
+      const deveIgnorar = String(url).includes("/v1/me");
+
+      if (!deveIgnorar) {
+        await registrarErroTela({
+          PAGE_URL:
+            typeof window !== "undefined" ? window.location.href : null,
+
+          ERROR_MESSAGE:
+            error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            error?.response?.data?.details ||
+            error?.message ||
+            "Erro no service de recibo financeiro",
+
+          ERROR_STACK: error?.stack || null,
+
+          ERROR_DETAIL: {
+            status: error?.response?.status,
+            url,
+            baseURL: error?.config?.baseURL,
+            method: error?.config?.method,
+            responseData: error?.response?.data,
+          },
+
+          SOURCE: "CADASTRO_RECIBO_FINANCEIRO_AXIOS",
+        });
+      }
+    } catch {
+      //evita loop infinito
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export type ParcelaItem = {
   NR_CONTRATO: string;

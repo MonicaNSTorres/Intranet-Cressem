@@ -1,4 +1,5 @@
 import axios from "axios";
+import { registrarErroTela } from "./error_log.service";
 
 export type LoginResponse = {
   access_token: string;
@@ -26,6 +27,56 @@ export const api = axios.create({
   withCredentials: true,
   timeout: 15000,
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    try {
+      const url = error?.config?.url || "";
+
+      const ignorarRotas = [
+        "/v1/me",
+        "/v1/login_sem_automatico",
+        "/v1/logout",
+        "/v1/error-logs",
+      ];
+
+      const deveIgnorar = ignorarRotas.some((rota) =>
+        String(url).includes(rota)
+      );
+
+      if (!deveIgnorar) {
+        await registrarErroTela({
+          PAGE_URL:
+            typeof window !== "undefined"
+              ? window.location.href
+              : null,
+
+          ERROR_MESSAGE:
+            error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            error?.message ||
+            "Erro no service de autenticação",
+
+          ERROR_STACK: error?.stack || null,
+
+          ERROR_DETAIL: {
+            status: error?.response?.status,
+            url,
+            method: error?.config?.method,
+            responseData: error?.response?.data,
+          },
+
+          SOURCE: "AUTH_AXIOS",
+        });
+      }
+    } catch {
+      //evita loop infinito
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export async function loginAdUser(
   username: string,
@@ -56,7 +107,10 @@ export function userHasGroup(
   allowedGroups: string[]
 ): boolean {
   if (!Array.isArray(userGroups) || userGroups.length === 0) return false;
-  return allowedGroups.some((group) => userGroups.includes(group));
+
+  return allowedGroups.some((group) =>
+    userGroups.includes(group)
+  );
 }
 
 export function userHasAnyGroup(

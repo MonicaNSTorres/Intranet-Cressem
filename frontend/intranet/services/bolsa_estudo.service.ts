@@ -1,10 +1,43 @@
 import axios from "axios";
+import { registrarErroTela } from "./error_log.service";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   withCredentials: true,
   timeout: 15000,
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    try {
+      await registrarErroTela({
+        PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
+
+        ERROR_MESSAGE:
+          error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Erro no service de bolsa de estudo",
+
+        ERROR_STACK: error?.stack || null,
+
+        ERROR_DETAIL: {
+          status: error?.response?.status,
+          url: error?.config?.url,
+          method: error?.config?.method,
+          responseData: error?.response?.data,
+        },
+
+        SOURCE: "BOLSA_ESTUDO_AXIOS",
+      });
+    } catch {
+      //evita loop infinito
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export type FuncionarioBolsa = {
   NM_FUNCIONARIO: string;
@@ -25,13 +58,23 @@ export type CidadeOption = {
   DSC_CIDADE?: string;
 };
 
-export async function buscarFuncionarioPorNome(nome: string): Promise<FuncionarioBolsa> {
-  const response = await api.get(`/v1/funcionarios_sicoob_cressem/nome/${encodeURIComponent(nome)}`);
+export async function buscarFuncionarioPorNome(
+  nome: string
+): Promise<FuncionarioBolsa> {
+  const response = await api.get(
+    `/v1/funcionarios_sicoob_cressem/nome/${encodeURIComponent(nome)}`
+  );
+
   return response.data;
 }
 
-export async function buscarGerenciaPorCodigo(codigo: string | number): Promise<GerenciaBolsa> {
-  const response = await api.get(`/v1/funcionarios_sicoob_cressem_unico/${codigo}`);
+export async function buscarGerenciaPorCodigo(
+  codigo: string | number
+): Promise<GerenciaBolsa> {
+  const response = await api.get(
+    `/v1/funcionarios_sicoob_cressem_unico/${codigo}`
+  );
+
   return response.data;
 }
 
@@ -44,6 +87,7 @@ export async function listarCidades(): Promise<string[]> {
       return data
         .map((item: CidadeOption) => {
           if (typeof item === "string") return item;
+
           return (
             item.nome ||
             item.NM_CIDADE ||
@@ -58,7 +102,23 @@ export async function listarCidades(): Promise<string[]> {
     }
 
     return [];
-  } catch {
+  } catch (error: any) {
+    await registrarErroTela({
+      PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
+
+      ERROR_MESSAGE:
+        error?.message || "Erro ao listar cidades da bolsa de estudo",
+
+      ERROR_STACK: error?.stack || null,
+
+      ERROR_DETAIL: {
+        endpoint: "/v1/cidades",
+        method: "GET",
+      },
+
+      SOURCE: "BOLSA_ESTUDO_LISTAR_CIDADES",
+    });
+
     return [];
   }
 }
