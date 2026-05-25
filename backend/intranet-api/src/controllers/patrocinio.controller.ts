@@ -396,9 +396,137 @@ async function buscarDiasPatrocinio(id: number) {
     return result.rows || [];
 }
 
+async function definirAndamentoInicialPorGestor(
+    conn: oracledb.Connection,
+    nomeFuncionario: string
+) {
+    const nome = String(nomeFuncionario || "").trim();
+    if (!nome) return "Pendente Gerencia";
+
+    const result = await conn.execute(
+        `
+      SELECT
+        cg.NM_NIVEL AS NM_NIVEL_GESTOR
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM gestor
+        ON gestor.ID_FUNCIONARIO = f.CD_GERENCIA
+      LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM cg
+        ON cg.ID_CARGO = gestor.ID_CARGO
+      WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) = UPPER(TRIM(:nome))
+      FETCH FIRST 1 ROWS ONLY
+    `,
+        { nome },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const row: any = result.rows?.[0];
+    const nivelGestor = String(row?.NM_NIVEL_GESTOR || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase()
+        .trim();
+
+    if (nivelGestor === "DIRETORIA") {
+        return "Pendente Diretoria";
+    }
+
+    return "Pendente Gerencia";
+}
+
+type ParticipacaoSubmitStatus = "processing" | "done";
+type ParticipacaoSubmitResponse = {
+    ID_PATROCINIO: number;
+    NM_ANDAMENTO: string;
+    DIR_OFICIO: string;
+    DIR_DOC_SEM_FINS_LUCRATIVO: string | null;
+};
+type ParticipacaoSubmitEntry = {
+    status: ParticipacaoSubmitStatus;
+    updatedAt: number;
+    response?: ParticipacaoSubmitResponse;
+};
+
+const PARTICIPACAO_DEDUPE_TTL_MS = 20_000;
+const participacaoSubmitMap = new Map<string, ParticipacaoSubmitEntry>();
+
+function normalizeDedupeText(value: any) {
+    return String(value ?? "").trim().toUpperCase();
+}
+
+function cleanupParticipacaoSubmitMap(now = Date.now()) {
+    for (const [key, entry] of participacaoSubmitMap.entries()) {
+        if (now - entry.updatedAt > PARTICIPACAO_DEDUPE_TTL_MS) {
+            participacaoSubmitMap.delete(key);
+        }
+    }
+}
+
+function buildParticipacaoDedupeKey(params: {
+    body: any;
+    dias: Array<{ DT_DIA: string; HR_INICIO: string; HR_FIM: string }>;
+    oficioFile?: UploadedFile;
+    semFinsFile?: UploadedFile | null;
+    auditorio: any;
+}) {
+    const { body, dias, oficioFile, semFinsFile, auditorio } = params;
+
+    const diasKey = [...dias]
+        .map(
+            (dia) =>
+                `${String(dia.DT_DIA || "").trim()}|${String(
+                    dia.HR_INICIO || ""
+                ).trim()}|${String(dia.HR_FIM || "").trim()}`
+        )
+        .sort()
+        .join(";");
+
+    const auditorioKey =
+        toNumber(body.CD_AUDITORIO_SEDE) === 1 && auditorio
+            ? [
+                  toNumber(auditorio.QTD_ESTIMATIVA_CONVIDADOS),
+                  toNumber(auditorio.SN_USO_MICROFONE),
+                  toNumber(auditorio.QNTD_MICROFONE),
+                  toNumber(auditorio.SN_USO_PROJETOR),
+                  normalizeDedupeText(auditorio.NM_APRESENTACAO),
+                  toNumber(auditorio.SN_AUDIO_EXTERNO),
+                  toNumber(auditorio.SN_OPERADOR),
+                  toNumber(auditorio.SN_AO_VIVO),
+                  normalizeDedupeText(auditorio.NM_PLATAFORMA),
+                  toNumber(auditorio.SN_INTERNET),
+                  normalizeDedupeText(auditorio.DESC_JUSTIFICATIVA),
+                  normalizeDedupeText(auditorio.OBS_AUDITORIO_SICOOB_SEDE),
+              ].join("|")
+            : "";
+
+    return [
+        normalizeDedupeText(body.NM_SOLICITANTE),
+        onlyDigits(String(body.NR_CPF_CNPJ || "")),
+        normalizeDedupeText(body.NM_FUNCIONARIO),
+        normalizeDedupeText(body.NM_CIDADE),
+        String(body.DT_SOLICITACAO || "").trim(),
+        normalizeDedupeText(body.DESC_SOLICITACAO),
+        normalizeDedupeText(body.DESC_RESUMO_EVENTO),
+        String(toNullableNumber(body.VL_PATROCINIO) ?? ""),
+        String(toNullableNumber(body.VL_MONETARIO) ?? ""),
+        String(toNullableNumber(body.QTD_INSUMO) ?? ""),
+        String(toNullableNumber(body.VL_ESTIMATIVA) ?? ""),
+        String(toNumber(body.CD_AUDITORIO_CENTRO)),
+        String(toNumber(body.CD_AUDITORIO_SEDE)),
+        diasKey,
+        `${normalizeDedupeText(oficioFile?.name)}|${String(
+            oficioFile?.size || 0
+        )}`,
+        `${normalizeDedupeText(semFinsFile?.name)}|${String(
+            semFinsFile?.size || 0
+        )}`,
+        auditorioKey,
+    ].join("§");
+}
+
 export const patrocinioController = {
     async cadastrar(req: Request, res: Response) {
         let conn: oracledb.Connection | undefined;
+        let dedupeKey = "";
 
         try {
             const pool = getOraclePool();
@@ -458,6 +586,36 @@ export const patrocinioController = {
                 return res.status(400).json({ error: "DIR_OFICIO Ã© obrigatÃ³rio." });
             }
 
+            dedupeKey = buildParticipacaoDedupeKey({
+                body,
+                dias,
+                oficioFile,
+                semFinsFile,
+                auditorio,
+            });
+
+            cleanupParticipacaoSubmitMap();
+            const dedupeEntry = participacaoSubmitMap.get(dedupeKey);
+
+            if (dedupeEntry?.status === "processing") {
+                return res.status(409).json({
+                    error: "Solicitação já está sendo enviada. Aguarde alguns segundos.",
+                });
+            }
+
+            if (dedupeEntry?.status === "done" && dedupeEntry.response) {
+                return res.status(200).json({
+                    message: "Solicitação já cadastrada recentemente.",
+                    DUPLICIDADE_IGNORADA: true,
+                    ...dedupeEntry.response,
+                });
+            }
+
+            participacaoSubmitMap.set(dedupeKey, {
+                status: "processing",
+                updatedAt: Date.now(),
+            });
+
             const nomePastaSolicitante =
                 toNullableString(body.NM_SOLICITANTE) || "SEM_NOME";
 
@@ -478,6 +636,11 @@ export const patrocinioController = {
                 conn,
                 "DBACRESSEM.PATROCINIO",
                 "ID_PATROCINIO"
+            );
+
+            const andamentoInicial = await definirAndamentoInicialPorGestor(
+                conn,
+                String(body.NM_FUNCIONARIO || "")
             );
 
             await conn.execute(
@@ -547,8 +710,7 @@ export const patrocinioController = {
                     DIR_OFICIO: oficioPath,
                     NM_CIDADE: toNullableString(body.NM_CIDADE),
                     DT_SOLICITACAO: String(body.DT_SOLICITACAO),
-                    NM_ANDAMENTO:
-                        toNullableString(body.NM_ANDAMENTO) || "Pendente Gerencia",
+                    NM_ANDAMENTO: andamentoInicial,
                     CD_CONTA_COOPERATIVA: toNullableNumber(body.CD_CONTA_COOPERATIVA),
                     VL_SALDO_MEDCIOCC: toNullableNumber(body.VL_SALDO_MEDCIOCC),
                     DESC_SERVICOS: toNullableString(body.DESC_SERVICOS),
@@ -679,13 +841,26 @@ export const patrocinioController = {
 
             await conn.commit();
 
-            return res.status(201).json({
+            const responsePayload = {
                 message: "Solicitação cadastrada com sucesso.",
                 ID_PATROCINIO: idPatrocinio,
+                NM_ANDAMENTO: andamentoInicial,
                 DIR_OFICIO: oficioPath,
                 DIR_DOC_SEM_FINS_LUCRATIVO: semFinsPath,
+            };
+
+            participacaoSubmitMap.set(dedupeKey, {
+                status: "done",
+                updatedAt: Date.now(),
+                response: responsePayload,
             });
+
+            return res.status(201).json(responsePayload);
         } catch (err: any) {
+            if (dedupeKey) {
+                participacaoSubmitMap.delete(dedupeKey);
+            }
+
             if (conn) {
                 try {
                     await conn.rollback();

@@ -120,6 +120,7 @@ export function SolicitacaoParticipacaoForm() {
     };
 
     const [loading, setLoading] = useState(false);
+    const submitLockRef = useRef(false);
     const [erro, setErro] = useState("");
     const [info, setInfo] = useState("");
     const alertRef = useRef<HTMLDivElement | null>(null);
@@ -577,10 +578,14 @@ export function SolicitacaoParticipacaoForm() {
     };
 
     const cadastrar = async () => {
+        if (loading || submitLockRef.current) return;
+
         setErro("");
         setInfo("");
 
         if (!validarCampos()) return;
+
+        submitLockRef.current = true;
 
         try {
             setLoading(true);
@@ -701,8 +706,9 @@ export function SolicitacaoParticipacaoForm() {
 
             const response = await cadastrarSolicitacaoParticipacao(formData);
             const idPatrocinio = response?.ID_PATROCINIO;
+            const duplicidadeIgnorada = Boolean(response?.DUPLICIDADE_IGNORADA);
 
-            if (idPatrocinio) {
+            if (idPatrocinio && !duplicidadeIgnorada) {
                 await dispararEmailGerencia({
                     funcionario,
                     empresa: nmSolicitanteOracle,
@@ -711,11 +717,12 @@ export function SolicitacaoParticipacaoForm() {
             }
 
             limparTudo();
-            setInfo("Solicitação cadastrada com sucesso.");
+            setInfo(response?.message || "Solicitação cadastrada com sucesso.");
         } catch (err: any) {
             setErro(err?.message || "Falha ao cadastrar solicitação.");
         } finally {
             setLoading(false);
+            submitLockRef.current = false;
         }
     };
 

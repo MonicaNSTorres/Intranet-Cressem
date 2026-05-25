@@ -126,7 +126,7 @@ export const emailController = {
 
       <ul>
         <li><b>Empresa:</b> ${empresa}</li>
-        <li><b>Solicitante:</b> ${patrocinio.NM_SOLICITANTE}</li>
+        <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || funcionario || "-"}</li>
         <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
         <li><b>Funcionário:</b> ${funcionario}</li>
         ${diasHtml}
@@ -277,7 +277,7 @@ export const emailController = {
 
         <ul>
           <li><b>Empresa:</b> ${empresa}</li>
-          <li><b>Solicitante:</b> ${patrocinio.NM_SOLICITANTE}</li>
+          <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || funcionario || "-"}</li>
           <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
           <li><b>Funcionário:</b> ${funcionario}</li>
           ${diasHtml}
@@ -374,7 +374,7 @@ export const emailController = {
 
       <ul>
         <li><b>Empresa:</b> ${empresa}</li>
-        <li><b>Solicitante:</b> ${patrocinio.NM_SOLICITANTE}</li>
+        <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || funcionario || "-"}</li>
         <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
         <li><b>Funcionário:</b> ${funcionario}</li>
         <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
@@ -494,7 +494,7 @@ export const emailController = {
       <p>A solicitação abaixo foi finalizada:</p>
 
       <ul>
-        <li><b>Solicitante:</b> ${patrocinio.NM_SOLICITANTE}</li>
+        <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || "-"}</li>
         <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
         <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
         <li><b>Resumo:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
