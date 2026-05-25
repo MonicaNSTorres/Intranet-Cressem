@@ -1454,17 +1454,15 @@ ORDER BY P.NR_PA
         EXTRACT(YEAR FROM DT_MOV)
     ),
 
-    P_SEMANA AS (
+    P_PERIODO AS (
       SELECT
         NR_PA,
         EXTRACT(YEAR FROM DT_MOV) AS ANO,
-        TO_NUMBER(TO_CHAR(DT_MOV, 'IW')) AS SEMANA,
         COUNT(DISTINCT NR_CONTA_CORRENTE) AS PRODUCAO_SEMANAL
       FROM P_BASE
       GROUP BY
         NR_PA,
-        EXTRACT(YEAR FROM DT_MOV),
-        TO_NUMBER(TO_CHAR(DT_MOV, 'IW'))
+        EXTRACT(YEAR FROM DT_MOV)
     ),
 
     META AS (
@@ -1490,6 +1488,16 @@ ORDER BY P.NR_PA
 
       ROUND(NVL(M.META_ANO, 0), 0) AS "meta_ano",
 
+      (NVL(M.META_ANO, 0) / 12) AS "meta_mensal",
+
+      CASE
+        WHEN (NVL(M.META_ANO, 0) / 12) > 0
+          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(M.META_ANO, 0) / 12)) * 100
+        ELSE 0
+      END AS "perc_meta_realizada_mensal",
+
+      (NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(M.META_ANO, 0) / 12)) AS "falta_para_meta_mensal",
+
       CASE
         WHEN NVL(M.META_ANO, 0) > 0
           THEN ROUND((NVL(AY.PRODUCAO_ANO, 0) / M.META_ANO) * 100, 2)
@@ -1507,15 +1515,9 @@ ORDER BY P.NR_PA
       ON AY.NR_PA = M.NR_PA
      AND AY.ANO = M.ANO
 
-    LEFT JOIN P_SEMANA SW
+    LEFT JOIN P_PERIODO SW
       ON SW.NR_PA = M.NR_PA
      AND SW.ANO = M.ANO
-     AND SW.SEMANA = TO_NUMBER(
-       TO_CHAR(
-         NVL(PR.DT_INI_SEMANA, SYSDATE),
-         'IW'
-       )
-     )
 
     ORDER BY PA.NR_PA, M.ANO
   `;

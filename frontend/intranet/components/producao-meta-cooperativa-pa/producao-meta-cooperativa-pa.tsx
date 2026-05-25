@@ -727,8 +727,12 @@ export function ProducaoMetaCooperativaPAForm() {
 
     const semanasOptions = useMemo(() => {
         if (!mesSelecionado || mesSelecionado === "__ANO__") return [];
-        return gerarSemanasDoMes(Number(mesSelecionado));
-    }, [mesSelecionado]);
+        const opcoes = gerarSemanasDoMes(Number(mesSelecionado));
+        if (tema === "consorcio" || tema === "portabilidade") {
+            return opcoes.filter((item) => item.tipo === "mes_inteiro");
+        }
+        return opcoes;
+    }, [mesSelecionado, tema]);
 
     const configAtual = useMemo(() => {
         if (!tema) return null;
@@ -926,6 +930,23 @@ export function ProducaoMetaCooperativaPAForm() {
             return;
         }
 
+        if (tema === "consorcio" || tema === "portabilidade") {
+            const opcaoMesInteiro = gerarSemanasDoMes(Number(value)).find(
+                (item) => item.tipo === "mes_inteiro"
+            );
+
+            if (opcaoMesInteiro) {
+                setPeriodoSelecionado(opcaoMesInteiro.value);
+                setModoPeriodo("mes");
+                carregarRelatorio({
+                    temaAtual: tema,
+                    periodoAtual: opcaoMesInteiro.value,
+                    modoAtual: "mes",
+                });
+                return;
+            }
+        }
+
         setPeriodoSelecionado("");
     }
 
@@ -1090,7 +1111,7 @@ export function ProducaoMetaCooperativaPAForm() {
                                 className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 shadow-sm outline-none transition-all disabled:cursor-not-allowed disabled:bg-gray-100 focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
                             >
                                 {!TEMAS_SOMENTE_ANO.has(tema as ChaveRelatorioPA) && (
-                                    <option value="">Selecione a semana</option>
+                                    <option value="">Selecione o período</option>
                                 )}
 
                                 {TEMAS_SOMENTE_ANO.has(tema as ChaveRelatorioPA) ? (

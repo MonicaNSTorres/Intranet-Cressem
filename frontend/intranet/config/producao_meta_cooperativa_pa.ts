@@ -33,7 +33,6 @@ export type RelatorioDataInfo = {
 
 export const TEMAS_SOMENTE_ANO = new Set<ChaveRelatorioPA>([
   "conta_corrente_ativas",
-  "portabilidade",
   "saldo_cooperados",
 ]);
 
