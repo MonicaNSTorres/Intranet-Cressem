@@ -655,8 +655,28 @@ export function CadastroConvenioOdontoForm() {
 
             if (!dep.registroOriginal?.ID_CONVENIO_PESSOAS) {
                 try {
-                    await buscarPessoaOdontoPorCpfUsuario(cpfDep);
-                    throw new Error(`O CPF ${formatCpf(cpfDep)} já possui convênio odontológico ativo.`);
+                    const registroExistente = await buscarPessoaOdontoPorCpfUsuario(cpfDep);
+                    const possuiExclusao = Boolean(
+                        String(registroExistente?.DT_EXCLUSAO || "").trim()
+                    );
+                    const registroAtivo =
+                        Number(registroExistente?.SN_ATIVO || 0) === 1 && !possuiExclusao;
+
+                    if (registroAtivo) {
+                        throw new Error(
+                            `O CPF ${formatCpf(cpfDep)} já possui convênio odontológico ativo.`
+                        );
+                    }
+
+                    try {
+                        await buscarPessoaOdontoSemCpf(nomeDep);
+                    } catch {
+                        await criarPessoaOdonto(payload);
+                        continue;
+                    }
+
+                    await criarPessoaOdonto(payload);
+                    continue;
                 } catch (error: any) {
                     if (error?.response?.status === 404) {
                         try {

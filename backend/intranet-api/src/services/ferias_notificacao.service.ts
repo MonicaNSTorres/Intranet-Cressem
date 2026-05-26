@@ -1,6 +1,9 @@
 import oracledb from "oracledb";
 import { oracleExecute } from "./oracle.service";
 import { sendEmail } from "./email.service";
+import fs from "fs/promises";
+import os from "os";
+import path from "path";
 
 const EMAIL_RH = [
   "paloma.eduarda@sicoob.com.br",
@@ -14,6 +17,66 @@ const EMAIL_DIRETORIA = [
 ];
 
 const EMAIL_TI = "informatica.cressem@sicoob.com.br";
+
+type TipoNotificacaoMensal = "RH_DIRETORIA" | "GERENCIAS";
+
+const FERIAS_CONTROLE_PATH = path.join(
+  os.tmpdir(),
+  "intranet-ferias-notificacoes.json"
+);
+
+function dataRefMesSaoPaulo(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((p) => p.type === "year")?.value || "0000";
+  const month = parts.find((p) => p.type === "month")?.value || "00";
+  const day = Number(parts.find((p) => p.type === "day")?.value || "0");
+
+  return {
+    refMes: `${year}-${month}`,
+    diaDoMes: day,
+  };
+}
+
+async function readControleMensal() {
+  try {
+    const raw = await fs.readFile(FERIAS_CONTROLE_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+async function writeControleMensal(data: Record<string, string>) {
+  await fs.writeFile(FERIAS_CONTROLE_PATH, JSON.stringify(data, null, 2), "utf8");
+}
+
+function chaveControle(tipo: TipoNotificacaoMensal, refMes: string) {
+  return `${tipo}:${refMes}`;
+}
+
+async function jaEnviadoNoMes(tipo: TipoNotificacaoMensal, refMes: string) {
+  const controle = await readControleMensal();
+  return Boolean(controle[chaveControle(tipo, refMes)]);
+}
+
+async function marcarEnviadoNoMes(tipo: TipoNotificacaoMensal, refMes: string) {
+  const controle = await readControleMensal();
+  controle[chaveControle(tipo, refMes)] = new Date().toISOString();
+  await writeControleMensal(controle);
+}
+
+function podeExecutarMensalHoje(force = false) {
+  if (force) return true;
+  const { diaDoMes } = dataRefMesSaoPaulo();
+  return diaDoMes >= 1 && diaDoMes <= 3;
+}
 
 
 
@@ -410,6 +473,61 @@ export async function enviarEmailTiFerias() {
   return { enviados };
 }
 
+export async function executarNotificacoesMensaisFerias(options?: {
+  force?: boolean;
+  origem?: "cron" | "startup" | "manual";
+}) {
+  const force = Boolean(options?.force);
+  const origem = options?.origem || "cron";
+  const { refMes } = dataRefMesSaoPaulo();
+
+  if (!podeExecutarMensalHoje(force)) {
+    console.log(
+      `[FÉRIAS] Mensal ignorado (${origem}): fora da janela de envio (dia 1 a 3).`
+    );
+    return {
+      pulado: true,
+      motivo: "Fora da janela mensal (dia 1 a 3).",
+      refMes,
+      origem,
+      rhDiretoria: { enviados: 0, pulado: true },
+      gerencias: { enviados: 0, pulado: true },
+    };
+  }
+
+  const rhJaEnviado = await jaEnviadoNoMes("RH_DIRETORIA", refMes);
+  const gerJaEnviado = await jaEnviadoNoMes("GERENCIAS", refMes);
+
+  let rhDiretoria: any = { enviados: 0, pulado: false };
+  let gerencias: any = { enviados: 0, pulado: false };
+
+  if (rhJaEnviado && !force) {
+    rhDiretoria = { enviados: 0, pulado: true, motivo: "Já enviado no mês." };
+  } else {
+    rhDiretoria = await enviarEmailRhDiretoria();
+    if (Number(rhDiretoria?.enviados || 0) > 0) {
+      await marcarEnviadoNoMes("RH_DIRETORIA", refMes);
+    }
+  }
+
+  if (gerJaEnviado && !force) {
+    gerencias = { enviados: 0, pulado: true, motivo: "Já enviado no mês." };
+  } else {
+    gerencias = await enviarEmailGerencias();
+    if (Number(gerencias?.enviados || 0) > 0) {
+      await marcarEnviadoNoMes("GERENCIAS", refMes);
+    }
+  }
+
+  return {
+    pulado: false,
+    refMes,
+    origem,
+    rhDiretoria,
+    gerencias,
+  };
+}
+
 //teste de envio de email para a TI
 {/*export async function enviarEmailTiFerias() {
   const hoje = new Date();
@@ -525,13 +643,14 @@ export async function enviarEmailTiFerias() {
 }*/}
 
 export async function executarTodasNotificacoesFerias() {
-  const rhDiretoria = await enviarEmailRhDiretoria();
-  const gerencias = await enviarEmailGerencias();
+  const mensal = await executarNotificacoesMensaisFerias({
+    force: true,
+    origem: "manual",
+  });
   const ti = await enviarEmailTiFerias();
 
   return {
-    rhDiretoria,
-    gerencias,
+    mensal,
     ti,
   };
 }
