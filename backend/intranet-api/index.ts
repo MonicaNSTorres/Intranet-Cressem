@@ -77,8 +77,18 @@ const port = process.env.PORT || 3001;
 async function bootstrap() {
   await initOraclePool();
 
-  const server = app.listen(port, () => {
-    console.log(`API running at port ${port}`);
+  const httpServer = createServer(app);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: allowedOrigins,
+      methods: ["GET", "POST"],
+      allowedHeaders: ["*"],
+      credentials: true,
+    },
+  });
+
+  httpServer.listen(port, () => {
+    console.log(`API + Socket running at port ${port}`);
   });
 
   setTimeout(async () => {
@@ -92,21 +102,6 @@ async function bootstrap() {
       console.error("Erro ao enviar alerta de estoque:", error);
     }
   }, 10000);
-
-  const httpServer = createServer();
-  const io = new Server(httpServer, {
-    cors: {
-      origin: allowedOrigins,
-      methods: ["GET", "POST"],
-      allowedHeaders: ["*"],
-      credentials: true,
-    },
-  });
-
-  const portSocket = process.env.PORT_SOCKET || 3002;
-  httpServer.listen(portSocket, () => {
-    console.log(`Socket running at port ${portSocket}`);
-  });
 
   io.on("connection", (socket: IOSocket) => {
     socket.on("auth", (userId: string | number) => {
@@ -128,7 +123,7 @@ async function bootstrap() {
 
   const shutdown = async () => {
     console.log("Encerrando...");
-    server.close(async () => {
+    httpServer.close(async () => {
       await closeOraclePool();
       process.exit(0);
     });
