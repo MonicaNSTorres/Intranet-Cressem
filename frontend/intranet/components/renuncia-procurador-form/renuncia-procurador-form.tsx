@@ -34,6 +34,23 @@ const hojePartsBR = () => {
     return { dia, mes, ano };
 };
 
+function formatCpfCnpjView(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 14);
+
+    if (digits.length <= 11) {
+        return digits
+            .replace(/^(\d{3})(\d)/, "$1.$2")
+            .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+            .replace(/\.(\d{3})(\d)/, ".$1-$2");
+    }
+
+    return digits
+        .replace(/^(\d{2})(\d)/, "$1.$2")
+        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/\.(\d{3})(\d)/, ".$1/$2")
+        .replace(/(\d{4})(\d)/, "$1-$2");
+}
+
 export function RenunciaProcuradorForm() {
     const [cpf, setCpf] = useState("");
 
@@ -111,7 +128,7 @@ export function RenunciaProcuradorForm() {
             renuncianteNome.trim() !== "" &&
             renuncianteCpf.replace(/\D/g, "").length === 11 &&
             outorganteNomeRazao.trim() !== "" &&
-            outorganteCpfCnpj.trim() !== "" &&
+            [11, 14].includes(outorganteCpfCnpj.replace(/\D/g, "").length) &&
             numeroConta.trim() !== "" &&
             cidade.trim() !== "" &&
             dia.trim() !== "" &&
@@ -222,10 +239,14 @@ export function RenunciaProcuradorForm() {
                         CPF/CNPJ do outorgante
                     </label>
                     <input
-                        value={outorganteCpfCnpj}
-                        onChange={(e) => setOutorganteCpfCnpj(e.target.value)}
+                        value={formatCpfCnpjView(outorganteCpfCnpj)}
+                        onChange={(e) =>
+                            setOutorganteCpfCnpj(e.target.value.replace(/\D/g, "").slice(0, 14))
+                        }
                         className="w-full border px-3 py-2 rounded"
                         placeholder="CPF ou CNPJ"
+                        inputMode="numeric"
+                        maxLength={18}
                     />
                 </div>
 

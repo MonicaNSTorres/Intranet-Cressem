@@ -56,6 +56,7 @@ const AD_GROUPS = {
     RH_INTRANET: "GG_INTRANET_RH",
     MIGRACAO_CONTRATO: "GG_INTRANET_MIGRACAO_CONTRATO",
     SOLICITACAO_CREDITO: "GG_INTRANET_SOLICITACAO_CRED",
+    TERMOS_MENSAIS_CAIXA: "GG_INTRANET_TERMOS_MENSAIS_CX",
 } as const;
 
 type AccessRule = {
@@ -434,6 +435,23 @@ const links: LinkItem[] = [
                 title: "Recibos Financeiros",
                 href: "/auth/consulta_recibo_financeiro",
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.FINANCEIRO_CADASTRO],
+            },
+        ],
+    },
+    {
+        title: "Termos Mensais Caixa",
+        description: "Ferramentas para cadastro e consulta de termos.",
+        icon: FaFolderOpen,
+        category: "Financeiro",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TERMOS_MENSAIS_CAIXA],
+        children: [
+            {
+                title: "Cadastro de Termos Mensais Caixa",
+                href: "/auth/termos_mensais_caixa/novo",
+            },
+            {
+                title: "Consulta de Termos Mensais Caixa",
+                href: "/auth/termos_mensais_caixa",
             },
         ],
     },

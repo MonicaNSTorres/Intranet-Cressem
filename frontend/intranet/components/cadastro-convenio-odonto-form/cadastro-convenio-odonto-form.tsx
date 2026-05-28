@@ -138,9 +138,9 @@ function Section({
     children: React.ReactNode;
 }) {
     return (
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-emerald-200 bg-gradient-to-r from-[#79B729] to-[#8ED12F] px-5 py-3">
-                <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm mb-10">
+            <div className="border-b border-emerald-200 bg-linear-to-r from-[#79B729] to-[#8ED12F] px-5 py-3">
+                <h3 className="text-sm font-bold text-white">{title}</h3>
             </div>
             <div className="p-5">{children}</div>
         </section>
@@ -770,7 +770,7 @@ export function CadastroConvenioOdontoForm() {
     return (
         <div className="mx-auto w-full min-w-225 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
             <SearchForm onSearch={onBuscar}>
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm mb-10">
                     <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-800">

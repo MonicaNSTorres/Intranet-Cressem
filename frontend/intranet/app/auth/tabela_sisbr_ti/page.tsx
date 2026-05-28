@@ -17,7 +17,7 @@ type SisbrRow = {
   IP: string | null;
   PROVEDOR: string | null;
   ANTIGO_PA: string | null;
-  CNPJ: string | number | null;
+  CNPJ: string | null;
 };
 
 export default function TabelaSisbrTiPage() {
@@ -165,9 +165,8 @@ export default function TabelaSisbrTiPage() {
             <table className="min-w-225 w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-gray-500">
-                  <th className="py-3 px-3">FW</th>
+                  <th className="py-3 px-3">PA SisBR</th>
                   <th className="py-3 px-3">Local</th>
-                  <th className="py-3 px-3">SISBR</th>
                   <th className="py-3 px-3">IP</th>
                   <th className="py-3 px-3">Provedor</th>
                   <th className="py-3 px-3">Antigo PA</th>

@@ -25,6 +25,7 @@ export type BuscarChequeEspecialParams = {
   nome: string;
   page?: number;
   limit?: number;
+  status?: string;
 };
 
 export type UsuarioLogadoChequeEspecial = {
