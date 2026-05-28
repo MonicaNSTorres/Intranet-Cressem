@@ -898,11 +898,13 @@ routes.post("/v1/juntar-pdf", juntarPdfController);
 
 routes.get(
   "/v1/producao-meta-cooperativa-pa",
+  authMiddleware,
   producaoMetaCooperativaPaController.listar
 );
 
 routes.get(
   "/v1/producao-meta-cooperativa-pa/datas",
+  authMiddleware,
   producaoMetaCooperativaPaController.datas
 );
 

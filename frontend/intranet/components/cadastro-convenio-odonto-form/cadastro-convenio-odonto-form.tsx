@@ -189,6 +189,7 @@ export function CadastroConvenioOdontoForm() {
     const [fatores, setFatores] = useState<FatorAjuste[]>([]);
     const [parentescos, setParentescos] = useState<Parentesco[]>([]);
     const [dependentes, setDependentes] = useState<DependenteForm[]>([]);
+    const [bloquearNovoCadastro, setBloquearNovoCadastro] = useState(false);
 
     const [modoEdicao, setModoEdicao] = useState(false);
     const [titularOriginal, setTitularOriginal] = useState<PessoaOdonto | null>(null);
@@ -274,6 +275,7 @@ export function CadastroConvenioOdontoForm() {
         setDependentes([]);
         setModoEdicao(false);
         setTitularOriginal(null);
+        setBloquearNovoCadastro(false);
         setErro("");
         setInfo("");
     }
@@ -296,6 +298,7 @@ export function CadastroConvenioOdontoForm() {
         setDependentes([]);
         setModoEdicao(false);
         setTitularOriginal(null);
+        setBloquearNovoCadastro(false);
     }
 
     function syncEmpresaSelecionada(matricula: string, lista: EmpresaAssociado[]) {
@@ -307,16 +310,24 @@ export function CadastroConvenioOdontoForm() {
 
     async function carregarEmpresas(cpfTitular: string, matriculaPreferencial?: string) {
         const lista = await listarEmpresasDoAssociado(cpfTitular);
-        setEmpresas(lista || []);
+        const listaEmpresas = lista || [];
+        setEmpresas(listaEmpresas);
 
         if (matriculaPreferencial) {
-            syncEmpresaSelecionada(matriculaPreferencial, lista);
-            return;
+            const encontrou = listaEmpresas.some(
+                (item) => String(item.NR_MATRICULA) === String(matriculaPreferencial)
+            );
+            if (encontrou) {
+                syncEmpresaSelecionada(matriculaPreferencial, listaEmpresas);
+            }
+            return listaEmpresas;
         }
 
-        if (lista.length === 1) {
-            syncEmpresaSelecionada(String(lista[0].NR_MATRICULA), lista);
+        if (listaEmpresas.length === 1) {
+            syncEmpresaSelecionada(String(listaEmpresas[0].NR_MATRICULA), listaEmpresas);
         }
+
+        return listaEmpresas;
     }
 
     function mapDependenteFromApi(item: PessoaOdonto): DependenteForm {
@@ -355,59 +366,48 @@ export function CadastroConvenioOdontoForm() {
 
             setLoadingBuscar(true);
 
-            const associado = await buscarAssociadoBasePorCpf(cpfDigits);
-
-            if (!associadoAtivo(associado)) {
-                setNome("");
-                setNomeMae("");
-                setDataNascimento("");
-                setCidade("");
-                setCodCartao("");
-                setCodAssociado("");
-                setCodPlano("");
-                setConvenio("");
-                setPlanoTitular("");
-                setEmpresas([]);
-                setMatriculaSelecionada("");
-                setEmpresaSelecionada("");
-                setCnpjSelecionado("");
-                setDependentes([]);
-                setModoEdicao(false);
-                setTitularOriginal(null);
-                setErro("Associado inativo. Apenas associados ativos podem ser preenchidos.");
-                return;
+            let associado: any = null;
+            try {
+                associado = await buscarAssociadoBasePorCpf(cpfDigits);
+            } catch (error: any) {
+                if (error?.response?.status !== 404) throw error;
             }
 
-            setNome(associado?.NM_CLIENTE || "");
-            setNomeMae(associado?.NM_MAE || "");
-            setDataNascimento(
-                associado?.DT_NASCIMENTO ? String(associado.DT_NASCIMENTO).slice(0, 10) : ""
-            );
+            const associadoAtivoNaBase = associadoAtivo(associado);
+            setBloquearNovoCadastro(!associadoAtivoNaBase);
 
-            if (associado?.CD_ASSOCIADO) {
-                setCodAssociado(String(associado.CD_ASSOCIADO));
-            }
+            if (associado) {
+                setNome(associado?.NM_CLIENTE || "");
+                setNomeMae(associado?.NM_MAE || "");
+                setDataNascimento(
+                    associado?.DT_NASCIMENTO ? String(associado.DT_NASCIMENTO).slice(0, 10) : ""
+                );
 
-            const empresaAssociado = {
-                NR_MATRICULA: String(associado?.NR_MATRICULA || "").trim(),
-                NM_EMPRESA: String(associado?.NM_EMPRESA || "").trim(),
-                NR_CPF_CNPJ_EMPREGADOR: String(associado?.NR_CPF_CNPJ_EMPREGADOR || "").trim(),
-            };
+                if (associado?.CD_ASSOCIADO) {
+                    setCodAssociado(String(associado.CD_ASSOCIADO));
+                }
 
-            if (
-                empresaAssociado.NR_MATRICULA ||
-                empresaAssociado.NM_EMPRESA ||
-                empresaAssociado.NR_CPF_CNPJ_EMPREGADOR
-            ) {
-                setEmpresas([empresaAssociado]);
-                setMatriculaSelecionada(empresaAssociado.NR_MATRICULA);
-                setEmpresaSelecionada(empresaAssociado.NM_EMPRESA);
-                setCnpjSelecionado(empresaAssociado.NR_CPF_CNPJ_EMPREGADOR);
-            } else {
-                setEmpresas([]);
-                setMatriculaSelecionada("");
-                setEmpresaSelecionada("");
-                setCnpjSelecionado("");
+                const empresaAssociado = {
+                    NR_MATRICULA: String(associado?.NR_MATRICULA || "").trim(),
+                    NM_EMPRESA: String(associado?.NM_EMPRESA || "").trim(),
+                    NR_CPF_CNPJ_EMPREGADOR: String(associado?.NR_CPF_CNPJ_EMPREGADOR || "").trim(),
+                };
+
+                if (
+                    empresaAssociado.NR_MATRICULA ||
+                    empresaAssociado.NM_EMPRESA ||
+                    empresaAssociado.NR_CPF_CNPJ_EMPREGADOR
+                ) {
+                    setEmpresas([empresaAssociado]);
+                    setMatriculaSelecionada(empresaAssociado.NR_MATRICULA);
+                    setEmpresaSelecionada(empresaAssociado.NM_EMPRESA);
+                    setCnpjSelecionado(empresaAssociado.NR_CPF_CNPJ_EMPREGADOR);
+                } else {
+                    setEmpresas([]);
+                    setMatriculaSelecionada("");
+                    setEmpresaSelecionada("");
+                    setCnpjSelecionado("");
+                }
             }
 
             try {
@@ -425,7 +425,27 @@ export function CadastroConvenioOdontoForm() {
                 setCodAssociado(String(titular.CD_ASSOCIADO || associado?.CD_ASSOCIADO || ""));
                 setTitularAtivo(Number(titular.SN_ATIVO || 0) === 1);
 
-                await carregarEmpresas(cpfDigits, String(titular.CD_MATRICULA || ""));
+                const listaEmpresas = await carregarEmpresas(cpfDigits, String(titular.CD_MATRICULA || ""));
+
+                const fallbackMatricula = String(titular.CD_MATRICULA || "").trim();
+                const fallbackEmpresa = String(titular.NM_EMPRESA || "").trim();
+                const fallbackCnpj = String(titular.NR_CNPJ_EMPRESA || "").trim();
+                const existeEmpresaPreferencial = listaEmpresas.some(
+                    (item) => String(item.NR_MATRICULA) === fallbackMatricula
+                );
+
+                if (!existeEmpresaPreferencial && (fallbackMatricula || fallbackEmpresa || fallbackCnpj)) {
+                    const empresaFallback: EmpresaAssociado = {
+                        NR_MATRICULA: fallbackMatricula || "SEM_MATRICULA",
+                        NM_EMPRESA: fallbackEmpresa || "EMPRESA NÃO INFORMADA",
+                        NR_CPF_CNPJ_EMPREGADOR: fallbackCnpj,
+                    };
+
+                    setEmpresas((prev) => [empresaFallback, ...(prev || [])]);
+                    setMatriculaSelecionada(empresaFallback.NR_MATRICULA);
+                    setEmpresaSelecionada(empresaFallback.NM_EMPRESA);
+                    setCnpjSelecionado(empresaFallback.NR_CPF_CNPJ_EMPREGADOR);
+                }
 
                 const dependentesApi = (todos || []).filter((item) => {
                     const parentesco = String(item.DESC_PARENTESCO || "").toUpperCase();
@@ -434,13 +454,23 @@ export function CadastroConvenioOdontoForm() {
                 });
 
                 setDependentes(dependentesApi.map(mapDependenteFromApi));
-                setInfo("Registro carregado para alteração.");
+                setInfo(
+                    associadoAtivoNaBase
+                        ? "Registro carregado para alteração."
+                        : "Associado inativo na base, mas o convênio existente foi carregado para alteração/desligamento."
+                );
             } catch (error: any) {
                 if (error?.response?.status === 404) {
                     setModoEdicao(false);
                     setTitularOriginal(null);
                     setDependentes([]);
-                    setInfo("Titular carregado. Nenhum convênio odontológico cadastrado ainda.");
+                    if (!associadoAtivoNaBase) {
+                        setErro(
+                            "Associado inativo ou não encontrado na base. Novo cadastro bloqueado; apenas alteração/desligamento de convênio existente é permitido."
+                        );
+                    } else {
+                        setInfo("Titular carregado. Nenhum convênio odontológico cadastrado ainda.");
+                    }
                 } else {
                     throw error;
                 }
@@ -454,6 +484,13 @@ export function CadastroConvenioOdontoForm() {
     }
 
     function adicionarDependente() {
+        if (bloquearNovoCadastro) {
+            setErro(
+                "Novo cadastro está bloqueado para associado inativo/não encontrado. Apenas alteração de convênio existente é permitida."
+            );
+            return;
+        }
+
         if (!convenio) {
             setErro("Selecione o convênio antes de adicionar dependentes.");
             return;
@@ -493,10 +530,16 @@ export function CadastroConvenioOdontoForm() {
     }
 
     function validaCampos() {
+        const possuiEmpresaSelecionada = Boolean(
+            String(matriculaSelecionada || "").trim() ||
+                String(empresaSelecionada || "").trim() ||
+                String(cnpjSelecionado || "").trim()
+        );
+
         if (!cpf) return "CPF do titular não preenchido.";
         if (!isValidCpf(cpf)) return "CPF do titular inválido.";
         if (!nome.trim()) return "Nome do titular não preenchido.";
-        if (!matriculaSelecionada) return "Selecione a empresa do titular.";
+        if (!possuiEmpresaSelecionada && !modoEdicao) return "Selecione a empresa do titular.";
         if (!convenio) return "Convênio não selecionado.";
         if (!planoTitular) return "Plano do titular não selecionado.";
         if (!cidade) return "Cidade não selecionada.";
@@ -554,9 +597,12 @@ export function CadastroConvenioOdontoForm() {
             CD_ASSOCIADO: codAssociado ? Number(codAssociado) : null,
             CD_USUARIO: codCartao ? Number(String(codCartao).slice(-1)) : null,
             NR_CPF_TITULAR: onlyDigits(cpf),
-            CD_MATRICULA: matriculaSelecionada || null,
-            NM_EMPRESA: empresaSelecionada || null,
-            NR_CNPJ_EMPRESA: cnpjSelecionado ? onlyDigits(cnpjSelecionado) : null,
+            CD_MATRICULA: matriculaSelecionada || titularOriginal?.CD_MATRICULA || null,
+            NM_EMPRESA: empresaSelecionada || titularOriginal?.NM_EMPRESA || null,
+            NR_CNPJ_EMPRESA:
+                (cnpjSelecionado ? onlyDigits(cnpjSelecionado) : "") ||
+                onlyDigits(String(titularOriginal?.NR_CNPJ_EMPRESA || "")) ||
+                null,
             NM_USUARIO: nome.trim().toUpperCase(),
             NR_CPF_USUARIO: onlyDigits(cpf),
             DT_INCLUSAO: titularOriginal?.DT_INCLUSAO
@@ -634,9 +680,12 @@ export function CadastroConvenioOdontoForm() {
                 CD_ASSOCIADO: codAssociado ? Number(codAssociado) : null,
                 CD_USUARIO: dep.codCartao ? Number(String(dep.codCartao).slice(-1)) : null,
                 NR_CPF_TITULAR: onlyDigits(cpf),
-                CD_MATRICULA: matriculaSelecionada || null,
-                NM_EMPRESA: empresaSelecionada || null,
-                NR_CNPJ_EMPRESA: cnpjSelecionado ? onlyDigits(cnpjSelecionado) : null,
+                CD_MATRICULA: matriculaSelecionada || titularOriginal?.CD_MATRICULA || null,
+                NM_EMPRESA: empresaSelecionada || titularOriginal?.NM_EMPRESA || null,
+                NR_CNPJ_EMPRESA:
+                    (cnpjSelecionado ? onlyDigits(cnpjSelecionado) : "") ||
+                    onlyDigits(String(titularOriginal?.NR_CNPJ_EMPRESA || "")) ||
+                    null,
                 NM_USUARIO: nomeDep,
                 NR_CPF_USUARIO: cpfDep,
                 DT_INCLUSAO: dep.registroOriginal?.DT_INCLUSAO
@@ -728,6 +777,11 @@ export function CadastroConvenioOdontoForm() {
         try {
             setErro("");
             setInfo("");
+
+            if (bloquearNovoCadastro && !modoEdicao) {
+                setErro("Não é permitido criar novo convênio para associado inativo/não encontrado na base.");
+                return;
+            }
 
             const msg = validaCampos();
             if (msg) {

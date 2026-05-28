@@ -151,7 +151,12 @@ function sqlConsorcio() {
                    )
                   THEN 95
                   ELSE B.NR_PA
-                END DESC
+                END DESC,
+                NVL(B.VL_CONTRATADO_NUM, -1) DESC,
+                NVL(TRIM(TO_CHAR(B.NR_COOPERATIVA)), 'ZZZZZZ') DESC,
+                NVL(B.SN_VENDA_CONCLUIDA, ' ') DESC,
+                NVL(B.SITUACAO_COTA, ' ') DESC,
+                NVL(B.DESC_VERSAO_COTA, ' ') DESC
             ) AS RN
           FROM CDN_BASE_ALL B
           WHERE B.NM_VENDEDOR IS NOT NULL
@@ -380,7 +385,10 @@ function sqlSeguroGeraisNovo() {
           END AS NR_PA,
           ROW_NUMBER() OVER (
             PARTITION BY B.NM_FUNCIONARIO
-            ORDER BY B.DT_MOV DESC, NVL(B.NR_PA, -1) DESC
+            ORDER BY
+              B.DT_MOV DESC,
+              NVL(B.NR_PA, -1) DESC,
+              NVL(B.VL_PREMIO_LIQUIDO_NUM, -1) DESC
           ) AS RN
         FROM SGPD_BASE_ALL B
         WHERE B.NM_FUNCIONARIO IS NOT NULL
@@ -680,7 +688,10 @@ function sqlEntradaCooperados() {
             B.NR_PA,
             ROW_NUMBER() OVER (
               PARTITION BY B.NM_FUNCIONARIO
-              ORDER BY B.DT_MOV DESC, NVL(B.NR_PA, -1) DESC
+              ORDER BY
+                B.DT_MOV DESC,
+                NVL(B.NR_PA, -1) DESC,
+                NVL(B.NR_CONTA_CAPITAL, -1) DESC
             ) AS RN
           FROM AA_BASE_ALL B
           WHERE B.NM_FUNCIONARIO IS NOT NULL
@@ -1130,6 +1141,7 @@ function sqlSeguroVendaNova() {
             PARTITION BY B.NM_FUNCIONARIO, B.NR_PROPOSTA_VENDA
             ORDER BY
               CASE WHEN B.NR_PA = 4317 THEN 2 ELSE 1 END,
+              NVL(B.NR_PA, -1) DESC,
               B.VL_PREMIO_MENSAL_NUM DESC,
               B.DT_MOV DESC
           ) AS RN
@@ -1359,7 +1371,10 @@ function sqlSeguroRural() {
             B.NR_PA,
             ROW_NUMBER() OVER (
               PARTITION BY B.NM_FUNCIONARIO
-              ORDER BY B.DT_MOV DESC, NVL(B.NR_PA, -1) DESC
+              ORDER BY
+                B.DT_MOV DESC,
+                NVL(B.NR_PA, -1) DESC,
+                NVL(B.VL_PREMIO_BRUTO_NUM, -1) DESC
             ) AS RN
           FROM SRC_BASE_ALL B
           WHERE B.NM_FUNCIONARIO IS NOT NULL
@@ -1622,7 +1637,9 @@ function sqlSaldoPrevidenciaMi() {
             B.NR_PA,
             ROW_NUMBER() OVER (
               PARTITION BY B.NM_FUNCIONARIO
-              ORDER BY B.DT_MOV DESC, NVL(B.NR_PA, -1) DESC
+              ORDER BY
+                B.DT_MOV DESC,
+                NVL(B.NR_PA, -1) DESC
             ) AS RN
           FROM PMDN_BASE_ALL B
           WHERE B.NM_FUNCIONARIO IS NOT NULL
@@ -1875,7 +1892,10 @@ function sqlSaldoPrevidenciaVgbl() {
             B.NR_PA,
             ROW_NUMBER() OVER (
               PARTITION BY B.NM_FUNCIONARIO
-              ORDER BY B.DT_MOV DESC, NVL(B.NR_PA, -1) DESC
+              ORDER BY
+                B.DT_MOV DESC,
+                NVL(B.NR_PA, -1) DESC,
+                NVL(TRIM(B.NR_APOLICE_CERTIFICADO_SEGURO), 'ZZZZZZ') DESC
             ) AS RN
           FROM PVPD_BASE_ALL B
           WHERE B.NM_FUNCIONARIO IS NOT NULL
