@@ -74,6 +74,7 @@ import { feriasNotificacaoController } from "../controllers/ferias-notificacao.c
 import { contratosNotificacaoController } from "../controllers/contratos-notificacao.controller";
 import { buscarAcessosSemana } from "../controllers/dashboard.controller";
 import { errorLogController } from "../controllers/errorlog.controller";
+import { termosMensaisCaixaController } from "../controllers/termos-mensais-caixa.controller";
 
 const routes = Router();
 
@@ -1039,6 +1040,47 @@ routes.get("/v1/dashboard/acessos", buscarAcessosSemana);
 
 //erros
 routes.post("/v1/error-logs", errorLogController.criar);
+
+//termos mensais caixa relatorio
+routes.get(
+  "/v1/termos-mensais-caixa/pas",
+  termosMensaisCaixaController.listarPAs
+);
+
+routes.get(
+  "/v1/termos-mensais-caixa",
+  termosMensaisCaixaController.listar
+);
+
+routes.get(
+  "/v1/termos-mensais-caixa/:id",
+  termosMensaisCaixaController.obterPorId
+);
+
+routes.post(
+  "/v1/termos-mensais-caixa",
+  termosMensaisCaixaController.criar
+);
+
+routes.put(
+  "/v1/termos-mensais-caixa/:id",
+  termosMensaisCaixaController.atualizar
+);
+
+routes.patch(
+  "/v1/termos-mensais-caixa/:id/status",
+  termosMensaisCaixaController.alterarStatus
+);
+
+routes.post(
+  "/v1/termos-mensais-caixa/:id/assinado",
+  termosMensaisCaixaController.uploadAssinado
+);
+
+routes.get(
+  "/v1/termos-mensais-caixa/:id/assinado/download",
+  termosMensaisCaixaController.downloadAssinado
+);
 
 export { routes };
 

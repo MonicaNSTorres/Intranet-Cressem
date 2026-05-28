@@ -7,17 +7,14 @@ export const sisbrTiController = {
     try {
       const sql = `
         SELECT
-          NR_PA AS FW,
-          NR_FW AS LOCAL,
-          NR_SISBR AS SISBR,
-          NR_SISBR AS IP,
-          NR_IP AS PROVEDOR,
-          CASE
-            WHEN NM_PROVEDOR = 'S' THEN 'SIM'
-            WHEN NM_PROVEDOR = 'N' THEN 'NÃO'
-          END AS LINK_SISBR
+          NR_PA_SISBR AS FW,
+          NM_LOCAL AS LOCAL,
+          NR_IP_GERENCIA AS IP,
+          NM_PROVEDOR_INTERNET AS PROVEDOR,
+          NR_ANTIGO_PA AS ANTIGO_PA,
+          NR_CNPJ AS CNPJ
         FROM DBACRESSEM.INFOS_PA
-        ORDER BY NR_PA
+        ORDER BY NR_PA_SISBR
       `;
 
       const result = await oracleExecute(
