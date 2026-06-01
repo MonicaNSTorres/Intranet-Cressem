@@ -485,6 +485,15 @@ routes.post(
   "/v1/ferias_funcionarios",
   gerenciamentoFeriasController.cadastrar
 );
+routes.post(
+  "/v1/ferias_funcionarios/importar-excel",
+  upload.single("file"),
+  gerenciamentoFeriasController.importarExcel
+);
+routes.post(
+  "/v1/ferias_funcionarios/lote",
+  gerenciamentoFeriasController.cadastrarLote
+);
 
 routes.put(
   "/v1/ferias_funcionarios/:id",
@@ -1022,6 +1031,11 @@ routes.get(
 routes.get(
   "/ferias-notificacao/ti",
   feriasNotificacaoController.executarTi
+);
+
+routes.get(
+  "/ferias-notificacao/previa-dia17",
+  feriasNotificacaoController.executarPreviaDia17
 );
 
 //automacao de contratos

@@ -278,6 +278,14 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["adiantamento", "salarial", "emprestimo", "empréstimo", "desconto"],
   },
   {
+    title: "Declaração de Presença",
+    desc: "Acesso ao formulário de declaração de presença para empréstimos.",
+    href: "/auth/declaracao_presenca_emprestimo",
+    group: "Formulários de Empréstimos",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    keywords: ["declaração", "declaracao", "presença", "presenca", "empréstimo", "emprestimo"],
+  },
+  {
     title: "Autorização de Débito",
     desc: "Acesso ao formulário de autorização de débito.",
     href: "/auth/autorizacao_debito",

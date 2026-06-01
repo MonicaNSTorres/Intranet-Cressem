@@ -1,9 +1,7 @@
 import oracledb from "oracledb";
-import { oracleExecute } from "./oracle.service";
+import { oracleExecute, oracleExecuteCommit } from "./oracle.service";
 import { sendEmail } from "./email.service";
-import fs from "fs/promises";
 import os from "os";
-import path from "path";
 
 const EMAIL_RH = [
   "paloma.eduarda@sicoob.com.br",
@@ -17,13 +15,9 @@ const EMAIL_DIRETORIA = [
 ];
 
 const EMAIL_TI = "informatica.cressem@sicoob.com.br";
+const ROTINA = "FERIAS_NOTIFICACAO";
 
-type TipoNotificacaoMensal = "RH_DIRETORIA" | "GERENCIAS";
-
-const FERIAS_CONTROLE_PATH = path.join(
-  os.tmpdir(),
-  "intranet-ferias-notificacoes.json"
-);
+type TipoNotificacaoMensal = "RH_DIRETORIA" | "GERENCIAS" | "PREVIA_DIA17";
 
 function dataRefMesSaoPaulo(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -43,39 +37,147 @@ function dataRefMesSaoPaulo(date = new Date()) {
   };
 }
 
-async function readControleMensal() {
+function chaveControle(tipo: TipoNotificacaoMensal, refMes: string) {
+  return `${ROTINA}:${tipo}:${refMes}`;
+}
+
+function destinatarioControle(tipo: TipoNotificacaoMensal) {
+  return tipo === "RH_DIRETORIA"
+    ? "RH_DIRETORIA@INTRANET"
+    : "GERENCIAS@INTRANET";
+}
+
+function assuntoControle(tipo: TipoNotificacaoMensal, refMes: string) {
+  return `Controle envio ${tipo} ${refMes}`;
+}
+
+async function reservarEnvioNoMes(tipo: TipoNotificacaoMensal, refMes: string) {
+  const idempotencyKey = chaveControle(tipo, refMes);
+
   try {
-    const raw = await fs.readFile(FERIAS_CONTROLE_PATH, "utf8");
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
+    await oracleExecuteCommit(
+      `
+        INSERT INTO DBACRESSEM.EMAIL_ENVIO_CONTROLE (
+          ID_EMPOTENCY_KEY,
+          NM_ROTINA,
+          NM_COMPETENCIA,
+          NM_DESTINATARIO,
+          NM_ASSUNTO,
+          NM_STATUS,
+          NM_ORIGEM_HOST,
+          NM_ORIGEM_PID
+        ) VALUES (
+          :idempotencyKey,
+          :rotina,
+          :competencia,
+          :destinatario,
+          :assunto,
+          'RESERVADO',
+          :origemHost,
+          :origemPid
+        )
+      `,
+      {
+        idempotencyKey,
+        rotina: ROTINA,
+        competencia: refMes,
+        destinatario: destinatarioControle(tipo),
+        assunto: assuntoControle(tipo, refMes),
+        origemHost: os.hostname(),
+        origemPid: String(process.pid),
+      }
+    );
+    return true;
+  } catch (error: any) {
+    const message = String(error?.message || "");
+    const jaExiste =
+      error?.errorNum === 1 ||
+      message.includes("ORA-00001") ||
+      message.toUpperCase().includes("UNIQUE");
+
+    if (jaExiste) return false;
+    throw error;
   }
 }
 
-async function writeControleMensal(data: Record<string, string>) {
-  await fs.writeFile(FERIAS_CONTROLE_PATH, JSON.stringify(data, null, 2), "utf8");
-}
-
-function chaveControle(tipo: TipoNotificacaoMensal, refMes: string) {
-  return `${tipo}:${refMes}`;
-}
-
-async function jaEnviadoNoMes(tipo: TipoNotificacaoMensal, refMes: string) {
-  const controle = await readControleMensal();
-  return Boolean(controle[chaveControle(tipo, refMes)]);
-}
-
 async function marcarEnviadoNoMes(tipo: TipoNotificacaoMensal, refMes: string) {
-  const controle = await readControleMensal();
-  controle[chaveControle(tipo, refMes)] = new Date().toISOString();
-  await writeControleMensal(controle);
+  const idempotencyKey = chaveControle(tipo, refMes);
+  await oracleExecuteCommit(
+    `
+      UPDATE DBACRESSEM.EMAIL_ENVIO_CONTROLE
+         SET NM_STATUS = 'ENVIADO',
+             DT_SENT_AT = SYSDATE,
+             NM_ERRO = NULL
+       WHERE ID_EMPOTENCY_KEY = :idempotencyKey
+    `,
+    { idempotencyKey }
+  );
+}
+
+async function marcarFalhaNoMes(
+  tipo: TipoNotificacaoMensal,
+  refMes: string,
+  erro: unknown
+) {
+  const idempotencyKey = chaveControle(tipo, refMes);
+  const erroTexto = String((erro as any)?.message || erro || "").slice(0, 2000);
+  await oracleExecuteCommit(
+    `
+      UPDATE DBACRESSEM.EMAIL_ENVIO_CONTROLE
+         SET NM_STATUS = 'FALHA',
+             NM_ERRO = :erro
+       WHERE ID_EMPOTENCY_KEY = :idempotencyKey
+    `,
+    {
+      idempotencyKey,
+      erro: erroTexto || "Falha sem detalhe.",
+    }
+  );
+}
+
+async function limparReservaNoMes(tipo: TipoNotificacaoMensal, refMes: string) {
+  const idempotencyKey = chaveControle(tipo, refMes);
+  await oracleExecuteCommit(
+    `
+      DELETE FROM DBACRESSEM.EMAIL_ENVIO_CONTROLE
+       WHERE ID_EMPOTENCY_KEY = :idempotencyKey
+         AND NM_STATUS = 'RESERVADO'
+    `,
+    { idempotencyKey }
+  );
 }
 
 function podeExecutarMensalHoje(force = false) {
   if (force) return true;
   const { diaDoMes } = dataRefMesSaoPaulo();
   return diaDoMes >= 1 && diaDoMes <= 3;
+}
+
+function podeExecutarPreviaDia17Hoje(force = false) {
+  if (force) return true;
+  const { diaDoMes } = dataRefMesSaoPaulo();
+  return diaDoMes === 17;
+}
+
+function alvoDoAvisoDia17(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(date);
+
+  const anoBase = Number(parts.find((p) => p.type === "year")?.value || "0");
+  const mesBase = Number(parts.find((p) => p.type === "month")?.value || "0");
+  const idxBase = anoBase * 12 + (mesBase - 1);
+  const idxAlvo = idxBase + 2;
+  const anoAlvo = Math.floor(idxAlvo / 12);
+  const mesAlvo = (idxAlvo % 12) + 1;
+
+  return {
+    anoAlvo,
+    mesAlvo,
+    refAlvo: `${anoAlvo}-${String(mesAlvo).padStart(2, "0")}`,
+  };
 }
 
 
@@ -172,6 +274,38 @@ async function buscarFeriasMesAtual() {
   const result = await oracleExecute(
     sql,
     {},
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  return (result.rows || []) as any[];
+}
+
+async function buscarFeriasPorMesAno(mes: number, ano: number) {
+  const sql = `
+    SELECT
+      F.ID_FERIAS_FUNCIONARIOS,
+      F.DT_DIA_INICIO,
+      F.DT_DIA_FIM,
+      F.DT_DIAS_TOTAIS,
+      F.ID_FUNCIONARIO,
+      P.NM_FUNCIONARIO AS NOME,
+      P.EMAIL AS EMAIL,
+      P.CD_GERENCIA,
+      G.NM_FUNCIONARIO AS NOME_GERENTE,
+      G.EMAIL AS EMAIL_GERENTE
+    FROM DBACRESSEM.FERIAS_FUNCIONARIOS F
+    JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM P
+      ON P.ID_FUNCIONARIO = F.ID_FUNCIONARIO
+    LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM G
+      ON G.ID_FUNCIONARIO = P.CD_GERENCIA
+    WHERE EXTRACT(MONTH FROM F.DT_DIA_INICIO) = :mes
+      AND EXTRACT(YEAR FROM F.DT_DIA_INICIO) = :ano
+    ORDER BY F.DT_DIA_INICIO, P.NM_FUNCIONARIO
+  `;
+
+  const result = await oracleExecute(
+    sql,
+    { mes, ano },
     { outFormat: oracledb.OUT_FORMAT_OBJECT }
   );
 
@@ -360,6 +494,83 @@ export async function enviarEmailGerencias() {
   return { enviados };
 }
 
+async function enviarEmailPreviaRhDiretoriaDia17(params: {
+  mesAlvo: number;
+  anoAlvo: number;
+}) {
+  const { mesAlvo, anoAlvo } = params;
+  const rows = await buscarFeriasPorMesAno(mesAlvo, anoAlvo);
+  const mesFmt = String(mesAlvo).padStart(2, "0");
+
+  if (!rows.length) {
+    const assunto = `[RH/Diretoria] Previa de ferias ${mesFmt}/${anoAlvo} - sem cadastro`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
+        <p>Ola,</p>
+        <p>Nao ha cadastro de ferias para <strong>${mesFmt}/${anoAlvo}</strong>.</p>
+        <p style="margin-top: 20px; color: #666;">Este email foi enviado automaticamente pela intranet.</p>
+      </div>
+    `;
+    await sendEmail(EMAIL_RH, assunto, html);
+    return { enviados: 1, semCadastro: true };
+  }
+
+  const assunto = `[RH/Diretoria] Previa de ferias ${mesFmt}/${anoAlvo}`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
+      <p>Ola,</p>
+      <p>Colaboradores que iniciam ferias em <strong>${mesFmt}/${anoAlvo}</strong>:</p>
+      ${buildListaHtml(rows)}
+      <p style="margin-top: 20px; color: #666;">Este email foi enviado automaticamente pela intranet.</p>
+    </div>
+  `;
+
+  await sendEmail([...EMAIL_RH, ...EMAIL_DIRETORIA], assunto, html);
+  return { enviados: 1, semCadastro: false };
+}
+
+async function enviarEmailPreviaGerenciasDia17(params: {
+  mesAlvo: number;
+  anoAlvo: number;
+}) {
+  const { mesAlvo, anoAlvo } = params;
+  const rows = await buscarFeriasPorMesAno(mesAlvo, anoAlvo);
+  const mesFmt = String(mesAlvo).padStart(2, "0");
+
+  if (!rows.length) {
+    return { enviados: 0, semCadastro: true };
+  }
+
+  const porGerente: Record<string, any[]> = {};
+  for (const row of rows) {
+    const emailGerente = String(row.EMAIL_GERENTE || "").trim();
+    if (!emailGerente) continue;
+    if (!porGerente[emailGerente]) {
+      porGerente[emailGerente] = [];
+    }
+    porGerente[emailGerente].push(row);
+  }
+
+  let enviados = 0;
+  for (const emailGerente of Object.keys(porGerente)) {
+    const itens = porGerente[emailGerente];
+    const nomeGerente = itens[0]?.NOME_GERENTE || "Gerencia";
+    const assunto = `[Gerencia] Previa de ferias dos liderados ${mesFmt}/${anoAlvo}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
+        <p>Ola <strong>${nomeGerente}</strong>,</p>
+        <p>Seus liderados que iniciam ferias em <strong>${mesFmt}/${anoAlvo}</strong>:</p>
+        ${buildListaHtml(itens)}
+        <p style="margin-top: 20px; color: #666;">Este email foi enviado automaticamente pela intranet.</p>
+      </div>
+    `;
+    await sendEmail(emailGerente, assunto, html);
+    enviados++;
+  }
+
+  return { enviados, semCadastro: false };
+}
+
 export async function enviarEmailTiFerias() {
   const hoje = new Date();
   const em3Dias = addDias(3);
@@ -495,30 +706,47 @@ export async function executarNotificacoesMensaisFerias(options?: {
     };
   }
 
-  const rhJaEnviado = await jaEnviadoNoMes("RH_DIRETORIA", refMes);
-  const gerJaEnviado = await jaEnviadoNoMes("GERENCIAS", refMes);
-
   let rhDiretoria: any = { enviados: 0, pulado: false };
   let gerencias: any = { enviados: 0, pulado: false };
 
-  if (rhJaEnviado && !force) {
-    rhDiretoria = { enviados: 0, pulado: true, motivo: "Já enviado no mês." };
+  const rhReservado = force ? true : await reservarEnvioNoMes("RH_DIRETORIA", refMes);
+  const gerReservado = force ? true : await reservarEnvioNoMes("GERENCIAS", refMes);
+
+  if (!rhReservado && !force) {
+    rhDiretoria = { enviados: 0, pulado: true, motivo: "Ja enviado no mes." };
   } else {
-    rhDiretoria = await enviarEmailRhDiretoria();
-    if (Number(rhDiretoria?.enviados || 0) > 0) {
-      await marcarEnviadoNoMes("RH_DIRETORIA", refMes);
+    try {
+      rhDiretoria = await enviarEmailRhDiretoria();
+      if (Number(rhDiretoria?.enviados || 0) > 0 && !force) {
+        await marcarEnviadoNoMes("RH_DIRETORIA", refMes);
+      } else if (!force) {
+        await limparReservaNoMes("RH_DIRETORIA", refMes);
+      }
+    } catch (error) {
+      if (!force) {
+        await marcarFalhaNoMes("RH_DIRETORIA", refMes, error);
+      }
+      throw error;
     }
   }
 
-  if (gerJaEnviado && !force) {
-    gerencias = { enviados: 0, pulado: true, motivo: "Já enviado no mês." };
+  if (!gerReservado && !force) {
+    gerencias = { enviados: 0, pulado: true, motivo: "Ja enviado no mes." };
   } else {
-    gerencias = await enviarEmailGerencias();
-    if (Number(gerencias?.enviados || 0) > 0) {
-      await marcarEnviadoNoMes("GERENCIAS", refMes);
+    try {
+      gerencias = await enviarEmailGerencias();
+      if (Number(gerencias?.enviados || 0) > 0 && !force) {
+        await marcarEnviadoNoMes("GERENCIAS", refMes);
+      } else if (!force) {
+        await limparReservaNoMes("GERENCIAS", refMes);
+      }
+    } catch (error) {
+      if (!force) {
+        await marcarFalhaNoMes("GERENCIAS", refMes, error);
+      }
+      throw error;
     }
   }
-
   return {
     pulado: false,
     refMes,
@@ -526,6 +754,76 @@ export async function executarNotificacoesMensaisFerias(options?: {
     rhDiretoria,
     gerencias,
   };
+}
+
+export async function executarNotificacoesPreviaDia17(options?: {
+  force?: boolean;
+  origem?: "cron" | "startup" | "manual";
+}) {
+  const force = Boolean(options?.force);
+  const origem = options?.origem || "cron";
+  const { refMes } = dataRefMesSaoPaulo();
+  const alvo = alvoDoAvisoDia17();
+
+  if (!podeExecutarPreviaDia17Hoje(force)) {
+    return {
+      pulado: true,
+      motivo: "Fora do dia 17.",
+      refMes,
+      refAlvo: alvo.refAlvo,
+      origem,
+      rhDiretoria: { enviados: 0, pulado: true },
+      gerencias: { enviados: 0, pulado: true },
+    };
+  }
+
+  const reservado = force ? true : await reservarEnvioNoMes("PREVIA_DIA17", refMes);
+  if (!reservado && !force) {
+    return {
+      pulado: true,
+      motivo: "Previa do dia 17 ja enviada neste mes.",
+      refMes,
+      refAlvo: alvo.refAlvo,
+      origem,
+      rhDiretoria: { enviados: 0, pulado: true },
+      gerencias: { enviados: 0, pulado: true },
+    };
+  }
+
+  try {
+    const rhDiretoria = await enviarEmailPreviaRhDiretoriaDia17({
+      mesAlvo: alvo.mesAlvo,
+      anoAlvo: alvo.anoAlvo,
+    });
+
+    const gerencias = await enviarEmailPreviaGerenciasDia17({
+      mesAlvo: alvo.mesAlvo,
+      anoAlvo: alvo.anoAlvo,
+    });
+
+    const totalEnvios =
+      Number(rhDiretoria?.enviados || 0) + Number(gerencias?.enviados || 0);
+
+    if (totalEnvios > 0 && !force) {
+      await marcarEnviadoNoMes("PREVIA_DIA17", refMes);
+    } else if (!force) {
+      await limparReservaNoMes("PREVIA_DIA17", refMes);
+    }
+
+    return {
+      pulado: false,
+      refMes,
+      refAlvo: alvo.refAlvo,
+      origem,
+      rhDiretoria,
+      gerencias,
+    };
+  } catch (error) {
+    if (!force) {
+      await marcarFalhaNoMes("PREVIA_DIA17", refMes, error);
+    }
+    throw error;
+  }
 }
 
 //teste de envio de email para a TI

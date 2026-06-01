@@ -2,6 +2,7 @@ import cron from "node-cron";
 
 import {
   executarNotificacoesMensaisFerias,
+  executarNotificacoesPreviaDia17,
   enviarEmailTiFerias,
 } from "../services/ferias_notificacao.service";
 
@@ -9,13 +10,21 @@ cron.schedule(
   "0 8 * * *",
   async () => {
     try {
-      console.log("[CRON FERIAS] Executando fluxo mensal RH/Gerencias...");
+      console.log("[CRON FÉRIAS] Executando fluxo mensal RH/Gerências...");
+
       const result = await executarNotificacoesMensaisFerias({
         origem: "cron",
       });
-      console.log("[CRON FERIAS] Resultado mensal:", result);
+
+      console.log("[CRON FÉRIAS] Resultado mensal:", result);
+
+      const previa = await executarNotificacoesPreviaDia17({
+        origem: "cron",
+      });
+
+      console.log("[CRON FÉRIAS] Resultado prévia dia 17:", previa);
     } catch (err) {
-      console.error("[CRON FERIAS] Erro fluxo mensal:", err);
+      console.error("[CRON FÉRIAS] Erro no fluxo mensal:", err);
     }
   },
   {
@@ -27,13 +36,13 @@ cron.schedule(
   "0 8 * * *",
   async () => {
     try {
-      console.log("[CRON FERIAS] Executando TI...");
+      console.log("[CRON FÉRIAS] Executando TI...");
 
       await enviarEmailTiFerias();
 
-      console.log("[CRON FERIAS] TI finalizado.");
+      console.log("[CRON FÉRIAS] TI finalizado.");
     } catch (err) {
-      console.error("[CRON FERIAS] Erro TI:", err);
+      console.error("[CRON FÉRIAS] Erro TI:", err);
     }
   },
   {
@@ -43,12 +52,14 @@ cron.schedule(
 
 setTimeout(async () => {
   try {
-    console.log("[CRON FERIAS] Startup catch-up mensal...");
+    console.log("[CRON FÉRIAS] Startup catch-up mensal...");
+
     const result = await executarNotificacoesMensaisFerias({
       origem: "startup",
     });
-    console.log("[CRON FERIAS] Startup catch-up resultado:", result);
+
+    console.log("[CRON FÉRIAS] Startup catch-up resultado:", result);
   } catch (err) {
-    console.error("[CRON FERIAS] Erro startup catch-up mensal:", err);
+    console.error("[CRON FÉRIAS] Erro no startup catch-up mensal:", err);
   }
 }, 20_000);

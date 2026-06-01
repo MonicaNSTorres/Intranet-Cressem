@@ -55,10 +55,13 @@ const multerManagedPaths = new Set([
   "/v1/marca_dagua",
   "/v1/converter-arquivos",
   "/v1/estoque-consumiveis/importar-excel",
+  "/v1/ferias_funcionarios/importar-excel",
 ]);
 
 app.use((req, res, next) => {
-  if (multerManagedPaths.has(req.path)) {
+  const normalizedPath = req.path.replace(/\/+$/, "") || "/";
+
+  if (multerManagedPaths.has(normalizedPath)) {
     return next();
   }
 
