@@ -3846,3 +3846,1987 @@ ERRO AO SALVAR NO ORACLE:
 NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
 ==============================
 
+
+==============================
+DATA: 2026-05-28T15:06:36.705Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:07:37.223Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:08:17.101Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:08:48.438Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:09:23.980Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:09:53.987Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:10:30.874Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:11:01.141Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:11:30.882Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:12:01.229Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:12:23.030Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:14:10.028Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:14:39.996Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:15:09.143Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: POPUP_AVISO_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Erro ao consultar popup pendente.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:2320:9
+settle@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:3562:16
+onloadend@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:4078:218
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:15:09.146Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: POPUP_AVISO_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Erro ao consultar popup pendente.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:2320:9
+settle@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:3562:16
+onloadend@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:4078:218
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:15:09.148Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: HOME_BUSCAR_ANIVERSARIANTES_HOJE
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao consultar aniversariantes.
+STACK:
+buscarAniversariantesHoje@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1925:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:15:09.150Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:15:40.518Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:16:24.284Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:16:40.528Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-05-28T15:17:10.245Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T12:55:13.008Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T12:55:48.212Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T12:56:53.888Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T12:57:23.687Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T12:57:53.892Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T12:58:23.805Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T12:58:54.014Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T12:59:24.503Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T12:59:55.179Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:00:25.751Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:00:56.590Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:11:10.376Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-510: connection to host 10.0.107.216 port 1521 timed out. Request exceeded "transportConnectTimeout" of 20 seconds. (CONNECTION_ID=y/N4lCNLSVUYt+VJpQqTMw==)
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:12:50.460Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:13:50.365Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:14:20.531Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:14:50.512Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:15:20.576Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:15:50.584Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:16:20.658Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:16:50.724Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:17:20.838Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:17:50.847Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:18:21.699Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:18:52.054Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:19:22.263Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:19:52.306Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:20:22.332Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:20:52.593Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:21:23.167Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-01T13:21:53.635Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1965:19
+async*loadAcessos@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2874:243
+HomePage.useEffect.interval@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2883:21
+setInterval handler*HomePage.useEffect@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:2881:41
+react_stack_bottom_frame@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:14876:22
+runWithFiberInDEV@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:965:131
+commitHookEffectListMount@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7266:167
+commitHookPassiveMountEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:7301:60
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8786:46
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8800:59
+recursivelyTraverseReconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8773:36
+reconnectPassiveEffects@http://localhost:3000/_next/static/chunks/cf76a_next_dist_compiled_react-dom_9da7042a._.js:8785:59
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+

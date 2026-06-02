@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import {
+  oracleExecute,
+  oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
 
 function capitalizeWords(value: string) {
   return String(value || "")
@@ -160,7 +163,8 @@ export const gerenciamentoSetorController = {
         RETURNING ID_SETOR INTO :ID_SETOR
       `;
 
-      const result = await oracleExecute(
+      const result = await oracleExecuteCommitWithAudit(
+        req,
         sql,
         {
           NM_SETOR,
@@ -171,7 +175,7 @@ export const gerenciamentoSetorController = {
             type: oracledb.NUMBER,
           },
         },
-        { autoCommit: true }
+        {} as any
       );
 
       const id = (result.outBinds as any)?.ID_SETOR?.[0];
@@ -235,7 +239,8 @@ export const gerenciamentoSetorController = {
         WHERE ID_SETOR = :ID_SETOR
       `;
 
-      const result = await oracleExecute(
+      const result = await oracleExecuteCommitWithAudit(
+        req,
         sql,
         {
           ID_SETOR: id,
@@ -244,7 +249,7 @@ export const gerenciamentoSetorController = {
           NR_RAMAL,
           SN_ATIVO,
         },
-        { autoCommit: true }
+        {} as any
       );
 
       if (!result.rowsAffected) {

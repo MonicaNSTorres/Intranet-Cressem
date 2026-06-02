@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import {
+    oracleExecute,
+    oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
 
 
 function toNumber(v: any, fallback = 0) {
@@ -56,14 +59,14 @@ export const convenioOdontoController = {
     async listarFatorAjuste(req: Request, res: Response) {
         try {
             const sql = `
-        SELECT
-          ID_CONVENIO_FATOR_AJUSTE,
-          ID_OPERADORA,
-          NM_FATOR_AJUSTE,
-          VL_AJUSTE,
-          DT_VIGENCIA
-        FROM DBACRESSEM.CONVENIO_FATOR_AJUSTE
-        ORDER BY ID_CONVENIO_FATOR_AJUSTE
+            SELECT
+            ID_CONVENIO_FATOR_AJUSTE,
+            ID_OPERADORA,
+            NM_FATOR_AJUSTE,
+            VL_AJUSTE,
+            DT_VIGENCIA
+            FROM DBACRESSEM.CONVENIO_FATOR_AJUSTE
+            ORDER BY ID_CONVENIO_FATOR_AJUSTE
       `;
 
             const result = await oracleExecute(sql, {}, {
@@ -83,11 +86,11 @@ export const convenioOdontoController = {
     async listarParentesco(req: Request, res: Response) {
         try {
             const sql = `
-        SELECT
-          ID_PARENTESCO,
-          NM_PARENTESCO
-        FROM DBACRESSEM.PARENTESCO
-        ORDER BY NM_PARENTESCO
+            SELECT
+            ID_PARENTESCO,
+            NM_PARENTESCO
+            FROM DBACRESSEM.PARENTESCO
+            ORDER BY NM_PARENTESCO
       `;
 
             const result = await oracleExecute(sql, {}, {
@@ -115,28 +118,28 @@ export const convenioOdontoController = {
             }
 
             const sql = `
-      SELECT
-        CP.NM_USUARIO,
-        CP.NR_CPF_USUARIO,
-        CP.CD_CARTAO,
-        CP.DESC_PARENTESCO,
-        CFA.NM_FATOR_AJUSTE,
-        TO_CHAR(CP.DT_INCLUSAO, 'DD/MM/YYYY') AS DT_INCLUSAO,
-        TO_CHAR(CP.DT_EXCLUSAO, 'DD/MM/YYYY') AS DT_EXCLUSAO,
-        NVL(CFA.VL_AJUSTE, 0) AS VL_AJUSTE,
-        CO.DESC_CONVENIO,
-        CP.NM_MAE,
-        TO_CHAR(CP.DT_NASCIMENTO, 'YYYY-MM-DD') AS DT_NASCIMENTO,
-        CP.NM_CIDADE,
-        CP.SN_ATIVO
-      FROM DBACRESSEM.CONVENIO_PESSOAS CP
-      LEFT JOIN DBACRESSEM.CONVENIO_OPERADORA CO
-        ON CO.ID_CONVENIO_OPERADORA = CP.ID_OPERADORA
-      LEFT JOIN DBACRESSEM.CONVENIO_FATOR_AJUSTE CFA
-        ON CFA.ID_CONVENIO_FATOR_AJUSTE = CP.ID_CONVENIO_FATOR_AJUSTE
-      WHERE CP.NR_CPF_TITULAR = :cpf
-      ORDER BY CP.SN_ATIVO DESC, CP.NM_USUARIO
-    `;
+            SELECT
+                CP.NM_USUARIO,
+                CP.NR_CPF_USUARIO,
+                CP.CD_CARTAO,
+                CP.DESC_PARENTESCO,
+                CFA.NM_FATOR_AJUSTE,
+                TO_CHAR(CP.DT_INCLUSAO, 'DD/MM/YYYY') AS DT_INCLUSAO,
+                TO_CHAR(CP.DT_EXCLUSAO, 'DD/MM/YYYY') AS DT_EXCLUSAO,
+                NVL(CFA.VL_AJUSTE, 0) AS VL_AJUSTE,
+                CO.DESC_CONVENIO,
+                CP.NM_MAE,
+                TO_CHAR(CP.DT_NASCIMENTO, 'YYYY-MM-DD') AS DT_NASCIMENTO,
+                CP.NM_CIDADE,
+                CP.SN_ATIVO
+            FROM DBACRESSEM.CONVENIO_PESSOAS CP
+            LEFT JOIN DBACRESSEM.CONVENIO_OPERADORA CO
+                ON CO.ID_CONVENIO_OPERADORA = CP.ID_OPERADORA
+            LEFT JOIN DBACRESSEM.CONVENIO_FATOR_AJUSTE CFA
+                ON CFA.ID_CONVENIO_FATOR_AJUSTE = CP.ID_CONVENIO_FATOR_AJUSTE
+            WHERE CP.NR_CPF_TITULAR = :cpf
+            ORDER BY CP.SN_ATIVO DESC, CP.NM_USUARIO
+        `;
 
             const result = await oracleExecute(
                 sql,
@@ -839,9 +842,12 @@ export const convenioOdontoController = {
                 NM_CIDADE: NM_CIDADE ? toUpperTrim(NM_CIDADE) : null,
             };
 
-            await oracleExecute(sql, binds, {
-                autoCommit: true,
-            } as any);
+            await oracleExecuteCommitWithAudit(
+                req,
+                sql,
+                binds,
+                {} as any
+            );
 
             return res.status(201).json({
                 success: true,
@@ -957,9 +963,12 @@ export const convenioOdontoController = {
                 NM_CIDADE: NM_CIDADE ? toUpperTrim(NM_CIDADE) : null,
             };
 
-            const result = await oracleExecute(sql, binds, {
-                autoCommit: true,
-            } as any);
+            const result = await oracleExecuteCommitWithAudit(
+                req,
+                sql,
+                binds,
+                {} as any
+            );
 
             if (!result.rowsAffected) {
                 return res.status(404).json({
@@ -1087,9 +1096,12 @@ export const convenioOdontoController = {
                 NM_OPERADORA: NM_OPERADORA ? toUpperTrim(NM_OPERADORA) : null,
             };
 
-            await oracleExecute(sql, binds, {
-                autoCommit: true,
-            } as any);
+            await oracleExecuteCommitWithAudit(
+                req,
+                sql,
+                binds,
+                {} as any
+            );
 
             return res.status(201).json({
                 success: true,
@@ -1122,10 +1134,11 @@ export const convenioOdontoController = {
           AND SN_ATIVO = 1
       `;
 
-            const result = await oracleExecute(
+            const result = await oracleExecuteCommitWithAudit(
+                req,
                 sql,
                 { cpf },
-                { autoCommit: true } as any
+                {} as any
             );
 
             return res.json({

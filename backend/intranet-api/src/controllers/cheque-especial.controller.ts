@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
+import { setAuditoriaContext } from "../services/oracle.service";
 
 function onlyDigits(v: string) {
   return String(v || "").replace(/\D/g, "");
@@ -221,6 +222,8 @@ export const chequeEspecialController = {
       }
 
       connection = await oracledb.getConnection();
+
+      await setAuditoriaContext(connection, req);
 
       const resultCheck = await connection.execute(
         `

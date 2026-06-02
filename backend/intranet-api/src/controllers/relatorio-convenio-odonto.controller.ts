@@ -138,7 +138,7 @@ export const relatorioConvenioOdontoController = {
           NM_OPERADORA,
           NM_PLANO_FATOR_AJUSTE,
           VL_FATOR_AJUSTE
-        FROM DBACRESSEM.CONVENIO_PESSOAS_HISTORICO
+        FROM DBACRESSEM.HISTORICO_CONVENIO_PESSOAS
         ORDER BY NR_CPF_TITULAR, NM_USUARIO
       `;
 

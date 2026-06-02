@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
 import { randomUUID } from "crypto";
-import { oracleExecute } from "../services/oracle.service";
+import {
+  oracleExecute,
+  setAuditoriaContext,
+} from "../services/oracle.service";
 
 function gerarIdCurto(): string {
   return randomUUID().replace(/-/g, "").substring(0, 10).toUpperCase();
@@ -14,7 +17,6 @@ function normalizarValor(valor: any): number {
 
   const texto = String(valor).trim();
 
-  // remove separador de milhar e troca vírgula por ponto
   const normalizado = texto.replace(/\./g, "").replace(",", ".");
   const numero = parseFloat(normalizado);
 
@@ -292,6 +294,8 @@ export const fichaDesimpedimentoController = {
 
       conn = await getConnection();
 
+      await setAuditoriaContext(conn, req);
+
       const idFicha = gerarIdCurto();
 
       await conn.execute(
@@ -516,6 +520,8 @@ export const fichaDesimpedimentoController = {
 
       conn = await getConnection();
 
+      await setAuditoriaContext(conn, req);
+
       await conn.execute(
         `
           UPDATE FICHAS_FINANCEIRAS
@@ -691,6 +697,8 @@ export const fichaDesimpedimentoController = {
       }
 
       conn = await getConnection();
+
+      await setAuditoriaContext(conn, req);
 
       await conn.execute(
         `DELETE FROM CONTAS_DEVEDORAS WHERE ID_FICHAS = :id`,
