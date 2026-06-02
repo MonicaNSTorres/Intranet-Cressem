@@ -1,5 +1,6 @@
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -198,11 +199,16 @@ export async function cadastrarFuncionario(payload: {
     if (payload.DOC_IDENTIDADE_CONJ) formData.append("DOC_IDENTIDADE_CONJ", payload.DOC_IDENTIDADE_CONJ);
     if (payload.FICHA_DESIMPEDIMENTO) formData.append("FICHA_DESIMPEDIMENTO", payload.FICHA_DESIMPEDIMENTO);
 
-    const response = await api.post("/v1/funcionarios_sicoob_cressem", formData, {
-        headers: {
-            "Content-Type": "multipart/form-data",
-        },
-    });
+    const response = await api.post(
+        "/v1/funcionarios_sicoob_cressem",
+        formData,
+        {
+            headers: {
+                ...getAuditoriaHeaders(),
+                "Content-Type": "multipart/form-data",
+            },
+        }
+    );
 
     return response.data;
 }
@@ -279,7 +285,13 @@ export async function editarFuncionario(payload: {
 
     const response = await api.put(
         `/v1/funcionarios_sicoob_cressem/${payload.id}`,
-        formData
+        formData,
+        {
+            headers: {
+                ...getAuditoriaHeaders(),
+                "Content-Type": "multipart/form-data",
+            },
+        }
     );
 
     return response.data;
@@ -307,6 +319,7 @@ export async function alterarStatusFuncionario(payload: {
         formData,
         {
             headers: {
+                ...getAuditoriaHeaders(),
                 "Content-Type": "multipart/form-data",
             },
         }

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
@@ -113,7 +114,10 @@ export type ContatoContratoItem = {
 export async function cadastrarContratoEmpresa(
   payload: ContratoEmpresaPayload
 ) {
-  const { data } = await api.post("/v1/contratos_empresas", payload);
+  const { data } = await api.post("/v1/contratos_empresas", payload, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return data;
 }
 
@@ -121,7 +125,10 @@ export async function editarContratoEmpresa(
   id: number,
   payload: ContratoEmpresaPayload
 ) {
-  const { data } = await api.put(`/v1/contratos_empresas/${id}`, payload);
+  const { data } = await api.put(`/v1/contratos_empresas/${id}`, payload, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return data;
 }
 
@@ -165,7 +172,10 @@ export async function buscarFuncionarioPorEmail(email: string) {
 }
 
 export async function criarEmailContrato(payload: EmailContratoPayload) {
-  const { data } = await api.post("/v1/email_contrato", payload);
+  const { data } = await api.post("/v1/email_contrato", payload, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return data;
 }
 
@@ -184,7 +194,10 @@ export async function listarEmailContratoPorFuncionario(idFuncionario: number) {
 }
 
 export async function removerEmailContrato(idContratoEmail: number) {
-  const { data } = await api.delete(`/v1/email_contrato/${idContratoEmail}`);
+  const { data } = await api.delete(`/v1/email_contrato/${idContratoEmail}`, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return data;
 }
 
@@ -208,10 +221,17 @@ export async function cadastrarContatosContratoLote(
   idContrato: number,
   contatos: ContatoContratoPayload[]
 ) {
-  const { data } = await api.post("/v1/rh_contato/lote", {
-    ID_CONTRATO: idContrato,
-    CONTATOS: contatos,
-  });
+  const { data } = await api.post(
+    "/v1/rh_contato/lote",
+    {
+      ID_CONTRATO: idContrato,
+      CONTATOS: contatos,
+    },
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return data;
 }
 
@@ -219,10 +239,17 @@ export async function editarContatosContratoLote(
   idContrato: number,
   contatos: ContatoContratoPayload[]
 ) {
-  const { data } = await api.put(`/v1/rh_contato/lote/${idContrato}`, {
-    ID_CONTRATO: idContrato,
-    CONTATOS: contatos,
-  });
+  const { data } = await api.put(
+    `/v1/rh_contato/lote/${idContrato}`,
+    {
+      ID_CONTRATO: idContrato,
+      CONTATOS: contatos,
+    },
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return data;
 }
 

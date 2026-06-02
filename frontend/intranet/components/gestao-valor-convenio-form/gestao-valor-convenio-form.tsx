@@ -288,7 +288,7 @@ export function GestaoValorConvenioForm() {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-[1500px] space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
+      <div className="mx-auto w-full min-w-225 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-2">
             <h2 className="text-xl font-bold text-slate-800">

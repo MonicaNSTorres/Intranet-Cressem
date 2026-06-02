@@ -1,5 +1,6 @@
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -85,7 +86,14 @@ export async function buscarFuncionarioFeriasPorId(id: string | number) {
 }
 
 export async function cadastrarFeriasFuncionario(payload: PeriodoFeriasPayload[]) {
-  const response = await api.post("/v1/ferias_funcionarios", payload);
+  const response = await api.post(
+    "/v1/ferias_funcionarios",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return response.data;
 }
 
@@ -95,7 +103,10 @@ export async function editarFeriasFuncionario(
 ) {
   const response = await api.put(
     `/v1/ferias_funcionarios/${idFuncionario}`,
-    payload
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
 
   return response.data;

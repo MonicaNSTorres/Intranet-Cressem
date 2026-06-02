@@ -1,5 +1,6 @@
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 export type DemissaoAssociadoResponse = {
   NOME?: string;
@@ -141,7 +142,10 @@ export async function desativarConvenioDemissao(
 
   const response = await api.post(
     `/v1/demissao/convenio/${cpfLimpo}/desativacao`,
-    { atendente }
+    { atendente },
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
 
   return response.data;

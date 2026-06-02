@@ -48,7 +48,7 @@ function ReportButton({
       disabled={loading}
       className="group flex min-h-29.5 w-full flex-col items-start justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-secondary hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-secondary transition group-hover:bg-primary-50">
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-secondary transition">
         {icon}
       </div>
 
@@ -155,7 +155,7 @@ export function RelatorioConvenioOdontoForm() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-350 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
+    <div className="mx-auto w-full min-w-225 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-2 flex items-center gap-3">
           <div>

@@ -239,10 +239,6 @@ export async function desativarConvenioPorCpfTitular(cpf: string) {
   return data;
 }
 
-/**
- * Endpoints já existentes no seu backend antigo / atual
- * usados pela lógica da tela antiga
- */
 export async function buscarAssociadoBasePorCpf(cpf: string) {
   const { data } = await api.get<AssociadoBase>(
     `/v1/associado_analitico/${onlyDigits(cpf)}`

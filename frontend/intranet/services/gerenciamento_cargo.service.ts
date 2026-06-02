@@ -1,5 +1,6 @@
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -106,7 +107,14 @@ export async function cadastrarCargo(payload: {
   NM_NIVEL: string;
   ID_POSICAO: number;
 }) {
-  const response = await api.post("/v1/cargo_gerentes_sicoob_cressem", payload);
+  const response = await api.post(
+    "/v1/cargo_gerentes_sicoob_cressem",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return response.data;
 }
 
@@ -124,6 +132,9 @@ export async function editarCargo(payload: {
       SN_ATIVO: payload.SN_ATIVO,
       NM_NIVEL: payload.NM_NIVEL,
       ID_POSICAO: payload.ID_POSICAO,
+    },
+    {
+      headers: getAuditoriaHeaders(),
     }
   );
 
@@ -144,6 +155,9 @@ export async function alterarStatusCargo(payload: {
       SN_ATIVO: payload.SN_ATIVO,
       NM_NIVEL: payload.NM_NIVEL,
       ID_POSICAO: payload.ID_POSICAO,
+    },
+    {
+      headers: getAuditoriaHeaders(),
     }
   );
 
