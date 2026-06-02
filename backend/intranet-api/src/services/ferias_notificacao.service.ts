@@ -19,6 +19,54 @@ const ROTINA = "FERIAS_NOTIFICACAO";
 
 type TipoNotificacaoMensal = "RH_DIRETORIA" | "GERENCIAS" | "PREVIA_DIA17";
 
+function getAllowedEmailIps() {
+  return String(process.env.EMAIL_ALLOWED_IPS || "")
+    .split(",")
+    .map((ip) => ip.trim())
+    .filter(Boolean);
+}
+
+function getLocalIpv4s() {
+  const nets = os.networkInterfaces();
+  const ips = new Set<string>();
+
+  Object.values(nets).forEach((entries) => {
+    (entries || []).forEach((entry) => {
+      if (!entry) return;
+      if (entry.family !== "IPv4") return;
+      if (entry.internal) return;
+      if (!entry.address) return;
+      ips.add(entry.address);
+    });
+  });
+
+  return Array.from(ips);
+}
+
+function validarHostAutorizadoParaEmail() {
+  const ipsPermitidos = getAllowedEmailIps();
+  const ipsLocais = getLocalIpv4s();
+
+  if (!ipsPermitidos.length) {
+    return {
+      autorizado: true,
+      motivo: "EMAIL_ALLOWED_IPS não configurado; envio liberado.",
+      ipsPermitidos,
+      ipsLocais,
+    };
+  }
+
+  const autorizado = ipsLocais.some((ip) => ipsPermitidos.includes(ip));
+  return {
+    autorizado,
+    motivo: autorizado
+      ? "Host autorizado para envio."
+      : `Host sem IP autorizado. Locais=[${ipsLocais.join(", ")}] Permitidos=[${ipsPermitidos.join(", ")}]`,
+    ipsPermitidos,
+    ipsLocais,
+  };
+}
+
 function dataRefMesSaoPaulo(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
@@ -226,25 +274,125 @@ function feriasFakeTeste() {
   ];
 }
 
+function escapeHtml(value: any) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function montarLinhaInfoFerias(label: string, value: any) {
+  return `
+    <tr>
+      <td style="width:34%;padding:11px 14px;background:#f8faf9;border-bottom:1px solid #e8eeeb;font-weight:700;color:#2f3a35;">
+        ${escapeHtml(label)}
+      </td>
+      <td style="padding:11px 14px;border-bottom:1px solid #e8eeeb;color:#1f2933;">
+        ${escapeHtml(value || "-")}
+      </td>
+    </tr>
+  `;
+}
+
+function montarWrapperEmailFerias(conteudo: string) {
+  return `
+    <div style="margin:0;padding:0;background:#f3f6f4;font-family:Arial,Helvetica,sans-serif;color:#1f2933;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;background:#f3f6f4;">
+        <tr>
+          <td align="center" style="padding:24px 12px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="760" style="width:100%;max-width:760px;border-collapse:separate;background:#ffffff;border:1px solid #dfe7e2;border-radius:14px;overflow:hidden;">
+              ${conteudo}
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+function montarHtmlEmailFerias(params: {
+  titulo: string;
+  introducao: string;
+  introducaoHtml?: string;
+  listaHtml: string;
+  observacaoFinal?: string;
+}) {
+  const conteudo = `
+    <tr>
+      <td style="background:#006b3f;padding:22px 26px;color:#ffffff;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;opacity:.9;">
+          Gestão de férias
+        </div>
+        <h2 style="margin:6px 0 0;font-size:22px;line-height:1.3;font-weight:700;">
+          ${escapeHtml(params.titulo)}
+        </h2>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:24px 26px;">
+        <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#4b5563;">
+          ${params.introducaoHtml || escapeHtml(params.introducao)}
+        </p>
+
+        ${params.listaHtml}
+
+        <p style="margin:18px 0 0;font-size:13px;line-height:1.6;color:#4b5563;">
+          ${escapeHtml(params.observacaoFinal || "Este e-mail foi enviado automaticamente pela intranet.")}
+        </p>
+      </td>
+    </tr>
+  `;
+
+  return montarWrapperEmailFerias(conteudo);
+}
+
 function buildListaHtml(rows: any[]) {
   if (!rows?.length) {
-    return "<p>- (vazio)</p>";
+    return `
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;border-spacing:0;border:1px solid #e1e8e4;border-radius:10px;overflow:hidden;">
+        ${montarLinhaInfoFerias("Registros", "Nenhum registro para exibir")}
+      </table>
+    `;
   }
 
   return `
-    <ul>
-      ${rows
-        .map(
-          (row) => `
-            <li>
-              <strong>${row.NOME || row.NM_FUNCIONARIO || "-"}</strong>
-              — Início: <strong>${dataBR(row.DT_DIA_INICIO)}</strong>
-              | Fim: <strong>${dataBR(row.DT_DIA_FIM)}</strong>
-            </li>
-          `
-        )
-        .join("")}
-    </ul>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;border-spacing:0;border:1px solid #e1e8e4;border-radius:10px;overflow:hidden;">
+      <thead>
+        <tr>
+          <th style="padding:11px 14px;background:#eef5f1;border-bottom:1px solid #dce7e1;color:#2f3a35;font-size:13px;text-align:left;">
+            Colaborador
+          </th>
+          <th style="padding:11px 14px;background:#eef5f1;border-bottom:1px solid #dce7e1;color:#2f3a35;font-size:13px;text-align:left;width:150px;">
+            Início
+          </th>
+          <th style="padding:11px 14px;background:#eef5f1;border-bottom:1px solid #dce7e1;color:#2f3a35;font-size:13px;text-align:left;width:150px;">
+            Fim
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows
+          .map(
+            (row) => `
+              <tr>
+                <td style="padding:12px 14px;border-bottom:1px solid #edf1ef;color:#374151;font-weight:600;">
+                  ${escapeHtml(row.NOME || row.NM_FUNCIONARIO || "-")}
+                </td>
+                <td style="padding:12px 14px;border-bottom:1px solid #edf1ef;color:#374151;">
+                  ${escapeHtml(dataBR(row.DT_DIA_INICIO))}
+                </td>
+                <td style="padding:12px 14px;border-bottom:1px solid #edf1ef;color:#374151;">
+                  ${escapeHtml(dataBR(row.DT_DIA_FIM))}
+                </td>
+              </tr>
+            `
+          )
+          .join("")}
+      </tbody>
+    </table>
   `;
 }
 
@@ -312,7 +460,7 @@ async function buscarFeriasPorMesAno(mes: number, ano: number) {
   return (result.rows || []) as any[];
 }
 
-//funcao para fins de teste de envio do email ao rh/diretoria
+//função para fins de teste de envio do e-mail ao RH/Diretoria
 {/*async function buscarFeriasMesAtual() {
   console.log("[FÉRIAS TESTE] Usando férias fake para teste.");
 
@@ -408,26 +556,12 @@ export async function enviarEmailRhDiretoria() {
 
   const assunto = `[RH/Diretoria] Férias do mês ${mes}/${ano}`;
 
-  const html = `
-    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-      <p>Olá,</p>
-
-      <p>
-        Colaboradores que <strong>INICIAM férias</strong> em
-        <strong>${mes}/${ano}</strong>:
-      </p>
-
-      ${buildListaHtml(rows)}
-
-      <br/>
-
-      <p>Atenciosamente,<br/>Equipe RH</p>
-
-      <p style="margin-top: 20px; color: #666;">
-        Este email foi enviado automaticamente pela intranet.
-      </p>
-    </div>
-  `;
+  const html = montarHtmlEmailFerias({
+    titulo: `Férias do mês ${mes}/${ano}`,
+    introducao: `Colaboradores que iniciam férias em ${mes}/${ano}.`,
+    listaHtml: buildListaHtml(rows),
+    observacaoFinal: "Atenciosamente, Equipe RH.",
+  });
 
   await sendEmail([...EMAIL_RH, ...EMAIL_DIRETORIA], assunto, html);
 
@@ -466,26 +600,13 @@ export async function enviarEmailGerencias() {
 
     const assunto = `[Gerência] Férias dos seus liderados em ${mes}/${ano}`;
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-        <p>Olá <strong>${nomeGerente}</strong>,</p>
-
-        <p>
-          Seus liderados que <strong>INICIAM férias</strong> em
-          <strong>${mes}/${ano}</strong>:
-        </p>
-
-        ${buildListaHtml(itens)}
-
-        <br/>
-
-        <p>Qualquer dúvida, conte com o RH.</p>
-
-        <p style="margin-top: 20px; color: #666;">
-          Este email foi enviado automaticamente pela intranet.
-        </p>
-      </div>
-    `;
+    const html = montarHtmlEmailFerias({
+      titulo: `Férias dos liderados - ${mes}/${ano}`,
+      introducao: `Olá, ${nomeGerente}. Seguem os liderados que iniciam férias em ${mes}/${ano}.`,
+      introducaoHtml: `Olá, <strong>${escapeHtml(nomeGerente)}</strong>. Seguem os liderados que iniciam férias em ${escapeHtml(`${mes}/${ano}`)}.`,
+      listaHtml: buildListaHtml(itens),
+      observacaoFinal: "Qualquer dúvida, conte com o RH.",
+    });
 
     await sendEmail(emailGerente, assunto, html);
     enviados++;
@@ -503,27 +624,23 @@ async function enviarEmailPreviaRhDiretoriaDia17(params: {
   const mesFmt = String(mesAlvo).padStart(2, "0");
 
   if (!rows.length) {
-    const assunto = `[RH/Diretoria] Previa de ferias ${mesFmt}/${anoAlvo} - sem cadastro`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-        <p>Ola,</p>
-        <p>Nao ha cadastro de ferias para <strong>${mesFmt}/${anoAlvo}</strong>.</p>
-        <p style="margin-top: 20px; color: #666;">Este email foi enviado automaticamente pela intranet.</p>
-      </div>
-    `;
+    const assunto = `[RH/Diretoria] Prévia de férias ${mesFmt}/${anoAlvo} - sem cadastro`;
+    const html = montarHtmlEmailFerias({
+      titulo: `Prévia de férias ${mesFmt}/${anoAlvo}`,
+      introducao: `Não há cadastro de férias para ${mesFmt}/${anoAlvo}.`,
+      listaHtml: buildListaHtml([]),
+      observacaoFinal: "Sem registros para o período consultado.",
+    });
     await sendEmail(EMAIL_RH, assunto, html);
     return { enviados: 1, semCadastro: true };
   }
 
-  const assunto = `[RH/Diretoria] Previa de ferias ${mesFmt}/${anoAlvo}`;
-  const html = `
-    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-      <p>Ola,</p>
-      <p>Colaboradores que iniciam ferias em <strong>${mesFmt}/${anoAlvo}</strong>:</p>
-      ${buildListaHtml(rows)}
-      <p style="margin-top: 20px; color: #666;">Este email foi enviado automaticamente pela intranet.</p>
-    </div>
-  `;
+  const assunto = `[RH/Diretoria] Prévia de férias ${mesFmt}/${anoAlvo}`;
+  const html = montarHtmlEmailFerias({
+    titulo: `Prévia de férias ${mesFmt}/${anoAlvo}`,
+    introducao: `Colaboradores que iniciam férias em ${mesFmt}/${anoAlvo}.`,
+    listaHtml: buildListaHtml(rows),
+  });
 
   await sendEmail([...EMAIL_RH, ...EMAIL_DIRETORIA], assunto, html);
   return { enviados: 1, semCadastro: false };
@@ -554,16 +671,14 @@ async function enviarEmailPreviaGerenciasDia17(params: {
   let enviados = 0;
   for (const emailGerente of Object.keys(porGerente)) {
     const itens = porGerente[emailGerente];
-    const nomeGerente = itens[0]?.NOME_GERENTE || "Gerencia";
-    const assunto = `[Gerencia] Previa de ferias dos liderados ${mesFmt}/${anoAlvo}`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-        <p>Ola <strong>${nomeGerente}</strong>,</p>
-        <p>Seus liderados que iniciam ferias em <strong>${mesFmt}/${anoAlvo}</strong>:</p>
-        ${buildListaHtml(itens)}
-        <p style="margin-top: 20px; color: #666;">Este email foi enviado automaticamente pela intranet.</p>
-      </div>
-    `;
+    const nomeGerente = itens[0]?.NOME_GERENTE || "Gerência";
+    const assunto = `[Gerência] Prévia de férias dos liderados ${mesFmt}/${anoAlvo}`;
+    const html = montarHtmlEmailFerias({
+      titulo: `Prévia de férias dos liderados ${mesFmt}/${anoAlvo}`,
+      introducao: `Olá, ${nomeGerente}. Seguem os liderados com início de férias em ${mesFmt}/${anoAlvo}.`,
+      introducaoHtml: `Olá, <strong>${escapeHtml(nomeGerente)}</strong>. Seguem os liderados com início de férias em ${escapeHtml(`${mesFmt}/${anoAlvo}`)}.`,
+      listaHtml: buildListaHtml(itens),
+    });
     await sendEmail(emailGerente, assunto, html);
     enviados++;
   }
@@ -572,6 +687,12 @@ async function enviarEmailPreviaGerenciasDia17(params: {
 }
 
 export async function enviarEmailTiFerias() {
+  const gate = validarHostAutorizadoParaEmail();
+  if (!gate.autorizado) {
+    console.log(`[FÉRIAS][TI] Envio pulado: ${gate.motivo}`);
+    return { enviados: 0, pulado: true, motivo: gate.motivo };
+  }
+
   const hoje = new Date();
   const em3Dias = addDias(3);
   const amanha = addDias(1);
@@ -586,22 +707,11 @@ export async function enviarEmailTiFerias() {
   if (preInicio.length) {
     const assunto = `[TI] Em 3 dias iniciam férias (${dataBR(em3Dias)})`;
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-        <p>Boa tarde,</p>
-
-        <p>
-          Daqui a 3 dias (<strong>${dataBR(em3Dias)}</strong>) os seguintes
-          colaboradores <strong>INICIAM férias</strong>:
-        </p>
-
-        ${buildListaHtml(preInicio)}
-
-        <p style="margin-top: 20px; color: #666;">
-          Este email foi enviado automaticamente pela intranet.
-        </p>
-      </div>
-    `;
+    const html = montarHtmlEmailFerias({
+      titulo: `TI - Início de férias em 3 dias (${dataBR(em3Dias)})`,
+      introducao: `Daqui a 3 dias os seguintes colaboradores iniciam férias.`,
+      listaHtml: buildListaHtml(preInicio),
+    });
 
     await sendEmail(EMAIL_TI, assunto, html);
     enviados++;
@@ -610,22 +720,11 @@ export async function enviarEmailTiFerias() {
   if (inicioHoje.length) {
     const assunto = `[TI] Início de férias HOJE (${dataBR(hoje)})`;
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-        <p>Bom dia,</p>
-
-        <p>
-          Colaboradores que <strong>INICIAM férias HOJE</strong>
-          (<strong>${dataBR(hoje)}</strong>):
-        </p>
-
-        ${buildListaHtml(inicioHoje)}
-
-        <p style="margin-top: 20px; color: #666;">
-          Este email foi enviado automaticamente pela intranet.
-        </p>
-      </div>
-    `;
+    const html = montarHtmlEmailFerias({
+      titulo: `TI - Início de férias hoje (${dataBR(hoje)})`,
+      introducao: "Colaboradores que iniciam férias hoje.",
+      listaHtml: buildListaHtml(inicioHoje),
+    });
 
     await sendEmail(EMAIL_TI, assunto, html);
     enviados++;
@@ -634,22 +733,11 @@ export async function enviarEmailTiFerias() {
   if (preVolta.length) {
     const assunto = `[TI] Em 3 dias RETORNAM de férias (${dataBR(em3Dias)})`;
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-        <p>Boa tarde,</p>
-
-        <p>
-          Daqui a 3 dias (<strong>${dataBR(em3Dias)}</strong>) os seguintes
-          colaboradores <strong>RETORNAM de férias</strong>:
-        </p>
-
-        ${buildListaHtml(preVolta)}
-
-        <p style="margin-top: 20px; color: #666;">
-          Este email foi enviado automaticamente pela intranet.
-        </p>
-      </div>
-    `;
+    const html = montarHtmlEmailFerias({
+      titulo: `TI - Retorno de férias em 3 dias (${dataBR(em3Dias)})`,
+      introducao: "Daqui a 3 dias os seguintes colaboradores retornam de férias.",
+      listaHtml: buildListaHtml(preVolta),
+    });
 
     await sendEmail(EMAIL_TI, assunto, html);
     enviados++;
@@ -658,24 +746,11 @@ export async function enviarEmailTiFerias() {
   if (ultimoDia.length) {
     const assunto = `[TI] ÚLTIMO dia de férias, retorno amanhã: ${dataBR(amanha)}`;
 
-    const html = `
-      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-        <p>Boa tarde,</p>
-
-        <p>
-          Hoje (<strong>${dataBR(hoje)}</strong>) é o
-          <strong>ÚLTIMO dia de férias</strong> de:
-        </p>
-
-        ${buildListaHtml(ultimoDia)}
-
-        <p>Retorno amanhã: <strong>${dataBR(amanha)}</strong></p>
-
-        <p style="margin-top: 20px; color: #666;">
-          Este email foi enviado automaticamente pela intranet.
-        </p>
-      </div>
-    `;
+    const html = montarHtmlEmailFerias({
+      titulo: `TI - Último dia de férias (${dataBR(hoje)})`,
+      introducao: `Hoje é o último dia de férias. Retorno amanhã: ${dataBR(amanha)}.`,
+      listaHtml: buildListaHtml(ultimoDia),
+    });
 
     await sendEmail(EMAIL_TI, assunto, html);
     enviados++;
@@ -691,6 +766,19 @@ export async function executarNotificacoesMensaisFerias(options?: {
   const force = Boolean(options?.force);
   const origem = options?.origem || "cron";
   const { refMes } = dataRefMesSaoPaulo();
+  const gate = validarHostAutorizadoParaEmail();
+
+  if (!gate.autorizado) {
+    console.log(`[FÉRIAS][MENSAL] Envio pulado: ${gate.motivo}`);
+    return {
+      pulado: true,
+      motivo: gate.motivo,
+      refMes,
+      origem,
+      rhDiretoria: { enviados: 0, pulado: true },
+      gerencias: { enviados: 0, pulado: true },
+    };
+  }
 
   if (!podeExecutarMensalHoje(force)) {
     console.log(
@@ -713,7 +801,7 @@ export async function executarNotificacoesMensaisFerias(options?: {
   const gerReservado = force ? true : await reservarEnvioNoMes("GERENCIAS", refMes);
 
   if (!rhReservado && !force) {
-    rhDiretoria = { enviados: 0, pulado: true, motivo: "Ja enviado no mes." };
+    rhDiretoria = { enviados: 0, pulado: true, motivo: "Já enviado no mês." };
   } else {
     try {
       rhDiretoria = await enviarEmailRhDiretoria();
@@ -731,7 +819,7 @@ export async function executarNotificacoesMensaisFerias(options?: {
   }
 
   if (!gerReservado && !force) {
-    gerencias = { enviados: 0, pulado: true, motivo: "Ja enviado no mes." };
+    gerencias = { enviados: 0, pulado: true, motivo: "Já enviado no mês." };
   } else {
     try {
       gerencias = await enviarEmailGerencias();
@@ -764,6 +852,20 @@ export async function executarNotificacoesPreviaDia17(options?: {
   const origem = options?.origem || "cron";
   const { refMes } = dataRefMesSaoPaulo();
   const alvo = alvoDoAvisoDia17();
+  const gate = validarHostAutorizadoParaEmail();
+
+  if (!gate.autorizado) {
+    console.log(`[FÉRIAS][DIA17] Envio pulado: ${gate.motivo}`);
+    return {
+      pulado: true,
+      motivo: gate.motivo,
+      refMes,
+      refAlvo: alvo.refAlvo,
+      origem,
+      rhDiretoria: { enviados: 0, pulado: true },
+      gerencias: { enviados: 0, pulado: true },
+    };
+  }
 
   if (!podeExecutarPreviaDia17Hoje(force)) {
     return {
@@ -781,7 +883,7 @@ export async function executarNotificacoesPreviaDia17(options?: {
   if (!reservado && !force) {
     return {
       pulado: true,
-      motivo: "Previa do dia 17 ja enviada neste mes.",
+      motivo: "Prévia do dia 17 já enviada neste mês.",
       refMes,
       refAlvo: alvo.refAlvo,
       origem,
@@ -826,7 +928,7 @@ export async function executarNotificacoesPreviaDia17(options?: {
   }
 }
 
-//teste de envio de email para a TI
+//teste de envio de e-mail para a TI
 {/*export async function enviarEmailTiFerias() {
   const hoje = new Date();
   const em3Dias = addDias(3);
@@ -854,7 +956,7 @@ export async function executarNotificacoesPreviaDia17(options?: {
         ${buildListaHtml(preInicio)}
 
         <p style="margin-top: 20px; color: #666;">
-          Este email foi enviado automaticamente pela intranet.
+          Este e-mail foi enviado automaticamente pela intranet.
         </p>
       </div>
     `;
@@ -878,7 +980,7 @@ export async function executarNotificacoesPreviaDia17(options?: {
         ${buildListaHtml(inicioHoje)}
 
         <p style="margin-top: 20px; color: #666;">
-          Este email foi enviado automaticamente pela intranet.
+          Este e-mail foi enviado automaticamente pela intranet.
         </p>
       </div>
     `;
@@ -902,7 +1004,7 @@ export async function executarNotificacoesPreviaDia17(options?: {
         ${buildListaHtml(preVolta)}
 
         <p style="margin-top: 20px; color: #666;">
-          Este email foi enviado automaticamente pela intranet.
+          Este e-mail foi enviado automaticamente pela intranet.
         </p>
       </div>
     `;
@@ -928,7 +1030,7 @@ export async function executarNotificacoesPreviaDia17(options?: {
         <p>Retorno amanhã: <strong>${dataBR(amanha)}</strong></p>
 
         <p style="margin-top: 20px; color: #666;">
-          Este email foi enviado automaticamente pela intranet.
+          Este e-mail foi enviado automaticamente pela intranet.
         </p>
       </div>
     `;

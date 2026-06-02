@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 
 function getEnv(name: string) {
   const value = process.env[name];
@@ -6,6 +6,20 @@ function getEnv(name: string) {
     throw new Error(`Variável de ambiente obrigatória não definida: ${name}`);
   }
   return value;
+}
+
+function getOptionalEnv(name: string) {
+  return String(process.env[name] || "").trim();
+}
+
+function isTruthyEnv(value: string) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return (
+    normalized === "1" ||
+    normalized === "true" ||
+    normalized === "yes" ||
+    normalized === "sim"
+  );
 }
 
 function getEmailTimeoutMs() {
@@ -65,11 +79,15 @@ export async function sendEmail(
 ) {
   const accessToken = await getAccessToken();
   const departmentalMailbox = getEnv("DEPARTAMENTBOX");
+  const emailModoTeste = isTruthyEnv(getOptionalEnv("EMAIL_MODO_TESTE"));
+  const emailDestinoTeste = getOptionalEnv("EMAIL_DESTINO_TESTE");
 
-  const recipients = normalizeRecipients(to);
+  const recipients = emailModoTeste
+    ? normalizeRecipients(emailDestinoTeste)
+    : normalizeRecipients(to);
 
   if (!recipients.length) {
-    throw new Error("Nenhum destinatário informado para envio do email.");
+    throw new Error("Nenhum destinatário informado para envio do e-mail.");
   }
 
   const graphUrl = `https://graph.microsoft.com/v1.0/users/${departmentalMailbox}/sendMail`;
