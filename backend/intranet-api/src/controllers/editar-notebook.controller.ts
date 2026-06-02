@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import { oracleExecuteCommitWithAudit } from "../services/oracle.service";
 
 export const editarNotebookController = {
   async atualizar(req: Request, res: Response) {
@@ -52,7 +52,8 @@ export const editarNotebookController = {
         WHERE ID_NOTEBOOKS_SICOOB = :ID_NOTEBOOKS_SICOOB
       `;
 
-      const result = await oracleExecute(
+      const result = await oracleExecuteCommitWithAudit(
+        req,
         sql,
         {
           ID_NOTEBOOKS_SICOOB: Number(id),
@@ -63,8 +64,8 @@ export const editarNotebookController = {
           NR_MAC: NR_MAC ? String(NR_MAC).trim() : null,
           CD_PATRIMONIO:
             CD_PATRIMONIO !== null &&
-            CD_PATRIMONIO !== undefined &&
-            String(CD_PATRIMONIO) !== ""
+              CD_PATRIMONIO !== undefined &&
+              String(CD_PATRIMONIO) !== ""
               ? Number(CD_PATRIMONIO)
               : null,
           NR_IP: NR_IP ? String(NR_IP).trim() : null,
@@ -74,8 +75,8 @@ export const editarNotebookController = {
             : null,
           ID_FUNCIONARIO:
             ID_FUNCIONARIO !== null &&
-            ID_FUNCIONARIO !== undefined &&
-            String(ID_FUNCIONARIO) !== ""
+              ID_FUNCIONARIO !== undefined &&
+              String(ID_FUNCIONARIO) !== ""
               ? Number(ID_FUNCIONARIO)
               : null,
           NM_FUNCIONARIO_TI: NM_FUNCIONARIO_TI
@@ -84,7 +85,6 @@ export const editarNotebookController = {
           DESC_SITUACAO: DESC_SITUACAO ? String(DESC_SITUACAO).trim() : null,
         },
         {
-          autoCommit: true,
           outFormat: oracledb.OUT_FORMAT_OBJECT,
         }
       );

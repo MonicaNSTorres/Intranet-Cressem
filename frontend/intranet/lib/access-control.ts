@@ -368,5 +368,9 @@ export const PAGE_ACCESS = {
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.GERENCIAR_CONVENIO_ODONTO],
     },
 
+    termosMensaisCaixa: {
+        allowedGroups: [AD_GROUPS.TERMOS_MENSAIS_CAIXA, AD_GROUPS.SUPORTE]
+    }
+
 
 } satisfies Record<string, AccessRule>;

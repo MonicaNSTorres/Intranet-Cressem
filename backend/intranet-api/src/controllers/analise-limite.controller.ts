@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import {
+    oracleExecute,
+    oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
 import fs from "fs/promises";
 import path from "path";
 import { execFile } from "child_process";
@@ -447,9 +450,12 @@ export const analiseLimiteController = {
                 },
             };
 
-            const result = await oracleExecute(sql, binds, {
-                autoCommit: true,
-            } as any);
+            const result = await oracleExecuteCommitWithAudit(
+                req,
+                sql,
+                binds,
+                {} as any
+            );
 
             const idAnalise =
                 (result.outBinds as any)?.ID_ANALISE?.[0] ||
@@ -623,13 +629,14 @@ export const analiseLimiteController = {
         WHERE ID_ANALISE = :ID_ANALISE
       `;
 
-            const result = await oracleExecute(
+            const result = await oracleExecuteCommitWithAudit(
+                req,
                 sql,
                 {
                     ID_ANALISE,
                     NM_ASSINATURA: caminhoAssinatura,
                 },
-                { autoCommit: true }
+                {} as any
             );
 
             if (!result.rowsAffected) {

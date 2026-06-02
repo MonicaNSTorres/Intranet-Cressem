@@ -27,6 +27,7 @@ const AD_GROUPS = {
   RH_INTRANET: "GG_INTRANET_RH",
   MIGRACAO_CONTRATO: "GG_INTRANET_MIGRACAO_CONTRATO",
   SOLICITACAO_CREDITO: "GG_INTRANET_SOLICITACAO_CRED",
+  TERMOS_MENSAIS_CAIXA: "GG_INTRANET_TERMOS_MENSAIS_CX",
 } as const;
 
 export const SCREENS: ScreenItem[] = [
@@ -170,6 +171,22 @@ export const SCREENS: ScreenItem[] = [
     group: "Financeiro",
     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CHEQUE_ESPCIAL],
     keywords: ["cheque especial", "limite", "credito", "crédito", "formulario"],
+  },
+  {
+    title: "Termos Mensais Caixa Consulta",
+    desc: "Consulte os termos mensais.",
+    href: "/auth/termos_mensais_caixa",
+    group: "Financeiro",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TERMOS_MENSAIS_CAIXA],
+    keywords: ["termos mensais", "exportar", "termos", "caixa", "formulario"],
+  },
+  {
+    title: "Termos Mensais Caixa Cadastro",
+    desc: "Acesso ao formulário de termos mensais e cadastre.",
+    href: "/auth/termos_mensais_caixa/novo",
+    group: "Financeiro",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TERMOS_MENSAIS_CAIXA],
+    keywords: ["termos mensais", "cadastrar", "termos", "caixa", "formulario"],
   },
   {
     title: "Declaração de Rendimentos",

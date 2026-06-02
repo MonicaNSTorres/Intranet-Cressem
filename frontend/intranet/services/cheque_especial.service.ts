@@ -1,5 +1,6 @@
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 export type ChequeEspecialItem = {
   ID_ATUALIZACAO_BENEFICIO_CHEQUE_ESPECIAL: number;
@@ -25,6 +26,7 @@ export type BuscarChequeEspecialParams = {
   nome: string;
   page?: number;
   limit?: number;
+  status?: string;
 };
 
 export type UsuarioLogadoChequeEspecial = {
@@ -110,7 +112,11 @@ export async function atualizarChequeEspecial(
   data: string
 ) {
   const response = await api.put(
-    `/v1/atualizacao_cheque_especial/${id}/${encodeURIComponent(atendente)}/${data}`
+    `/v1/atualizacao_cheque_especial/${id}/${encodeURIComponent(atendente)}/${data}`,
+    {},
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
 
   return response.data;

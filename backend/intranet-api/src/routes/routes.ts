@@ -74,6 +74,7 @@ import { feriasNotificacaoController } from "../controllers/ferias-notificacao.c
 import { contratosNotificacaoController } from "../controllers/contratos-notificacao.controller";
 import { buscarAcessosSemana } from "../controllers/dashboard.controller";
 import { errorLogController } from "../controllers/errorlog.controller";
+import { termosMensaisCaixaController } from "../controllers/termos-mensais-caixa.controller";
 
 const routes = Router();
 
@@ -113,13 +114,18 @@ routes.get("/v1/gr-document-missing", grDocumentMissingController.listar);
 
 routes.get("/v1/download-from-db", docusignController.downloadFromDb);
 
+//notebook
 routes.get("/v1/consulta-notebook", consultaNotebookController.listar);
 
 routes.post("/v1/cadastro-notebook", cadastroNotebookController.criar);
 
 routes.get("/v1/funcionarios-notebook", funcionariosNotebookController.listar);
 
-routes.put("/v1/consulta-notebook/:id", editarNotebookController.atualizar);
+routes.put(
+  "/v1/consulta-notebook/:id",
+  authMiddleware,
+  editarNotebookController.atualizar
+);
 
 //ficha de desimpedimento
 routes.get("/v1/ficha-desimpedimento/associado-por-cpf", fichaDesimpedimentoController.buscarAssociadoPorCpf);
@@ -128,9 +134,9 @@ routes.get("/v1/ficha-desimpedimento/fichas", fichaDesimpedimentoController.list
 routes.get("/v1/ficha-desimpedimento/contas-devedoras", fichaDesimpedimentoController.listarContasDevedoras);
 routes.get("/v1/ficha-desimpedimento/contas-credoras", fichaDesimpedimentoController.listarContasCredoras);
 routes.get("/v1/ficha-desimpedimento/contas-bancarias", fichaDesimpedimentoController.listarContasBancarias);
-routes.post("/v1/ficha-desimpedimento/fichas", fichaDesimpedimentoController.criarFicha);
-routes.put("/v1/ficha-desimpedimento/fichas", fichaDesimpedimentoController.editarFicha);
-routes.delete("/v1/ficha-desimpedimento/fichas", fichaDesimpedimentoController.excluirFicha);
+routes.post("/v1/ficha-desimpedimento/fichas", authMiddleware, fichaDesimpedimentoController.criarFicha);
+routes.put("/v1/ficha-desimpedimento/fichas", authMiddleware, fichaDesimpedimentoController.editarFicha);
+routes.delete("/v1/ficha-desimpedimento/fichas", authMiddleware, fichaDesimpedimentoController.excluirFicha);
 
 //bolsa de estudos
 routes.get(
@@ -213,6 +219,7 @@ routes.get(
 
 routes.post(
   "/v1/demissao/convenio/:cpf/desativacao",
+  authMiddleware,
   demissaoController.desativarConvenio
 );
 
@@ -353,11 +360,13 @@ routes.get(
 
 routes.post(
   "/v1/cargo_gerentes_sicoob_cressem",
+  authMiddleware,
   gerenciamentoCargoController.cadastrar
 );
 
 routes.put(
   "/v1/cargo_gerentes_sicoob_cressem/:id",
+  authMiddleware,
   gerenciamentoCargoController.editar
 );
 
@@ -383,16 +392,19 @@ routes.get(
 
 routes.post(
   "/v1/funcionarios_sicoob_cressem",
+  authMiddleware,
   gerenciamentoFuncionarioController.cadastrar
 );
 
 routes.put(
   "/v1/funcionarios_sicoob_cressem/:id",
+  authMiddleware,
   gerenciamentoFuncionarioController.editar
 );
 
 routes.put(
   "/v1/funcionarios_sicoob_cressem/ativar_desativar/:id",
+  authMiddleware,
   gerenciamentoFuncionarioController.ativarDesativar
 );
 
@@ -426,11 +438,13 @@ routes.get(
 
 routes.post(
   "/v1/posicao_sicoob",
+  authMiddleware,
   gerenciamentoPosicaoController.cadastrar
 );
 
 routes.put(
   "/v1/posicao_sicoob/:id",
+  authMiddleware,
   gerenciamentoPosicaoController.editar
 );
 
@@ -452,11 +466,13 @@ routes.get(
 
 routes.post(
   "/v1/setor_sicoob_cressem",
+  authMiddleware,
   gerenciamentoSetorController.cadastrar
 );
 
 routes.put(
   "/v1/setor_sicoob_cressem/:id",
+  authMiddleware,
   gerenciamentoSetorController.editar
 );
 
@@ -483,6 +499,7 @@ routes.get(
 
 routes.post(
   "/v1/ferias_funcionarios",
+  authMiddleware,
   gerenciamentoFeriasController.cadastrar
 );
 routes.post(
@@ -497,6 +514,7 @@ routes.post(
 
 routes.put(
   "/v1/ferias_funcionarios/:id",
+  authMiddleware,
   gerenciamentoFeriasController.editar
 );
 
@@ -507,6 +525,7 @@ routes.get(
 
 routes.delete(
   "/v1/ferias_funcionarios/:id",
+  authMiddleware,
   gerenciamentoFeriasController.excluirPeriodo
 );
 
@@ -523,6 +542,7 @@ routes.get(
 
 routes.put(
   "/v1/atualizacao_cheque_especial/:id/:atendente/:data",
+  authMiddleware,
   chequeEspecialController.atualizar
 );
 
@@ -625,7 +645,7 @@ routes.post(
   analiseLimiteController.downloadAssinatura
 );
 
-// convÃªnio odonto
+// convenio odonto
 routes.get("/v1/fator_ajuste", convenioOdontoController.listarFatorAjuste);
 routes.get("/v1/parentesco", convenioOdontoController.listarParentesco);
 
@@ -676,21 +696,25 @@ routes.get(
 
 routes.post(
   "/v1/pessoa_odontologica",
+  authMiddleware,
   convenioOdontoController.criar
 );
 
 routes.put(
   "/v1/pessoa_odontologica/id/:id",
+  authMiddleware,
   convenioOdontoController.editar
 );
 
 routes.post(
   "/v1/pessoa_odontologica_historico",
+  authMiddleware,
   convenioOdontoController.criarHistorico
 );
 
 routes.put(
   "/v1/pessoa_odontologica/desativar/cpf_titular/:cpf",
+  authMiddleware,
   convenioOdontoController.desativarPorCpfTitular
 );
 
@@ -699,7 +723,7 @@ routes.get(
   convenioOdontoController.downloadCsvTitular
 );
 
-// fator ajuste / gestÃ£o valor convÃªnio
+//fator ajuste / gestao valor convenio
 routes.get("/v1/fator_ajuste", fatorAjusteController.listar);
 
 routes.get(
@@ -709,15 +733,17 @@ routes.get(
 
 routes.post(
   "/v1/fator_ajuste",
+  authMiddleware,
   fatorAjusteController.criar
 );
 
 routes.put(
   "/v1/fator_ajuste/:id/usuario/:usuario",
+  authMiddleware,
   fatorAjusteController.editar
 );
 
-// relatÃ³rios convÃªnio odonto
+//relatorio convenio odonto
 routes.get(
   "/v1/download_pessoas_odontologicas",
   relatorioConvenioOdontoController.downloadContratantes
@@ -738,7 +764,7 @@ routes.get(
   relatorioConvenioOdontoController.downloadFolha
 );
 
-// consulta contratos
+//consulta contratos
 routes.get(
   "/v1/contratos_empresas",
   consultaContratosController.listarPaginado
@@ -749,14 +775,16 @@ routes.get(
   consultaContratosController.buscarPorId
 );
 
-// contratos empresas
+//contratos empresas
 routes.post(
   "/v1/contratos_empresas",
+  authMiddleware,
   contratosEmpresasController.criar
 );
 
 routes.put(
   "/v1/contratos_empresas/:id",
+  authMiddleware,
   contratosEmpresasController.editar
 );
 
@@ -906,13 +934,11 @@ routes.post("/v1/juntar-pdf", juntarPdfController);
 
 routes.get(
   "/v1/producao-meta-cooperativa-pa",
-  authMiddleware,
   producaoMetaCooperativaPaController.listar
 );
 
 routes.get(
   "/v1/producao-meta-cooperativa-pa/datas",
-  authMiddleware,
   producaoMetaCooperativaPaController.datas
 );
 
@@ -1046,8 +1072,8 @@ routes.get(
 
 
 routes.get(
-    "/v1/autorizacao-debito",
-    autorizacaoDebitoController.listarContaCorrente
+  "/v1/autorizacao-debito",
+  autorizacaoDebitoController.listarContaCorrente
 );
 
 //grafico na home
@@ -1055,6 +1081,47 @@ routes.get("/v1/dashboard/acessos", buscarAcessosSemana);
 
 //erros
 routes.post("/v1/error-logs", errorLogController.criar);
+
+//termos mensais caixa relatorio
+routes.get(
+  "/v1/termos-mensais-caixa/pas",
+  termosMensaisCaixaController.listarPAs
+);
+
+routes.get(
+  "/v1/termos-mensais-caixa",
+  termosMensaisCaixaController.listar
+);
+
+routes.get(
+  "/v1/termos-mensais-caixa/:id",
+  termosMensaisCaixaController.obterPorId
+);
+
+routes.post(
+  "/v1/termos-mensais-caixa",
+  termosMensaisCaixaController.criar
+);
+
+routes.put(
+  "/v1/termos-mensais-caixa/:id",
+  termosMensaisCaixaController.atualizar
+);
+
+routes.patch(
+  "/v1/termos-mensais-caixa/:id/status",
+  termosMensaisCaixaController.alterarStatus
+);
+
+routes.post(
+  "/v1/termos-mensais-caixa/:id/assinado",
+  termosMensaisCaixaController.uploadAssinado
+);
+
+routes.get(
+  "/v1/termos-mensais-caixa/:id/assinado/download",
+  termosMensaisCaixaController.downloadAssinado
+);
 
 export { routes };
 

@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import {
+  oracleExecute,
+  oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
 
 function toNumber(v: any, fallback = 0) {
   if (v === null || v === undefined || v === "") return fallback;
@@ -172,9 +175,12 @@ export const fatorAjusteController = {
         DT_VIGENCIA: toNullableDate(DT_VIGENCIA),
       };
 
-      const result = await oracleExecute(sql, binds, {
-        autoCommit: true,
-      } as any);
+      const result = await oracleExecuteCommitWithAudit(
+        req,
+        sql,
+        binds,
+        {} as any
+      );
 
       if (!result.rowsAffected) {
         return res.status(404).json({
@@ -249,9 +255,12 @@ export const fatorAjusteController = {
         DT_VIGENCIA: toNullableDate(DT_VIGENCIA),
       };
 
-      await oracleExecute(sql, binds, {
-        autoCommit: true,
-      } as any);
+      await oracleExecuteCommitWithAudit(
+        req,
+        sql,
+        binds,
+        {} as any
+      );
 
       return res.status(201).json({
         success: true,

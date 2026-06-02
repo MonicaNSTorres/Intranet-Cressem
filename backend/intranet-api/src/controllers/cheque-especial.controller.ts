@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
+import { setAuditoriaContext } from "../services/oracle.service";
 
 function onlyDigits(v: string) {
   return String(v || "").replace(/\D/g, "");
@@ -80,6 +81,7 @@ export const chequeEspecialController = {
 
     try {
       const nome = String(req.query.nome || "").trim();
+      const status = String(req.query.status || "todos").trim();
       const page = Math.max(Number(req.query.page || 1), 1);
       const limit = Math.max(Number(req.query.limit || 15), 1);
       const offset = (page - 1) * limit;
@@ -87,10 +89,20 @@ export const chequeEspecialController = {
       connection = await oracledb.getConnection();
 
       const nomeNormalizado = normalizeSearch(nome);
-      const termoBusca = `%${nomeNormalizado}%`;
+      const termoBusca = nomeNormalizado ? `%${nomeNormalizado}%` : "%%";
       const digitos = onlyDigits(nome);
       const termoDigitos = digitos ? `%${digitos}%` : null;
       const temNumero = digitos ? 1 : 0;
+
+      let filtroStatus = "";
+
+      if (status === "pendente") {
+        filtroStatus = " AND NVL(a.SN_FEITO, 0) = 0 ";
+      }
+
+      if (status === "concluido") {
+        filtroStatus = " AND NVL(a.SN_FEITO, 0) <> 0 ";
+      }
 
       const resultCount = await connection.execute(
         `
@@ -104,6 +116,7 @@ export const chequeEspecialController = {
             OR (:cpfNumerico IS NOT NULL AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico)
 
           )
+          ${filtroStatus}
         `,
         {
           nome: termoBusca,
@@ -145,6 +158,7 @@ export const chequeEspecialController = {
               OR (:cpfNumerico IS NOT NULL AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico)
 
             )
+            ${filtroStatus}
           )
           WHERE RN > :offset
             AND RN <= (:offset + :limit)
@@ -208,6 +222,8 @@ export const chequeEspecialController = {
       }
 
       connection = await oracledb.getConnection();
+
+      await setAuditoriaContext(connection, req);
 
       const resultCheck = await connection.execute(
         `

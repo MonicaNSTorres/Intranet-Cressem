@@ -1,6 +1,7 @@
 ﻿import { Request, Response } from "express";
 import oracledb from "oracledb";
 import * as XLSX from "xlsx";
+import { setAuditoriaContext } from "../services/oracle.service";
 
 function onlyDigits(v: string) {
   return String(v || "").replace(/\D/g, "");
@@ -696,6 +697,8 @@ export const gerenciamentoFeriasController = {
 
       connection = await oracledb.getConnection();
 
+      await setAuditoriaContext(connection, req);
+
       for (const item of lista) {
         const DT_DIA_INICIO = toDateOnly(item.DT_DIA_INICIO);
         const DT_DIA_FIM = toDateOnly(item.DT_DIA_FIM);
@@ -793,6 +796,8 @@ export const gerenciamentoFeriasController = {
       }
 
       connection = await oracledb.getConnection();
+
+      await setAuditoriaContext(connection, req);
 
       const idsRecebidos = lista
         .map((item) => Number(item.ID_FERIAS_FUNCIONARIOS || 0))
@@ -936,6 +941,8 @@ export const gerenciamentoFeriasController = {
       }
 
       connection = await oracledb.getConnection();
+
+      await setAuditoriaContext(connection, req);
 
       const resultCheck = await connection.execute(
         `

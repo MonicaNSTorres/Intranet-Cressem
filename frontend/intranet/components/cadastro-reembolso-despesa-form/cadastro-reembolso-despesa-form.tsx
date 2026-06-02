@@ -190,6 +190,8 @@ export function CadastroReembolsoDespesaForm() {
   const [comprovanteFile, setComprovanteFile] = useState<File | null>(null);
   const [comprovantePath, setComprovantePath] = useState<string | null>(null);
 
+  const hoje = new Date().toISOString().split("T")[0];
+
   const totalDespesas = useMemo(() => {
     return despesas.reduce((acc, item) => acc + parseBRL(item.valor), 0);
   }, [despesas]);
@@ -582,8 +584,25 @@ export function CadastroReembolsoDespesaForm() {
             <input
               type="date"
               value={ida}
+              max={hoje}
               onChange={(e) => setIda(e.target.value)}
-              className="w-full rounded border px-3 py-2"
+              className="
+    w-full
+    h-11
+    rounded-lg
+    border
+    border-gray-300
+    bg-white
+    px-3
+    text-sm
+    text-gray-700
+    shadow-sm
+    outline-none
+    transition
+    focus:border-[#00AE9D]
+    focus:ring-2
+    focus:ring-[#00AE9D]/20
+  "
             />
           </div>
 
@@ -592,8 +611,25 @@ export function CadastroReembolsoDespesaForm() {
             <input
               type="date"
               value={volta}
+              max={hoje}
               onChange={(e) => setVolta(e.target.value)}
-              className="w-full rounded border px-3 py-2"
+              className="
+    w-full
+    h-11
+    rounded-lg
+    border
+    border-gray-300
+    bg-white
+    px-3
+    text-sm
+    text-gray-700
+    shadow-sm
+    outline-none
+    transition
+    focus:border-[#00AE9D]
+    focus:ring-2
+    focus:ring-[#00AE9D]/20
+  "
             />
           </div>
 
@@ -622,7 +658,23 @@ export function CadastroReembolsoDespesaForm() {
             <input
               value={numeroConta}
               onChange={(e) => setNumeroConta(e.target.value)}
-              className="w-full rounded border px-3 py-2"
+              className="
+              w-full
+              h-11
+              rounded-lg
+              border
+              border-gray-300
+              bg-white
+              px-3
+              text-sm
+              text-gray-700
+              shadow-sm
+              outline-none
+              transition
+              focus:border-[#00AE9D]
+              focus:ring-2
+              focus:ring-[#00AE9D]/20
+            "
             />
           </div>
 
@@ -631,7 +683,23 @@ export function CadastroReembolsoDespesaForm() {
             <select
               value={cidade}
               onChange={(e) => setCidade(e.target.value)}
-              className="w-full rounded border px-3 py-2"
+              className="
+              w-full
+              h-11
+              rounded-lg
+              border
+              border-gray-300
+              bg-white
+              px-3
+              text-sm
+              text-gray-700
+              shadow-sm
+              outline-none
+              transition
+              focus:border-[#00AE9D]
+              focus:ring-2
+              focus:ring-[#00AE9D]/20
+            "
             >
               <option value="">Selecione</option>
               {cidades.map((item) => (
@@ -647,7 +715,7 @@ export function CadastroReembolsoDespesaForm() {
             <textarea
               value={justificativa}
               onChange={(e) => setJustificativa(e.target.value)}
-              className="w-full rounded border px-3 py-2"
+              className="w-full rounded border border-gray-300 shadow-sm outline-none transition px-3 py-2 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20"
               rows={4}
               maxLength={400}
               placeholder="Descreva a justificativa do reembolso"
@@ -662,7 +730,7 @@ export function CadastroReembolsoDespesaForm() {
             <button
               type="button"
               onClick={abrirModalNovaDespesa}
-              className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary"
+              className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary cursor-pointer"
             >
               <FaPlus size={12} />
               Adicionar despesa

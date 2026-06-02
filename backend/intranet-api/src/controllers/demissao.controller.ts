@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
-import { sendEmail } from "../services/email.service"; // ajuste o caminho se o nome do arquivo for diferente
+import {
+  oracleExecute,
+  oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
+import { sendEmail } from "../services/email.service";
 
 function somenteNumeros(valor: string) {
   return String(valor || "").replace(/\D/g, "");
@@ -233,9 +236,12 @@ export const demissaoController = {
         binds[`id${index}`] = id;
       });
 
-      await oracleExecute(updateSql, binds, {
-        autoCommit: true,
-      });
+      await oracleExecuteCommitWithAudit(
+        req,
+        updateSql,
+        binds,
+        {} as any
+      );
 
       const pessoasComExclusao = pessoas.map((p) => ({
         ...p,

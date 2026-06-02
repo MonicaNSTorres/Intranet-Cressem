@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import {
+    oracleExecute,
+    oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
 import fs from "fs/promises";
 import path from "path";
 import { execFile } from "child_process";
@@ -690,7 +693,8 @@ export const gerenciamentoFuncionarioController = {
         RETURNING ID_FUNCIONARIO INTO :ID_FUNCIONARIO
       `;
 
-            const result = await oracleExecute(
+            const result = await oracleExecuteCommitWithAudit(
+                req,
                 sql,
                 {
                     NM_FUNCIONARIO,
@@ -713,7 +717,7 @@ export const gerenciamentoFuncionarioController = {
                         type: oracledb.NUMBER,
                     },
                 },
-                { autoCommit: true }
+                {} as any
             );
 
             const id = (result.outBinds as any)?.ID_FUNCIONARIO?.[0];
@@ -987,7 +991,8 @@ export const gerenciamentoFuncionarioController = {
                 FICHA_DESIMPEDIMENTO: caminhoFichaDesimpedimento,
             });
 
-            const result = await oracleExecute(
+            const result = await oracleExecuteCommitWithAudit(
+                req,
                 sql,
                 {
                     ID_FUNCIONARIO: id,
@@ -1014,7 +1019,7 @@ export const gerenciamentoFuncionarioController = {
                     DOC_IDENTIDADE_CONJ: caminhoDocConjuge,
                     FICHA_DESIMPEDIMENTO: caminhoFichaDesimpedimento,
                 },
-                { autoCommit: true }
+                {} as any
             );
 
             console.log("rowsAffected editar:", result.rowsAffected);
@@ -1078,14 +1083,15 @@ export const gerenciamentoFuncionarioController = {
         WHERE ID_FUNCIONARIO = :ID_FUNCIONARIO
       `;
 
-            const result = await oracleExecute(
+            const result = await oracleExecuteCommitWithAudit(
+                req,
                 sql,
                 {
                     ID_FUNCIONARIO: id,
                     SN_ATIVO,
                     DT_DESLIGAMENTO,
                 },
-                { autoCommit: true }
+                {} as any
             );
 
             if (!result.rowsAffected) {

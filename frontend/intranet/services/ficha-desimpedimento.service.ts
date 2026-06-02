@@ -1,8 +1,10 @@
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true,
 });
 
 api.interceptors.response.use(
@@ -177,18 +179,34 @@ export async function listarContasBancarias(idFicha: string): Promise<Conta[]> {
 }
 
 export async function criarFicha(payload: SalvarFichaPayload) {
-  const { data } = await api.post("/v1/ficha-desimpedimento/fichas", payload);
+  const { data } = await api.post(
+    "/v1/ficha-desimpedimento/fichas",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return data;
 }
 
 export async function editarFicha(payload: SalvarFichaPayload & { id: string }) {
-  const { data } = await api.put("/v1/ficha-desimpedimento/fichas", payload);
+  const { data } = await api.put(
+    "/v1/ficha-desimpedimento/fichas",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return data;
 }
 
 export async function excluirFicha(id: string) {
   const { data } = await api.delete("/v1/ficha-desimpedimento/fichas", {
     params: { id },
+    headers: getAuditoriaHeaders(),
   });
+
   return data;
 }

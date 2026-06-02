@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:3001/v1";
@@ -74,7 +75,10 @@ export async function atualizarFatorAjusteOdonto(
 
   const { data } = await api.put(
     `/v1/fator_ajuste/${id}/usuario/${encodeURIComponent(nomeUsuario)}`,
-    payload
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
 
   return data;

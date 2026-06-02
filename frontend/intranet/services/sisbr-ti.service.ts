@@ -8,7 +8,7 @@ export type SisbrRow = {
   IP: string | null;
   PROVEDOR: string | null;
   ANTIGO_PA: string | null;
-  CNPJ: string | number | null;
+  CNPJ: string | null;
 };
 
 export type BuscarTabelaSisbrTiResponse = SisbrRow[];

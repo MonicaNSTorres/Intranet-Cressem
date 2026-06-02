@@ -152,9 +152,15 @@ export async function atualizarNotebook(
       throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
     }
 
+    const telaOrigem =
+      typeof window !== "undefined" ? window.location.href : "";
+
     const res = await fetch(`${API_URL}/v1/consulta-notebook/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-tela-origem": telaOrigem,
+      },
       credentials: "include",
       cache: "no-store",
       body: JSON.stringify(payload),

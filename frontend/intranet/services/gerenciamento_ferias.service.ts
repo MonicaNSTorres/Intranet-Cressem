@@ -1,5 +1,6 @@
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -84,6 +85,9 @@ export async function buscarFeriasPaginado(params: {
 }
 
 export async function excluirPeriodoFerias(idPeriodo: number) {
-  const response = await api.delete(`/v1/ferias_funcionarios/${idPeriodo}`);
+  const response = await api.delete(`/v1/ferias_funcionarios/${idPeriodo}`, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return response.data;
 }

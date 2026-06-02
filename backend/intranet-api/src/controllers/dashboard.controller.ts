@@ -11,20 +11,21 @@ export async function buscarAcessosSemana(req: Request, res: Response) {
 
     const result = await connection.execute(
       `
-        SELECT
-          TO_CHAR(DT_ACESSO, 'DY', 'NLS_DATE_LANGUAGE=PORTUGUESE') AS DIA,
-          COUNT(*) AS ACESSOS
-        FROM DBACRESSEM.ACESSOS_INTRANET
-        WHERE DT_ACESSO >= TRUNC(SYSDATE) - 6
-        GROUP BY TO_CHAR(DT_ACESSO, 'DY', 'NLS_DATE_LANGUAGE=PORTUGUESE')
-        ORDER BY MIN(DT_ACESSO)
-      `,
+    SELECT
+      TO_CHAR(TRUNC(DT_ACESSO), 'DY', 'NLS_DATE_LANGUAGE=PORTUGUESE') AS DIA,
+      COUNT(DISTINCT DS_IP) AS ACESSOS
+    FROM DBACRESSEM.ACESSOS_INTRANET
+    WHERE DT_ACESSO >= TRUNC(SYSDATE) - 6
+      AND DS_TELA IN ('/v1/me')
+      AND DS_IP <> '::ffff:127.0.0.1'
+    GROUP BY TRUNC(DT_ACESSO)
+    ORDER BY TRUNC(DT_ACESSO)
+  `,
       {},
       {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
       }
     );
-
     return res.json(result.rows || []);
   } catch (error) {
     console.error("[buscarAcessosSemana] erro:", error);

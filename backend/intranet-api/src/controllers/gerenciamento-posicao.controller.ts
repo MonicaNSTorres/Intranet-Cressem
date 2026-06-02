@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import {
+  oracleExecute,
+  oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
 
 function capitalizeWords(value: string) {
   return String(value || "")
@@ -181,7 +184,8 @@ export const gerenciamentoPosicaoController = {
         RETURNING ID_POSICAO INTO :ID_POSICAO
       `;
 
-      const result = await oracleExecute(
+      const result = await oracleExecuteCommitWithAudit(
+        req,
         sql,
         {
           CD_SICOOB,
@@ -193,7 +197,7 @@ export const gerenciamentoPosicaoController = {
             type: oracledb.NUMBER,
           },
         },
-        { autoCommit: true }
+        {} as any
       );
 
       const id = (result.outBinds as any)?.ID_POSICAO?.[0];
@@ -272,7 +276,8 @@ export const gerenciamentoPosicaoController = {
         WHERE ID_POSICAO = :ID_POSICAO
       `;
 
-      const result = await oracleExecute(
+      const result = await oracleExecuteCommitWithAudit(
+        req,
         sql,
         {
           ID_POSICAO: id,
@@ -282,7 +287,7 @@ export const gerenciamentoPosicaoController = {
           DESC_POSICAO,
           SN_ATIVO,
         },
-        { autoCommit: true }
+        {} as any
       );
 
       if (!result.rowsAffected) {

@@ -242,9 +242,8 @@ function Field({
         {label}
       </label>
       <div
-        className={`rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm ${
-          multiline ? "min-h-[90px] whitespace-pre-wrap" : ""
-        }`}
+        className={`rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm ${multiline ? "min-h-[90px] whitespace-pre-wrap" : ""
+          }`}
       >
         {value || "-"}
       </div>
@@ -557,9 +556,23 @@ export function ConsultaAnaliseLimiteForm() {
             </label>
             <input
               type="text"
-              value={txtAnalise}
-              onChange={(e) => setTxtAnalise(e.target.value)}
-              placeholder="Digite para buscar..."
+              value={
+                /^\d+$/.test(txtAnalise.replace(/\D/g, ""))
+                  ? formatCpfCnpjView(txtAnalise)
+                  : txtAnalise
+              }
+              onChange={(e) => {
+                const value = e.target.value;
+
+                const onlyNumbers = value.replace(/\D/g, "");
+
+                if (onlyNumbers.length > 0) {
+                  setTxtAnalise(onlyNumbers.slice(0, 14));
+                } else {
+                  setTxtAnalise(value);
+                }
+              }}
+              placeholder="Nome, CPF/CNPJ ou Funcionário"
               className={inputBase}
             />
           </div>
@@ -773,11 +786,10 @@ export function ConsultaAnaliseLimiteForm() {
                 <button
                   key={item}
                   onClick={() => buscarAlteracoes(Number(item), 10)}
-                  className={`h-10 min-w-[40px] rounded-xl px-3 text-sm font-semibold transition ${
-                    paginaAtual === item
-                      ? "bg-[#79B729] text-white"
-                      : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className={`h-10 min-w-[40px] rounded-xl px-3 text-sm font-semibold transition ${paginaAtual === item
+                    ? "bg-[#79B729] text-white"
+                    : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
                 >
                   {item}
                 </button>

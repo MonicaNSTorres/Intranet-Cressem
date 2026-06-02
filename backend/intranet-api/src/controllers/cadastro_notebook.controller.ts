@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { oracleExecute } from "../services/oracle.service";
+import { oracleExecuteCommitWithAudit } from "../services/oracle.service";
 
 export const cadastroNotebookController = {
   async criar(req: Request, res: Response) {
@@ -55,9 +55,10 @@ export const cadastroNotebookController = {
         )
       `;
 
-      await oracleExecute(
-        sql,
-        {
+      await oracleExecuteCommitWithAudit(
+  req,
+  sql,
+  {
           NM_NOTEBOOK: String(NM_NOTEBOOK).trim(),
           NM_MODELO: NM_MODELO ? String(NM_MODELO).trim() : null,
           DT_INICIO_OPERACAO: DT_INICIO_OPERACAO || "",
@@ -85,7 +86,7 @@ export const cadastroNotebookController = {
             : null,
           DESC_SITUACAO: DESC_SITUACAO ? String(DESC_SITUACAO).trim() : null,
         },
-        { autoCommit: true }
+        //{ autoCommit: true }
       );
 
       return res.status(201).json({

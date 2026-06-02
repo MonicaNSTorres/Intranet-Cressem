@@ -1,5 +1,6 @@
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -88,7 +89,10 @@ export async function cadastrarSetor(payload: {
   NM_ENDERECO: string;
   NR_RAMAL?: string;
 }) {
-  const response = await api.post("/v1/setor_sicoob_cressem", payload);
+  const response = await api.post("/v1/setor_sicoob_cressem", payload, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return response.data;
 }
 
@@ -99,12 +103,18 @@ export async function editarSetor(payload: {
   NR_RAMAL?: string;
   SN_ATIVO: number;
 }) {
-  const response = await api.put(`/v1/setor_sicoob_cressem/${payload.id}`, {
-    NM_SETOR: payload.NM_SETOR,
-    NM_ENDERECO: payload.NM_ENDERECO,
-    NR_RAMAL: payload.NR_RAMAL || "",
-    SN_ATIVO: payload.SN_ATIVO,
-  });
+  const response = await api.put(
+    `/v1/setor_sicoob_cressem/${payload.id}`,
+    {
+      NM_SETOR: payload.NM_SETOR,
+      NM_ENDERECO: payload.NM_ENDERECO,
+      NR_RAMAL: payload.NR_RAMAL || "",
+      SN_ATIVO: payload.SN_ATIVO,
+    },
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
   return response.data;
 }

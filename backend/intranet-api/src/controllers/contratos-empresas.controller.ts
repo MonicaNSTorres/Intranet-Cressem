@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import {
+  oracleExecute,
+  oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
 
 function onlyDigits(v: string) {
   return String(v || "").replace(/\D/g, "");
@@ -153,9 +156,12 @@ export const contratosEmpresasController = {
         },
       };
 
-      const result = await oracleExecute(sql, binds, {
-        autoCommit: true,
-      } as any);
+      const result = await oracleExecuteCommitWithAudit(
+        req,
+        sql,
+        binds,
+        {} as any
+      );
 
       const idContrato =
         (result.outBinds as any)?.ID_CONTRATOS_EMPRESAS?.[0] ||
@@ -292,9 +298,12 @@ export const contratosEmpresasController = {
         OBS_CONTRATO: OBS_CONTRATO ? toTrim(OBS_CONTRATO) : null,
       };
 
-      const result = await oracleExecute(sql, binds, {
-        autoCommit: true,
-      } as any);
+      const result = await oracleExecuteCommitWithAudit(
+        req,
+        sql,
+        binds,
+        {} as any
+      );
 
       if (!result.rowsAffected) {
         return res.status(404).json({
