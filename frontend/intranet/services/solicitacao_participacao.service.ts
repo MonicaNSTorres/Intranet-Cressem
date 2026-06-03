@@ -1,4 +1,5 @@
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -74,6 +75,9 @@ export async function cadastrarSolicitacaoParticipacao(
     const res = await fetch(`${API_URL}/v1/patrocinio_cressem`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        ...getAuditoriaHeaders(),
+      },
       body: formData,
     });
 

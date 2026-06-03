@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
@@ -106,6 +107,9 @@ export async function buscarReciboFinanceiroPorId(id: number) {
 }
 
 export async function excluirReciboFinanceiro(id: number) {
-  const { data } = await api.delete(`/v1/recibo_crm/${id}`);
+  const { data } = await api.delete(`/v1/recibo_crm/${id}`, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return data;
 }

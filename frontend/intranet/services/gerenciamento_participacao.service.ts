@@ -1,4 +1,5 @@
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -197,6 +198,7 @@ export async function atualizarPatrocinio(id: number, payload: Record<string, an
       method: "PUT",
       credentials: "include",
       headers: {
+        ...getAuditoriaHeaders(),
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),

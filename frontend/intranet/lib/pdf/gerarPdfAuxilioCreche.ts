@@ -32,7 +32,6 @@ export async function gerarPdfAuxilioCreche(o: PdfOpts) {
   const TETO = o.valorFixo ?? 545.87;
   const totalReembolsarCalc = Math.min(o.valorPago || 0, TETO);
 
-  //fonte global
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
 
@@ -43,7 +42,6 @@ export async function gerarPdfAuxilioCreche(o: PdfOpts) {
     const h = w * (500 / 1000);
 
     ensureSpace(h + 200);
-    //alinha a esquerda
     doc.addImage(dataUrl, "PNG", 30, y - 8, w, h);
 
     y = y - 8 + h + 22;
@@ -65,7 +63,6 @@ export async function gerarPdfAuxilioCreche(o: PdfOpts) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
 
-  //linha nome + matricula
   const leftText = "Eu, ";
   doc.text(leftText, margin, y);
   const nameX = margin + doc.getTextWidth(leftText);
@@ -83,7 +80,6 @@ export async function gerarPdfAuxilioCreche(o: PdfOpts) {
   doc.text(matricValue, matricX + matricLabelW + gap, y);
   y += 16;
 
-  //instituicao
   const base = "solicito cadastramento para futuros reembolsos do meu AUXÍLIO CRECHE OU BABÁ efetuado junto a (ao): ";
   const inst = toUpper(
     o.instituicao || "__________________________________________"
@@ -114,31 +110,28 @@ export async function gerarPdfAuxilioCreche(o: PdfOpts) {
   y += 16;
   */}
 
-  // valor pago
   const vtLabel = "Valor total pago:";
   doc.text(vtLabel, margin, y);
 
   const vtNumX = margin + doc.getTextWidth(vtLabel) + 6;
   doc.setFont("helvetica", "bold");
   doc.text(fmtBRL(o.valorPago || 0), vtNumX, y);
-  y += 14; // espaço após valor pago
+  y += 14;
 
-  // total que deve reembolsar
   doc.setFont("helvetica", "normal");
   const trLabel = "TOTAL A REEMBOLSAR:";
   doc.text(trLabel, margin, y);
   doc.setFont("helvetica", "bold");
   doc.text(fmtBRL(totalReembolsarCalc), margin + doc.getTextWidth(trLabel) + 8, y);
-  y += 18; // espaço após total
+  y += 18; 
 
-  // aviso por último
   doc.setFont("helvetica", "normal");
   doc.text(
     "TODO MÊS APRESENTAR AO RH O BOLETO E O COMPROVANTE DE PAGAMENTO.",
     margin,
     y
   );
-  y += 20; // espaço extra antes de continuar
+  y += 20;
 
   doc.setFont("helvetica", "normal");
   doc.text(
@@ -182,6 +175,8 @@ export async function gerarPdfAuxilioCreche(o: PdfOpts) {
   y = writeParagraphWithBoldHeading(doc, "Parágrafo Segundo", "Quando ambos os cônjuges forem empregados na mesma cooperativa, o pagamento não será cumulativo, obrigando-se os empregados a designarem, por escrito, à Cooperativa, o cônjuge que deverá perceber o benefício.", margin, y, colW);
   y = writeParagraphWithBoldHeading(doc, "Parágrafo Terceiro", "O auxílio Creche não será cumulativo com o auxílio babá, devendo beneficiário fazer opção escrita por um ou outro, para cada filho.", margin, y, colW);
   y = writeParagraphWithBoldHeading(doc, "Parágrafo Quarto", "As concessões vantagens contidas nesta cláusula atendem aos dispostos dos incisos XXV e XXVI do artigo 7º da Constituição da República, ao disposto nos §§ 1º e 2º do artigo 389 da CLT e na Portaria MTP nº 671, de 8 de novembro de 2021 (DOU 11.11.2021) em seus Capítulos VII e VIII.", margin, y, colW);
+  y = writeParagraphWithBoldHeading(doc, "Parágrafo Quinto", "O auxílio babá será pago desde que o empregado comprove, com regular anotação de carteira profissional, haver contratado empregadadoméstica (babá), para tomar conta de seu filho.", margin, y, colW);
+  y = writeParagraphWithBoldHeading(doc, "Parágrafo Sexto", " Não será devido o Auxílio Creche/Auxílio Babá, nos casos de pagamento do décimo terceiro salário da empregada doméstica (babá).", margin, y, colW);
 
   write("Todos os meses, antes do dia 15 de cada mês, o funcionário deverá apresentar o contrato ou o boleto onde constam o nome do seu filho, o nome da instituição de ensino e o valor a ser pago, bem como o comprovante deste pagamento efetuado em instituição bancária.");
   write("Caso o funcionário esqueça ou se atrase na entrega destes documentos acima descritos, o mesmo ficará sem receber o reembolso. Enviar documentação até o dia 13 de cada mês para receber no fim do mês no holerite.");
