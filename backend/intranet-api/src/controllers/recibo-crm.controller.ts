@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import { oracleExecute, setAuditoriaContext } from "../services/oracle.service";
+import { getOraclePool } from "../config/oracle.pool";
 
 function onlyDigits(v: string) {
     return String(v || "").replace(/\D/g, "");
@@ -35,7 +36,7 @@ function toNullableNumber(v: any) {
 async function salvarParcelas(
     idRecibo: number,
     parcelas: any[],
-    conn?: oracledb.Connection
+    conn: oracledb.Connection
 ) {
     for (const item of parcelas || []) {
         const sql = `
@@ -58,26 +59,22 @@ async function salvarParcelas(
       )
     `;
 
-        await oracleExecute(
-            sql,
-            {
-                ID_RECIBO: idRecibo,
-                NM_CATEGORIA: toUpperTrim(item?.NM_CATEGORIA),
-                SN_QUITACAO: Number(item?.SN_QUITACAO || 0),
-                DT_PERIODO: toNullableDate(item?.DT_PERIODO),
-                NR_CONTRATO: item?.NR_CONTRATO ? toTrim(item?.NR_CONTRATO) : null,
-                NR_PARCELA: toNullableNumber(item?.NR_PARCELA),
-                VL_PARCELA_CRM: toNullableNumber(item?.VL_PARCELA_CRM) || 0,
-            },
-            { autoCommit: true, connection: conn } as any
-        );
+        await conn.execute(sql, {
+            ID_RECIBO: idRecibo,
+            NM_CATEGORIA: toUpperTrim(item?.NM_CATEGORIA),
+            SN_QUITACAO: Number(item?.SN_QUITACAO || 0),
+            DT_PERIODO: toNullableDate(item?.DT_PERIODO),
+            NR_CONTRATO: item?.NR_CONTRATO ? toTrim(item?.NR_CONTRATO) : null,
+            NR_PARCELA: toNullableNumber(item?.NR_PARCELA),
+            VL_PARCELA_CRM: toNullableNumber(item?.VL_PARCELA_CRM) || 0,
+        });
     }
 }
 
 async function salvarPagamentos(
     idRecibo: number,
     pagamentos: any[],
-    conn?: oracledb.Connection
+    conn: oracledb.Connection
 ) {
     for (const item of pagamentos || []) {
         const sql = `
@@ -92,15 +89,11 @@ async function salvarPagamentos(
       )
     `;
 
-        await oracleExecute(
-            sql,
-            {
-                ID_RECIBO: idRecibo,
-                NM_FORMA_PAGAMENTO: toUpperTrim(item?.NM_FORMA_PAGAMENTO),
-                VL_PAGAMENTO: toNullableNumber(item?.VL_PAGAMENTO) || 0,
-            },
-            { autoCommit: true, connection: conn } as any
-        );
+        await conn.execute(sql, {
+            ID_RECIBO: idRecibo,
+            NM_FORMA_PAGAMENTO: toUpperTrim(item?.NM_FORMA_PAGAMENTO),
+            VL_PAGAMENTO: toNullableNumber(item?.VL_PAGAMENTO) || 0,
+        });
     }
 }
 
@@ -184,6 +177,8 @@ export const reciboCrmController = {
     },
 
     async criar(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
         try {
             const {
                 NR_CPF_CNPJ,
@@ -252,7 +247,11 @@ export const reciboCrmController = {
         RETURNING ID_RECIBO_CRM INTO :ID_RECIBO_CRM
       `;
 
-            const result = await oracleExecute(
+            conn = await getOraclePool().getConnection();
+
+            await setAuditoriaContext(conn, req);
+
+            const result = await conn.execute(
                 sql,
                 {
                     NR_CPF_CNPJ: onlyDigits(NR_CPF_CNPJ),
@@ -269,30 +268,46 @@ export const reciboCrmController = {
                         type: oracledb.NUMBER,
                     },
                 },
-                { autoCommit: true } as any
+                { autoCommit: false } as any
             );
 
             const idRecibo =
                 (result.outBinds as any)?.ID_RECIBO_CRM?.[0] ||
                 (result.outBinds as any)?.ID_RECIBO_CRM;
 
-            await salvarParcelas(idRecibo, PARCELAS);
-            await salvarPagamentos(idRecibo, PAGAMENTOS);
+            await salvarParcelas(idRecibo, PARCELAS, conn);
+            await salvarPagamentos(idRecibo, PAGAMENTOS, conn);
+
+            await conn.commit();
 
             return res.status(201).json({
                 success: true,
                 ID_RECIBO_CRM: idRecibo,
             });
         } catch (err: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch {}
+            }
+
             console.error("criar recibo crm erro:", err);
             return res.status(500).json({
                 error: "Falha ao cadastrar recibo.",
                 details: String(err?.message || err),
             });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch {}
+            }
         }
     },
 
     async editar(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
         try {
             const id = Number(req.params.id);
 
@@ -351,7 +366,11 @@ export const reciboCrmController = {
         WHERE ID_RECIBO_CRM = :ID_RECIBO_CRM
       `;
 
-            const result = await oracleExecute(
+            conn = await getOraclePool().getConnection();
+
+            await setAuditoriaContext(conn, req);
+
+            const result = await conn.execute(
                 sql,
                 {
                     ID_RECIBO_CRM: id,
@@ -365,40 +384,54 @@ export const reciboCrmController = {
                     OBSERVACAO: OBSERVACAO ? toTrim(OBSERVACAO) : null,
                     NM_FUNCIONARIO: NM_FUNCIONARIO ? toUpperTrim(NM_FUNCIONARIO) : null,
                 },
-                { autoCommit: true } as any
+                { autoCommit: false } as any
             );
 
             if (!result.rowsAffected) {
+                await conn.rollback();
+
                 return res.status(404).json({
                     error: "Recibo não encontrado.",
                 });
             }
 
-            await oracleExecute(
+            await conn.execute(
                 `DELETE FROM DBACRESSEM.PARCELA_VALOR_CRM WHERE ID_RECIBO = :ID_RECIBO`,
-                { ID_RECIBO: id },
-                { autoCommit: true } as any
+                { ID_RECIBO: id }
             );
 
-            await oracleExecute(
+            await conn.execute(
                 `DELETE FROM DBACRESSEM.PAGAMENTO_CRM WHERE ID_RECIBO = :ID_RECIBO`,
-                { ID_RECIBO: id },
-                { autoCommit: true } as any
+                { ID_RECIBO: id }
             );
 
-            await salvarParcelas(id, PARCELAS || []);
-            await salvarPagamentos(id, PAGAMENTOS || []);
+            await salvarParcelas(id, PARCELAS || [], conn);
+            await salvarPagamentos(id, PAGAMENTOS || [], conn);
+
+            await conn.commit();
 
             return res.json({
                 success: true,
                 ID_RECIBO_CRM: id,
             });
         } catch (err: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch {}
+            }
+
             console.error("editar recibo crm erro:", err);
             return res.status(500).json({
                 error: "Falha ao editar recibo.",
                 details: String(err?.message || err),
             });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch {}
+            }
         }
     },
 
@@ -573,6 +606,8 @@ export const reciboCrmController = {
     },
 
     async excluir(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
         try {
             const id = Number(req.params.id);
 
@@ -582,40 +617,57 @@ export const reciboCrmController = {
                 });
             }
 
-            await oracleExecute(
+            conn = await getOraclePool().getConnection();
+
+            await setAuditoriaContext(conn, req);
+
+            await conn.execute(
                 `DELETE FROM DBACRESSEM.PARCELA_VALOR_CRM WHERE ID_RECIBO = :ID_RECIBO`,
-                { ID_RECIBO: id },
-                { autoCommit: true } as any
+                { ID_RECIBO: id }
             );
 
-            await oracleExecute(
+            await conn.execute(
                 `DELETE FROM DBACRESSEM.PAGAMENTO_CRM WHERE ID_RECIBO = :ID_RECIBO`,
-                { ID_RECIBO: id },
-                { autoCommit: true } as any
+                { ID_RECIBO: id }
             );
 
-            const result = await oracleExecute(
+            const result = await conn.execute(
                 `DELETE FROM DBACRESSEM.RECIBO_CRM WHERE ID_RECIBO_CRM = :ID_RECIBO_CRM`,
-                { ID_RECIBO_CRM: id },
-                { autoCommit: true } as any
+                { ID_RECIBO_CRM: id }
             );
 
             if (!result.rowsAffected) {
+                await conn.rollback();
+
                 return res.status(404).json({
                     error: "Recibo não encontrado.",
                 });
             }
+
+            await conn.commit();
 
             return res.json({
                 success: true,
                 ID_RECIBO_CRM: id,
             });
         } catch (err: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch {}
+            }
+
             console.error("excluir recibo crm erro:", err);
             return res.status(500).json({
                 error: "Falha ao excluir recibo.",
                 details: String(err?.message || err),
             });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch {}
+            }
         }
     },
 };

@@ -2,6 +2,7 @@
 import axios from "axios";
 import { buscarFuncionarioPorCpf } from "./associado.service";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
@@ -164,7 +165,10 @@ export async function buscarReciboFinanceiroPorId(id: number) {
 export async function cadastrarReciboFinanceiro(
   payload: ReciboFinanceiroPayload
 ) {
-  const { data } = await api.post("/v1/recibo_crm", payload);
+  const { data } = await api.post("/v1/recibo_crm", payload, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return data;
 }
 
@@ -172,7 +176,10 @@ export async function editarReciboFinanceiro(
   id: number,
   payload: ReciboFinanceiroPayload
 ) {
-  const { data } = await api.put(`/v1/recibo_crm/${id}`, payload);
+  const { data } = await api.put(`/v1/recibo_crm/${id}`, payload, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return data;
 }
 

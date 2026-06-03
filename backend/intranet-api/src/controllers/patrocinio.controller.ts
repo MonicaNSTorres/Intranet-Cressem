@@ -6,7 +6,11 @@ import { UploadedFile } from "express-fileupload";
 import { getOraclePool } from "../config/oracle.pool";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import { oracleExecute } from "../services/oracle.service";
+import {
+    oracleExecute,
+    oracleExecuteCommitWithAudit,
+    setAuditoriaContext,
+} from "../services/oracle.service";
 
 const execFileAsync = promisify(execFile);
 
@@ -483,19 +487,19 @@ function buildParticipacaoDedupeKey(params: {
     const auditorioKey =
         toNumber(body.CD_AUDITORIO_SEDE) === 1 && auditorio
             ? [
-                  toNumber(auditorio.QTD_ESTIMATIVA_CONVIDADOS),
-                  toNumber(auditorio.SN_USO_MICROFONE),
-                  toNumber(auditorio.QNTD_MICROFONE),
-                  toNumber(auditorio.SN_USO_PROJETOR),
-                  normalizeDedupeText(auditorio.NM_APRESENTACAO),
-                  toNumber(auditorio.SN_AUDIO_EXTERNO),
-                  toNumber(auditorio.SN_OPERADOR),
-                  toNumber(auditorio.SN_AO_VIVO),
-                  normalizeDedupeText(auditorio.NM_PLATAFORMA),
-                  toNumber(auditorio.SN_INTERNET),
-                  normalizeDedupeText(auditorio.DESC_JUSTIFICATIVA),
-                  normalizeDedupeText(auditorio.OBS_AUDITORIO_SICOOB_SEDE),
-              ].join("|")
+                toNumber(auditorio.QTD_ESTIMATIVA_CONVIDADOS),
+                toNumber(auditorio.SN_USO_MICROFONE),
+                toNumber(auditorio.QNTD_MICROFONE),
+                toNumber(auditorio.SN_USO_PROJETOR),
+                normalizeDedupeText(auditorio.NM_APRESENTACAO),
+                toNumber(auditorio.SN_AUDIO_EXTERNO),
+                toNumber(auditorio.SN_OPERADOR),
+                toNumber(auditorio.SN_AO_VIVO),
+                normalizeDedupeText(auditorio.NM_PLATAFORMA),
+                toNumber(auditorio.SN_INTERNET),
+                normalizeDedupeText(auditorio.DESC_JUSTIFICATIVA),
+                normalizeDedupeText(auditorio.OBS_AUDITORIO_SICOOB_SEDE),
+            ].join("|")
             : "";
 
     return [
@@ -531,6 +535,8 @@ export const patrocinioController = {
         try {
             const pool = getOraclePool();
             conn = await pool.getConnection();
+
+            await setAuditoriaContext(conn, req);
 
             const body = req.body || {};
 
@@ -1129,7 +1135,8 @@ export const patrocinioController = {
         WHERE ID_PATROCINIO = :ID_PATROCINIO
       `;
 
-            const result = await oracleExecute(
+            const result = await oracleExecuteCommitWithAudit(
+                req,
                 sql,
                 {
                     ID_PATROCINIO: id,
@@ -1150,7 +1157,7 @@ export const patrocinioController = {
                     ),
                     DT_FINALIZACAO: toNullableString(body.DT_FINALIZACAO),
                 },
-                { autoCommit: true }
+                {} as any
             );
 
             if (!result.rowsAffected) {

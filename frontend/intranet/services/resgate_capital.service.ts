@@ -1,6 +1,7 @@
 import axios from "axios";
 import { onlyDigits } from "@/utils/br";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -72,11 +73,11 @@ export type EmprestimoAssociadoItem = {
 export type BuscarIdAssociadoResponse =
   | { found: false }
   | {
-      found: true;
-      ID_CLIENTE: number;
-      NM_CLIENTE?: string;
-      NR_CPF_CNPJ?: string;
-    };
+    found: true;
+    ID_CLIENTE: number;
+    NM_CLIENTE?: string;
+    NR_CPF_CNPJ?: string;
+  };
 
 export type CriarResgatePayload = {
   ID_CLIENTE?: number | null;
@@ -202,27 +203,50 @@ export async function buscarDiaUtil(data: string) {
 export async function criarResgate(payload: CriarResgatePayload) {
   const response = await api.post<CriarResgateResponse>(
     "/v1/resgate-capital",
-    payload
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
 
   return response.data;
 }
 
 export async function criarEmprestimo(payload: CriarEmprestimoPayload) {
-  const response = await api.post("/v1/resgate-capital/emprestimo", payload);
+  const response = await api.post(
+    "/v1/resgate-capital/emprestimo",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return response.data;
 }
 
 export async function criarContaCorrente(payload: CriarContaCorrentePayload) {
-  const response = await api.post("/v1/resgate-capital/conta-corrente", payload);
+  const response = await api.post(
+    "/v1/resgate-capital/conta-corrente",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return response.data;
 }
 
 export async function criarCartaoCredito(payload: CriarCartaoCreditoPayload) {
-  const response = await api.post("/v1/resgate-capital/cartao-credito", {
-    ...payload,
-    NR_CARTAO: onlyDigits(payload.NR_CARTAO),
-  });
+  const response = await api.post(
+    "/v1/resgate-capital/cartao-credito",
+    {
+      ...payload,
+      NR_CARTAO: onlyDigits(payload.NR_CARTAO),
+    },
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
   return response.data;
 }
@@ -230,14 +254,24 @@ export async function criarCartaoCredito(payload: CriarCartaoCreditoPayload) {
 export async function criarContaDeposito(payload: CriarContaDepositoPayload) {
   const response = await api.post<CriarContaDepositoResponse>(
     "/v1/resgate-capital/conta-deposito",
-    payload
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
 
   return response.data;
 }
 
 export async function criarParcela(payload: CriarParcelaPayload) {
-  const response = await api.post("/v1/resgate-capital/parcela", payload);
+  const response = await api.post(
+    "/v1/resgate-capital/parcela",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return response.data;
 }
 

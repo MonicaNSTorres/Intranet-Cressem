@@ -1,5 +1,6 @@
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -67,7 +68,10 @@ export async function responderPopupAviso(payload: {
   idPopup: number;
   resposta: "ACEITO" | "RECUSADO";
 }) {
-  const { data } = await api.post("/v1/popup-aviso/responder", payload);
+  const { data } = await api.post("/v1/popup-aviso/responder", payload, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return data;
 }
 
@@ -82,16 +86,29 @@ export async function buscarPopupAvisoPorId(id: number) {
 }
 
 export async function criarPopupAviso(payload: any) {
-  const { data } = await api.post("/v1/popup-aviso", payload);
+  const { data } = await api.post("/v1/popup-aviso", payload, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return data;
 }
 
 export async function editarPopupAviso(id: number, payload: any) {
-  const { data } = await api.put(`/v1/popup-aviso/${id}`, payload);
+  const { data } = await api.put(`/v1/popup-aviso/${id}`, payload, {
+    headers: getAuditoriaHeaders(),
+  });
+
   return data;
 }
 
 export async function ativarPopupAviso(id: number, stAtivo: "S" | "N") {
-  const { data } = await api.patch(`/v1/popup-aviso/${id}/ativar`, { stAtivo });
+  const { data } = await api.patch(
+    `/v1/popup-aviso/${id}/ativar`,
+    { stAtivo },
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return data;
 }

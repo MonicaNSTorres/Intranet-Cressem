@@ -405,7 +405,15 @@ export function ConsultaReciboFinanceiroForm() {
                 <Field label="Nome, CPF/CNPJ ou Funcionário">
                   <SearchInput
                     value={busca}
-                    onChange={(e) => setBusca(e.target.value)}
+                    onChange={(e) => {
+                      const valor = e.target.value;
+
+                      if (/^[\d./-]*$/.test(valor)) {
+                        setBusca(formatCpfCnpj(valor));
+                      } else {
+                        setBusca(valor);
+                      }
+                    }}
                     onKeyDown={(e) => e.key === "Enter" && buscarRecibos(1)}
                     className={inputBase}
                     placeholder="Digite o nome, CPF/CNPJ ou funcionário"
