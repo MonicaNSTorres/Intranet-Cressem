@@ -14,7 +14,7 @@ import {
 import { buscarDiaUtil } from "@/services/resgate_capital.service";
 import { gerarPdfDemissao } from "@/lib/pdf/gerarPdfDemissao";
 import { getMeAdUser } from "@/services/auth.service";
-import { formatCpfView, monetizarDigitacao, parseBRL, fmtBRL, hojeBR } from "@/utils/br";
+import { monetizarDigitacao, parseBRL, fmtBRL, hojeBR } from "@/utils/br";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
@@ -36,6 +36,25 @@ function formatTelefone(value: string) {
   return digits
     .replace(/^(\d{2})(\d)/, "($1) $2")
     .replace(/(\d{5})(\d)/, "$1-$2");
+}
+
+function onlyDigits(value: string) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function formatCpfCnpjView(value: string) {
+  const digits = onlyDigits(value).slice(0, 14);
+
+  if (digits.length <= 11) {
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    if (digits.length <= 9) {
+      return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    }
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+  }
+
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
 type ParcelaItem = {
@@ -514,7 +533,7 @@ export function DemissaoForm() {
 
       await gerarPdfDemissao({
         tipoFormulario,
-        cpf: formatCpfView(cpf),
+        cpf: formatCpfCnpjView(cpf),
         nome,
         matricula,
         empresa,
@@ -595,17 +614,17 @@ export function DemissaoForm() {
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">
-              CPF do associado
+              CPF/CNPJ do associado
             </label>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
               <SearchInput
-                value={formatCpfView(cpf)}
-                onChange={(e) => setCpf(e.target.value)}
-                placeholder="CPF (somente números)"
+                value={formatCpfCnpjView(cpf)}
+                onChange={(e) => setCpf(onlyDigits(e.target.value).slice(0, 14))}
+                placeholder="CPF/CNPJ (somente números)"
                 className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
                 inputMode="numeric"
-                maxLength={14}
+                maxLength={18}
               />
 
               <SearchButton loading={loading} label="Pesquisar" />

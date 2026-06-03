@@ -11,7 +11,11 @@ function somenteNumeros(valor: string) {
 }
 
 
-function montarEmailConvenioHtml(cpfTitular: string, pessoas: any[]) {
+function documentoValido(documento: string) {
+  return documento.length === 11 || documento.length === 14;
+}
+
+function montarEmailConvenioHtml(documentoTitular: string, pessoas: any[]) {
   const linhas = pessoas
     .map(
       (p) => `
@@ -27,14 +31,14 @@ function montarEmailConvenioHtml(cpfTitular: string, pessoas: any[]) {
 
   return `
     <h3>Desativação realizada via formulário de Demissão</h3>
-    <p>CPF do titular: <b>${cpfTitular}</b></p>
+    <p>CPF/CNPJ do titular: <b>${documentoTitular}</b></p>
     <p>Total desativados: <b>${pessoas.length}</b></p>
 
     <table border="1" cellpadding="6" cellspacing="0">
       <thead>
         <tr>
           <th>Nome</th>
-          <th>CPF</th>
+          <th>CPF/CNPJ</th>
           <th>Parentesco</th>
           <th>Data Exclusão</th>
         </tr>
@@ -49,11 +53,11 @@ function montarEmailConvenioHtml(cpfTitular: string, pessoas: any[]) {
 export const demissaoController = {
   async buscarAssociado(req: Request, res: Response) {
     try {
-      const cpf = somenteNumeros(String(req.params.cpf || ""));
+      const documento = somenteNumeros(String(req.params.cpf || ""));
 
-      if (!cpf) {
+      if (!documentoValido(documento)) {
         return res.status(400).json({
-          error: "CPF não informado",
+          error: "CPF/CNPJ inválido ou não informado",
         });
       }
 
@@ -66,13 +70,13 @@ export const demissaoController = {
           a.NR_TELEFONE AS TELEFONE,
           a.SL_CONTA_CAPITAL AS SL_CONTA_CAPITAL
         FROM DBACRESSEM.ASSOCIADO_ANALITICO a
-        WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ,'[^0-9]','') = :cpf
+        WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ,'[^0-9]','') = :documento
         FETCH FIRST 1 ROWS ONLY
       `;
 
       const result = await oracleExecute(
         sql,
-        { cpf },
+        { documento },
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
 
@@ -97,11 +101,11 @@ export const demissaoController = {
 
   async buscarConvenio(req: Request, res: Response) {
     try {
-      const cpf = somenteNumeros(String(req.params.cpf || ""));
+      const documento = somenteNumeros(String(req.params.cpf || ""));
 
-      if (!cpf) {
+      if (!documentoValido(documento)) {
         return res.status(400).json({
-          error: "CPF não informado",
+          error: "CPF/CNPJ inválido ou não informado",
         });
       }
 
@@ -119,14 +123,14 @@ export const demissaoController = {
         ON f.ID_CONVENIO_FATOR_AJUSTE = p.ID_CONVENIO_FATOR_AJUSTE
       WHERE p.SN_ATIVO = 1
         AND (
-          REGEXP_REPLACE(p.NR_CPF_TITULAR, '[^0-9]', '') = :cpf
-          OR REGEXP_REPLACE(p.NR_CPF_USUARIO, '[^0-9]', '') = :cpf
+          REGEXP_REPLACE(p.NR_CPF_TITULAR, '[^0-9]', '') = :documento
+          OR REGEXP_REPLACE(p.NR_CPF_USUARIO, '[^0-9]', '') = :documento
         )
     `;
 
       const result = await oracleExecute(
         sql,
-        { cpf },
+        { documento },
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
 
@@ -141,8 +145,8 @@ export const demissaoController = {
       // verifica se o cpf pesquisado é titular
       const ehTitular = pessoas.some(
         (p) =>
-          somenteNumeros(p.NR_CPF_TITULAR) === cpf &&
-          somenteNumeros(p.NR_CPF_USUARIO) === cpf
+          somenteNumeros(p.NR_CPF_TITULAR) === documento &&
+          somenteNumeros(p.NR_CPF_USUARIO) === documento
       );
 
       let totalCusto = 0;
@@ -176,12 +180,12 @@ export const demissaoController = {
 
   async desativarConvenio(req: Request, res: Response) {
     try {
-      const cpf = somenteNumeros(String(req.params.cpf || ""));
+      const documento = somenteNumeros(String(req.params.cpf || ""));
       const atendente = String(req.body?.atendente || "Atendente");
 
-      if (!cpf) {
+      if (!documentoValido(documento)) {
         return res.status(400).json({
-          error: "CPF não informado",
+          error: "CPF/CNPJ inválido ou não informado",
         });
       }
 
@@ -195,14 +199,14 @@ export const demissaoController = {
         FROM DBACRESSEM.CONVENIO_PESSOAS p
         WHERE p.SN_ATIVO = 1
           AND (
-            REGEXP_REPLACE(p.NR_CPF_TITULAR, '[^0-9]', '') = :cpf
-            OR REGEXP_REPLACE(p.NR_CPF_USUARIO, '[^0-9]', '') = :cpf
+            REGEXP_REPLACE(p.NR_CPF_TITULAR, '[^0-9]', '') = :documento
+            OR REGEXP_REPLACE(p.NR_CPF_USUARIO, '[^0-9]', '') = :documento
           )
       `;
 
       const busca = await oracleExecute(
         buscarSql,
-        { cpf },
+        { documento },
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
 
@@ -216,8 +220,8 @@ export const demissaoController = {
         });
       }
 
-      const cpfTitular =
-        pessoas.find((p) => p.NR_CPF_TITULAR)?.NR_CPF_TITULAR || cpf;
+      const documentoTitular =
+        pessoas.find((p) => p.NR_CPF_TITULAR)?.NR_CPF_TITULAR || documento;
 
       const ids = pessoas.map((p) => p.ID_CONVENIO_PESSOAS);
 
@@ -258,9 +262,9 @@ export const demissaoController = {
         "monica.torres@sicoob.com.br",
       ];
 
-      const assunto = `[Odonto] Desativação via Demissão concluída - CPF Titular ${cpfTitular}`;
+      const assunto = `[Odonto] Desativação via Demissão concluída - CPF/CNPJ Titular ${documentoTitular}`;
 
-      const html = montarEmailConvenioHtml(cpfTitular, pessoasComExclusao);
+      const html = montarEmailConvenioHtml(documentoTitular, pessoasComExclusao);
 
       await sendEmail(destinatarios, assunto, html);
 
@@ -268,7 +272,7 @@ export const demissaoController = {
         desativados: pessoasComExclusao.length,
         email_enviado: true,
         atendente,
-        cpf_titular: cpfTitular,
+        cpf_titular: documentoTitular,
         pessoas: pessoasComExclusao,
       });
     } catch (error: any) {
