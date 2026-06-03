@@ -97,7 +97,6 @@ export const rcoController = {
                 });
             }
 
-            // Mantendo a mesma ordem do Python para preservar regra atual
             const primeiro = calculaDataDia(String(data_ultima), String(data_hoje));
             const segundo = calculaDataDia(String(data_ultima), String(data_operacao));
 

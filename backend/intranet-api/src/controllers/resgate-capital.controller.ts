@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import {
+  oracleExecute,
+  oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
 
 function onlyDigits(v: string) {
   return String(v || "").replace(/\D/g, "");
@@ -146,10 +149,6 @@ export const resgateCapitalController = {
         return res.json([]);
       }
 
-      /**
-       * Ajuste aqui caso sua tabela/origem real dos contratos esteja em outra tabela.
-       * Estou usando um SELECT placeholder baseado na estrutura que você vinha tratando.
-       */
       const sqlEmprestimos = `
         SELECT
           '' AS DESC_TIPO,
@@ -224,12 +223,6 @@ export const resgateCapitalController = {
         return res.status(400).json({ error: "Data não informada." });
       }
 
-      /**
-       * Aqui também você pode trocar pela sua tabela/calendário real de dias úteis.
-       * Por enquanto deixei uma validação simples no Oracle:
-       * sábado = 7 / domingo = 1 dependendo de NLS_TERRITORY.
-       * Para evitar inconsistência regional, ideal depois ligar na sua tabela real.
-       */
       const sql = `
         SELECT
           CASE
@@ -350,7 +343,7 @@ export const resgateCapitalController = {
         NM_CIDADE: toUpperTrim(NM_CIDADE),
       };
 
-      await oracleExecute(sql, binds, { autoCommit: true } as any);
+      await oracleExecuteCommitWithAudit(req, sql, binds, {} as any);
 
       return res.status(201).json({
         success: true,
@@ -402,7 +395,8 @@ export const resgateCapitalController = {
         )
       `;
 
-      await oracleExecute(
+      await oracleExecuteCommitWithAudit(
+        req,
         sql,
         {
           ID_EMPRESTIMO_RESGATE: nextIdEmprestimo,
@@ -412,7 +406,7 @@ export const resgateCapitalController = {
           VL_SALDO_DEVEDOR: toNumber(VL_SALDO_DEVEDOR),
           VL_SALDO_AMORTIZADO: toNumber(VL_SALDO_AMORTIZADO),
         },
-        { autoCommit: true } as any
+        {} as any
       );
 
       return res.status(201).json({ success: true });
@@ -455,7 +449,8 @@ export const resgateCapitalController = {
         )
       `;
 
-      await oracleExecute(
+      await oracleExecuteCommitWithAudit(
+        req,
         sql,
         {
           ID_CONTA_CORRENTE_RESGATE: nextIdContaCorrente,
@@ -464,7 +459,7 @@ export const resgateCapitalController = {
           VL_SALDO_AMORTIZADO: toNumber(VL_SALDO_AMORTIZADO),
           ID_RESGATE,
         },
-        { autoCommit: true } as any
+        {} as any
       );
 
       return res.status(201).json({ success: true });
@@ -507,7 +502,8 @@ export const resgateCapitalController = {
         )
       `;
 
-      await oracleExecute(
+      await oracleExecuteCommitWithAudit(
+        req,
         sql,
         {
           ID_CARTAO_CREDITO_RESGATE: nextIdCartao,
@@ -516,7 +512,7 @@ export const resgateCapitalController = {
           VL_SALDO_AMORTIZADO: toNumber(VL_SALDO_AMORTIZADO),
           ID_RESGATE,
         },
-        { autoCommit: true } as any
+        {} as any
       );
 
       return res.status(201).json({ success: true });
@@ -558,7 +554,8 @@ export const resgateCapitalController = {
         )
       `;
 
-      await oracleExecute(
+      await oracleExecuteCommitWithAudit(
+        req,
         sql,
         {
           ID_CONTA_DEPOSITO_RESGATE: nextIdContaDeposito,
@@ -566,7 +563,7 @@ export const resgateCapitalController = {
           CD_AGENCIA: String(CD_AGENCIA || "").trim(),
           CD_CONTA_CORRENTE: String(CD_CONTA_CORRENTE || "").trim(),
         },
-        { autoCommit: true } as any
+        {} as any
       );
 
       return res.status(201).json({
@@ -636,7 +633,8 @@ export const resgateCapitalController = {
         )
       `;
 
-      await oracleExecute(
+      await oracleExecuteCommitWithAudit(
+        req,
         sql,
         {
           ID_PARCELA_RESGATE: nextIdParcela,
@@ -648,7 +646,7 @@ export const resgateCapitalController = {
           ID_RESGATE,
           ID_CONTA_DEPOSITO,
         },
-        { autoCommit: true } as any
+        {} as any
       );
 
       return res.status(201).json({ success: true });

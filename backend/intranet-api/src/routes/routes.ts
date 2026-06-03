@@ -557,10 +557,10 @@ routes.post(
 routes.get("/v1/cidade", cidadeController.listar);
 
 //patrocinio
-routes.post("/v1/patrocinio_cressem", patrocinioController.cadastrar);
+routes.post("/v1/patrocinio_cressem", authMiddleware, patrocinioController.cadastrar);
 routes.get("/v1/funcionarios_sicoob_cressem_patrocinio_paginado", patrocinioController.listarPaginado);
 routes.get("/v1/patrocinio_cressem/:id", patrocinioController.buscarPorId);
-routes.put("/v1/patrocinio_cressem/:id", patrocinioController.editar);
+routes.put("/v1/patrocinio_cressem/:id", authMiddleware, patrocinioController.editar);
 routes.post("/v1/patrocinio/download", patrocinioController.downloadArquivo);
 routes.get("/v1/download_patrocinios", patrocinioController.downloadCsv);
 
@@ -599,12 +599,12 @@ routes.get("/v1/resgate-capital/emprestimos", resgateCapitalController.buscarEmp
 routes.get("/v1/resgate-capital/associado-id", resgateCapitalController.buscarIdAssociado);
 routes.get("/v1/resgate-capital/dia-util", resgateCapitalController.buscarDiaUtil);
 
-routes.post("/v1/resgate-capital", resgateCapitalController.criarResgate);
-routes.post("/v1/resgate-capital/emprestimo", resgateCapitalController.criarEmprestimo);
-routes.post("/v1/resgate-capital/conta-corrente", resgateCapitalController.criarContaCorrente);
-routes.post("/v1/resgate-capital/cartao-credito", resgateCapitalController.criarCartaoCredito);
-routes.post("/v1/resgate-capital/conta-deposito", resgateCapitalController.criarContaDeposito);
-routes.post("/v1/resgate-capital/parcela", resgateCapitalController.criarParcela);
+routes.post("/v1/resgate-capital", authMiddleware, resgateCapitalController.criarResgate);
+routes.post("/v1/resgate-capital/emprestimo", authMiddleware, resgateCapitalController.criarEmprestimo);
+routes.post("/v1/resgate-capital/conta-corrente", authMiddleware, resgateCapitalController.criarContaCorrente);
+routes.post("/v1/resgate-capital/cartao-credito", authMiddleware, resgateCapitalController.criarCartaoCredito);
+routes.post("/v1/resgate-capital/conta-deposito", authMiddleware, resgateCapitalController.criarContaDeposito);
+routes.post("/v1/resgate-capital/parcela", authMiddleware, resgateCapitalController.criarParcela);
 
 //analise limite
 routes.post("/v1/analise_limite_cheque_cartao", analiseLimiteController.criar);
@@ -849,8 +849,9 @@ routes.put(
   rhContatoController.editarLote
 );
 
-routes.post("/v1/recibo_crm", reciboCrmController.criar);
-routes.put("/v1/recibo_crm/:id", reciboCrmController.editar);
+//recibo crm
+routes.post("/v1/recibo_crm", authMiddleware, reciboCrmController.criar);
+routes.put("/v1/recibo_crm/:id", authMiddleware, reciboCrmController.editar);
 routes.get("/v1/recibo_crm/:id", reciboCrmController.buscarPorId);
 
 routes.get("/v1/tipo_atendimento_recibo", reciboCrmController.listarTiposAtendimento);
@@ -858,13 +859,38 @@ routes.get("/v1/categoria_contrato_recibo", reciboCrmController.listarCategorias
 routes.get("/v1/forma_pagamento_recibo", reciboCrmController.listarFormasPagamento);
 
 routes.get("/v1/recibo_crm_paginado", reciboCrmController.listarPaginado);
-routes.delete("/v1/recibo_crm/:id", reciboCrmController.excluir);
+routes.delete("/v1/recibo_crm/:id", authMiddleware, reciboCrmController.excluir);
 
-routes.post("/v1/popup-aviso", criarPopupAviso);
-routes.get("/v1/popup-aviso", listarPopupsAviso);
-routes.get("/v1/popup-aviso/:id", buscarPopupAvisoPorId);
-routes.put("/v1/popup-aviso/:id", editarPopupAviso);
-routes.patch("/v1/popup-aviso/:id/ativar", ativarDesativarPopupAviso);
+//popup
+routes.post(
+  "/v1/popup-aviso",
+  authMiddleware,
+  criarPopupAviso
+);
+
+routes.get(
+  "/v1/popup-aviso",
+  authMiddleware,
+  listarPopupsAviso
+);
+
+routes.get(
+  "/v1/popup-aviso/:id",
+  authMiddleware,
+  buscarPopupAvisoPorId
+);
+
+routes.put(
+  "/v1/popup-aviso/:id",
+  authMiddleware,
+  editarPopupAviso
+);
+
+routes.patch(
+  "/v1/popup-aviso/:id/ativar",
+  authMiddleware,
+  ativarDesativarPopupAviso
+);
 
 routes.get("/v1/popup-aviso/pendente/me", authMiddleware, obterPopupPendenteDoUsuario);
 routes.post("/v1/popup-aviso/responder", authMiddleware, responderPopupAviso);

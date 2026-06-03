@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute, oracleExecuteCommit } from "../services/oracle.service";
+import {
+  oracleExecute,
+  oracleExecuteCommit,
+  oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
 
 function onlySN(value: any, fallback: "S" | "N" = "N"): "S" | "N" {
   return String(value || fallback).toUpperCase() === "S" ? "S" : "N";
@@ -64,7 +68,7 @@ export async function criarPopupAviso(req: Request, res: Response) {
       )
     `;
 
-    await oracleExecuteCommit(sql, {
+    await oracleExecuteCommitWithAudit(req, sql, {
       titulo,
       mensagem,
       botaoAceitar: botaoAceitar || "Aceitar",
@@ -77,7 +81,6 @@ export async function criarPopupAviso(req: Request, res: Response) {
       imagemBase64: imagemBase64 || null,
       criadoPor: usuario.sub || "sistema",
     });
-
     return res.status(201).json({
       message: "Popup cadastrado com sucesso.",
     });
@@ -213,7 +216,7 @@ export async function editarPopupAviso(req: Request, res: Response) {
        WHERE ID_POPUP = :id
     `;
 
-    await oracleExecuteCommit(sql, {
+    await oracleExecuteCommitWithAudit(req, sql, {
       id: Number(id),
       titulo,
       mensagem,
@@ -250,7 +253,7 @@ export async function ativarDesativarPopupAviso(req: Request, res: Response) {
        WHERE ID_POPUP = :id
     `;
 
-    await oracleExecuteCommit(sql, {
+    await oracleExecuteCommitWithAudit(req, sql, {
       id: Number(id),
       stAtivo: onlySN(stAtivo, "N"),
     });
@@ -364,7 +367,7 @@ export async function responderPopupAviso(req: Request, res: Response) {
       )
     `;
 
-    await oracleExecuteCommit(sql, {
+    await oracleExecuteCommitWithAudit(req, sql, {
       idPopup: Number(idPopup),
       loginUsuario,
       nomeUsuario,
