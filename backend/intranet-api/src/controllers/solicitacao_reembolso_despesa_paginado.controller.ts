@@ -25,6 +25,20 @@ function parseVerTodos(value: any) {
   return v === "1" || v === "true" || v === "sim";
 }
 
+function normalizarNome(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+const SECRETARIAS_DIRETORIA = new Set([
+  "ISABELI LOHANA CARVALHO MARTINS",
+  "JANAINA GABRIELA",
+]);
+
 async function buscarTipoUsuarioPorNome(nome: string, verTodos: boolean) {
   const nomeLimpo = String(nome || "").trim();
   if (!nomeLimpo) {
@@ -55,6 +69,14 @@ async function buscarTipoUsuarioPorNome(nome: string, verTodos: boolean) {
   const idFuncionario = Number(row?.ID_FUNCIONARIO || 0);
   const idSetor = Number(row?.ID_SETOR || 0);
   const nivelUpper = String(row?.NM_NIVEL || "").toUpperCase();
+  const nomeNormalizado = normalizarNome(String(row?.NM_FUNCIONARIO || nomeLimpo));
+
+  if (SECRETARIAS_DIRETORIA.has(nomeNormalizado)) {
+    return {
+      tipoUsuario: "secretaria_diretoria",
+      idFuncionario,
+    };
+  }
 
   // Mesmo com ver_todos=0, usuário do financeiro enxerga tudo.
   if (idSetor === 26) return { tipoUsuario: "financeiro", idFuncionario };
@@ -86,13 +108,33 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
 
       const pesquisaUpper = pesquisa.toUpperCase();
       const pesquisaCpf = onlyDigits(pesquisa);
-      const { tipoUsuario, idFuncionario } = await buscarTipoUsuarioPorNome(nome, verTodos);
+      const { tipoUsuario, idFuncionario } = await buscarTipoUsuarioPorNome(nome, verTodos) as any;
 
       let wherePerfilSql = "1 = 1";
 
       if (!verTodos) {
         if (tipoUsuario === "financeiro" || tipoUsuario === "suporte") {
           wherePerfilSql = "1 = 1";
+        } else if (tipoUsuario === "secretaria_diretoria" && idFuncionario > 0) {
+          wherePerfilSql = `
+            (
+              s.ID_SOLICITANTE = :idFuncionarioPerfil
+              OR s.ID_APROV_GERENCIA = :idFuncionarioPerfil
+              OR s.ID_APROV_GERENCIA_SUP = :idFuncionarioPerfil
+              OR s.ID_APROV_DIRETORIA = :idFuncionarioPerfil
+              OR EXISTS (
+                SELECT 1
+                FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
+                JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM cg
+                  ON cg.ID_CARGO = fg.ID_CARGO
+                WHERE UPPER(cg.NM_NIVEL) = 'DIRETORIA'
+                  AND (
+                    fg.ID_FUNCIONARIO = s.ID_SOLICITANTE
+                    OR UPPER(TRIM(fg.NM_FUNCIONARIO)) = UPPER(TRIM(s.NM_FUNCIONARIO))
+                  )
+              )
+            )
+          `;
         } else if (idFuncionario > 0) {
           wherePerfilSql = `
             (

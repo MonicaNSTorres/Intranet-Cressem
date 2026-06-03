@@ -938,6 +938,7 @@ async function resolverProximoAndamentoPorHierarquia(
 ) {
   const solicitante = await buscarFuncionarioHierarquia(connection, nomeSolicitante);
   const nivelSolicitante = normalizarNivelHierarquia(String(solicitante?.NM_NIVEL || ""));
+  const cdGerenciaSolicitante = Number(solicitante?.CD_GERENCIA || 0);
 
   const aprovadoresDerivados = await derivarAprovadoresPorEscala(
     connection,
@@ -980,6 +981,13 @@ async function resolverProximoAndamentoPorHierarquia(
   };
 
   if (etapaAtual === "Pendente Financeiro") {
+    if (solicitante && !cdGerenciaSolicitante) {
+      const statusDiretoria = await escolherStatusDisponivel([
+        { id: idAprovDiretoria, status: "Pendente Diretoria" },
+      ]);
+      return statusDiretoria || "Pendente Diretoria";
+    }
+
     const status = await escolherStatusDisponivel([
       { id: idAprovGerencia, status: "Pendente Gerencia" },
       { id: idAprovGerenciaSup, status: "Pendente Gerencia Superior" },

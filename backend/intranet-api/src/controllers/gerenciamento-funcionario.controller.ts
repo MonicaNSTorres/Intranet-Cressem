@@ -570,17 +570,14 @@ export const gerenciamentoFuncionarioController = {
         try {
             const sql = `
         SELECT
-          ID_FUNCIONARIO,
-          NM_FUNCIONARIO,
-          SN_ATIVO
-        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM
-        WHERE CD_GERENCIA IS NOT NULL
-           OR ID_CARGO IN (
-             SELECT ID_CARGO
-             FROM DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM
-             WHERE UPPER(NM_NIVEL) IN ('GERENCIA', 'DIRETORIA')
-           )
-        ORDER BY UPPER(NM_FUNCIONARIO)
+          f.ID_FUNCIONARIO,
+          f.NM_FUNCIONARIO,
+          f.SN_ATIVO
+        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+        INNER JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM c
+          ON c.ID_CARGO = f.ID_CARGO
+        WHERE UPPER(c.NM_NIVEL) IN ('GERENCIA', 'DIRETORIA')
+        ORDER BY UPPER(f.NM_FUNCIONARIO)
       `;
 
             const result = await oracleExecute(

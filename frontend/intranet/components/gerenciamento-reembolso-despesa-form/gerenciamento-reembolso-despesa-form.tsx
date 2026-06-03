@@ -94,10 +94,6 @@ function normalizeNomeComparacao(value: string) {
     .toUpperCase();
 }
 
-function normalizeGrupo(value: string) {
-  return String(value || "").trim().toUpperCase();
-}
-
 function normalizeStatus(value: string) {
   return String(value || "")
     .normalize("NFD")
@@ -109,6 +105,10 @@ function normalizeStatus(value: string) {
 
 function isAndamento(value: string, esperado: string) {
   return normalizeStatus(value) === normalizeStatus(esperado);
+}
+
+function isSecretariaDiretoria(value?: string) {
+  return normalizeStatus(value || "") === "SECRETARIA_DIRETORIA";
 }
 
 function fmtBRL(value: number) {
@@ -226,8 +226,6 @@ export function GerenciamentoReembolsoDespesaForm() {
 
       const nomeAD = me?.nome_completo || me?.nome || "";
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
-      const gruposNormalizados = grupos.map(normalizeGrupo);
-
       setNomeResponsavelAD(nomeAD);
       setNomeUsuarioLogado(nomeAD);
 
@@ -433,6 +431,8 @@ export function GerenciamentoReembolsoDespesaForm() {
     if (!solicitacaoAtual) return false;
 
     if (!isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Funcionario")) return false;
+
+    if (isSecretariaDiretoria(solicitacaoAtual.TIPO_USUARIO)) return true;
 
     const nomeSolicitacao = normalizeNomeComparacao(
       solicitacaoAtual.NM_FUNCIONARIO || ""
