@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import oracledb from "oracledb";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
 import { oracleExecute } from "../services/oracle.service";
-import { registrarMonitorMeta } from "../services/monitor-meta.service";
+import { registrarMonitorMeta } from "../services/monitor_meta.service";
 import { parsePeriodo } from "../services/producao-meta-funcionario/periodo";
 import { getSql, TemaFuncionario } from "../services/producao-meta-funcionario/queries";
 
@@ -261,7 +261,9 @@ export const producaoMetaFuncionarioController = {
                     periodo: `${periodo.dt_inicio}|${periodo.dt_fim}`,
                     fonte: "API_PRODUCAO_META_FUNCIONARIO",
                     dtFimPeriodo: periodo.dt_fim,
-                    rows: rowsFiltradas,
+                    rows,
+                    gravarCarga: false,
+                    gravarResultado: true,
                 });
             } catch (monitorErr: any) {
                 console.error("Erro ao registrar monitor meta funcionario:", monitorErr);

@@ -69,6 +69,31 @@ export type PeriodoFeriasPayload = {
   ID_FERIAS_FUNCIONARIOS?: number;
 };
 
+export type ImportacaoFeriasErro = {
+  linha: number;
+  motivo: string;
+  nome?: string;
+};
+
+export type ImportacaoFeriasResponse = {
+  success: boolean;
+  total_linhas: number;
+  carregados: number;
+  registros: Array<{
+    NM_FUNCIONARIO: string;
+    DT_DIA_INICIO: string;
+    DT_DIA_FIM: string;
+  }>;
+  erros: ImportacaoFeriasErro[];
+  message: string;
+};
+
+export type CadastroLoteFeriasPayload = Array<{
+  NM_FUNCIONARIO: string;
+  DT_DIA_INICIO: string;
+  DT_DIA_FIM: string;
+}>;
+
 export async function buscarFuncionarioFeriasPorCpf(cpf: string) {
   const response = await api.get<FuncionarioFeriasResponse>(
     `/v1/funcionarios_sicoob_cressem_unico/cpf/${cpf}`
@@ -109,5 +134,27 @@ export async function editarFeriasFuncionario(
     }
   );
 
+  return response.data;
+}
+
+export async function importarFeriasExcel(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await api.post<ImportacaoFeriasResponse>(
+    "/v1/ferias_funcionarios/importar-excel",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return response.data;
+}
+
+export async function salvarLoteFerias(payload: CadastroLoteFeriasPayload) {
+  const response = await api.post("/v1/ferias_funcionarios/lote", payload);
   return response.data;
 }

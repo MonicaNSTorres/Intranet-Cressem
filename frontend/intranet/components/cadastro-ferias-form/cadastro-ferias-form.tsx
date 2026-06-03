@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -10,6 +10,9 @@ import {
   buscarFuncionarioFeriasPorId,
   cadastrarFeriasFuncionario,
   editarFeriasFuncionario,
+  importarFeriasExcel,
+  salvarLoteFerias,
+  type ImportacaoFeriasResponse,
   type FuncionarioFeriasResponse,
   type PeriodoFeriasPayload,
 } from "@/services/cadastro_ferias.service";
@@ -19,6 +22,12 @@ import { SearchButton } from "@/components/ui/search-button";
 
 type LinhaFerias = {
   id?: number | string;
+  dataInicio: string;
+  dataFim: string;
+};
+
+type LinhaFeriasLote = {
+  nome: string;
   dataInicio: string;
   dataFim: string;
 };
@@ -76,15 +85,22 @@ function diferencaEmDias(inicio: Date | null, fim: Date | null, inclusivo = true
 export function CadastroFeriasForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const idSolicitacao = searchParams.get("id") || "";
 
   const [cpf, setCpf] = useState("");
   const [nome, setNome] = useState("");
+  const [modoCadastro, setModoCadastro] = useState<"manual" | "lote">("manual");
   const [funcionarioBuscado, setFuncionarioBuscado] =
     useState<FuncionarioFeriasResponse | null>(null);
 
   const [ferias, setFerias] = useState<LinhaFerias[]>([]);
+  const [feriasLote, setFeriasLote] = useState<LinhaFeriasLote[]>([]);
   const [loadingBusca, setLoadingBusca] = useState(false);
   const [loadingSalvar, setLoadingSalvar] = useState(false);
+  const [loadingImportacao, setLoadingImportacao] = useState(false);
+  const [arquivoImportacao, setArquivoImportacao] = useState<File | null>(null);
+  const [resultadoImportacao, setResultadoImportacao] =
+    useState<ImportacaoFeriasResponse | null>(null);
 
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
@@ -95,8 +111,6 @@ export function CadastroFeriasForm() {
   const [inputInicio, setInputInicio] = useState("");
   const [inputVolta, setInputVolta] = useState("");
 
-  const idSolicitacao = searchParams.get("id") || "";
-
   const totalDias = useMemo(() => {
     return ferias.reduce((acc, item) => {
       const inicio = parseDateBR(formatarDataBrasil(item.dataInicio));
@@ -104,6 +118,14 @@ export function CadastroFeriasForm() {
       return acc + diferencaEmDias(inicio, fim, true);
     }, 0);
   }, [ferias]);
+
+  const totalDiasLote = useMemo(() => {
+    return feriasLote.reduce((acc, item) => {
+      const inicio = parseDateBR(formatarDataBrasil(item.dataInicio));
+      const fim = parseDateBR(formatarDataBrasil(item.dataFim));
+      return acc + diferencaEmDias(inicio, fim, true);
+    }, 0);
+  }, [feriasLote]);
 
   function limparCamposModal() {
     setInputInicio("");
@@ -217,6 +239,7 @@ export function CadastroFeriasForm() {
 
   useEffect(() => {
     if (idSolicitacao) {
+      setModoCadastro("manual");
       carregarTelaEdicao(idSolicitacao);
     }
   }, [idSolicitacao]);
@@ -255,10 +278,10 @@ export function CadastroFeriasForm() {
         prev.map((item, index) =>
           index === indiceEditando
             ? {
-              ...item,
-              dataInicio: inputInicio,
-              dataFim: inputVolta,
-            }
+                ...item,
+                dataInicio: inputInicio,
+                dataFim: inputVolta,
+              }
             : item
         )
       );
@@ -326,6 +349,104 @@ export function CadastroFeriasForm() {
     }
   }
 
+  async function importarPlanilhaFerias() {
+    try {
+      setErro("");
+      setInfo("");
+      setResultadoImportacao(null);
+
+      if (!arquivoImportacao) {
+        setErro("Selecione uma planilha Excel para importar.");
+        return;
+      }
+
+      setLoadingImportacao(true);
+
+      const response = await importarFeriasExcel(arquivoImportacao);
+      setResultadoImportacao(response);
+      setFeriasLote(
+        (response.registros || []).map((item) => ({
+          nome: item.NM_FUNCIONARIO,
+          dataInicio: item.DT_DIA_INICIO,
+          dataFim: item.DT_DIA_FIM,
+        }))
+      );
+      setInfo(response.message || "Planilha carregada.");
+      setArquivoImportacao(null);
+    } catch (error) {
+      console.error(error);
+      setErro("Falha ao importar planilha de férias.");
+    } finally {
+      setLoadingImportacao(false);
+    }
+  }
+
+  function atualizarLinhaLote(
+    index: number,
+    campo: "nome" | "dataInicio" | "dataFim",
+    valor: string
+  ) {
+    setFeriasLote((prev) =>
+      prev.map((item, idx) =>
+        idx === index
+          ? {
+              ...item,
+              [campo]: valor,
+            }
+          : item
+      )
+    );
+  }
+
+  function removerLinhaLote(index: number) {
+    setFeriasLote((prev) => prev.filter((_, i) => i !== index));
+    setInfo("Linha removida do lote.");
+  }
+
+  async function salvarLoteImportado() {
+    try {
+      setErro("");
+      setInfo("");
+
+      if (feriasLote.length === 0) {
+        setErro("Não há linhas no lote para salvar.");
+        return;
+      }
+
+      setLoadingSalvar(true);
+
+      await salvarLoteFerias(
+        feriasLote.map((item) => ({
+          NM_FUNCIONARIO: item.nome,
+          DT_DIA_INICIO: item.dataInicio,
+          DT_DIA_FIM: item.dataFim,
+        }))
+      );
+
+      setInfo("Lote de férias salvo com sucesso.");
+      setFeriasLote([]);
+      setResultadoImportacao(null);
+    } catch (error: any) {
+      console.error(error);
+
+      const erros = error?.response?.data?.erros;
+      if (Array.isArray(erros) && erros.length > 0) {
+        const texto = erros
+          .slice(0, 5)
+          .map((e: any) => `Linha ${e.linha}: ${e.nome ? `${e.nome} - ` : ""}${e.motivo}`)
+          .join(" | ");
+        setErro(texto);
+      } else {
+        setErro(
+          error?.response?.data?.error ||
+            "Falha ao salvar lote de férias. Revise as linhas e tente novamente."
+        );
+      }
+    } finally {
+      setLoadingSalvar(false);
+    }
+  }
+
   return (
     <>
       <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
@@ -339,47 +460,310 @@ export function CadastroFeriasForm() {
           </button>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr]">
-          <SearchForm onSearch={buscarFuncionario}>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                CPF
-              </label>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                <SearchInput
-                  value={cpf}
-                  onChange={(e) => setCpf(formatCpfView(e.target.value))}
-                  maxLength={14}
-                  className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                />
+        {!idSolicitacao && (
+          <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h6 className="text-sm font-semibold text-slate-700">Modo de Cadastro</h6>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setModoCadastro("manual")}
+                className={`rounded px-4 py-2 text-sm font-semibold ${
+                  modoCadastro === "manual"
+                    ? "bg-secondary text-white"
+                    : "bg-white text-slate-700 border border-slate-300"
+                }`}
+              >
+                Inserir Manualmente
+              </button>
+              <button
+                type="button"
+                onClick={() => setModoCadastro("lote")}
+                className={`rounded px-4 py-2 text-sm font-semibold ${
+                  modoCadastro === "lote"
+                    ? "bg-secondary text-white"
+                    : "bg-white text-slate-700 border border-slate-300"
+                }`}
+              >
+                Importar por Planilha
+              </button>
+            </div>
+          </div>
+        )}
 
-                <SearchButton loading={loadingBusca} label="Pesquisar" />
+        {(modoCadastro === "manual" || !!idSolicitacao) && (
+          <>
+            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr]">
+              <SearchForm onSearch={buscarFuncionario}>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    CPF
+                  </label>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                    <SearchInput
+                      value={cpf}
+                      onChange={(e) => setCpf(formatCpfView(e.target.value))}
+                      maxLength={14}
+                      className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                    />
+
+                    <SearchButton loading={loadingBusca} label="Pesquisar" />
+                  </div>
+                </div>
+              </SearchForm>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Nome
+                </label>
+                <input
+                  value={nome}
+                  readOnly
+                  className="w-full rounded border bg-gray-50 px-3 py-2"
+                />
               </div>
             </div>
-          </SearchForm>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Nome
-            </label>
-            <input
-              value={nome}
-              readOnly
-              className="w-full rounded border bg-gray-50 px-3 py-2"
-            />
-          </div>
-        </div>
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={abrirModal}
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+              >
+                <FaCalendarPlus />
+                Adicionar Férias
+              </button>
+            </div>
 
-        <div className="mt-6">
-          <button
-            type="button"
-            onClick={abrirModal}
-            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary"
-          >
-            <FaCalendarPlus />
-            Adicionar Férias
-          </button>
-        </div>
+            <div className="mt-6 overflow-x-auto rounded-xl border">
+              <div className="border-b bg-slate-50 px-4 py-3">
+                <h5 className="font-semibold text-slate-700">Férias</h5>
+              </div>
+
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      Data de Início
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      Data Final
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                      Editar
+                    </th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                      Remover
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {ferias.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-6 text-center text-slate-500"
+                      >
+                        Nenhum período de férias adicionado.
+                      </td>
+                    </tr>
+                  ) : (
+                    ferias.map((item, index) => (
+                      <tr key={`${item.id || "novo"}-${index}`} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">{formatarDataBrasil(item.dataInicio)}</td>
+                        <td className="px-4 py-3">{formatarDataBrasil(item.dataFim)}</td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => abrirModalEdicao(index)}
+                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                          >
+                            <FaEdit />
+                            Editar
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removerPeriodo(index)}
+                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                          >
+                            <FaTrash />
+                            Remover
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_auto]">
+              <div className="max-w-xs">
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Total de Dias
+                </label>
+                <input
+                  readOnly
+                  value={String(totalDias)}
+                  className="w-full rounded border bg-gray-50 px-3 py-2"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={salvarSolicitacao}
+                  disabled={loadingSalvar}
+                  className="inline-flex w-full cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                >
+                  {loadingSalvar ? "Salvando..." : "Salvar Solicitação"}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {modoCadastro === "lote" && !idSolicitacao && (
+          <>
+            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <h6 className="text-sm font-semibold text-slate-700">
+                Importação em Lote por Planilha
+              </h6>
+              <p className="mt-1 text-xs text-slate-600">
+                Colunas esperadas: <b>nome</b>, <b>início programado</b>, <b>fim programado</b>.
+              </p>
+
+              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => setArquivoImportacao(e.target.files?.[0] || null)}
+                  className="w-full rounded border bg-white px-3 py-2 text-sm"
+                />
+
+                <button
+                  type="button"
+                  onClick={importarPlanilhaFerias}
+                  disabled={loadingImportacao}
+                  className="inline-flex cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loadingImportacao ? "Carregando..." : "Carregar Planilha"}
+                </button>
+              </div>
+
+              {resultadoImportacao && (
+                <div className="mt-3 rounded border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                  <div>
+                    Total de linhas: <b>{resultadoImportacao.total_linhas}</b> | Carregados:{" "}
+                    <b>{resultadoImportacao.carregados}</b> | Erros:{" "}
+                    <b>{resultadoImportacao.erros?.length || 0}</b>
+                  </div>
+
+                  {(resultadoImportacao.erros?.length || 0) > 0 && (
+                    <div className="mt-2 max-h-36 overflow-auto rounded border border-red-200 bg-red-50 p-2 text-red-700">
+                      {resultadoImportacao.erros.map((item, index) => (
+                        <div key={`${item.linha}-${index}`}>
+                          Linha {item.linha}: {item.nome ? `${item.nome} - ` : ""}
+                          {item.motivo}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 overflow-x-auto rounded-xl border">
+              <div className="border-b bg-slate-50 px-4 py-3">
+                <h5 className="font-semibold text-slate-700">Prévia do Lote (editável)</h5>
+              </div>
+
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Funcionário</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Data de Início</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Data Final</th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-700">Remover</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {feriasLote.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                        Nenhuma linha carregada.
+                      </td>
+                    </tr>
+                  ) : (
+                    feriasLote.map((item, index) => (
+                      <tr key={`lote-${index}`}>
+                        <td className="px-4 py-3">
+                          <input
+                            value={item.nome}
+                            onChange={(e) => atualizarLinhaLote(index, "nome", e.target.value)}
+                            className="w-full rounded border px-2 py-1"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            type="date"
+                            value={item.dataInicio}
+                            onChange={(e) => atualizarLinhaLote(index, "dataInicio", e.target.value)}
+                            className="w-full rounded border px-2 py-1"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            type="date"
+                            value={item.dataFim}
+                            onChange={(e) => atualizarLinhaLote(index, "dataFim", e.target.value)}
+                            className="w-full rounded border px-2 py-1"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removerLinhaLote(index)}
+                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                          >
+                            <FaTrash />
+                            Remover
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_auto]">
+              <div className="max-w-xs">
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Total de Dias (Lote)
+                </label>
+                <input
+                  readOnly
+                  value={String(totalDiasLote)}
+                  className="w-full rounded border bg-gray-50 px-3 py-2"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={salvarLoteImportado}
+                  disabled={loadingSalvar}
+                  className="inline-flex w-full cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                >
+                  {loadingSalvar ? "Salvando..." : "Salvar Lote"}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
         {(erro || info) && (
           <div className="mt-4">
@@ -394,95 +778,6 @@ export function CadastroFeriasForm() {
             )}
           </div>
         )}
-
-        <div className="mt-6 overflow-x-auto rounded-xl border">
-          <div className="border-b bg-slate-50 px-4 py-3">
-            <h5 className="font-semibold text-slate-700">Férias</h5>
-          </div>
-
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                  Data Início
-                </th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                  Data Final
-                </th>
-                <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                  Editar
-                </th>
-                <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                  Remover
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {ferias.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-4 py-6 text-center text-slate-500"
-                  >
-                    Nenhum período de férias adicionado.
-                  </td>
-                </tr>
-              ) : (
-                ferias.map((item, index) => (
-                  <tr key={`${item.id || "novo"}-${index}`} className="hover:bg-slate-50">
-                    <td className="px-4 py-3">{formatarDataBrasil(item.dataInicio)}</td>
-                    <td className="px-4 py-3">{formatarDataBrasil(item.dataFim)}</td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => abrirModalEdicao(index)}
-                        className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                      >
-                        <FaEdit />
-                        Editar
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => removerPeriodo(index)}
-                        className="inline-flex cursor-pointer items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
-                      >
-                        <FaTrash />
-                        Remover
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_auto]">
-          <div className="max-w-xs">
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Total de Dias
-            </label>
-            <input
-              readOnly
-              value={String(totalDias)}
-              className="w-full rounded border bg-gray-50 px-3 py-2"
-            />
-          </div>
-
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={salvarSolicitacao}
-              disabled={loadingSalvar}
-              className="inline-flex w-full cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
-            >
-              {loadingSalvar ? "Enviando..." : "Enviar Solicitação"}
-            </button>
-          </div>
-        </div>
       </div>
 
       {modalOpen && (
@@ -510,7 +805,7 @@ export function CadastroFeriasForm() {
             <div className="space-y-4 px-6 py-5">
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Dia Início
+                  Data de Início
                 </label>
                 <input
                   type="date"
@@ -522,7 +817,7 @@ export function CadastroFeriasForm() {
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Dia Volta
+                  Data de Volta
                 </label>
                 <input
                   type="date"

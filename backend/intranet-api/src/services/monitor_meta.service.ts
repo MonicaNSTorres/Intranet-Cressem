@@ -10,6 +10,8 @@ type RegistrarMonitorParams = {
   fonte: string;
   dtFimPeriodo: string;
   rows: GenericRow[];
+  gravarCarga?: boolean;
+  gravarResultado?: boolean;
 };
 
 const SQL_INSERT_CARGA = `
@@ -491,32 +493,26 @@ export async function registrarMonitorMeta(params: RegistrarMonitorParams) {
   const rows = params.rows ?? [];
   const qtdLinhas = rows.length;
   const qtdDistintas = distinctEntityCount(rows);
+  const gravarCarga = params.gravarCarga ?? true;
+  const gravarResultado = params.gravarResultado ?? true;
 
-  await oracleExecuteCommit(
-    SQL_INSERT_CARGA,
-    {
-      nm_tema: params.tema,
-      nm_fonte: params.fonte,
-      qtd_linhas: qtdLinhas,
-      qtd_distintas: qtdDistintas,
-      dt_max: params.dtFimPeriodo,
-      nm_status: "OK",
-      nm_detalhes: `Registros monitorados: ${qtdLinhas}`,
-    },
-    {}
-  );
+  if (gravarCarga) {
+    await oracleExecuteCommit(
+      SQL_INSERT_CARGA,
+      {
+        nm_tema: params.tema,
+        nm_fonte: params.fonte,
+        qtd_linhas: qtdLinhas,
+        qtd_distintas: qtdDistintas,
+        dt_max: params.dtFimPeriodo,
+        nm_status: "OK",
+        nm_detalhes: `Registros monitorados: ${qtdLinhas}`,
+      },
+      {}
+    );
+  }
 
   if (!qtdLinhas) return;
-
-  const binds = rows.map((row, idx) => ({
-    nm_tela: params.tela,
-    nm_tema: params.tema,
-    dt_periodo: params.periodo,
-    cv_entidade: buildEntityKey(row, idx),
-    nm_json: JSON.stringify(row),
-    nm_status: "OK",
-    nm_detalhes: null,
-  }));
 
   try {
     await processarAlertasVariacao(
@@ -529,6 +525,18 @@ export async function registrarMonitorMeta(params: RegistrarMonitorParams) {
   } catch (alertErr) {
     console.error("[MONITOR_META] Falha ao processar alertas de variação:", alertErr);
   }
+
+  if (!gravarResultado) return;
+
+  const binds = rows.map((row, idx) => ({
+    nm_tela: params.tela,
+    nm_tema: params.tema,
+    dt_periodo: params.periodo,
+    cv_entidade: buildEntityKey(row, idx),
+    nm_json: JSON.stringify(row),
+    nm_status: "OK",
+    nm_detalhes: null,
+  }));
 
   await oracleExecuteManyCommit(SQL_INSERT_RESULTADO, binds, {});
 }

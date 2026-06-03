@@ -490,6 +490,11 @@ const Sidebar = () => {
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
+                    label: "Declaração de Presença",
+                    href: "/auth/declaracao_presenca_emprestimo",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
                     label: "Cálculo de Margem",
                     href: "/auth/margem_consignavel",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],

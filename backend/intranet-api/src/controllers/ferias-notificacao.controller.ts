@@ -4,11 +4,12 @@ import {
   enviarEmailRhDiretoria,
   enviarEmailGerencias,
   enviarEmailTiFerias,
+  executarNotificacoesPreviaDia17,
   executarTodasNotificacoesFerias,
 } from "../services/ferias_notificacao.service";
 
 export const feriasNotificacaoController = {
-  async executarTodas(req: Request, res: Response) {
+  async executarTodas(_req: Request, res: Response) {
     try {
       const result = await executarTodasNotificacoesFerias();
 
@@ -28,7 +29,7 @@ export const feriasNotificacaoController = {
     }
   },
 
-  async executarRhDiretoria(req: Request, res: Response) {
+  async executarRhDiretoria(_req: Request, res: Response) {
     try {
       const result = await enviarEmailRhDiretoria();
 
@@ -48,7 +49,7 @@ export const feriasNotificacaoController = {
     }
   },
 
-  async executarGerencias(req: Request, res: Response) {
+  async executarGerencias(_req: Request, res: Response) {
     try {
       const result = await enviarEmailGerencias();
 
@@ -68,7 +69,7 @@ export const feriasNotificacaoController = {
     }
   },
 
-  async executarTi(req: Request, res: Response) {
+  async executarTi(_req: Request, res: Response) {
     try {
       const result = await enviarEmailTiFerias();
 
@@ -83,6 +84,29 @@ export const feriasNotificacaoController = {
       return res.status(500).json({
         success: false,
         error: "Falha ao executar notificação para TI.",
+        details: String(err?.message || err),
+      });
+    }
+  },
+
+  async executarPreviaDia17(_req: Request, res: Response) {
+    try {
+      const result = await executarNotificacoesPreviaDia17({
+        force: true,
+        origem: "manual",
+      });
+
+      return res.json({
+        success: true,
+        message: "Prévia de férias (regra dia 17) executada.",
+        result,
+      });
+    } catch (err: any) {
+      console.error("Erro prévia dia 17 férias:", err);
+
+      return res.status(500).json({
+        success: false,
+        error: "Falha ao executar prévia de férias do dia 17.",
         details: String(err?.message || err),
       });
     }

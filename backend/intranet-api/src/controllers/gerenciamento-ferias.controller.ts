@@ -1,5 +1,6 @@
-import { Request, Response } from "express";
+﻿import { Request, Response } from "express";
 import oracledb from "oracledb";
+import * as XLSX from "xlsx";
 import { setAuditoriaContext } from "../services/oracle.service";
 
 function onlyDigits(v: string) {
@@ -22,7 +23,398 @@ function calcularDiasTotais(inicio: string, fim: string) {
   return Math.floor(diff / msDia) + 1;
 }
 
+function normalizarTexto(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function parseExcelDateToIso(value: any): string {
+  if (value === null || value === undefined || value === "") return "";
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, "0");
+    const d = String(value.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const parsed = XLSX.SSF.parse_date_code(value);
+    if (parsed?.y && parsed?.m && parsed?.d) {
+      const y = String(parsed.y).padStart(4, "0");
+      const m = String(parsed.m).padStart(2, "0");
+      const d = String(parsed.d).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+  }
+
+  const str = String(value).trim();
+  if (!str) return "";
+
+  const iso = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+
+  const br = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (br) {
+    const d = br[1].padStart(2, "0");
+    const m = br[2].padStart(2, "0");
+    const y = br[3];
+    return `${y}-${m}-${d}`;
+  }
+
+  const parsed = new Date(str);
+  if (!Number.isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, "0");
+    const d = String(parsed.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  return "";
+}
+
+function extrairValorLinha(
+  row: Record<string, any>,
+  alternativas: string[]
+): any {
+  const mapa = new Map<string, any>();
+  Object.entries(row || {}).forEach(([k, v]) => {
+    mapa.set(normalizarTexto(k), v);
+  });
+
+  for (const alt of alternativas) {
+    const valor = mapa.get(normalizarTexto(alt));
+    if (valor !== undefined && valor !== null && String(valor).trim() !== "") {
+      return valor;
+    }
+  }
+
+  return "";
+}
+
 export const gerenciamentoFeriasController = {
+  async importarExcel(req: Request, res: Response) {
+    try {
+      const file = (req as any).file as Express.Multer.File | undefined;
+
+      if (!file?.buffer) {
+        return res.status(400).json({
+          error: "Nenhum arquivo enviado.",
+        });
+      }
+
+      const workbook = XLSX.read(file.buffer, {
+        type: "buffer",
+        cellDates: true,
+      });
+
+      const nomeAba = workbook.SheetNames[0];
+      const aba = workbook.Sheets[nomeAba];
+
+      if (!aba) {
+        return res.status(400).json({
+          error: "Planilha inválida.",
+        });
+      }
+
+      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(aba, {
+        defval: "",
+        raw: false,
+      });
+
+      if (!rows.length) {
+        return res.status(400).json({
+          error: "A planilha está vazia.",
+        });
+      }
+
+      const erros: Array<{ linha: number; motivo: string; nome?: string }> = [];
+      const registros: Array<{
+        NM_FUNCIONARIO: string;
+        DT_DIA_INICIO: string;
+        DT_DIA_FIM: string;
+      }> = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i] || {};
+        const linha = i + 2;
+
+        const nomeBruto = extrairValorLinha(row, [
+          "nome",
+          "nm_funcionario",
+          "funcionario",
+        ]);
+        const inicioBruto = extrairValorLinha(row, [
+          "inicio programa",
+          "inicio programada",
+          "início programada",
+          "inicio programado",
+          "início programado",
+          "inicial programada",
+          "periodo inicial",
+          "período inicial",
+          "inicio_programa",
+          "inicio_programada",
+          "dt_inicio",
+          "data inicio",
+        ]);
+        const fimBruto = extrairValorLinha(row, [
+          "fim programa",
+          "fim programada",
+          "fim programado",
+          "final programada",
+          "periodo final",
+          "período final",
+          "fim_programa",
+          "fim_programada",
+          "dt_fim",
+          "data fim",
+        ]);
+
+        const nome = String(nomeBruto || "").trim();
+        const inicio = parseExcelDateToIso(inicioBruto);
+        const fim = parseExcelDateToIso(fimBruto);
+
+        if (!nome) {
+          erros.push({ linha, motivo: "Nome não informado." });
+          continue;
+        }
+
+        if (!inicio) {
+          erros.push({ linha, motivo: "Data de início inválida.", nome });
+          continue;
+        }
+
+        if (!fim) {
+          erros.push({ linha, motivo: "Data de fim inválida.", nome });
+          continue;
+        }
+
+        const diasTotais = calcularDiasTotais(inicio, fim);
+        if (diasTotais <= 0) {
+          erros.push({
+            linha,
+            nome,
+            motivo: "Período inválido (fim anterior ao início).",
+          });
+          continue;
+        }
+
+        registros.push({
+          NM_FUNCIONARIO: nome,
+          DT_DIA_INICIO: inicio,
+          DT_DIA_FIM: fim,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        total_linhas: rows.length,
+        carregados: registros.length,
+        registros,
+        erros,
+        message:
+          erros.length > 0
+            ? "Planilha carregada com alertas. Revise antes de salvar."
+            : "Planilha carregada com sucesso. Revise e salve para gravar.",
+      });
+    } catch (err: any) {
+      console.error("importarExcel ferias erro:", err);
+      return res.status(500).json({
+        error: "Falha ao importar planilha de férias.",
+        details: String(err?.message || err),
+      });
+    }
+  },
+
+  async cadastrarLote(req: Request, res: Response) {
+    let connection: oracledb.Connection | undefined;
+
+    try {
+      const lista = Array.isArray(req.body) ? req.body : [];
+
+      if (!lista.length) {
+        return res.status(400).json({
+          error: "Nenhum registro informado para salvar em lote.",
+        });
+      }
+
+      connection = await oracledb.getConnection();
+
+      const erros: Array<{ linha: number; motivo: string; nome?: string }> = [];
+      const registrosValidos: Array<{
+        linha: number;
+        nome: string;
+        dtInicio: string;
+        dtFim: string;
+        diasTotais: number;
+        idFuncionario: number;
+      }> = [];
+
+      for (let i = 0; i < lista.length; i++) {
+        const item = lista[i] || {};
+        const linha = i + 1;
+
+        const nome = String(item.NM_FUNCIONARIO || "").trim();
+        const dtInicio = toDateOnly(item.DT_DIA_INICIO);
+        const dtFim = toDateOnly(item.DT_DIA_FIM);
+
+        if (!nome) {
+          erros.push({ linha, motivo: "Nome não informado." });
+          continue;
+        }
+
+        if (!dtInicio) {
+          erros.push({ linha, nome, motivo: "Data de início inválida." });
+          continue;
+        }
+
+        if (!dtFim) {
+          erros.push({ linha, nome, motivo: "Data de fim inválida." });
+          continue;
+        }
+
+        const diasTotais = calcularDiasTotais(dtInicio, dtFim);
+        if (diasTotais <= 0) {
+          erros.push({
+            linha,
+            nome,
+            motivo: "Período inválido (fim anterior ao início).",
+          });
+          continue;
+        }
+
+        const resultFuncionario = await connection.execute(
+          `
+            SELECT
+              f.ID_FUNCIONARIO,
+              f.NM_FUNCIONARIO
+            FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+            WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) LIKE UPPER(:nomeLike)
+            ORDER BY
+              CASE
+                WHEN UPPER(TRIM(f.NM_FUNCIONARIO)) = UPPER(TRIM(:nomeExato)) THEN 0
+                ELSE 1
+              END,
+              f.ID_FUNCIONARIO DESC
+          `,
+          {
+            nomeLike: `%${nome}%`,
+            nomeExato: nome,
+          },
+          { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        const candidatos = (resultFuncionario.rows || []) as Array<{
+          ID_FUNCIONARIO: number;
+          NM_FUNCIONARIO: string;
+        }>;
+
+        if (!candidatos.length) {
+          erros.push({
+            linha,
+            nome,
+            motivo: "Funcionário não encontrado pelo nome.",
+          });
+          continue;
+        }
+
+        const nomeNormalizado = normalizarTexto(nome);
+        const exatos = candidatos.filter(
+          (c) => normalizarTexto(c.NM_FUNCIONARIO) === nomeNormalizado
+        );
+
+        const escolhido =
+          exatos.length === 1
+            ? exatos[0]
+            : candidatos.length === 1
+            ? candidatos[0]
+            : null;
+
+        if (!escolhido) {
+          erros.push({
+            linha,
+            nome,
+            motivo: "Mais de um funcionário encontrado para esse nome.",
+          });
+          continue;
+        }
+
+        registrosValidos.push({
+          linha,
+          nome,
+          dtInicio,
+          dtFim,
+          diasTotais,
+          idFuncionario: Number(escolhido.ID_FUNCIONARIO),
+        });
+      }
+
+      if (erros.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Existem inconsistências no lote. Corrija e tente novamente.",
+          erros,
+        });
+      }
+
+      for (const item of registrosValidos) {
+        await connection.execute(
+          `
+            INSERT INTO DBACRESSEM.FERIAS_FUNCIONARIOS (
+              DT_DIA_INICIO,
+              DT_DIA_FIM,
+              DT_DIAS_TOTAIS,
+              SN_EFETUADO,
+              ID_FUNCIONARIO
+            ) VALUES (
+              TO_DATE(:DT_DIA_INICIO, 'YYYY-MM-DD'),
+              TO_DATE(:DT_DIA_FIM, 'YYYY-MM-DD'),
+              :DT_DIAS_TOTAIS,
+              0,
+              :ID_FUNCIONARIO
+            )
+          `,
+          {
+            DT_DIA_INICIO: item.dtInicio,
+            DT_DIA_FIM: item.dtFim,
+            DT_DIAS_TOTAIS: item.diasTotais,
+            ID_FUNCIONARIO: item.idFuncionario,
+          }
+        );
+      }
+
+      await connection.commit();
+
+      return res.status(201).json({
+        success: true,
+        inseridos: registrosValidos.length,
+        message: "Lote de férias salvo com sucesso.",
+      });
+    } catch (err: any) {
+      if (connection) {
+        try {
+          await connection.rollback();
+        } catch {}
+      }
+
+      console.error("cadastrarLote ferias erro:", err);
+      return res.status(500).json({
+        error: "Falha ao salvar lote de férias.",
+        details: String(err?.message || err),
+      });
+    } finally {
+      if (connection) {
+        try {
+          await connection.close();
+        } catch {}
+      }
+    }
+  },
   async buscarFuncionarioPorCpf(req: Request, res: Response) {
     let connection: oracledb.Connection | undefined;
 
@@ -32,7 +424,7 @@ export const gerenciamentoFeriasController = {
 
       if (cpf.length !== 11) {
         return res.status(400).json({
-          error: "CPF inválido.",
+          error: "CPF invÃ¡lido.",
         });
       }
 
@@ -57,7 +449,7 @@ export const gerenciamentoFeriasController = {
 
       if (!row) {
         return res.status(404).json({
-          error: "Funcionário não encontrado.",
+          error: "FuncionÃ¡rio nÃ£o encontrado.",
         });
       }
 
@@ -71,7 +463,7 @@ export const gerenciamentoFeriasController = {
     } catch (err: any) {
       console.error("buscarFuncionarioPorCpf ferias erro:", err);
       return res.status(500).json({
-        error: "Falha ao buscar funcionário por CPF.",
+        error: "Falha ao buscar funcionÃ¡rio por CPF.",
         details: String(err?.message || err),
       });
     } finally {
@@ -91,7 +483,7 @@ export const gerenciamentoFeriasController = {
 
       if (!id) {
         return res.status(400).json({
-          error: "ID do funcionário inválido.",
+          error: "ID do funcionÃ¡rio invÃ¡lido.",
         });
       }
 
@@ -115,7 +507,7 @@ export const gerenciamentoFeriasController = {
 
       if (!funcionario) {
         return res.status(404).json({
-          error: "Funcionário não encontrado.",
+          error: "FuncionÃ¡rio nÃ£o encontrado.",
         });
       }
 
@@ -146,7 +538,7 @@ export const gerenciamentoFeriasController = {
     } catch (err: any) {
       console.error("buscarFuncionarioComFerias erro:", err);
       return res.status(500).json({
-        error: "Falha ao buscar funcionário com férias.",
+        error: "Falha ao buscar funcionÃ¡rio com fÃ©rias.",
         details: String(err?.message || err),
       });
     } finally {
@@ -279,7 +671,7 @@ export const gerenciamentoFeriasController = {
     } catch (err: any) {
       console.error("listarPaginado ferias erro:", err);
       return res.status(500).json({
-        error: "Falha ao listar férias paginadas.",
+        error: "Falha ao listar fÃ©rias paginadas.",
         details: String(err?.message || err),
       });
     } finally {
@@ -299,7 +691,7 @@ export const gerenciamentoFeriasController = {
 
       if (!lista.length) {
         return res.status(400).json({
-          error: "Nenhum período de férias informado.",
+          error: "Nenhum perÃ­odo de fÃ©rias informado.",
         });
       }
 
@@ -314,19 +706,19 @@ export const gerenciamentoFeriasController = {
 
         if (!DT_DIA_INICIO) {
           return res.status(400).json({
-            error: "Preencha a data de início das férias.",
+            error: "Preencha a data de inÃ­cio das fÃ©rias.",
           });
         }
 
         if (!DT_DIA_FIM) {
           return res.status(400).json({
-            error: "Preencha a data final das férias.",
+            error: "Preencha a data final das fÃ©rias.",
           });
         }
 
         if (!ID_FUNCIONARIO) {
           return res.status(400).json({
-            error: "Funcionário inválido para cadastro de férias.",
+            error: "FuncionÃ¡rio invÃ¡lido para cadastro de fÃ©rias.",
           });
         }
 
@@ -361,7 +753,7 @@ export const gerenciamentoFeriasController = {
 
       return res.status(201).json({
         success: true,
-        message: "Férias cadastradas com sucesso.",
+        message: "FÃ©rias cadastradas com sucesso.",
       });
     } catch (err: any) {
       if (connection) {
@@ -372,7 +764,7 @@ export const gerenciamentoFeriasController = {
 
       console.error("cadastrar ferias erro:", err);
       return res.status(500).json({
-        error: "Falha ao cadastrar férias.",
+        error: "Falha ao cadastrar fÃ©rias.",
         details: String(err?.message || err),
       });
     } finally {
@@ -393,13 +785,13 @@ export const gerenciamentoFeriasController = {
 
       if (!idFuncionario) {
         return res.status(400).json({
-          error: "ID do funcionário inválido.",
+          error: "ID do funcionÃ¡rio invÃ¡lido.",
         });
       }
 
       if (!lista.length) {
         return res.status(400).json({
-          error: "Nenhum período de férias informado para edição.",
+          error: "Nenhum perÃ­odo de fÃ©rias informado para ediÃ§Ã£o.",
         });
       }
 
@@ -451,13 +843,13 @@ export const gerenciamentoFeriasController = {
 
         if (!DT_DIA_INICIO) {
           return res.status(400).json({
-            error: "Preencha a data de início das férias.",
+            error: "Preencha a data de inÃ­cio das fÃ©rias.",
           });
         }
 
         if (!DT_DIA_FIM) {
           return res.status(400).json({
-            error: "Preencha a data final das férias.",
+            error: "Preencha a data final das fÃ©rias.",
           });
         }
 
@@ -513,7 +905,7 @@ export const gerenciamentoFeriasController = {
 
       return res.json({
         success: true,
-        message: "Férias atualizadas com sucesso.",
+        message: "FÃ©rias atualizadas com sucesso.",
       });
     } catch (err: any) {
       if (connection) {
@@ -524,7 +916,7 @@ export const gerenciamentoFeriasController = {
 
       console.error("editar ferias erro:", err);
       return res.status(500).json({
-        error: "Falha ao atualizar férias.",
+        error: "Falha ao atualizar fÃ©rias.",
         details: String(err?.message || err),
       });
     } finally {
@@ -544,7 +936,7 @@ export const gerenciamentoFeriasController = {
 
       if (!id) {
         return res.status(400).json({
-          error: "ID do período de férias inválido.",
+          error: "ID do perÃ­odo de fÃ©rias invÃ¡lido.",
         });
       }
 
@@ -568,13 +960,13 @@ export const gerenciamentoFeriasController = {
 
       if (!row) {
         return res.status(404).json({
-          error: "Período de férias não encontrado.",
+          error: "PerÃ­odo de fÃ©rias nÃ£o encontrado.",
         });
       }
 
       if (Number(row.SN_EFETUADO) === 1) {
         return res.status(400).json({
-          error: "Não é possível excluir férias já efetuadas.",
+          error: "NÃ£o Ã© possÃ­vel excluir fÃ©rias jÃ¡ efetuadas.",
         });
       }
 
@@ -588,7 +980,7 @@ export const gerenciamentoFeriasController = {
 
       if (!resultDelete.rowsAffected) {
         return res.status(404).json({
-          error: "Período de férias não encontrado para exclusão.",
+          error: "PerÃ­odo de fÃ©rias nÃ£o encontrado para exclusÃ£o.",
         });
       }
 
@@ -596,7 +988,7 @@ export const gerenciamentoFeriasController = {
 
       return res.json({
         success: true,
-        message: "Período de férias excluído com sucesso.",
+        message: "PerÃ­odo de fÃ©rias excluÃ­do com sucesso.",
       });
     } catch (err: any) {
       if (connection) {
@@ -607,7 +999,7 @@ export const gerenciamentoFeriasController = {
 
       console.error("excluirPeriodo ferias erro:", err);
       return res.status(500).json({
-        error: "Falha ao excluir período de férias.",
+        error: "Falha ao excluir perÃ­odo de fÃ©rias.",
         details: String(err?.message || err),
       });
     } finally {
@@ -619,3 +1011,4 @@ export const gerenciamentoFeriasController = {
     }
   },
 };
+

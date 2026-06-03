@@ -1,7 +1,9 @@
 ﻿"use client";
 
 import { monetizarDigitacao } from "@/utils/br";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getMeAdUser } from "@/services/auth.service";
+import { gerarPdfCalculadoraJurosCartao } from "@/lib/pdf/gerarPdfCalculadoraJurosCartao";
 
 type Resultado = {
     diasAtraso: number;
@@ -41,6 +43,25 @@ export function CalculadoraJurosCartaoForm() {
     const [dividaConsolidada, setDividaConsolidada] = useState("");
     const [mensagem, setMensagem] = useState<string | null>(null);
     const [resultado, setResultado] = useState<Resultado | null>(null);
+    const [responsavel, setResponsavel] = useState("INTRANET");
+
+    useEffect(() => {
+        let mounted = true;
+
+        (async () => {
+            try {
+                const me = await getMeAdUser();
+                const nome = String(me?.nome_completo || me?.username || "").trim();
+                if (mounted && nome) setResponsavel(nome);
+            } catch {
+                // fallback
+            }
+        })();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     function calcular() {
         setMensagem(null);
@@ -95,6 +116,35 @@ export function CalculadoraJurosCartaoForm() {
         setDividaConsolidada("");
         setMensagem(null);
         setResultado(null);
+    }
+
+    const podeGerarDocumento = useMemo(() => !!resultado, [resultado]);
+
+    async function gerarDocumento(acao: "download" | "print") {
+        if (!resultado) return;
+
+        await gerarPdfCalculadoraJurosCartao(
+            {
+                valorFatura: parseBRL(valorFatura),
+                vencimento,
+                diaHoje: hoje,
+                diasAtraso: resultado.diasAtraso,
+                multaPerc: resultado.multaPerc,
+                moraPerc,
+                taxaMensal: resultado.taxaMensal,
+                dividaConsolidada: resultado.divConsol,
+                multa: resultado.multa,
+                mora: resultado.mora,
+                juros: resultado.jurosDiario,
+                totalJurosMulta: resultado.totalJurosMulta,
+                totalGeral: resultado.totalGeral,
+                responsavel,
+            },
+            {
+                acao,
+                nomeArquivo: `calculadora_juros_cartao_${new Date().toISOString().slice(0, 10)}.pdf`,
+            }
+        );
     }
 
     return (
@@ -176,6 +226,29 @@ export function CalculadoraJurosCartaoForm() {
                             <tr className="bg-red-50 font-semibold"><th className="border p-2 text-left">Total a Pagar</th><td className="border p-2">{fmtBR(resultado.totalGeral)}</td></tr>
                         </tbody>
                     </table>
+
+                    <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
+                        Responsável pelo cálculo: <strong>{responsavel}</strong>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            onClick={() => gerarDocumento("print")}
+                            disabled={!podeGerarDocumento}
+                            className="bg-white border px-5 py-2 rounded hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            Imprimir
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => gerarDocumento("download")}
+                            disabled={!podeGerarDocumento}
+                            className="bg-secondary text-white px-5 py-2 rounded hover:bg-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            Gerar PDF
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

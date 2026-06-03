@@ -1018,7 +1018,7 @@ export const convenioOdontoController = {
           NR_CPF_TITULAR,
           CD_MATRICULA,
           NM_EMPRESA,
-          NR_CNPJ_EMPRSA,
+          NR_CNPJ_EMPRESA,
           NM_USUARIO,
           NR_CPF_USUARIO,
           DT_INCLUSAO,

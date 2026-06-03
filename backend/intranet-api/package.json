@@ -5,13 +5,15 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "cross-env NODE_OPTIONS=--openssl-legacy-provider nodemon --exec ts-node index.ts"
+    "dev": "cross-env NODE_OPTIONS=--openssl-legacy-provider nodemon --exec ts-node index.ts",
+    "test:smoke:routes": "node scripts/smoke-routes.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@marsaud/smb2": "^0.18.0",
     "archiver": "^7.0.1",
     "axios": "^1.14.0",
     "cookie-parser": "^1.4.7",
