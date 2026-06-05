@@ -5830,3 +5830,187 @@ ERRO AO SALVAR NO ORACLE:
 NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
 ==============================
 
+
+==============================
+DATA: 2026-06-03T17:58:01.440Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1983:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-03T17:58:15.199Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1983:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-03T17:58:16.459Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1983:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-03T17:58:45.280Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: POPUP_AVISO_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Erro ao consultar popup pendente.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:2320:9
+settle@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:3562:16
+onloadend@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:4078:218
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-03T17:58:45.283Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: POPUP_AVISO_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Erro ao consultar popup pendente.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:2320:9
+settle@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:3562:16
+onloadend@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:4078:218
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-03T17:58:45.285Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: HOME_BUSCAR_ANIVERSARIANTES_HOJE
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao consultar aniversariantes.
+STACK:
+buscarAniversariantesHoje@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1943:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-03T17:59:01.440Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: HOME_BUSCAR_ANIVERSARIANTES_HOJE
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao consultar aniversariantes.
+STACK:
+buscarAniversariantesHoje@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1943:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-03T17:59:01.472Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1983:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-03T17:59:17.678Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1983:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+

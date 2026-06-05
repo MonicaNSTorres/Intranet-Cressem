@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
-import { oracleExecute } from "../services/oracle.service";
+import {
+    oracleExecute,
+    oracleExecuteCommitWithAudit,
+} from "../services/oracle.service";
 import path from "path";
 import fs from "fs";
 
@@ -238,7 +241,8 @@ export const termosMensaisCaixaController = {
                 )
             `;
 
-            await oracleExecute(
+            await oracleExecuteCommitWithAudit(
+                req,
                 sql,
                 {
                     competencia: competenciaNormalizada,
@@ -246,7 +250,7 @@ export const termosMensaisCaixaController = {
                     dadosFormulario: dadosJson,
                     usuarioCriacao: usuarioCriacao || "INTRANET",
                 },
-                { autoCommit: true }
+                {} as any
             );
 
             return res.json({
@@ -303,7 +307,8 @@ export const termosMensaisCaixaController = {
 
             const dadosJson = JSON.stringify(dadosFormulario);
 
-            await oracleExecute(
+            await oracleExecuteCommitWithAudit(
+                req,
                 `
                     UPDATE DBACRESSEM.TERMOS_MENSAIS_CAIXA
                     SET
@@ -357,21 +362,22 @@ export const termosMensaisCaixaController = {
                 });
             }
 
-            await oracleExecute(
+            await oracleExecuteCommitWithAudit(
+                req,
                 `
-                    UPDATE DBACRESSEM.TERMOS_MENSAIS_CAIXA
-                    SET
-                        SN_STATUS = :status,
-                        NM_USUARIO_ATUALIZACAO = :usuarioAtualizacao,
-                        DT_ATUALIZACAO = SYSDATE
-                    WHERE ID_TERMOS_MENSAIS_CAIXA = :id
-                `,
+        UPDATE DBACRESSEM.TERMOS_MENSAIS_CAIXA
+        SET
+            SN_STATUS = :status,
+            NM_USUARIO_ATUALIZACAO = :usuarioAtualizacao,
+            DT_ATUALIZACAO = SYSDATE
+        WHERE ID_TERMOS_MENSAIS_CAIXA = :id
+    `,
                 {
                     id,
                     status,
                     usuarioAtualizacao: usuarioAtualizacao || "INTRANET",
                 },
-                { autoCommit: true }
+                {} as any
             );
 
             return res.json({
@@ -459,25 +465,26 @@ export const termosMensaisCaixaController = {
 
             await arquivo.mv(caminhoArquivo);
 
-            await oracleExecute(
+            await oracleExecuteCommitWithAudit(
+                req,
                 `
-                UPDATE DBACRESSEM.TERMOS_MENSAIS_CAIXA
-                SET
-                    NM_ARQUIVO_ASSINADO = :nomeArquivo,
-                    NM_CAMINHO_ARQUIVO_ASSINADO = :caminhoArquivo,
-                    DT_UPLOAD_ASSINADO = SYSDATE,
-                    SN_STATUS = 'ASSINADO_ANEXADO',
-                    NM_USUARIO_ATUALIZACAO = :usuarioAtualizacao,
-                    DT_ATUALIZACAO = SYSDATE
-                WHERE ID_TERMOS_MENSAIS_CAIXA = :id
-            `,
+    UPDATE DBACRESSEM.TERMOS_MENSAIS_CAIXA
+    SET
+        NM_ARQUIVO_ASSINADO = :nomeArquivo,
+        NM_CAMINHO_ARQUIVO_ASSINADO = :caminhoArquivo,
+        DT_UPLOAD_ASSINADO = SYSDATE,
+        SN_STATUS = 'ASSINADO_ANEXADO',
+        NM_USUARIO_ATUALIZACAO = :usuarioAtualizacao,
+        DT_ATUALIZACAO = SYSDATE
+    WHERE ID_TERMOS_MENSAIS_CAIXA = :id
+`,
                 {
                     id,
                     nomeArquivo,
                     caminhoArquivo,
                     usuarioAtualizacao,
                 },
-                { autoCommit: true }
+                {} as any
             );
 
             return res.json({

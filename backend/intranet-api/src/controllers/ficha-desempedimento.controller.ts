@@ -98,7 +98,7 @@ export const fichaDesimpedimentoController = {
     try {
       const sql = `
         SELECT NVL(MAX(SEQUENCIAL), 9999) + 1 AS SEQUENCIAL
-        FROM FICHAS_FINANCEIRAS
+        FROM MONICAADM.FICHAS_FINANCEIRAS
       `;
 
       const result = await oracleExecute(
@@ -145,7 +145,7 @@ export const fichaDesimpedimentoController = {
           NR_CEP,
           SEQUENCIAL,
           CREATED_AT
-        FROM FICHAS_FINANCEIRAS
+        FROM MONICAADM.FICHAS_FINANCEIRAS
         ORDER BY CREATED_AT DESC NULLS LAST, SEQUENCIAL DESC
       `;
 
@@ -175,7 +175,7 @@ export const fichaDesimpedimentoController = {
 
       const sql = `
         SELECT DESCRICAO, VALOR
-        FROM CONTAS_DEVEDORAS
+        FROM MONICAADM.CONTAS_DEVEDORAS
         WHERE ID_FICHAS = :idFicha
         ORDER BY DESCRICAO
       `;
@@ -206,7 +206,7 @@ export const fichaDesimpedimentoController = {
 
       const sql = `
         SELECT DESCRICAO, VALOR
-        FROM CONTAS_CREDORAS
+        FROM MONICAADM.CONTAS_CREDORAS
         WHERE ID_FICHAS = :idFicha
         ORDER BY DESCRICAO
       `;
@@ -237,7 +237,7 @@ export const fichaDesimpedimentoController = {
 
       const sql = `
         SELECT DESCRICAO, VALOR
-        FROM CONTAS_BANCARIAS
+        FROM MONICAADM.CONTAS_BANCARIAS
         WHERE ID_FICHAS = :idFicha
         ORDER BY DESCRICAO
       `;
@@ -300,7 +300,7 @@ export const fichaDesimpedimentoController = {
 
       await conn.execute(
         `
-          INSERT INTO FICHAS_FINANCEIRAS (
+          INSERT INTO MONICAADM.FICHAS_FINANCEIRAS (
             ID_FICHAS,
             TIPO_FICHA,
             NOME,
@@ -380,7 +380,7 @@ export const fichaDesimpedimentoController = {
       for (const conta of contasDevedoras) {
         await conn.execute(
           `
-            INSERT INTO CONTAS_DEVEDORAS (
+            INSERT INTO MONICAADM.CONTAS_DEVEDORAS (
               ID_CONTAS_DEVEDORAS,
               ID_FICHAS,
               DESCRICAO,
@@ -406,7 +406,7 @@ export const fichaDesimpedimentoController = {
 
         await conn.execute(
           `
-            INSERT INTO CONTAS_CREDORAS (
+            INSERT INTO MONICAADM.CONTAS_CREDORAS (
               ID_CONTAS_CREDORAS,
               ID_FICHAS,
               DESCRICAO,
@@ -432,7 +432,7 @@ export const fichaDesimpedimentoController = {
 
         await conn.execute(
           `
-            INSERT INTO CONTAS_BANCARIAS (
+            INSERT INTO MONICAADM.CONTAS_BANCARIAS (
               ID_CONTAS_BANCARIAS,
               ID_FICHAS,
               DESCRICAO,
@@ -524,7 +524,7 @@ export const fichaDesimpedimentoController = {
 
       await conn.execute(
         `
-          UPDATE FICHAS_FINANCEIRAS
+          UPDATE MONICAADM.FICHAS_FINANCEIRAS
           SET
             TIPO_FICHA = :tipo,
             NOME = :nome,
@@ -574,22 +574,22 @@ export const fichaDesimpedimentoController = {
       );
 
       await conn.execute(
-        `DELETE FROM CONTAS_DEVEDORAS WHERE ID_FICHAS = :id`,
+        `DELETE FROM MONICAADM.CONTAS_DEVEDORAS WHERE ID_FICHAS = :id`,
         { id }
       );
       await conn.execute(
-        `DELETE FROM CONTAS_CREDORAS WHERE ID_FICHAS = :id`,
+        `DELETE FROM MONICAADM.CONTAS_CREDORAS WHERE ID_FICHAS = :id`,
         { id }
       );
       await conn.execute(
-        `DELETE FROM CONTAS_BANCARIAS WHERE ID_FICHAS = :id`,
+        `DELETE FROM MONICAADM.CONTAS_BANCARIAS WHERE ID_FICHAS = :id`,
         { id }
       );
 
       for (const conta of contasDevedoras) {
         await conn.execute(
           `
-            INSERT INTO CONTAS_DEVEDORAS (
+            INSERT INTO MONICAADM.CONTAS_DEVEDORAS (
               ID_CONTAS_DEVEDORAS,
               ID_FICHAS,
               DESCRICAO,
@@ -615,7 +615,7 @@ export const fichaDesimpedimentoController = {
 
         await conn.execute(
           `
-            INSERT INTO CONTAS_CREDORAS (
+            INSERT INTO MONICAADM.CONTAS_CREDORAS (
               ID_CONTAS_CREDORAS,
               ID_FICHAS,
               DESCRICAO,
@@ -641,7 +641,7 @@ export const fichaDesimpedimentoController = {
 
         await conn.execute(
           `
-            INSERT INTO CONTAS_BANCARIAS (
+            INSERT INTO MONICAADM.CONTAS_BANCARIAS (
               ID_CONTAS_BANCARIAS,
               ID_FICHAS,
               DESCRICAO,
@@ -701,19 +701,19 @@ export const fichaDesimpedimentoController = {
       await setAuditoriaContext(conn, req);
 
       await conn.execute(
-        `DELETE FROM CONTAS_DEVEDORAS WHERE ID_FICHAS = :id`,
+        `DELETE FROM MONICAADM.CONTAS_DEVEDORAS WHERE ID_FICHAS = :id`,
         { id }
       );
       await conn.execute(
-        `DELETE FROM CONTAS_CREDORAS WHERE ID_FICHAS = :id`,
+        `DELETE FROM MONICAADM.CONTAS_CREDORAS WHERE ID_FICHAS = :id`,
         { id }
       );
       await conn.execute(
-        `DELETE FROM CONTAS_BANCARIAS WHERE ID_FICHAS = :id`,
+        `DELETE FROM MONICAADM.CONTAS_BANCARIAS WHERE ID_FICHAS = :id`,
         { id }
       );
       await conn.execute(
-        `DELETE FROM FICHAS_FINANCEIRAS WHERE ID_FICHAS = :id`,
+        `DELETE FROM MONICAADM.FICHAS_FINANCEIRAS WHERE ID_FICHAS = :id`,
         { id }
       );
 

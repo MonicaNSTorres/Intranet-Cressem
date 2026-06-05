@@ -906,11 +906,13 @@ routes.post("/v1/popup-aviso/responder", authMiddleware, responderPopupAviso);
 
 routes.post(
   "/v1/solicitacao_reembolso_despesa",
+  authMiddleware,
   solicitacaoReembolsoDespesaController.cadastrar
 );
 
 routes.put(
   "/v1/solicitacao_reembolso_despesa",
+  authMiddleware,
   solicitacaoReembolsoDespesaController.editar
 );
 
@@ -926,11 +928,13 @@ routes.post(
 
 routes.put(
   "/v1/solicitacao_reembolso_despesa/:id/decisao/name/:nomeResponsavel",
+  authMiddleware,
   solicitacaoReembolsoDespesaController.decidir
 );
 
 routes.put(
   "/v1/solicitacao_reembolso_despesa/:id/concluir",
+  authMiddleware,
   solicitacaoReembolsoDespesaController.concluir
 );
 
@@ -1126,21 +1130,25 @@ routes.get(
 
 routes.post(
   "/v1/termos-mensais-caixa",
+  authMiddleware,
   termosMensaisCaixaController.criar
 );
 
 routes.put(
   "/v1/termos-mensais-caixa/:id",
+  authMiddleware,
   termosMensaisCaixaController.atualizar
 );
 
 routes.patch(
   "/v1/termos-mensais-caixa/:id/status",
+  authMiddleware,
   termosMensaisCaixaController.alterarStatus
 );
 
 routes.post(
   "/v1/termos-mensais-caixa/:id/assinado",
+  authMiddleware,
   termosMensaisCaixaController.uploadAssinado
 );
 

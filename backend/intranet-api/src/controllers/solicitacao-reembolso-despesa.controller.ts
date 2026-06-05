@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 import { getOraclePool } from "../config/oracle.pool";
 import { sendEmail } from "../services/email.service";
+import { setAuditoriaContext } from "../services/oracle.service";
 
 
 function escapeHtml(value: any) {
@@ -1027,6 +1028,8 @@ export const solicitacaoReembolsoDespesaController = {
       const pool = await getOraclePool();
       connection = await pool.getConnection();
 
+      await setAuditoriaContext(connection, req);
+
       const idSolicitacao = await getNextSolicitacaoId(connection);
       const nomeSolicitanteCadastro = String(req.body.NM_FUNCIONARIO || "").toUpperCase();
       const aprovadores = await derivarAprovadoresPorEscala(
@@ -1235,6 +1238,8 @@ export const solicitacaoReembolsoDespesaController = {
       const despesas = parseJsonIfNeeded<any[]>(req.body.DESPESAS, []);
       const pool = await getOraclePool();
       connection = await pool.getConnection();
+
+      await setAuditoriaContext(connection, req);
 
       const resultAtualSolicitacao = await connection.execute(
         `
@@ -1493,6 +1498,8 @@ export const solicitacaoReembolsoDespesaController = {
 
       const pool = await getOraclePool();
       connection = await pool.getConnection();
+
+      await setAuditoriaContext(connection, req);
 
       const resultAtual = await connection.execute(
         `
@@ -1797,6 +1804,8 @@ export const solicitacaoReembolsoDespesaController = {
 
       const pool = await getOraclePool();
       connection = await pool.getConnection();
+
+      await setAuditoriaContext(connection, req);
 
       const result = await connection.execute(
         `
