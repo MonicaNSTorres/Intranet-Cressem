@@ -331,7 +331,7 @@ export function FichaDesimpedimentoForm() {
     bancarias: Conta[] = []
   ) {
     const doc = new jsPDF();
-    const logoBase64 = await getImageAsBase64("/logo.png");
+    const logoBase64 = await getImageAsBase64("/sicoob-cressem-logo.png");
 
     const normalize = (v: any) => (v && String(v).trim() !== "" ? v : "-");
 

@@ -44,7 +44,7 @@ export default function GerenciamentoReembolsoDespesaPage() {
             Nova Solicitação
           </button>
 
-          <button
+          {/*<button
             type="button"
             onClick={async () => {
               const response = await fetch(
@@ -76,7 +76,7 @@ export default function GerenciamentoReembolsoDespesaPage() {
             }}
           >
             Testar log manual
-          </button>
+          </button>*/}
         </div>
       </div>
 

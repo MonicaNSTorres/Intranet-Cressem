@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
@@ -153,14 +154,28 @@ export async function buscarSolicitacaoReembolsoPorId(id: number | string) {
 export async function cadastrarSolicitacaoReembolso(
   payload: SolicitacaoReembolsoPayload
 ) {
-  const { data } = await api.post("/v1/solicitacao_reembolso_despesa", payload);
+  const { data } = await api.post(
+    "/v1/solicitacao_reembolso_despesa",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return data;
 }
 
 export async function editarSolicitacaoReembolso(
   payload: SolicitacaoReembolsoPayload
 ) {
-  const { data } = await api.put("/v1/solicitacao_reembolso_despesa", payload);
+  const { data } = await api.put(
+    "/v1/solicitacao_reembolso_despesa",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
   return data;
 }
 

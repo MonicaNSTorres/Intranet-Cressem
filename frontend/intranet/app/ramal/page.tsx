@@ -61,6 +61,7 @@ export default function RamaisPage() {
     const [q, setQ] = useState("");
     const [nome, setNome] = useState("");
     const [departamento, setDepartamento] = useState("");
+    const [login, setLogin] = useState("");
     const [sortBy, setSortBy] = useState<"nome" | "ramal" | "departamento">("nome");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -71,6 +72,7 @@ export default function RamaisPage() {
     const debouncedQ = useDebouncedValue(q, 300);
     const debouncedNome = useDebouncedValue(nome, 300);
     const debouncedDepartamento = useDebouncedValue(departamento, 300);
+    const debouncedLogin = useDebouncedValue(login, 300);
 
     useEffect(() => {
         const load = async () => {
@@ -82,6 +84,7 @@ export default function RamaisPage() {
                     q: normalizeSearch(debouncedQ),
                     nome: normalizeSearch(debouncedNome),
                     departamento: normalizeSearch(debouncedDepartamento),
+                    login: normalizeSearch(debouncedLogin),
                     sortBy,
                     sortOrder,
                 });
@@ -95,10 +98,13 @@ export default function RamaisPage() {
 
                     const semRamal = isMissing(r.RAMAL);
                     const semLogin = isMissing(r.LOGIN);
+
+                    // considera "sem e-mail" quando está vazio OU inválido fora do domínio corporativo
                     const semEmail = isMissing(r.EMAIL) || !isEmailCorporativoValido(r.EMAIL);
 
                     return !(semRamal && semEmail && semLogin);
                 });
+
 
                 setRows(filtrados);
 
@@ -116,11 +122,13 @@ export default function RamaisPage() {
         debouncedQ,
         debouncedNome,
         debouncedDepartamento,
+        debouncedLogin,
         sortBy,
         sortOrder,
     ]);
 
     const total = useMemo(() => rows.length, [rows]);
+
 
     function normalizeEmail(value: string | number | null | undefined) {
         return normalizeField(value).toLowerCase();
@@ -128,18 +136,18 @@ export default function RamaisPage() {
 
     function isEmailCorporativoValido(value: string | number | null | undefined) {
         const email = normalizeEmail(value);
+
         if (isMissing(email)) return false;
+
         const emailRegex = /^[a-z0-9._%+-]+@sicoob\.com\.br$/i;
         return emailRegex.test(email);
     }
-
-
-
 
     function limparFiltros() {
         setQ("");
         setNome("");
         setDepartamento("");
+        setLogin("");
         setSortBy("nome");
         setSortOrder("asc");
     }
@@ -284,7 +292,7 @@ export default function RamaisPage() {
                                 </button>
                             </div>
 
-                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                                 <div>
                                     <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
                                         Nome
@@ -305,6 +313,19 @@ export default function RamaisPage() {
                                         value={departamento}
                                         onChange={(e) => setDepartamento(e.target.value)}
                                         placeholder="Buscar por departamento"
+                                        className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-secondary"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+                                        Login SISBR
+                                    </label>
+
+                                    <input
+                                        value={login}
+                                        onChange={(e) => setLogin(e.target.value)}
+                                        placeholder="Buscar por login"
                                         className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-secondary"
                                     />
                                 </div>
@@ -409,7 +430,7 @@ export default function RamaisPage() {
                                                         className={`border-t border-gray-100 transition hover:bg-[#F8FCF8] ${index % 2 === 0 ? "bg-white" : "bg-[#FCFDFC]"
                                                             }`}
                                                     >
-                                                        <td className="px-4 py-4 align-middle">
+                                                        <td className="px-4 py-4 align-middle text-gray-700">
                                                             <BadgeCampoPendente
                                                                 missing={isMissing(r.RAMAL)}
                                                                 missingLabel="Sem ramal"
@@ -451,11 +472,13 @@ export default function RamaisPage() {
                                                         </td>
 
                                                         <td className="px-4 py-4 align-middle text-gray-700">
+
                                                             <BadgeCampoPendente
                                                                 missing={isMissing(r.LOGIN)}
                                                                 missingLabel="Sem login"
                                                                 value={loginValue}
                                                             />
+
                                                         </td>
                                                     </tr>
                                                 );

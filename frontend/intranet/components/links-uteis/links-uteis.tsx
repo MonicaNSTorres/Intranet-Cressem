@@ -347,6 +347,11 @@ const links: LinkItem[] = [
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
+                title: "Declaração de Presença",
+                href: "/auth/declaracao_presenca_emprestimo",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+            },
+            {
                 title: "Formulário DPS",
                 href: "/auth/formulario_dps",
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],

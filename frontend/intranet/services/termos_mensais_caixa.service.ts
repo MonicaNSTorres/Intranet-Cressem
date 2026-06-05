@@ -1,3 +1,5 @@
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export type StatusTermoMensalCaixa =
@@ -112,7 +114,9 @@ export async function criarTermoMensalCaixa(
 ) {
   const res = await fetch(`${API_URL}/v1/termos-mensais-caixa`, {
     method: "POST",
+    credentials: "include",
     headers: {
+      ...getAuditoriaHeaders(),
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
@@ -137,7 +141,9 @@ export async function atualizarTermoMensalCaixa(
 ) {
   const res = await fetch(`${API_URL}/v1/termos-mensais-caixa/${id}`, {
     method: "PUT",
+    credentials: "include",
     headers: {
+      ...getAuditoriaHeaders(),
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
@@ -161,16 +167,21 @@ export async function alterarStatusTermoMensalCaixa(data: {
   status: StatusTermoMensalCaixa;
   usuarioAtualizacao?: string;
 }) {
-  const res = await fetch(`${API_URL}/v1/termos-mensais-caixa/${data.id}/status`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      status: data.status,
-      usuarioAtualizacao: data.usuarioAtualizacao || "INTRANET",
-    }),
-  });
+  const res = await fetch(
+    `${API_URL}/v1/termos-mensais-caixa/${data.id}/status`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        ...getAuditoriaHeaders(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        status: data.status,
+        usuarioAtualizacao: data.usuarioAtualizacao || "INTRANET",
+      }),
+    }
+  );
 
   const json = await res.json();
 
@@ -195,6 +206,11 @@ export async function uploadTermoMensalCaixaAssinado(data: {
     `${API_URL}/v1/termos-mensais-caixa/${data.id}/assinado`,
     {
       method: "POST",
+      credentials: "include",
+      headers: {
+        "x-tela-origem":
+          typeof window !== "undefined" ? window.location.href : "",
+      },
       body: formData,
     }
   );

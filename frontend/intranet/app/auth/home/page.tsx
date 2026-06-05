@@ -682,7 +682,7 @@ export default function HomePage() {
                                         </h2>
 
                                         <p className="text-sm text-[var(--paragraph)]">
-                                            Visualização simples da quantidade de acessos por dia.
+                                            Quantidade de acessos por dia, em tempo real.
                                         </p>
                                     </div>
                                 </div>

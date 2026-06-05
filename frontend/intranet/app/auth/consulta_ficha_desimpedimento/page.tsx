@@ -196,7 +196,16 @@ export default function ConsultaFichaDesimpedimentoPage() {
     bancarias: Conta[] = []
   ) {
     const doc = new jsPDF();
-    const logoBase64 = await getImageAsBase64("/logo-pdf.png");
+    const logoBase64 = await getImageAsBase64("/sicoob-cressem-logo.png");
+
+    const get = (...keys: string[]) => {
+      for (const key of keys) {
+        if (ficha?.[key] !== null && ficha?.[key] !== undefined && String(ficha[key]).trim() !== "") {
+          return ficha[key];
+        }
+      }
+      return "-";
+    };
 
     const normalize = (v: any) => (v && String(v).trim() !== "" ? v : "-");
 
@@ -208,26 +217,26 @@ export default function ConsultaFichaDesimpedimentoPage() {
       });
     };
 
-    doc.addImage(logoBase64, "PNG", 10, 7, 30, 15);
+    doc.addImage(logoBase64, "PNG", 10, 7, 20, 15);
     doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
     doc.text("FICHA DE DESIMPEDIMENTO", 105, 15, { align: "center" });
 
     const dadosTopo = [
-      ["Sequencial", normalize(ficha.sequencial)],
-      ["Associado", normalize(ficha.nome)],
-      ["CPF", normalize(ficha.cpf)],
-      ["Prontuário", normalize(ficha.prontuario)],
-      ["Empresa", normalize(ficha.empresa)],
-      ["Email", normalize(ficha.ds_email)],
-      ["Endereço", normalize(ficha.endereco)],
-      ["Telefone", normalize(ficha.telefone)],
-      ["Responsável", normalize(ficha.responsavel)],
-      ["Data", formatarDataPtBr(ficha.data_ficha)],
-      ["Tempo de Associação", normalize(ficha.tempo_associado)],
-      ["Risco", normalize(ficha.risco)],
-      ["Observação", normalize(ficha.observacao)],
-      ["Observações Gerais", normalize(ficha.observacoes_gerais)],
+      ["Sequencial", get("sequencial", "SEQUENCIAL")],
+      ["Associado", get("nome", "NOME")],
+      ["CPF", get("cpf", "CPF")],
+      ["Prontuário", get("prontuario", "PRONTUARIO")],
+      ["Empresa", get("empresa", "EMPRESA")],
+      ["Email", get("ds_email", "DS_EMAIL")],
+      ["Endereço", get("endereco", "ENDERECO")],
+      ["Telefone", get("telefone", "TELEFONE")],
+      ["Responsável", get("responsavel", "RESPONSAVEL")],
+      ["Data", formatarDataPtBr(get("data_ficha", "DATA_FICHA"))],
+      ["Tempo de Associação", get("tempo_associado", "TEMPO_ASSOCIADO")],
+      ["Risco", get("risco", "RISCO")],
+      ["Observação", get("observacao", "OBSERVACAO")],
+      ["Observações Gerais", get("observacoes_gerais", "OBSERVACOES_GERAIS")],
     ];
 
     autoTable(doc, {
@@ -291,13 +300,36 @@ export default function ConsultaFichaDesimpedimentoPage() {
 
     y = (doc as any).lastAutoTable.finalY + 10;
 
-    doc.text(`Total Capital: ${formatarValor(totalNumerico(credoras))}`, 10, y);
-    y += 6;
-    doc.text(`Contas Bancárias: ${formatarValor(totalNumerico(bancarias))}`, 10, y);
-    y += 6;
-    doc.text(`Total Débitos: ${formatarValor(totalNumerico(devedoras))}`, 10, y);
+    const tipoFicha = String(get("tipo_ficha", "TIPO_FICHA"))
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase();
 
-    doc.save(`Ficha_${String(ficha.nome || "desimpedimento").replace(/\s+/g, "_")}.pdf`);
+    const totalCreditos = totalNumerico(credoras);
+    const totalBancarias = totalNumerico(bancarias);
+    const totalCredor = totalCreditos - totalBancarias;
+    const totalDebitos = totalNumerico(devedoras);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+
+    if (tipoFicha === "CREDOR") {
+      doc.text(`Total Créditos: ${formatarValor(totalCreditos)}`, 10, y);
+      y += 6;
+      doc.text(`Total Contas Bancárias: ${formatarValor(totalBancarias)}`, 10, y);
+      y += 6;
+      doc.text(`Total Credor: ${formatarValor(totalCredor)}`, 10, y);
+    } else {
+      doc.text(`Total Capital: ${formatarValor(totalCreditos)}`, 10, y);
+      y += 6;
+      doc.text(`Contas Bancárias: ${formatarValor(totalBancarias)}`, 10, y);
+      y += 6;
+      doc.text(`Total Débitos: ${formatarValor(totalDebitos)}`, 10, y);
+    }
+
+    const nomeArquivo = String(get("nome", "NOME", "desimpedimento")).replace(/\s+/g, "_");
+
+    doc.save(`Ficha_${nomeArquivo}.pdf`);
   }
 
   async function handleExcluir(id: string) {
@@ -656,22 +688,7 @@ export default function ConsultaFichaDesimpedimentoPage() {
                               ]);
 
                               await gerarPdfFicha(
-                                {
-                                  nome: r.NOME,
-                                  cpf: r.CPF,
-                                  prontuario: r.PRONTUARIO,
-                                  empresa: r.EMPRESA,
-                                  endereco: r.ENDERECO,
-                                  telefone: r.TELEFONE,
-                                  ds_email: r.DS_EMAIL,
-                                  responsavel: r.RESPONSAVEL,
-                                  data_ficha: r.DATA_FICHA,
-                                  tempo_associado: r.TEMPO_ASSOCIADO,
-                                  risco: r.RISCO,
-                                  observacao: r.OBSERVACAO,
-                                  observacoes_gerais: r.OBSERVACOES_GERAIS,
-                                  sequencial: r.SEQUENCIAL,
-                                },
+                                r,
                                 devedoras.map((item: any) => ({
                                   descricao: item.DESCRICAO ?? item.descricao ?? "",
                                   valor: item.VALOR ?? item.valor ?? "",
