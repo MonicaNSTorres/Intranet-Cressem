@@ -917,6 +917,12 @@ routes.put(
 );
 
 routes.get(
+  "/v1/solicitacao_reembolso_despesa/funcionario/cpf/:cpf",
+  authMiddleware,
+  solicitacaoReembolsoDespesaController.buscarFuncionarioPorCpf
+);
+
+routes.get(
   "/v1/solicitacao_reembolso_despesa/:id",
   solicitacaoReembolsoDespesaController.buscarPorId
 );
@@ -964,6 +970,7 @@ routes.post("/v1/juntar-pdf", juntarPdfController);
 
 routes.get(
   "/v1/producao-meta-cooperativa-pa",
+  authMiddleware,
   producaoMetaCooperativaPaController.listar
 );
 

@@ -815,8 +815,33 @@ function normalizarNivelHierarquia(value: string): NivelHierarquia {
 
 async function buscarFuncionarioHierarquia(
   connection: oracledb.Connection,
-  nome: string
+  nome: string,
+  cpf?: string
 ) {
+  const cpfLimpo = onlyDigits(cpf || "");
+
+  if (cpfLimpo) {
+    const resultCpf = await connection.execute(
+      `
+        SELECT
+          f.ID_FUNCIONARIO,
+          f.CD_GERENCIA,
+          UPPER(TRIM(NVL(c.NM_NIVEL, ''))) AS NM_NIVEL
+        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+        LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM c
+          ON c.ID_CARGO = f.ID_CARGO
+        WHERE REGEXP_REPLACE(NVL(f.NR_CPF, ''), '[^0-9]', '') = :cpf
+        FETCH FIRST 1 ROWS ONLY
+      `,
+      { cpf: cpfLimpo },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (resultCpf.rows?.[0]) {
+      return resultCpf.rows[0] as any;
+    }
+  }
+
   const result = await connection.execute(
     `
       SELECT
@@ -884,9 +909,14 @@ async function estaDeFeriasHoje(
 
 async function derivarAprovadoresPorEscala(
   connection: oracledb.Connection,
-  nomeSolicitante: string
+  nomeSolicitante: string,
+  cpfSolicitante?: string
 ) {
-  const solicitante = await buscarFuncionarioHierarquia(connection, nomeSolicitante);
+  const solicitante = await buscarFuncionarioHierarquia(
+    connection,
+    nomeSolicitante,
+    cpfSolicitante
+  );
   const idSolicitante = Number(solicitante?.ID_FUNCIONARIO || 0);
 
   let idAprovGerencia = 0;
@@ -931,19 +961,25 @@ async function resolverProximoAndamentoPorHierarquia(
   connection: oracledb.Connection,
   nomeSolicitante: string,
   etapaAtual: "Pendente Financeiro" | "Pendente Gerencia",
+  cpfSolicitante?: string,
   idsAprovadores?: {
     idAprovGerencia?: number | null;
     idAprovGerenciaSup?: number | null;
     idAprovDiretoria?: number | null;
   }
 ) {
-  const solicitante = await buscarFuncionarioHierarquia(connection, nomeSolicitante);
+  const solicitante = await buscarFuncionarioHierarquia(
+    connection,
+    nomeSolicitante,
+    cpfSolicitante
+  );
   const nivelSolicitante = normalizarNivelHierarquia(String(solicitante?.NM_NIVEL || ""));
   const cdGerenciaSolicitante = Number(solicitante?.CD_GERENCIA || 0);
 
   const aprovadoresDerivados = await derivarAprovadoresPorEscala(
     connection,
-    nomeSolicitante
+    nomeSolicitante,
+    cpfSolicitante
   );
   const idSolicitante = Number(aprovadoresDerivados.idSolicitante || 0);
 
@@ -1015,6 +1051,65 @@ async function resolverProximoAndamentoPorHierarquia(
 }
 
 export const solicitacaoReembolsoDespesaController = {
+  async buscarFuncionarioPorCpf(req: Request, res: Response) {
+    let connection: oracledb.Connection | undefined;
+
+    try {
+      const cpf = onlyDigits(String(req.params.cpf || req.query.cpf || ""));
+
+      if (cpf.length !== 11) {
+        return res.status(400).json({ error: "CPF do funcionário inválido." });
+      }
+
+      const pool = await getOraclePool();
+      connection = await pool.getConnection();
+
+      const result = await connection.execute(
+        `
+          SELECT
+            f.ID_FUNCIONARIO,
+            f.NM_FUNCIONARIO,
+            f.NR_CPF,
+            f.NR_MATRICULA,
+            f.NR_CONTA_CORRENTE
+          FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+          WHERE REGEXP_REPLACE(NVL(f.NR_CPF, ''), '[^0-9]', '') = :cpf
+          FETCH FIRST 1 ROWS ONLY
+        `,
+        { cpf },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      const row = result.rows?.[0] as any;
+
+      if (!row) {
+        return res.json({ found: false });
+      }
+
+      return res.json({
+        found: true,
+        id_funcionario: row.ID_FUNCIONARIO,
+        nome: row.NM_FUNCIONARIO,
+        cpf: row.NR_CPF || cpf,
+        matricula: row.NR_MATRICULA || "",
+        conta_corrente: row.NR_CONTA_CORRENTE || "",
+        nr_conta_corrente: row.NR_CONTA_CORRENTE || "",
+      });
+    } catch (err: any) {
+      console.error("buscarFuncionarioPorCpf reembolso despesa erro:", err);
+      return res.status(500).json({
+        error: "Falha ao buscar funcionário por CPF.",
+        details: String(err?.message || err),
+      });
+    } finally {
+      if (connection) {
+        try {
+          await connection.close();
+        } catch {}
+      }
+    }
+  },
+
   async cadastrar(req: Request, res: Response) {
     let connection: oracledb.Connection | undefined;
 
@@ -1032,9 +1127,11 @@ export const solicitacaoReembolsoDespesaController = {
 
       const idSolicitacao = await getNextSolicitacaoId(connection);
       const nomeSolicitanteCadastro = String(req.body.NM_FUNCIONARIO || "").toUpperCase();
+      const cpfSolicitanteCadastro = onlyDigits(req.body.NR_CPF_FUNCIONARIO);
       const aprovadores = await derivarAprovadoresPorEscala(
         connection,
-        nomeSolicitanteCadastro
+        nomeSolicitanteCadastro,
+        cpfSolicitanteCadastro
       );
 
       const insertSolicitacaoSql = `
@@ -1078,7 +1175,7 @@ export const solicitacaoReembolsoDespesaController = {
       await connection.execute(insertSolicitacaoSql, {
         ID_SOLICITACAO_REEMBOLSO_DESPESA: idSolicitacao,
         NM_FUNCIONARIO: nomeSolicitanteCadastro,
-        NR_CPF_FUNCIONARIO: onlyDigits(req.body.NR_CPF_FUNCIONARIO),
+        NR_CPF_FUNCIONARIO: cpfSolicitanteCadastro,
         DT_IDA: req.body.DT_IDA,
         DT_VOLTA: req.body.DT_VOLTA,
         DESC_JTF_EVENTO: req.body.DESC_JTF_EVENTO,
@@ -1507,6 +1604,7 @@ export const solicitacaoReembolsoDespesaController = {
           ID_SOLICITACAO_REEMBOLSO_DESPESA,
           DESC_ANDAMENTO,
           NM_FUNCIONARIO,
+          NR_CPF_FUNCIONARIO,
           ID_SOLICITANTE,
           ID_APROV_GERENCIA,
           ID_APROV_GERENCIA_SUP,
@@ -1525,13 +1623,18 @@ export const solicitacaoReembolsoDespesaController = {
       const atual: any = resultAtual.rows[0];
       const andamentoAtual = String(atual.DESC_ANDAMENTO || "");
       const nomeSolicitante = String(atual.NM_FUNCIONARIO || "");
+      const cpfSolicitante = onlyDigits(atual.NR_CPF_FUNCIONARIO);
       let idSolicitante = Number(atual.ID_SOLICITANTE || 0);
       let idAprovGerencia = Number(atual.ID_APROV_GERENCIA || 0);
       let idAprovGerenciaSup = Number(atual.ID_APROV_GERENCIA_SUP || 0);
       let idAprovDiretoria = Number(atual.ID_APROV_DIRETORIA || 0);
 
       if (!idSolicitante || !idAprovDiretoria) {
-        const aprovadores = await derivarAprovadoresPorEscala(connection, nomeSolicitante);
+        const aprovadores = await derivarAprovadoresPorEscala(
+          connection,
+          nomeSolicitante,
+          cpfSolicitante
+        );
         idSolicitante = idSolicitante || Number(aprovadores.idSolicitante || 0);
         idAprovGerencia =
           idAprovGerencia || Number(aprovadores.idAprovGerencia || 0);
@@ -1573,6 +1676,7 @@ export const solicitacaoReembolsoDespesaController = {
             connection,
             nomeSolicitante,
             "Pendente Financeiro",
+            cpfSolicitante,
             {
               idAprovGerencia,
               idAprovGerenciaSup,
@@ -1609,6 +1713,7 @@ export const solicitacaoReembolsoDespesaController = {
             connection,
             nomeSolicitante,
             "Pendente Gerencia",
+            cpfSolicitante,
             {
               idAprovGerencia,
               idAprovGerenciaSup,

@@ -1,0 +1,94 @@
+[SMOKE][RESUMO]
+Base URL: http://localhost:3001
+Executado em: 2026-06-01T19:56:01.087Z
+Rotas encontradas: 84
+Testadas: 46
+OK: 44
+Falhas: 2
+Puladas: 38
+
+[SMOKE][DETALHES]
+OK | GET / | http=200
+SKIP | POST /v1/login_sem_automatico | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/me | http=401
+SKIP | POST /v1/logout | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/associados/buscar-por-cpf | http=400
+OK | GET /v1/kpis/resumo | http=200
+OK | GET /v1/aniversariantes/hoje | http=200
+OK | GET /v1/aniversariantes | http=400
+OK | GET /v1/ramais | http=200
+FAIL | GET /v1/tabela-sisbr-ti | http=500
+OK | GET /v1/gr-document-missing | http=200
+SKIP | GET /v1/download-from-db | Rota potencialmente destrutiva/acionadora.
+OK | GET /v1/consulta-notebook | http=200
+SKIP | POST /v1/cadastro-notebook | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/funcionarios-notebook | http=200
+SKIP | PUT /v1/consulta-notebook/:id | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/ficha-desimpedimento/associado-por-cpf | http=400
+OK | GET /v1/ficha-desimpedimento/proximo-sequencial | http=200
+OK | GET /v1/ficha-desimpedimento/fichas | http=200
+OK | GET /v1/ficha-desimpedimento/contas-devedoras | http=400
+OK | GET /v1/ficha-desimpedimento/contas-credoras | http=400
+OK | GET /v1/ficha-desimpedimento/contas-bancarias | http=400
+SKIP | POST /v1/ficha-desimpedimento/fichas | Método não GET (smoke seguro testa apenas GET).
+SKIP | PUT /v1/ficha-desimpedimento/fichas | Método não GET (smoke seguro testa apenas GET).
+SKIP | DELETE /v1/ficha-desimpedimento/fichas | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/funcionarios/baixar-arquivo | http=400
+OK | GET /v1/cidade | http=200
+SKIP | POST /v1/patrocinio_cressem | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/funcionarios_sicoob_cressem_patrocinio_paginado | http=200
+SKIP | GET /v1/patrocinio_cressem/:id | Rota com parâmetro dinâmico.
+SKIP | PUT /v1/patrocinio_cressem/:id | Método não GET (smoke seguro testa apenas GET).
+SKIP | POST /v1/patrocinio/download | Método não GET (smoke seguro testa apenas GET).
+SKIP | GET /v1/download_patrocinios | Rota potencialmente destrutiva/acionadora.
+OK | GET /v1/resgate-capital/motivos | http=200
+OK | GET /v1/resgate-capital/autorizacoes | http=200
+OK | GET /v1/resgate-capital/cidades | http=200
+OK | GET /v1/resgate-capital/emprestimos | http=400
+OK | GET /v1/resgate-capital/associado-id | http=400
+OK | GET /v1/resgate-capital/dia-util | http=400
+SKIP | POST /v1/resgate-capital | Método não GET (smoke seguro testa apenas GET).
+SKIP | POST /v1/resgate-capital/emprestimo | Método não GET (smoke seguro testa apenas GET).
+SKIP | POST /v1/resgate-capital/conta-corrente | Método não GET (smoke seguro testa apenas GET).
+SKIP | POST /v1/resgate-capital/cartao-credito | Método não GET (smoke seguro testa apenas GET).
+SKIP | POST /v1/resgate-capital/conta-deposito | Método não GET (smoke seguro testa apenas GET).
+SKIP | POST /v1/resgate-capital/parcela | Método não GET (smoke seguro testa apenas GET).
+SKIP | POST /v1/analise_limite_cheque_cartao | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/analise_limite_cheque_cartao | http=200
+SKIP | GET /v1/analise_limite_cheque_cartao/:id | Rota com parâmetro dinâmico.
+OK | GET /v1/fator_ajuste | http=200
+OK | GET /v1/parentesco | http=200
+SKIP | POST /v1/recibo_crm | Método não GET (smoke seguro testa apenas GET).
+SKIP | PUT /v1/recibo_crm/:id | Método não GET (smoke seguro testa apenas GET).
+SKIP | GET /v1/recibo_crm/:id | Rota com parâmetro dinâmico.
+OK | GET /v1/tipo_atendimento_recibo | http=200
+OK | GET /v1/categoria_contrato_recibo | http=200
+OK | GET /v1/forma_pagamento_recibo | http=200
+OK | GET /v1/recibo_crm_paginado | http=200
+SKIP | DELETE /v1/recibo_crm/:id | Método não GET (smoke seguro testa apenas GET).
+SKIP | POST /v1/popup-aviso | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/popup-aviso | http=200
+SKIP | GET /v1/popup-aviso/:id | Rota com parâmetro dinâmico.
+SKIP | PUT /v1/popup-aviso/:id | Método não GET (smoke seguro testa apenas GET).
+SKIP | PATCH /v1/popup-aviso/:id/ativar | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/popup-aviso/pendente/me | http=401
+SKIP | POST /v1/popup-aviso/responder | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/tipo_despesa | http=200
+OK | GET /v1/glpi/health | http=200
+OK | GET /v1/glpi/estoque | http=200
+SKIP | GET /v1/glpi/estoque/:id | Rota com parâmetro dinâmico.
+OK | GET /v1/glpi/test-itemtype | http=400
+SKIP | POST /v1/juntar-pdf | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/estoque-consumiveis/itens | http=200
+SKIP | POST /v1/estoque-consumiveis/itens | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/estoque-consumiveis/solicitacoes-glpi | http=200
+SKIP | POST /v1/estoque-consumiveis/solicitacoes-glpi/sincronizar | Método não GET (smoke seguro testa apenas GET).
+SKIP | POST /v1/estoque-consumiveis/solicitacoes-glpi/:idSolicitacao/baixa | Método não GET (smoke seguro testa apenas GET).
+SKIP | POST /v1/estoque-consumiveis/entrada | Método não GET (smoke seguro testa apenas GET).
+OK | GET /v1/estoque-consumiveis/movimentacoes | http=200
+FAIL | GET /v1/estoque-consumiveis/balanco-mensal | http=500
+SKIP | GET /v1/glpi/test-ticket/:id | Rota com parâmetro dinâmico.
+OK | GET /v1/glpi/list-search-options-ticket | http=200
+OK | GET /estoque-consumiveis/alertas | http=200
+OK | GET /v1/dashboard/acessos | http=200
+SKIP | POST /v1/error-logs | Método não GET (smoke seguro testa apenas GET).

@@ -1,0 +1,517 @@
+{
+  "baseUrl": "http://localhost:3001",
+  "executedAt": "2026-06-01T19:56:01.087Z",
+  "totalRoutesFound": 84,
+  "summary": {
+    "tested": 46,
+    "passed": 44,
+    "failed": 2,
+    "skipped": 38
+  },
+  "results": [
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/login_sem_automatico",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/me",
+      "httpStatus": 401
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/logout",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/associados/buscar-por-cpf",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/kpis/resumo",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/aniversariantes/hoje",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/aniversariantes",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/ramais",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "FAIL",
+      "method": "GET",
+      "routePath": "/v1/tabela-sisbr-ti",
+      "httpStatus": 500
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/gr-document-missing",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "GET",
+      "routePath": "/v1/download-from-db",
+      "reason": "Rota potencialmente destrutiva/acionadora."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/consulta-notebook",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/cadastro-notebook",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/funcionarios-notebook",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "PUT",
+      "routePath": "/v1/consulta-notebook/:id",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/ficha-desimpedimento/associado-por-cpf",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/ficha-desimpedimento/proximo-sequencial",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/ficha-desimpedimento/fichas",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/ficha-desimpedimento/contas-devedoras",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/ficha-desimpedimento/contas-credoras",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/ficha-desimpedimento/contas-bancarias",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/ficha-desimpedimento/fichas",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "PUT",
+      "routePath": "/v1/ficha-desimpedimento/fichas",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "DELETE",
+      "routePath": "/v1/ficha-desimpedimento/fichas",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/funcionarios/baixar-arquivo",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/cidade",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/patrocinio_cressem",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/funcionarios_sicoob_cressem_patrocinio_paginado",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "GET",
+      "routePath": "/v1/patrocinio_cressem/:id",
+      "reason": "Rota com parâmetro dinâmico."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "PUT",
+      "routePath": "/v1/patrocinio_cressem/:id",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/patrocinio/download",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "GET",
+      "routePath": "/v1/download_patrocinios",
+      "reason": "Rota potencialmente destrutiva/acionadora."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/resgate-capital/motivos",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/resgate-capital/autorizacoes",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/resgate-capital/cidades",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/resgate-capital/emprestimos",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/resgate-capital/associado-id",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/resgate-capital/dia-util",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/resgate-capital",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/resgate-capital/emprestimo",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/resgate-capital/conta-corrente",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/resgate-capital/cartao-credito",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/resgate-capital/conta-deposito",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/resgate-capital/parcela",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/analise_limite_cheque_cartao",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/analise_limite_cheque_cartao",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "GET",
+      "routePath": "/v1/analise_limite_cheque_cartao/:id",
+      "reason": "Rota com parâmetro dinâmico."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/fator_ajuste",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/parentesco",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/recibo_crm",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "PUT",
+      "routePath": "/v1/recibo_crm/:id",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "GET",
+      "routePath": "/v1/recibo_crm/:id",
+      "reason": "Rota com parâmetro dinâmico."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/tipo_atendimento_recibo",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/categoria_contrato_recibo",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/forma_pagamento_recibo",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/recibo_crm_paginado",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "DELETE",
+      "routePath": "/v1/recibo_crm/:id",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/popup-aviso",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/popup-aviso",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "GET",
+      "routePath": "/v1/popup-aviso/:id",
+      "reason": "Rota com parâmetro dinâmico."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "PUT",
+      "routePath": "/v1/popup-aviso/:id",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "PATCH",
+      "routePath": "/v1/popup-aviso/:id/ativar",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/popup-aviso/pendente/me",
+      "httpStatus": 401
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/popup-aviso/responder",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/tipo_despesa",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/glpi/health",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/glpi/estoque",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "GET",
+      "routePath": "/v1/glpi/estoque/:id",
+      "reason": "Rota com parâmetro dinâmico."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/glpi/test-itemtype",
+      "httpStatus": 400
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/juntar-pdf",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/estoque-consumiveis/itens",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/estoque-consumiveis/itens",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/estoque-consumiveis/solicitacoes-glpi",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/estoque-consumiveis/solicitacoes-glpi/sincronizar",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/estoque-consumiveis/solicitacoes-glpi/:idSolicitacao/baixa",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/estoque-consumiveis/entrada",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/estoque-consumiveis/movimentacoes",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "FAIL",
+      "method": "GET",
+      "routePath": "/v1/estoque-consumiveis/balanco-mensal",
+      "httpStatus": 500
+    },
+    {
+      "outcome": "SKIP",
+      "method": "GET",
+      "routePath": "/v1/glpi/test-ticket/:id",
+      "reason": "Rota com parâmetro dinâmico."
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/glpi/list-search-options-ticket",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/estoque-consumiveis/alertas",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "OK",
+      "method": "GET",
+      "routePath": "/v1/dashboard/acessos",
+      "httpStatus": 200
+    },
+    {
+      "outcome": "SKIP",
+      "method": "POST",
+      "routePath": "/v1/error-logs",
+      "reason": "Método não GET (smoke seguro testa apenas GET)."
+    }
+  ]
+}

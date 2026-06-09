@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FaEdit, FaPlus, FaSave, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
 import {
   baixarComprovanteReembolso,
+  buscarFuncionarioReembolsoPorCpf,
   buscarSolicitacaoReembolsoPorId,
   cadastrarSolicitacaoReembolso,
   carregarCidadesReembolso,
@@ -15,7 +16,6 @@ import {
   type SolicitacaoReembolsoPayload,
   type SolicitacaoReembolsoResponse,
 } from "@/services/cadastro_reembolso_despesa.service";
-import { buscarFuncionarioPorCpf } from "@/services/associado.service";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
@@ -269,7 +269,7 @@ export function CadastroReembolsoDespesaForm() {
         return;
       }
 
-      const response = await buscarFuncionarioPorCpf(cpf);
+      const response = await buscarFuncionarioReembolsoPorCpf(cpf);
 
       if (!response?.found) {
         alert("CPF não encontrado.");

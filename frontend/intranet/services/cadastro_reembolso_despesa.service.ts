@@ -126,6 +126,18 @@ export type AuthMeResponse = {
   nome_completo?: string;
 };
 
+export type BuscarFuncionarioReembolsoPorCpfResponse =
+  | { found: false }
+  | {
+      found: true;
+      id_funcionario?: string | number;
+      nome: string;
+      cpf?: string;
+      matricula?: string;
+      conta_corrente?: string;
+      nr_conta_corrente?: string;
+    };
+
 export async function carregarCidadesReembolso() {
   const { data } = await api.get<CidadeItem[] | string[]>("/v1/cidades");
 
@@ -176,6 +188,16 @@ export async function editarSolicitacaoReembolso(
     }
   );
 
+  return data;
+}
+
+export async function buscarFuncionarioReembolsoPorCpf(
+  cpf: string
+): Promise<BuscarFuncionarioReembolsoPorCpfResponse> {
+  const clean = String(cpf || "").replace(/\D/g, "");
+  const { data } = await api.get<BuscarFuncionarioReembolsoPorCpfResponse>(
+    `/v1/solicitacao_reembolso_despesa/funcionario/cpf/${encodeURIComponent(clean)}`
+  );
   return data;
 }
 
