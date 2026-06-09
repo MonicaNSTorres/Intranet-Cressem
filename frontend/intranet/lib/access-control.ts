@@ -370,6 +370,10 @@ export const PAGE_ACCESS = {
 
     termosMensaisCaixa: {
         allowedGroups: [AD_GROUPS.TERMOS_MENSAIS_CAIXA, AD_GROUPS.SUPORTE]
+    },
+
+    reservaSalaReuniao: {
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     }
 
 

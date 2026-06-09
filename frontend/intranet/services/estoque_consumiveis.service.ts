@@ -224,3 +224,20 @@ export async function atualizarItemEstoqueConsumiveis(
 
     return data;
 }
+
+export async function darBaixaItemSolicitacaoEstoque(
+  idSolicitacaoItem: number,
+  payload: {
+    idItem: number;
+    quantidadeAtendida: number;
+    observacao?: string;
+    usuarioAtendimento: string;
+  }
+) {
+  const { data } = await api.post(
+    `/v1/estoque-consumiveis/solicitacoes-glpi/itens/${idSolicitacaoItem}/baixa`,
+    payload
+  );
+
+  return data;
+}

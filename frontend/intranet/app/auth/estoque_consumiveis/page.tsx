@@ -23,6 +23,7 @@ import {
 import {
     buscarBalancoMensalEstoque,
     darBaixaSolicitacaoEstoque,
+    darBaixaItemSolicitacaoEstoque,
     lancarEntradaEstoque,
     listarItensEstoqueConsumiveis,
     listarSolicitacoesEstoqueGlpi,
@@ -86,6 +87,7 @@ export default function EstoqueConsumiveisPage() {
 
     const [modalBaixaAberta, setModalBaixaAberta] = useState(false);
     const [solicitacaoSelecionada, setSolicitacaoSelecionada] = useState<any | null>(null);
+    const [itemSolicitacaoSelecionado, setItemSolicitacaoSelecionado] = useState<any | null>(null);
     const [idItemBaixa, setIdItemBaixa] = useState("");
     const [quantidadeBaixa, setQuantidadeBaixa] = useState("");
     const [observacaoBaixa, setObservacaoBaixa] = useState("");
@@ -121,6 +123,8 @@ export default function EstoqueConsumiveisPage() {
 
     const [modalSaidaAberta, setModalSaidaAberta] = useState(false);
     const [itemSaidaSelecionado, setItemSaidaSelecionado] = useState<any | null>(null);
+    const [modalItensAberta, setModalItensAberta] = useState(false);
+    const [solicitacaoItensSelecionada, setSolicitacaoItensSelecionada] = useState<any | null>(null);
     const [quantidadeSaida, setQuantidadeSaida] = useState("");
     const [nomeSolicitanteSaida, setNomeSolicitanteSaida] = useState("");
     const [setorSaida, setSetorSaida] = useState("");
@@ -145,6 +149,16 @@ export default function EstoqueConsumiveisPage() {
     function fecharModalImportacao() {
         setModalImportacaoAberta(false);
         setArquivoExcel(null);
+    }
+
+    function abrirModalItensSolicitacao(solicitacao: any) {
+        setSolicitacaoItensSelecionada(solicitacao);
+        setModalItensAberta(true);
+    }
+
+    function fecharModalItensSolicitacao() {
+        setModalItensAberta(false);
+        setSolicitacaoItensSelecionada(null);
     }
 
     async function confirmarImportacaoExcel() {
@@ -254,10 +268,24 @@ export default function EstoqueConsumiveisPage() {
         await carregarTudo();
     }
 
-    function abrirModalBaixa(solicitacao: any) {
+    function abrirModalBaixa(solicitacao: any, itemSolicitacao?: any) {
         setSolicitacaoSelecionada(solicitacao);
-        setIdItemBaixa(solicitacao.ID_ITEM ? String(solicitacao.ID_ITEM) : "");
-        setQuantidadeBaixa(String(solicitacao.QT_SOLICITADA || ""));
+        setItemSolicitacaoSelecionado(itemSolicitacao || null);
+
+        setIdItemBaixa(
+            itemSolicitacao?.ID_ITEM
+                ? String(itemSolicitacao.ID_ITEM)
+                : solicitacao.ID_ITEM
+                    ? String(solicitacao.ID_ITEM)
+                    : ""
+        );
+
+        setQuantidadeBaixa(
+            itemSolicitacao?.QT_SOLICITADA
+                ? String(itemSolicitacao.QT_SOLICITADA)
+                : String(solicitacao.QT_SOLICITADA || "")
+        );
+
         setObservacaoBaixa("Baixa realizada via intranet");
         setModalBaixaAberta(true);
     }
@@ -265,6 +293,7 @@ export default function EstoqueConsumiveisPage() {
     function fecharModalBaixa() {
         setModalBaixaAberta(false);
         setSolicitacaoSelecionada(null);
+        setItemSolicitacaoSelecionado(null);
         setIdItemBaixa("");
         setQuantidadeBaixa("");
         setObservacaoBaixa("");
@@ -281,12 +310,24 @@ export default function EstoqueConsumiveisPage() {
         try {
             setSalvandoBaixa(true);
 
-            await darBaixaSolicitacaoEstoque(solicitacaoSelecionada.ID_SOLICITACAO, {
-                idItem: Number(idItemBaixa),
-                quantidadeAtendida: Number(quantidadeBaixa),
-                observacao: observacaoBaixa,
-                usuarioAtendimento: "monica.torres",
-            });
+            if (itemSolicitacaoSelecionado?.ID_SOLICITACAO_ITEM) {
+                await darBaixaItemSolicitacaoEstoque(
+                    itemSolicitacaoSelecionado.ID_SOLICITACAO_ITEM,
+                    {
+                        idItem: Number(idItemBaixa),
+                        quantidadeAtendida: Number(quantidadeBaixa),
+                        observacao: observacaoBaixa,
+                        usuarioAtendimento: "monica.torres",
+                    }
+                );
+            } else {
+                await darBaixaSolicitacaoEstoque(solicitacaoSelecionada.ID_SOLICITACAO, {
+                    idItem: Number(idItemBaixa),
+                    quantidadeAtendida: Number(quantidadeBaixa),
+                    observacao: observacaoBaixa,
+                    usuarioAtendimento: "monica.torres",
+                });
+            }
 
             fecharModalBaixa();
             await carregarTudo();
@@ -320,18 +361,45 @@ export default function EstoqueConsumiveisPage() {
         }
     }
 
+    function extrairTextoRespostaManual(texto: string) {
+        const valor = String(texto || "");
+
+        const partes = valor.split("Resposta:");
+
+        return partes.length > 1
+            ? partes[partes.length - 1].trim()
+            : valor.trim();
+    }
+
     function abrirModalRespostaManual(solicitacao: any) {
-        setSolicitacaoResposta(solicitacao);
+        const itensPreparados = Array.isArray(solicitacao.ITENS)
+            ? solicitacao.ITENS.map((item: any) => ({
+                ...item,
+                ID_ITEM_RESPOSTA: item.ID_ITEM ? String(item.ID_ITEM) : "",
+                QT_ATENDER_AGORA: "",
+            }))
+            : [];
+
+        setSolicitacaoResposta({
+            ...solicitacao,
+            ITENS: itensPreparados,
+        });
+
         setIdItemBaixa(solicitacao.ID_ITEM ? String(solicitacao.ID_ITEM) : "");
-        setQuantidadeBaixa(
-            solicitacao.QT_ATENDIDA ? String(solicitacao.QT_ATENDIDA) : ""
+        setQuantidadeBaixa("");
+
+        setRespostaManual(
+            extrairTextoRespostaManual(
+                solicitacao.DS_ULTIMA_RESPOSTA_MANUAL || ""
+            )
         );
-        setRespostaManual(solicitacao.DS_ULTIMA_RESPOSTA_MANUAL || "");
+
         setStatusGlpiResposta(
             solicitacao.NR_ULTIMO_STATUS_GLPI
                 ? String(solicitacao.NR_ULTIMO_STATUS_GLPI)
                 : "4"
         );
+
         setModalRespostaAberta(true);
     }
 
@@ -348,10 +416,51 @@ export default function EstoqueConsumiveisPage() {
         }
 
         try {
+            const itensSolicitacao = Array.isArray(solicitacaoResposta.ITENS)
+                ? solicitacaoResposta.ITENS
+                : [];
+
+            for (const item of itensSolicitacao) {
+                const quantidadeAtenderAgora = Number(item.QT_ATENDER_AGORA || 0);
+                const idItemEstoque = Number(item.ID_ITEM_RESPOSTA || item.ID_ITEM || 0);
+
+                if (quantidadeAtenderAgora > 0) {
+                    if (!idItemEstoque) {
+                        alert(`Selecione o item do estoque para: ${item.NM_ITEM_SOLICITADO}`);
+                        return;
+                    }
+
+                    await darBaixaItemSolicitacaoEstoque(item.ID_SOLICITACAO_ITEM, {
+                        idItem: idItemEstoque,
+                        quantidadeAtendida: quantidadeAtenderAgora,
+                        observacao: respostaManual,
+                        usuarioAtendimento: "monica.torres",
+                    });
+                }
+            }
+
+            const detalhesItens = itensSolicitacao.length
+                ? itensSolicitacao
+                    .map((item: any) => {
+                        const quantidadeAtenderAgora = Number(item.QT_ATENDER_AGORA || 0);
+
+                        return `- ${item.NM_ITEM_SOLICITADO} | Solicitado: ${item.QT_SOLICITADA} | Já atendido: ${item.QT_ATENDIDA || 0} | Atendido agora: ${quantidadeAtenderAgora}`;
+                    })
+                    .join("\n")
+                : `- ${solicitacaoResposta.NM_ITEM_SOLICITADO} | Solicitado: ${solicitacaoResposta.QT_SOLICITADA} | Atendido agora: ${quantidadeBaixa || 0}`;
+
+            const respostaDetalhada = `
+Itens solicitados:
+${detalhesItens}
+
+Resposta:
+${respostaManual}
+        `.trim();
+
             await responderManualSolicitacaoEstoque(solicitacaoResposta.ID_SOLICITACAO, {
                 idItem: idItemBaixa ? Number(idItemBaixa) : null,
                 quantidadeAtendida: quantidadeBaixa ? Number(quantidadeBaixa) : 0,
-                resposta: respostaManual,
+                resposta: respostaDetalhada,
                 usuarioAtendimento: "monica.torres",
                 statusGlpi: Number(statusGlpiResposta),
             });
@@ -591,6 +700,17 @@ export default function EstoqueConsumiveisPage() {
         );
     }
 
+    function getQuantidadeSolicitadaTotal(solicitacao: any) {
+        if (Array.isArray(solicitacao.ITENS) && solicitacao.ITENS.length > 0) {
+            return solicitacao.ITENS.reduce(
+                (total: number, item: any) => total + Number(item.QT_SOLICITADA || 0),
+                0
+            );
+        }
+
+        return solicitacao.QT_SOLICITADA;
+    }
+
     return (
         <div className="mx-auto w-full min-w-225 space-y-6 p-4 sm:p-6 lg:p-8">
             <BackButton />
@@ -798,16 +918,19 @@ export default function EstoqueConsumiveisPage() {
                                             <td className="px-4 py-3">{item.ID_CHAMADO_GLPI}</td>
 
                                             <td className="px-4 py-3 font-medium">
-                                                {item.NM_ITEM_SOLICITADO}
-
-                                                {/*{item.ST_SOLICITACAO === "RETORNO_NEGATIVO" && item.DS_ULTIMO_RETORNO_GLPI && (
-                                                    <div className="mt-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                                                        <strong>Retorno do GLPI:</strong> {item.DS_ULTIMO_RETORNO_GLPI}
+                                                {Array.isArray(item.ITENS) && item.ITENS.length > 1 ? (
+                                                    <div>
+                                                        <div>{item.ITENS.length} itens solicitados</div>
+                                                        <div className="mt-1 text-xs text-slate-500">
+                                                            {item.ITENS.map((i: any) => i.NM_ITEM_SOLICITADO).join(", ")}
+                                                        </div>
                                                     </div>
-                                                )}*/}
+                                                ) : (
+                                                    item.NM_ITEM_SOLICITADO
+                                                )}
                                             </td>
 
-                                            <td className="px-4 py-3">{item.QT_SOLICITADA}</td>
+                                            <td className="px-4 py-3">{getQuantidadeSolicitadaTotal(item)}</td>
                                             <td className="px-4 py-3">{item.NM_SOLICITANTE || "-"}</td>
                                             <td className="px-4 py-3">{item.NM_SETOR || "-"}</td>
 
@@ -820,7 +943,7 @@ export default function EstoqueConsumiveisPage() {
                                                     <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
                                                         Item não cadastrado
                                                     </span>
-                                                ) : ["ATENDIDA", "ATENDIDA_PARCIAL", "RECUSADA"].includes(item.ST_SOLICITACAO) ? (
+                                                ) : ["ATENDIDA", "RECUSADA"].includes(item.ST_SOLICITACAO) ? (
                                                     <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                                         {item.ST_SOLICITACAO === "ATENDIDA"
                                                             ? "Atendida"
@@ -834,13 +957,15 @@ export default function EstoqueConsumiveisPage() {
                                             </td>
 
                                             <td className="px-4 py-3 flex gap-2">
-                                                {["ABERTA", "EM_ANALISE", "RETORNO_NEGATIVO"].includes(item.ST_SOLICITACAO) && (
+                                                {["ABERTA", "EM_ANALISE", "RETORNO_NEGATIVO", "ATENDIDA_PARCIAL"].includes(item.ST_SOLICITACAO) && (
                                                     <>
                                                         <button
                                                             onClick={() =>
                                                                 item.ST_SOLICITACAO === "RETORNO_NEGATIVO"
                                                                     ? abrirModalRetornoNegativo(item)
-                                                                    : abrirModalBaixa(item)
+                                                                    : Array.isArray(item.ITENS) && item.ITENS.length > 1
+                                                                        ? abrirModalItensSolicitacao(item)
+                                                                        : abrirModalBaixa(item, item.ITENS?.[0])
                                                             }
                                                             className={`rounded-2xl px-4 py-2 text-xs font-semibold text-white cursor-pointer ${item.ST_SOLICITACAO === "RETORNO_NEGATIVO"
                                                                 ? "bg-red-600 hover:bg-red-700"
@@ -869,7 +994,7 @@ export default function EstoqueConsumiveisPage() {
                                                     </span>
                                                 )}
 
-                                                {["ATENDIDA", "ATENDIDA_PARCIAL", "RECUSADA"].includes(item.ST_SOLICITACAO) && (
+                                                {["ATENDIDA", "RECUSADA"].includes(item.ST_SOLICITACAO) && (
                                                     <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                                         Finalizado
                                                     </span>
@@ -1157,7 +1282,7 @@ export default function EstoqueConsumiveisPage() {
                                         Item solicitado
                                     </p>
                                     <p className="mt-1 font-semibold text-slate-800">
-                                        {solicitacaoSelecionada.NM_ITEM_SOLICITADO}
+                                        {itemSolicitacaoSelecionado?.NM_ITEM_SOLICITADO || solicitacaoSelecionada.NM_ITEM_SOLICITADO}
                                     </p>
                                 </div>
 
@@ -1166,7 +1291,7 @@ export default function EstoqueConsumiveisPage() {
                                         Quantidade solicitada
                                     </p>
                                     <p className="mt-1 font-semibold text-slate-800">
-                                        {solicitacaoSelecionada.QT_SOLICITADA}
+                                        {itemSolicitacaoSelecionado?.QT_SOLICITADA || solicitacaoSelecionada.QT_SOLICITADA}
                                     </p>
                                 </div>
 
@@ -1261,18 +1386,20 @@ export default function EstoqueConsumiveisPage() {
 
             {modalRespostaAberta && solicitacaoResposta && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+                    <div className="w-full max-w-5xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
                         <div className="bg-linear-to-r from-amber-500/10 via-white to-[#79B729]/10 px-6 py-5">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
                                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-600">
                                         Resposta manual
                                     </p>
+
                                     <h2 className="mt-1 text-2xl font-bold text-slate-800">
                                         Responder solicitação GLPI #{solicitacaoResposta.ID_CHAMADO_GLPI}
                                     </h2>
+
                                     <p className="mt-1 text-sm text-slate-500">
-                                        Use esta opção para informar atendimento parcial, indisponibilidade ou orientação ao solicitante.
+                                        Informe quais itens serão atendidos agora e quais ficarão pendentes.
                                     </p>
                                 </div>
 
@@ -1287,25 +1414,7 @@ export default function EstoqueConsumiveisPage() {
                         </div>
 
                         <div className="space-y-5 p-6">
-                            <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2">
-                                <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                        Item solicitado
-                                    </p>
-                                    <p className="mt-1 font-semibold text-slate-800">
-                                        {solicitacaoResposta.NM_ITEM_SOLICITADO}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                                        Quantidade solicitada
-                                    </p>
-                                    <p className="mt-1 font-semibold text-slate-800">
-                                        {solicitacaoResposta.QT_SOLICITADA}
-                                    </p>
-                                </div>
-
+                            <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-3">
                                 <div>
                                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
                                         Solicitante
@@ -1323,42 +1432,166 @@ export default function EstoqueConsumiveisPage() {
                                         {solicitacaoResposta.ST_SOLICITACAO}
                                     </p>
                                 </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                        Quantidade total solicitada
+                                    </p>
+                                    <p className="mt-1 font-semibold text-slate-800">
+                                        {getQuantidadeSolicitadaTotal(solicitacaoResposta)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                    Itens solicitados / atendimento
+                                </p>
+
+                                {Array.isArray(solicitacaoResposta.ITENS) && solicitacaoResposta.ITENS.length > 0 ? (
+                                    <div className="mt-3 overflow-x-auto rounded-2xl border border-slate-200">
+                                        <table className="min-w-full text-sm">
+                                            <thead className="bg-slate-50">
+                                                <tr className="text-left text-slate-500">
+                                                    <th className="px-3 py-3">Produto solicitado</th>
+                                                    <th className="px-3 py-3">Qtd. solicitada</th>
+                                                    <th className="px-3 py-3">Qtd. já atendida</th>
+                                                    <th className="px-3 py-3">Item do estoque</th>
+                                                    <th className="px-3 py-3">Qtd. atender agora</th>
+                                                    <th className="px-3 py-3">Status</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                {solicitacaoResposta.ITENS.map((subItem: any, index: number) => (
+                                                    <tr key={subItem.ID_SOLICITACAO_ITEM} className="border-t border-slate-100">
+                                                        <td className="px-3 py-3 font-semibold text-slate-800">
+                                                            {subItem.NM_ITEM_SOLICITADO}
+                                                        </td>
+
+                                                        <td className="px-3 py-3 text-slate-700">
+                                                            {subItem.QT_SOLICITADA}
+                                                        </td>
+
+                                                        <td className="px-3 py-3 text-slate-700">
+                                                            {subItem.QT_ATENDIDA || 0}
+                                                        </td>
+
+                                                        <td className="px-3 py-3">
+                                                            <select
+                                                                value={subItem.ID_ITEM_RESPOSTA || subItem.ID_ITEM || ""}
+                                                                onChange={(e) => {
+                                                                    const novosItens = [...solicitacaoResposta.ITENS];
+
+                                                                    novosItens[index] = {
+                                                                        ...novosItens[index],
+                                                                        ID_ITEM_RESPOSTA: e.target.value,
+                                                                    };
+
+                                                                    setSolicitacaoResposta({
+                                                                        ...solicitacaoResposta,
+                                                                        ITENS: novosItens,
+                                                                    });
+                                                                }}
+                                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                                                            >
+                                                                <option value="">Selecione</option>
+
+                                                                {itens.map((item) => (
+                                                                    <option key={item.ID_ITEM} value={item.ID_ITEM}>
+                                                                        {item.NM_ITEM} — saldo: {item.QT_SALDO_ATUAL} {item.DS_UNIDADE}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+
+                                                        <td className="px-3 py-3">
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                step="1"
+                                                                value={subItem.QT_ATENDER_AGORA || ""}
+                                                                onChange={(e) => {
+                                                                    const novosItens = [...solicitacaoResposta.ITENS];
+
+                                                                    novosItens[index] = {
+                                                                        ...novosItens[index],
+                                                                        QT_ATENDER_AGORA: e.target.value,
+                                                                    };
+
+                                                                    setSolicitacaoResposta({
+                                                                        ...solicitacaoResposta,
+                                                                        ITENS: novosItens,
+                                                                    });
+                                                                }}
+                                                                className="w-28 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                                                                placeholder="0"
+                                                            />
+                                                        </td>
+
+                                                        <td className="px-3 py-3">
+                                                            {subItem.ST_ITEM === "ATENDIDO" ? (
+                                                                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                                                    Atendido
+                                                                </span>
+                                                            ) : subItem.ST_ITEM === "ATENDIDO_PARCIAL" ? (
+                                                                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                                                    Parcial
+                                                                </span>
+                                                            ) : subItem.ST_ITEM === "SEM_SALDO" ? (
+                                                                <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                                                                    Sem saldo
+                                                                </span>
+                                                            ) : (
+                                                                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                                                    Aberto
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                                Item do estoque
+                                            </label>
+                                            <select
+                                                value={idItemBaixa}
+                                                onChange={(e) => setIdItemBaixa(e.target.value)}
+                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                                            >
+                                                <option value="">Selecione o item</option>
+                                                {itens.map((item) => (
+                                                    <option key={item.ID_ITEM} value={item.ID_ITEM}>
+                                                        {item.NM_ITEM} — saldo: {item.QT_SALDO_ATUAL} {item.DS_UNIDADE}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                                Quantidade atendida
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                                value={quantidadeBaixa}
+                                                onChange={(e) => setQuantidadeBaixa(e.target.value)}
+                                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                                                placeholder="Ex: 5"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                        Item do estoque
-                                    </label>
-                                    <select
-                                        value={idItemBaixa}
-                                        onChange={(e) => setIdItemBaixa(e.target.value)}
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
-                                    >
-                                        <option value="">Selecione o item</option>
-                                        {itens.map((item) => (
-                                            <option key={item.ID_ITEM} value={item.ID_ITEM}>
-                                                {item.NM_ITEM} — saldo: {item.QT_SALDO_ATUAL} {item.DS_UNIDADE}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                        Quantidade atendida
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="1"
-                                        value={quantidadeBaixa}
-                                        onChange={(e) => setQuantidadeBaixa(e.target.value)}
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
-                                        placeholder="Ex: 5"
-                                    />
-                                </div>
-
                                 <div>
                                     <label className="mb-2 block text-sm font-semibold text-slate-700">
                                         Status no GLPI
@@ -1385,7 +1618,7 @@ export default function EstoqueConsumiveisPage() {
                                     onChange={(e) => setRespostaManual(e.target.value)}
                                     rows={5}
                                     className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
-                                    placeholder="Ex: Solicitação atendida parcialmente. No momento temos apenas 5 unidades disponíveis em estoque."
+                                    placeholder="Ex: Copo descartável e Papel A4 serão entregues. Achocolatado em pó ficará pendente e chegará na próxima semana."
                                 />
                             </div>
 
@@ -1974,6 +2207,149 @@ export default function EstoqueConsumiveisPage() {
                                     className="rounded-2xl bg-[#00AE9D] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#00AE9D]/20 disabled:opacity-60"
                                 >
                                     {salvandoEdicaoProduto ? "Salvando..." : "Salvar alterações"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {modalItensAberta && solicitacaoItensSelecionada && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-4xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+                        <div className="bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#00AE9D]">
+                                        Itens da solicitação
+                                    </p>
+
+                                    <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                                        Chamado GLPI #{solicitacaoItensSelecionada.ID_CHAMADO_GLPI}
+                                    </h2>
+
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Confira os itens solicitados e realize a baixa individualmente.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={fecharModalItensSolicitacao}
+                                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-5 p-6">
+                            <div className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-3">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                        Solicitante
+                                    </p>
+                                    <p className="mt-1 font-semibold text-slate-800">
+                                        {solicitacaoItensSelecionada.NM_SOLICITANTE || "-"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                        Setor
+                                    </p>
+                                    <p className="mt-1 font-semibold text-slate-800">
+                                        {solicitacaoItensSelecionada.NM_SETOR || "-"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                        Status
+                                    </p>
+                                    <p className="mt-1 font-semibold text-slate-800">
+                                        {solicitacaoItensSelecionada.ST_SOLICITACAO}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="overflow-x-auto rounded-3xl border border-slate-200">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-slate-50">
+                                        <tr className="text-left text-slate-600">
+                                            <th className="px-4 py-3">Item solicitado</th>
+                                            <th className="px-4 py-3">Qtd. solicitada</th>
+                                            <th className="px-4 py-3">Qtd. atendida</th>
+                                            <th className="px-4 py-3">Status</th>
+                                            <th className="px-4 py-3">Ação</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {(solicitacaoItensSelecionada.ITENS || []).map((subItem: any) => (
+                                            <tr key={subItem.ID_SOLICITACAO_ITEM} className="border-t border-slate-100">
+                                                <td className="px-4 py-3 font-medium text-slate-800">
+                                                    {subItem.NM_ITEM_SOLICITADO}
+                                                </td>
+
+                                                <td className="px-4 py-3">
+                                                    {subItem.QT_SOLICITADA}
+                                                </td>
+
+                                                <td className="px-4 py-3">
+                                                    {subItem.QT_ATENDIDA || 0}
+                                                </td>
+
+                                                <td className="px-4 py-3">
+                                                    {subItem.ST_ITEM === "ATENDIDO" ? (
+                                                        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                                            Atendido
+                                                        </span>
+                                                    ) : subItem.ST_ITEM === "ATENDIDO_PARCIAL" ? (
+                                                        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                                            Parcial
+                                                        </span>
+                                                    ) : subItem.ST_ITEM === "SEM_SALDO" ? (
+                                                        <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                                                            Sem saldo
+                                                        </span>
+                                                    ) : (
+                                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                                            Aberto
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                <td className="px-4 py-3">
+                                                    {subItem.ST_ITEM === "ATENDIDO" ? (
+                                                        <span className="text-xs font-semibold text-slate-400">
+                                                            Finalizado
+                                                        </span>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                fecharModalItensSolicitacao();
+                                                                abrirModalBaixa(solicitacaoItensSelecionada, subItem);
+                                                            }}
+                                                            className="rounded-2xl bg-[#00AE9D] px-4 py-2 text-xs font-semibold text-white hover:bg-[#009688] cursor-pointer"
+                                                        >
+                                                            Dar baixa
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex justify-end border-t border-slate-100 pt-5">
+                                <button
+                                    type="button"
+                                    onClick={fecharModalItensSolicitacao}
+                                    className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    Fechar
                                 </button>
                             </div>
                         </div>

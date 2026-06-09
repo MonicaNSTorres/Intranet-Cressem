@@ -25,7 +25,8 @@ import {
     FaBirthdayCake,
     FaArchive,
     FaDesktop,
-    FaBookReader
+    FaBookReader,
+    FaCalendarCheck
 } from "react-icons/fa";
 import { useMe } from "@/hooks/use-me";
 
@@ -286,6 +287,24 @@ const links: LinkItem[] = [
         icon: FaBookReader,
         category: "Informativo",
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    },
+    {
+        title: "Sala de Reunião",
+        description: "Reserve e consulte reservas para a sala de reunião e auditorio.",
+        icon: FaCalendarCheck,
+        category: "Utilidades",
+        children: [
+            {
+                title: "Reservar",
+                href: "/auth/reserva_sala_reuniao",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+            },
+            {
+                title: "Consultar reserva",
+                href: "/auth/consulta_sala_reuniao",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+            },
+        ],
     },
     {
         title: "Formulários de Cadastro",

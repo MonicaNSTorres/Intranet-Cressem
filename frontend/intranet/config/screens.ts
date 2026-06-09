@@ -408,6 +408,22 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["juntar", "unir", "pdf", "arquivo"],
   },
   {
+    title: "Reservar Sala de Reunião",
+    desc: "Reserve data e horário na qual utilizará a sala ou auditorio.",
+    href: "/auth/reserva_sala_reuniao",
+    group: "Ferramentas",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    keywords: ["reserva", "reuniao", "sala", "auditorio"],
+  },
+  {
+    title: "Consultar Sala de Reunião",
+    desc: "Consulte a disponibilidade da sala de reunião e auditorio.",
+    href: "/auth/consulta_sala_reuniao",
+    group: "Ferramentas",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    keywords: ["consulta", "reuniao", "sala", "auditorio"],
+  },
+  {
     title: "Cadastro de Contrato",
     desc: "Cadastrar contratos.",
     href: "/auth/cadastro_contrato",
