@@ -122,6 +122,18 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               OR s.ID_APROV_GERENCIA = :idFuncionarioPerfil
               OR s.ID_APROV_GERENCIA_SUP = :idFuncionarioPerfil
               OR s.ID_APROV_DIRETORIA = :idFuncionarioPerfil
+              OR UPPER(TRIM(s.NM_FUNCIONARIO)) IN (
+                'ISABELI LOHANA CARVALHO MARTINS',
+                'JANAINA GABRIELA'
+              )
+              OR s.ID_SOLICITANTE IN (
+                SELECT fs.ID_FUNCIONARIO
+                FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fs
+                WHERE UPPER(TRIM(fs.NM_FUNCIONARIO)) IN (
+                  'ISABELI LOHANA CARVALHO MARTINS',
+                  'JANAINA GABRIELA'
+                )
+              )
               OR EXISTS (
                 SELECT 1
                 FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg

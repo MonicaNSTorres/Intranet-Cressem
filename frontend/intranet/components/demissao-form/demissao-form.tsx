@@ -1,7 +1,7 @@
 ﻿"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { FaPlus, FaPrint, FaTimes, FaTrash } from "react-icons/fa";
 import {
   buscarAssociadoDemissaoPorCpf,
@@ -55,6 +55,19 @@ function formatCpfCnpjView(value: string) {
   }
 
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
+function removerPontuacaoComDigitoVizinho(
+  value: string,
+  cursor: number,
+  direction: "backspace" | "delete"
+) {
+  if (direction === "backspace") {
+    const removeStart = Math.max(cursor - 2, 0);
+    return `${value.slice(0, removeStart)}${value.slice(cursor)}`;
+  }
+
+  return `${value.slice(0, cursor)}${value.slice(cursor + 2)}`;
 }
 
 type ParcelaItem = {
@@ -608,6 +621,36 @@ export function DemissaoForm() {
     }
   };
 
+  const onDocumentoKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Backspace" && e.key !== "Delete") return;
+
+    const input = e.currentTarget;
+    const cursorInicio = input.selectionStart ?? 0;
+    const cursorFim = input.selectionEnd ?? cursorInicio;
+    if (cursorInicio !== cursorFim) return;
+
+    const value = input.value;
+    const isBackspaceSobrePontuacao =
+      e.key === "Backspace" &&
+      cursorInicio > 0 &&
+      /\D/.test(value[cursorInicio - 1] || "");
+
+    const isDeleteSobrePontuacao =
+      e.key === "Delete" &&
+      cursorInicio < value.length &&
+      /\D/.test(value[cursorInicio] || "");
+
+    if (!isBackspaceSobrePontuacao && !isDeleteSobrePontuacao) return;
+
+    e.preventDefault();
+    const novoValor = removerPontuacaoComDigitoVizinho(
+      value,
+      cursorInicio,
+      e.key === "Backspace" ? "backspace" : "delete"
+    );
+    setCpf(onlyDigits(novoValor).slice(0, 14));
+  };
+
   return (
     <div className="min-w-0 mx-auto rounded-xl bg-white p-6 shadow">
       <SearchForm onSearch={onBuscar}>
@@ -621,6 +664,7 @@ export function DemissaoForm() {
               <SearchInput
                 value={formatCpfCnpjView(cpf)}
                 onChange={(e) => setCpf(onlyDigits(e.target.value).slice(0, 14))}
+                onKeyDown={onDocumentoKeyDown}
                 placeholder="CPF/CNPJ (somente números)"
                 className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
                 inputMode="numeric"

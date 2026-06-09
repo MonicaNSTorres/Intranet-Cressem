@@ -389,20 +389,18 @@ export const producaoMetaCooperativaPaController = {
           perfilAcesso.nrPaPermitidos.has(parseNumeroPa(row.numero_pa))
         );
 
-      try {
-        await registrarMonitorMeta({
-          tela: "producao_meta_cooperativa_pa",
-          tema,
-          periodo: `${periodo.dt_inicio}|${periodo.dt_fim}`,
-          fonte: "API_PRODUCAO_META_COOPERATIVA_PA",
-          dtFimPeriodo: periodo.dt_fim,
-          rows,
-          gravarCarga: false,
-          gravarResultado: true,
-        });
-      } catch (monitorErr: any) {
+      void registrarMonitorMeta({
+        tela: "producao_meta_cooperativa_pa",
+        tema,
+        periodo: `${periodo.dt_inicio}|${periodo.dt_fim}`,
+        fonte: "API_PRODUCAO_META_COOPERATIVA_PA",
+        dtFimPeriodo: periodo.dt_fim,
+        rows,
+        gravarCarga: false,
+        gravarResultado: true,
+      }).catch((monitorErr: any) => {
         console.error("Erro ao registrar monitor meta cooperativa:", monitorErr);
-      }
+      });
 
       return res.json(rowsFiltradas);
     } catch (err: any) {
