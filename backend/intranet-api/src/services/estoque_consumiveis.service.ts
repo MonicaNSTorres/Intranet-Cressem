@@ -5,6 +5,12 @@ import * as XLSX from "xlsx";
 import { whatsappService } from "./whatsapp.service";
 import { sendEmail } from "./email.service";
 
+type SolicitacaoGlpiItemInput = {
+    nomeItemSolicitado: string;
+    quantidadeSolicitada: number;
+    idItem?: number | null;
+};
+
 type SincronizarSolicitacaoInput = {
     idChamadoGlpi: number;
     nomeItemSolicitado: string;
@@ -15,6 +21,7 @@ type SincronizarSolicitacaoInput = {
     dataSolicitacao?: string | Date | null;
     idItem?: number | null;
     status?: string;
+    itens?: SolicitacaoGlpiItemInput[];
 };
 
 type DarBaixaInput = {
@@ -81,28 +88,76 @@ function extrairCampo(texto: string, campo: string): string {
     return match?.[1]?.trim() || "";
 }
 
-function parseDescricaoEstoqueGlpi(descricao: string) {
-    const textoLimpo = limparHtml(descricao);
-
-    const item =
-        extrairCampo(textoLimpo, "Selecione o Insumo") ||
-        extrairCampo(textoLimpo, "Insumo") ||
-        extrairCampo(textoLimpo, "Item");
-
-    const quantidadeTexto = extrairCampo(textoLimpo, "Quantidade");
-
+function parseQuantidade(value: string): number {
     const quantidade = Number(
-        String(quantidadeTexto || "")
+        String(value || "")
             .replace(",", ".")
             .replace(/[^\d.]/g, "")
     );
 
+    return Number.isFinite(quantidade) ? quantidade : 0;
+}
+
+function parseDescricaoEstoqueGlpi(descricao: string) {
+    const textoLimpo = limparHtml(descricao);
+
     const setor = extrairCampo(textoLimpo, "Setor");
     const observacao = extrairCampo(textoLimpo, "Observação");
 
+    const itens: Array<{
+        item: string;
+        quantidade: number;
+        indice: number;
+    }> = [];
+
+    for (let i = 1; i <= 10; i++) {
+        const blocoRegex = new RegExp(
+            `Solicitação de Insumos\\s*-\\s*Item\\s*${i}([\\s\\S]*?)(?=Solicitação de Insumos\\s*-\\s*Item\\s*${i + 1}|$)`,
+            "i"
+        );
+
+        const blocoMatch = textoLimpo.match(blocoRegex);
+        const bloco = blocoMatch?.[1] || "";
+
+        if (!bloco.trim()) continue;
+
+        const item =
+            extrairCampo(bloco, "Selecione o Insumo") ||
+            extrairCampo(bloco, "Insumo") ||
+            extrairCampo(bloco, "Item");
+
+        const quantidade = parseQuantidade(extrairCampo(bloco, "Quantidade"));
+
+        if (item && quantidade > 0) {
+            itens.push({
+                item,
+                quantidade,
+                indice: i,
+            });
+        }
+    }
+
+    if (!itens.length) {
+        const item =
+            extrairCampo(textoLimpo, "Selecione o Insumo") ||
+            extrairCampo(textoLimpo, "Insumo") ||
+            extrairCampo(textoLimpo, "Item");
+
+        const quantidade = parseQuantidade(extrairCampo(textoLimpo, "Quantidade"));
+
+        if (item && quantidade > 0) {
+            itens.push({
+                item,
+                quantidade,
+                indice: 1,
+            });
+        }
+    }
+
     return {
-        item,
-        quantidade: Number.isFinite(quantidade) ? quantidade : 0,
+        item: itens[0]?.item || "",
+        quantidade: itens[0]?.quantidade || 0,
+        itens,
         setor,
         observacao,
     };
@@ -274,7 +329,7 @@ export const estoqueConsumiveisService = {
     },
 
     async listarSolicitacoesGlpi() {
-        const sql = `
+        const sqlSolicitacoes = `
       SELECT
         ID_SOLICITACAO,
         ID_CHAMADO_GLPI,
@@ -306,9 +361,74 @@ export const estoqueConsumiveisService = {
         ID_SOLICITACAO DESC
     `;
 
-        const result = await oracleExecute(sql, {}, { outFormat: oracledb.OUT_FORMAT_OBJECT });
-        return result.rows || [];
+        const solicitacoesResult = await oracleExecute(
+            sqlSolicitacoes,
+            {},
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        const solicitacoes = solicitacoesResult.rows || [];
+
+        if (!solicitacoes.length) {
+            return [];
+        }
+
+        const ids = solicitacoes
+            .map((item: any) => Number(item.ID_SOLICITACAO))
+            .filter((id: number) => Number.isFinite(id) && id > 0);
+
+        const bindIds: any = {};
+        const placeholders = ids.map((id: number, index: number) => {
+            const key = `id${index}`;
+            bindIds[key] = id;
+            return `:${key}`;
+        });
+
+        const itensResult = await oracleExecute(
+            `
+      SELECT
+        ID_SOLICITACAO_ITEM,
+        ID_SOLICITACAO,
+        ID_ITEM,
+        NM_ITEM_SOLICITADO,
+        QT_SOLICITADA,
+        QT_ATENDIDA,
+        ST_ITEM,
+        DS_OBSERVACAO,
+        DT_CADASTRO,
+        DT_ATENDIMENTO,
+        NM_USUARIO_ATENDIMENTO
+      FROM DBACRESSEM.ESTOQUE_SOLICITACOES_ITENS
+      WHERE ID_SOLICITACAO IN (${placeholders.join(",")})
+      ORDER BY ID_SOLICITACAO, ID_SOLICITACAO_ITEM
+      `,
+            bindIds,
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        const itensPorSolicitacao = new Map<number, any[]>();
+
+        for (const item of itensResult.rows || []) {
+            const idSolicitacao = Number((item as any).ID_SOLICITACAO);
+
+            if (!itensPorSolicitacao.has(idSolicitacao)) {
+                itensPorSolicitacao.set(idSolicitacao, []);
+            }
+
+            itensPorSolicitacao.get(idSolicitacao)?.push(item);
+        }
+
+        return solicitacoes.map((solicitacao: any) => {
+            const itens = itensPorSolicitacao.get(Number(solicitacao.ID_SOLICITACAO)) || [];
+
+            return {
+                ...solicitacao,
+                ITENS: itens,
+                QTD_ITENS: itens.length || 1,
+            };
+        });
     },
+
 
     async sincronizarChamadosReaisGlpi() {
         const tickets = await glpiService.listTicketsEstoque();
@@ -329,8 +449,8 @@ export const estoqueConsumiveisService = {
 
             console.log("Ticket parseado:", {
                 idChamadoGlpi,
-                item: parsed.item,
-                quantidade: parsed.quantidade,
+                totalItens: parsed.itens.length,
+                itens: parsed.itens,
                 descricao,
             });
 
@@ -355,40 +475,40 @@ export const estoqueConsumiveisService = {
                 ""
             );
 
-            if (!idChamadoGlpi || !parsed.item || !parsed.quantidade) {
+            if (!idChamadoGlpi || !parsed.itens.length) {
                 ignorados++;
                 semPadrao++;
                 continue;
             }
 
-            const itemEncontrado = await this.buscarItemPorNomeAproximado(parsed.item);
+            const itensComEstoque: SolicitacaoGlpiItemInput[] = [];
+
+            for (const itemSolicitado of parsed.itens) {
+                const itemEncontrado = await this.buscarItemPorNomeAproximado(itemSolicitado.item);
+
+                itensComEstoque.push({
+                    idItem: itemEncontrado?.ID_ITEM || null,
+                    nomeItemSolicitado: itemSolicitado.item,
+                    quantidadeSolicitada: itemSolicitado.quantidade,
+                });
+            }
+
+            const possuiItemNaoCadastrado = itensComEstoque.some((item) => !item.idItem);
+
+            const primeiroItem = itensComEstoque[0];
 
             const resultado = await this.sincronizarSolicitacaoGlpi({
                 idChamadoGlpi,
-                idItem: itemEncontrado?.ID_ITEM || null,
-                nomeItemSolicitado: parsed.item,
-                quantidadeSolicitada: parsed.quantidade,
+                idItem: primeiroItem?.idItem || null,
+                nomeItemSolicitado: primeiroItem?.nomeItemSolicitado || parsed.item,
+                quantidadeSolicitada: primeiroItem?.quantidadeSolicitada || parsed.quantidade,
                 nomeSolicitante: nomeSolicitante || null,
                 nomeSetor: parsed.setor || null,
                 descricaoGlpi: descricao,
                 dataSolicitacao: ticket?.date_creation || ticket?.date || null,
-                status: itemEncontrado?.ID_ITEM ? "ABERTA" : "ITEM_NAO_CADASTRADO",
+                status: possuiItemNaoCadastrado ? "ITEM_NAO_CADASTRADO" : "ABERTA",
+                itens: itensComEstoque,
             });
-
-            if (!resultado?.duplicated && itemEncontrado?.ID_ITEM) {
-                await oracleExecute(
-                    `
-          UPDATE DBACRESSEM.ESTOQUE_SOLICITACOES_GLPI
-          SET ID_ITEM = :idItem
-          WHERE ID_CHAMADO_GLPI = :idChamadoGlpi
-          `,
-                    {
-                        idItem: itemEncontrado.ID_ITEM,
-                        idChamadoGlpi,
-                    },
-                    { autoCommit: true }
-                );
-            }
 
             if (resultado?.duplicated) {
                 ignorados++;
@@ -408,6 +528,7 @@ export const estoqueConsumiveisService = {
         };
     },
 
+
     async sincronizarSolicitacaoGlpi(input: SincronizarSolicitacaoInput) {
         const sqlCheck = `
       SELECT ID_SOLICITACAO
@@ -425,52 +546,115 @@ export const estoqueConsumiveisService = {
             return { success: true, duplicated: true };
         }
 
+        const itens = Array.isArray(input.itens) && input.itens.length
+            ? input.itens
+            : [
+                {
+                    idItem: input.idItem || null,
+                    nomeItemSolicitado: input.nomeItemSolicitado,
+                    quantidadeSolicitada: normalizeNumber(input.quantidadeSolicitada),
+                },
+            ];
+
+        const primeiroItem = itens[0];
+
         const sqlInsert = `
       INSERT INTO DBACRESSEM.ESTOQUE_SOLICITACOES_GLPI (
-  ID_CHAMADO_GLPI,
-  ID_ITEM,
-  NM_ITEM_SOLICITADO,
-  QT_SOLICITADA,
-  NM_SOLICITANTE,
-  NM_SETOR,
-  DS_DESCRICAO_GLPI,
-  DT_SOLICITACAO,
-  ST_SOLICITACAO
-) VALUES (
-  :idChamadoGlpi,
-  :idItem,
-  :nomeItemSolicitado,
-  :quantidadeSolicitada,
-  :nomeSolicitante,
-  :nomeSetor,
-  :descricaoGlpi,
-  CASE
-    WHEN :dataSolicitacao IS NOT NULL
-    THEN TO_DATE(:dataSolicitacao, 'YYYY-MM-DD HH24:MI:SS')
-    ELSE SYSDATE
-  END,
-  :status
-)
+        ID_CHAMADO_GLPI,
+        ID_ITEM,
+        NM_ITEM_SOLICITADO,
+        QT_SOLICITADA,
+        QT_ATENDIDA,
+        NM_SOLICITANTE,
+        NM_SETOR,
+        DS_DESCRICAO_GLPI,
+        DT_SOLICITACAO,
+        ST_SOLICITACAO
+      ) VALUES (
+        :idChamadoGlpi,
+        :idItem,
+        :nomeItemSolicitado,
+        :quantidadeSolicitada,
+        0,
+        :nomeSolicitante,
+        :nomeSetor,
+        :descricaoGlpi,
+        CASE
+          WHEN :dataSolicitacao IS NOT NULL
+          THEN TO_DATE(:dataSolicitacao, 'YYYY-MM-DD HH24:MI:SS')
+          ELSE SYSDATE
+        END,
+        :status
+      )
+      RETURNING ID_SOLICITACAO INTO :idSolicitacao
     `;
 
-        await oracleExecute(
+        const insertResult = await oracleExecute(
             sqlInsert,
             {
                 idChamadoGlpi: input.idChamadoGlpi,
-                idItem: input.idItem || null,
-                nomeItemSolicitado: input.nomeItemSolicitado,
-                quantidadeSolicitada: normalizeNumber(input.quantidadeSolicitada),
+                idItem: primeiroItem?.idItem || null,
+                nomeItemSolicitado: primeiroItem?.nomeItemSolicitado || input.nomeItemSolicitado,
+                quantidadeSolicitada: normalizeNumber(primeiroItem?.quantidadeSolicitada || input.quantidadeSolicitada),
                 nomeSolicitante: input.nomeSolicitante || null,
                 nomeSetor: input.nomeSetor || null,
                 descricaoGlpi: input.descricaoGlpi || null,
                 dataSolicitacao: input.dataSolicitacao || null,
                 status: input.status || "ABERTA",
+                idSolicitacao: {
+                    dir: oracledb.BIND_OUT,
+                    type: oracledb.NUMBER,
+                },
             },
             { autoCommit: true }
         );
 
-        return { success: true, duplicated: false };
+        const idSolicitacao = Number(insertResult.outBinds?.idSolicitacao?.[0]);
+
+        if (!idSolicitacao) {
+            throw new Error("Solicitação criada, mas não foi possível recuperar o ID_SOLICITACAO.");
+        }
+
+        for (const item of itens.slice(0, 10)) {
+            const statusItem = item.idItem ? "ABERTO" : "SEM_SALDO";
+
+            await oracleExecute(
+                `
+      INSERT INTO DBACRESSEM.ESTOQUE_SOLICITACOES_ITENS (
+        ID_SOLICITACAO,
+        ID_ITEM,
+        NM_ITEM_SOLICITADO,
+        QT_SOLICITADA,
+        QT_ATENDIDA,
+        ST_ITEM
+      ) VALUES (
+        :idSolicitacao,
+        :idItem,
+        :nomeItemSolicitado,
+        :quantidadeSolicitada,
+        0,
+        :statusItem
+      )
+      `,
+                {
+                    idSolicitacao,
+                    idItem: item.idItem || null,
+                    nomeItemSolicitado: item.nomeItemSolicitado,
+                    quantidadeSolicitada: normalizeNumber(item.quantidadeSolicitada),
+                    statusItem,
+                },
+                { autoCommit: true }
+            );
+        }
+
+        return {
+            success: true,
+            duplicated: false,
+            idSolicitacao,
+            totalItens: itens.length,
+        };
     },
+
 
     async lancarEntrada(data: {
         idItem: number;
@@ -584,13 +768,35 @@ export const estoqueConsumiveisService = {
             throw new Error("Saldo insuficiente para atender a solicitação.");
         }
 
-        const saldoDepois = saldoAntes - quantidadeAtendida;
-        const qtSolicitada = normalizeNumber(solicitacao.QT_SOLICITADA);
-        const qtAtendidaAnterior = normalizeNumber(solicitacao.QT_ATENDIDA);
-        const qtAtendidaNova = qtAtendidaAnterior + quantidadeAtendida;
+        const itemSolicitacaoResult = await oracleExecute(
+            `
+      SELECT
+        ID_SOLICITACAO_ITEM,
+        QT_SOLICITADA,
+        QT_ATENDIDA
+      FROM DBACRESSEM.ESTOQUE_SOLICITACOES_ITENS
+      WHERE ID_SOLICITACAO = :idSolicitacao
+        AND (
+          ID_ITEM = :idItem
+          OR (
+            ID_ITEM IS NULL
+            AND UPPER(TRIM(NM_ITEM_SOLICITADO)) = UPPER(TRIM(:nomeItem))
+          )
+        )
+      ORDER BY ID_SOLICITACAO_ITEM
+      FETCH FIRST 1 ROWS ONLY
+      `,
+            {
+                idSolicitacao: data.idSolicitacao,
+                idItem: data.idItem,
+                nomeItem: item.NM_ITEM,
+            },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
 
-        let status = "ATENDIDA";
-        if (qtAtendidaNova < qtSolicitada) status = "ATENDIDA_PARCIAL";
+        const itemSolicitacao = (itemSolicitacaoResult.rows || [])[0] as any;
+
+        const saldoDepois = saldoAntes - quantidadeAtendida;
 
         await oracleExecute(
             `
@@ -629,7 +835,7 @@ export const estoqueConsumiveisService = {
                 idChamadoGlpi: solicitacao.ID_CHAMADO_GLPI,
                 usuario: data.usuarioAtendimento,
             },
-            { autoCommit: true }
+            { autoCommit: false }
         );
 
         await oracleExecute(
@@ -643,16 +849,85 @@ export const estoqueConsumiveisService = {
                 idItem: data.idItem,
                 saldoDepois,
             },
-            { autoCommit: true }
+            { autoCommit: false }
         );
+
+        if (itemSolicitacao?.ID_SOLICITACAO_ITEM) {
+            const qtSolicitadaItem = normalizeNumber(itemSolicitacao.QT_SOLICITADA);
+            const qtAtendidaAnteriorItem = normalizeNumber(itemSolicitacao.QT_ATENDIDA);
+            const qtAtendidaNovaItem = qtAtendidaAnteriorItem + quantidadeAtendida;
+
+            let statusItem = "ATENDIDO";
+            if (qtAtendidaNovaItem < qtSolicitadaItem) statusItem = "ATENDIDO_PARCIAL";
+
+            await oracleExecute(
+                `
+      UPDATE DBACRESSEM.ESTOQUE_SOLICITACOES_ITENS
+      SET ID_ITEM = :idItem,
+          QT_ATENDIDA = :qtAtendidaNova,
+          ST_ITEM = :statusItem,
+          DS_OBSERVACAO = :observacao,
+          DT_ATENDIMENTO = SYSDATE,
+          NM_USUARIO_ATENDIMENTO = :usuario
+      WHERE ID_SOLICITACAO_ITEM = :idSolicitacaoItem
+      `,
+                {
+                    idSolicitacaoItem: itemSolicitacao.ID_SOLICITACAO_ITEM,
+                    idItem: data.idItem,
+                    qtAtendidaNova: qtAtendidaNovaItem,
+                    statusItem,
+                    observacao: data.observacao || null,
+                    usuario: data.usuarioAtendimento,
+                },
+                { autoCommit: false }
+            );
+        }
+
+        const totaisResult = await oracleExecute(
+            `
+      SELECT
+        COUNT(*) AS TOTAL_ITENS,
+        SUM(CASE WHEN ST_ITEM = 'ATENDIDO' THEN 1 ELSE 0 END) AS TOTAL_ATENDIDOS,
+        SUM(CASE WHEN ST_ITEM = 'ATENDIDO_PARCIAL' THEN 1 ELSE 0 END) AS TOTAL_PARCIAIS,
+        SUM(QT_SOLICITADA) AS TOTAL_SOLICITADO,
+        SUM(QT_ATENDIDA) AS TOTAL_ATENDIDO
+      FROM DBACRESSEM.ESTOQUE_SOLICITACOES_ITENS
+      WHERE ID_SOLICITACAO = :idSolicitacao
+      `,
+            { idSolicitacao: data.idSolicitacao },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        const totais = (totaisResult.rows || [])[0] as any;
+
+        const totalItens = normalizeNumber(totais?.TOTAL_ITENS);
+        const totalAtendidos = normalizeNumber(totais?.TOTAL_ATENDIDOS);
+        const totalParciais = normalizeNumber(totais?.TOTAL_PARCIAIS);
+        const totalSolicitado = normalizeNumber(totais?.TOTAL_SOLICITADO);
+        const totalAtendido = normalizeNumber(totais?.TOTAL_ATENDIDO);
+
+        let status = "ABERTA";
+
+        if (totalItens > 0 && totalAtendidos === totalItens) {
+            status = "ATENDIDA";
+        } else if (totalAtendido > 0 || totalParciais > 0) {
+            status = "ATENDIDA_PARCIAL";
+        }
 
         await oracleExecute(
             `
       UPDATE DBACRESSEM.ESTOQUE_SOLICITACOES_GLPI
-      SET ID_ITEM = :idItem,
-          QT_ATENDIDA = :qtAtendidaNova,
+      SET ID_ITEM = NVL(:idItem, ID_ITEM),
+          QT_ATENDIDA = :totalAtendido,
+          QT_SOLICITADA = CASE
+            WHEN :totalSolicitado > 0 THEN :totalSolicitado
+            ELSE QT_SOLICITADA
+          END,
           ST_SOLICITACAO = :status,
-          DT_ATENDIMENTO = SYSDATE,
+          DT_ATENDIMENTO = CASE
+            WHEN :status IN ('ATENDIDA', 'ATENDIDA_PARCIAL') THEN SYSDATE
+            ELSE DT_ATENDIMENTO
+          END,
           NM_USUARIO_ATENDIMENTO = :usuario,
           DS_ULTIMO_RETORNO_GLPI = NULL,
           DT_RETORNO_NEGATIVO = NULL,
@@ -663,12 +938,15 @@ export const estoqueConsumiveisService = {
             {
                 idSolicitacao: data.idSolicitacao,
                 idItem: data.idItem,
-                qtAtendidaNova,
+                totalAtendido,
+                totalSolicitado,
                 status,
                 usuario: data.usuarioAtendimento,
             },
-            { autoCommit: true }
+            { autoCommit: false }
         );
+
+        await oracleExecute("COMMIT", {}, { autoCommit: true });
 
         try {
             const mensagemGlpi = `
@@ -676,12 +954,16 @@ Solicitação atendida via Intranet.
 
 Item entregue: ${item.NM_ITEM}
 Quantidade atendida: ${quantidadeAtendida}
+Status da solicitação: ${status}
 Responsável pela baixa: ${data.usuarioAtendimento}
 Observação: ${data.observacao || "-"}
   `.trim();
 
             await glpiService.addTicketFollowup(solicitacao.ID_CHAMADO_GLPI, mensagemGlpi);
-            await glpiService.solveTicket(solicitacao.ID_CHAMADO_GLPI, mensagemGlpi);
+
+            if (status === "ATENDIDA") {
+                await glpiService.solveTicket(solicitacao.ID_CHAMADO_GLPI, mensagemGlpi);
+            }
         } catch (error) {
             console.error("Baixa registrada no Oracle, mas falhou ao atualizar GLPI:", error);
         }
@@ -692,6 +974,7 @@ Observação: ${data.observacao || "-"}
             saldoDepois,
         };
     },
+
 
     async listarMovimentacoes() {
         const sql = `
@@ -930,10 +1213,33 @@ Observação: ${data.observacao || "-"}
             }
         }
 
+        const totaisItensResult = await oracleExecute(
+            `
+    SELECT
+        COUNT(*) AS TOTAL_ITENS,
+        SUM(CASE WHEN ST_ITEM = 'ATENDIDO' THEN 1 ELSE 0 END) AS TOTAL_ATENDIDOS,
+        SUM(QT_ATENDIDA) AS TOTAL_ATENDIDO
+    FROM DBACRESSEM.ESTOQUE_SOLICITACOES_ITENS
+    WHERE ID_SOLICITACAO = :idSolicitacao
+    `,
+            { idSolicitacao: data.idSolicitacao },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        const totaisItens = (totaisItensResult.rows || [])[0] as any;
+
+        const totalItens = normalizeNumber(totaisItens?.TOTAL_ITENS);
+        const totalAtendidos = normalizeNumber(totaisItens?.TOTAL_ATENDIDOS);
+        const totalAtendido = normalizeNumber(totaisItens?.TOTAL_ATENDIDO);
+
+        const todosItensAtendidos = totalItens > 0 && totalItens === totalAtendidos;
+
         const statusSolicitacao =
-            statusGlpi === 5 ? "ATENDIDA" :
-                statusGlpi === 6 ? "RECUSADA" :
-                    "EM_ANALISE";
+            todosItensAtendidos
+                ? "ATENDIDA"
+                : totalAtendido > 0
+                    ? "ATENDIDA_PARCIAL"
+                    : "EM_ANALISE";
 
         const mensagemGlpi = `
 Resposta manual registrada via Intranet.
@@ -953,20 +1259,23 @@ ${data.resposta}
 
         await oracleExecute(
             `
-        UPDATE DBACRESSEM.ESTOQUE_SOLICITACOES_GLPI
-        SET ID_ITEM = NVL(:idItem, ID_ITEM),
-            QT_ATENDIDA = :quantidadeAtendida,
-            DS_ULTIMA_RESPOSTA_MANUAL = :resposta,
-            NR_ULTIMO_STATUS_GLPI = :statusGlpi,
-            ST_SOLICITACAO = :statusSolicitacao,
-            DT_ATENDIMENTO = SYSDATE,
-            NM_USUARIO_ATENDIMENTO = :usuario
-        WHERE ID_SOLICITACAO = :idSolicitacao
-        `,
+    UPDATE DBACRESSEM.ESTOQUE_SOLICITACOES_GLPI
+    SET ID_ITEM = NVL(:idItem, ID_ITEM),
+        QT_ATENDIDA = :totalAtendido,
+        DS_ULTIMA_RESPOSTA_MANUAL = :resposta,
+        NR_ULTIMO_STATUS_GLPI = :statusGlpi,
+        ST_SOLICITACAO = :statusSolicitacao,
+        DT_ATENDIMENTO = CASE
+            WHEN :statusSolicitacao = 'ATENDIDA' THEN SYSDATE
+            ELSE DT_ATENDIMENTO
+        END,
+        NM_USUARIO_ATENDIMENTO = :usuario
+    WHERE ID_SOLICITACAO = :idSolicitacao
+    `,
             {
                 idSolicitacao: data.idSolicitacao,
                 idItem: data.idItem || null,
-                quantidadeAtendida,
+                totalAtendido,
                 resposta: data.resposta,
                 statusGlpi,
                 statusSolicitacao,
@@ -1674,10 +1983,9 @@ ${data.resposta}
 
         const saldoDepois = saldoAntes - quantidade;
 
-        // 🔥 STATUS FINAL PADRÃO ENTERPRISE
         const statusFinalGlpi = 6;
 
-        await oracleExecute(
+        const insertSolicitacaoResult = await oracleExecute(
             `
     INSERT INTO DBACRESSEM.ESTOQUE_SOLICITACOES_GLPI (
         ID_CHAMADO_GLPI,
@@ -1712,6 +2020,7 @@ ${data.resposta}
         :statusFinalGlpi,
         'S'
     )
+    RETURNING ID_SOLICITACAO INTO :idSolicitacao
     `,
             {
                 idChamadoGlpi,
@@ -1723,8 +2032,49 @@ ${data.resposta}
                 descricaoGlpi: data.observacao || "Saída manual registrada pela Intranet.",
                 usuario: data.usuarioAtendimento,
                 statusFinalGlpi,
+                idSolicitacao: {
+                    dir: oracledb.BIND_OUT,
+                    type: oracledb.NUMBER,
+                },
             },
-            { autoCommit: true }
+            { autoCommit: false }
+        );
+
+        const idSolicitacao = Number(insertSolicitacaoResult.outBinds?.idSolicitacao?.[0]);
+
+        await oracleExecute(
+            `
+    INSERT INTO DBACRESSEM.ESTOQUE_SOLICITACOES_ITENS (
+        ID_SOLICITACAO,
+        ID_ITEM,
+        NM_ITEM_SOLICITADO,
+        QT_SOLICITADA,
+        QT_ATENDIDA,
+        ST_ITEM,
+        DS_OBSERVACAO,
+        DT_ATENDIMENTO,
+        NM_USUARIO_ATENDIMENTO
+    ) VALUES (
+        :idSolicitacao,
+        :idItem,
+        :nomeItem,
+        :quantidade,
+        :quantidade,
+        'ATENDIDO',
+        :observacao,
+        SYSDATE,
+        :usuario
+    )
+    `,
+            {
+                idSolicitacao,
+                idItem: data.idItem,
+                nomeItem: item.NM_ITEM,
+                quantidade,
+                observacao: data.observacao || "Saída manual com chamado GLPI.",
+                usuario: data.usuarioAtendimento,
+            },
+            { autoCommit: false }
         );
 
         await oracleExecute(
@@ -1764,7 +2114,7 @@ ${data.resposta}
                 idChamadoGlpi,
                 usuario: data.usuarioAtendimento,
             },
-            { autoCommit: true }
+            { autoCommit: false }
         );
 
         await oracleExecute(
@@ -1778,8 +2128,10 @@ ${data.resposta}
                 idItem: data.idItem,
                 saldoDepois,
             },
-            { autoCommit: true }
+            { autoCommit: false }
         );
+
+        await oracleExecute("COMMIT", {}, { autoCommit: true });
 
         const mensagemGlpi = `
     Solicitação manual atendida via Intranet.
@@ -1819,4 +2171,178 @@ ${data.resposta}
             saldoDepois,
         };
     },
+
+    async darBaixaItemSolicitacao(data: {
+        idSolicitacaoItem: number;
+        idItem: number;
+        quantidadeAtendida: number;
+        observacao?: string;
+        usuarioAtendimento: string;
+    }) {
+        const itemSolicitacaoResult = await oracleExecute(
+            `
+        SELECT
+            SI.ID_SOLICITACAO_ITEM,
+            SI.ID_SOLICITACAO,
+            SI.QT_SOLICITADA,
+            SI.QT_ATENDIDA,
+            S.ID_CHAMADO_GLPI,
+            S.NM_SOLICITANTE,
+            S.NM_SETOR
+        FROM DBACRESSEM.ESTOQUE_SOLICITACOES_ITENS SI
+        INNER JOIN DBACRESSEM.ESTOQUE_SOLICITACOES_GLPI S
+            ON S.ID_SOLICITACAO = SI.ID_SOLICITACAO
+        WHERE SI.ID_SOLICITACAO_ITEM = :idSolicitacaoItem
+        `,
+            { idSolicitacaoItem: data.idSolicitacaoItem },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        const itemSolicitacao = (itemSolicitacaoResult.rows || [])[0] as any;
+
+        if (!itemSolicitacao) {
+            throw new Error("Item da solicitação não encontrado.");
+        }
+
+        const itemEstoque = await this.buscarItemPorId(data.idItem);
+
+        if (!itemEstoque) {
+            throw new Error("Item de estoque não encontrado.");
+        }
+
+        const saldoAntes = normalizeNumber(itemEstoque.QT_SALDO_ATUAL);
+        const quantidadeAtendida = normalizeNumber(data.quantidadeAtendida);
+
+        if (quantidadeAtendida <= 0) {
+            throw new Error("Quantidade atendida deve ser maior que zero.");
+        }
+
+        if (quantidadeAtendida > saldoAntes) {
+            throw new Error("Saldo insuficiente para atender este item.");
+        }
+
+        const novaQtdAtendida =
+            normalizeNumber(itemSolicitacao.QT_ATENDIDA) + quantidadeAtendida;
+
+        const qtdSolicitada = normalizeNumber(itemSolicitacao.QT_SOLICITADA);
+
+        const statusItem =
+            novaQtdAtendida >= qtdSolicitada
+                ? "ATENDIDO"
+                : "ATENDIDO_PARCIAL";
+
+        const saldoDepois = saldoAntes - quantidadeAtendida;
+
+        await oracleExecute(
+            `
+        UPDATE DBACRESSEM.ESTOQUE_ITENS
+        SET QT_SALDO_ATUAL = :saldoDepois,
+            DT_ATUALIZACAO = SYSDATE
+        WHERE ID_ITEM = :idItem
+        `,
+            {
+                saldoDepois,
+                idItem: data.idItem,
+            },
+            { autoCommit: true }
+        );
+
+        await oracleExecute(
+            `
+        UPDATE DBACRESSEM.ESTOQUE_SOLICITACOES_ITENS
+        SET ID_ITEM = :idItem,
+            QT_ATENDIDA = :novaQtdAtendida,
+            ST_ITEM = :statusItem,
+            DS_OBSERVACAO = :observacao,
+            DT_ATENDIMENTO = SYSDATE,
+            NM_USUARIO_ATENDIMENTO = :usuarioAtendimento
+        WHERE ID_SOLICITACAO_ITEM = :idSolicitacaoItem
+        `,
+            {
+                idItem: data.idItem,
+                novaQtdAtendida,
+                statusItem,
+                observacao: data.observacao || null,
+                usuarioAtendimento: data.usuarioAtendimento,
+                idSolicitacaoItem: data.idSolicitacaoItem,
+            },
+            { autoCommit: true }
+        );
+
+        await oracleExecute(
+            `
+        INSERT INTO DBACRESSEM.ESTOQUE_MOVIMENTACOES (
+            ID_ITEM,
+            TP_MOVIMENTACAO,
+            QT_MOVIMENTACAO,
+            QT_SALDO_ANTES,
+            QT_SALDO_DEPOIS,
+            DS_OBSERVACAO,
+            NM_SOLICITANTE,
+            NM_SETOR,
+            ID_CHAMADO_GLPI,
+            NM_USUARIO_BAIXA
+        ) VALUES (
+            :idItem,
+            'SAIDA',
+            :quantidadeAtendida,
+            :saldoAntes,
+            :saldoDepois,
+            :observacao,
+            :nomeSolicitante,
+            :nomeSetor,
+            :idChamadoGlpi,
+            :usuarioAtendimento
+        )
+        `,
+            {
+                idItem: data.idItem,
+                quantidadeAtendida,
+                saldoAntes,
+                saldoDepois,
+                observacao: data.observacao || "Baixa de item da solicitação GLPI",
+                nomeSolicitante: itemSolicitacao.NM_SOLICITANTE || null,
+                nomeSetor: itemSolicitacao.NM_SETOR || null,
+                idChamadoGlpi: itemSolicitacao.ID_CHAMADO_GLPI,
+                usuarioAtendimento: data.usuarioAtendimento,
+            },
+            { autoCommit: true }
+        );
+
+        await oracleExecute(
+            `
+        UPDATE DBACRESSEM.ESTOQUE_SOLICITACOES_GLPI S
+        SET S.ST_SOLICITACAO = (
+            SELECT
+                CASE
+                    WHEN COUNT(*) = SUM(CASE WHEN I.ST_ITEM = 'ATENDIDO' THEN 1 ELSE 0 END)
+                        THEN 'ATENDIDA'
+                    WHEN SUM(CASE WHEN I.ST_ITEM IN ('ATENDIDO', 'ATENDIDO_PARCIAL') THEN 1 ELSE 0 END) > 0
+                        THEN 'ATENDIDA_PARCIAL'
+                    ELSE 'ABERTA'
+                END
+            FROM DBACRESSEM.ESTOQUE_SOLICITACOES_ITENS I
+            WHERE I.ID_SOLICITACAO = S.ID_SOLICITACAO
+        ),
+        S.DT_ATENDIMENTO = SYSDATE,
+        S.NM_USUARIO_ATENDIMENTO = :usuarioAtendimento
+        WHERE S.ID_SOLICITACAO = :idSolicitacao
+        `,
+            {
+                usuarioAtendimento: data.usuarioAtendimento,
+                idSolicitacao: itemSolicitacao.ID_SOLICITACAO,
+            },
+            { autoCommit: true }
+        );
+
+        return {
+            success: true,
+            message: "Baixa do item realizada com sucesso.",
+            saldoAntes,
+            saldoDepois,
+            quantidadeAtendida,
+            statusItem,
+        };
+    },
+
 };

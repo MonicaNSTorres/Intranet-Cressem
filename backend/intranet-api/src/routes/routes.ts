@@ -75,6 +75,7 @@ import { contratosNotificacaoController } from "../controllers/contratos-notific
 import { buscarAcessosSemana } from "../controllers/dashboard.controller";
 import { errorLogController } from "../controllers/errorlog.controller";
 import { termosMensaisCaixaController } from "../controllers/termos-mensais-caixa.controller";
+import { reservaSalaReuniaoController } from "../controllers/reserva-sala-reuniao.controller";
 
 const routes = Router();
 
@@ -1036,6 +1037,11 @@ routes.post(
   estoqueConsumiveisController.responderManualGlpi
 );
 
+routes.post(
+  "/v1/estoque-consumiveis/solicitacoes-glpi/itens/:idSolicitacaoItem/baixa",
+  estoqueConsumiveisController.darBaixaItemSolicitacao
+);
+
 routes.get("/estoque-consumiveis/alertas", estoqueConsumiveisController.verificarEstoqueCritico);
 
 routes.post(
@@ -1155,6 +1161,24 @@ routes.post(
 routes.get(
   "/v1/termos-mensais-caixa/:id/assinado/download",
   termosMensaisCaixaController.downloadAssinado
+);
+
+//reserva sala de reuniao
+routes.post(
+  "/v1/reserva_sala_reuniao",
+  authMiddleware,
+  reservaSalaReuniaoController.criar
+);
+
+routes.get(
+  "/v1/reserva_sala_reuniao",
+  reservaSalaReuniaoController.listar
+);
+
+routes.delete(
+  "/v1/reserva_sala_reuniao/:id",
+  authMiddleware,
+  reservaSalaReuniaoController.cancelar
 );
 
 export { routes };

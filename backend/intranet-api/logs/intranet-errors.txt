@@ -6014,3 +6014,87 @@ ERRO AO SALVAR NO ORACLE:
 NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
 ==============================
 
+
+==============================
+DATA: 2026-06-08T12:02:00.092Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1983:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=VlUCV45LWEL+ej9vYovsJg==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-06-08T12:02:29.761Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1983:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=bwTc4t9eYhvYehIWUvRYWQ==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-06-08T12:03:04.630Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1983:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=PBIOYZDJ6uslJP7RHnWyHg==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-06-08T12:03:34.579Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: DASHBOARD_ACESSOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao buscar acessos.
+STACK:
+buscarAcessosSemana@http://localhost:3000/_next/static/chunks/intranet_cressem_frontend_intranet_6aaaafce._.js:1983:19
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=th497dxT6VpNvxwaPeM2fA==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+

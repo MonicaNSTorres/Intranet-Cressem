@@ -289,4 +289,25 @@ export const estoqueConsumiveisController = {
             });
         }
     },
+
+    async darBaixaItemSolicitacao(req: Request, res: Response) {
+        try {
+            const idSolicitacaoItem = Number(req.params.idSolicitacaoItem);
+
+            const result = await estoqueConsumiveisService.darBaixaItemSolicitacao({
+                idSolicitacaoItem,
+                idItem: Number(req.body.idItem),
+                quantidadeAtendida: Number(req.body.quantidadeAtendida),
+                observacao: req.body.observacao,
+                usuarioAtendimento: String(req.body.usuarioAtendimento || ""),
+            });
+
+            return res.status(200).json(result);
+        } catch (error: any) {
+            return res.status(500).json({
+                error: "Falha ao dar baixa no item da solicitação.",
+                details: error?.message || "Erro desconhecido",
+            });
+        }
+    },
 };
