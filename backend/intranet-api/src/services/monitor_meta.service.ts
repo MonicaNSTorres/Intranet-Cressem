@@ -906,9 +906,9 @@ const METAS_MENSAIS_FUNCIONARIO_SEGURO_VENDA_NOVA: Record<
   ],
   5: [
     { nomeFuncionario: "FERNANDA ALVES PEREIRA DE SOUZA", valorEsperado: 56.6 },
-    { nomeFuncionario: "JULIA PAOLA PIMENTEL FERREIRA", valorEsperado: 50.31 },
-    { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 99.74 },
-    { nomeFuncionario: "NATALIA GARCIA DOS SANTOS", valorEsperado: 206.44 },
+    { nomeFuncionario: "JULIA PAOLA PIMENTEL FERREIRA", valorEsperado: 76.25 },
+    { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 151.02 },
+    { nomeFuncionario: "NATALIA GARCIA DOS SANTOS", valorEsperado: 278.68 },
   ],
 };
 
@@ -976,13 +976,13 @@ const METAS_MENSAIS_FUNCIONARIO_CONSORCIO: Record<
     { nomeFuncionario: "ADRIANO CASTRO SPEGIORIN", valorEsperado: 9000 },
     { nomeFuncionario: "AMANDA APARECIDA MEIRELES", valorEsperado: 14500 },
     { nomeFuncionario: "CARLA GLASSER PANSERA DE FREITAS", valorEsperado: 71862 },
-    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 1283292 },
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 1133292 },
     { nomeFuncionario: "DIOMAR MORAES DE SOUSA RAMOS", valorEsperado: 44272 },
     { nomeFuncionario: "GUSTAVO COLAFRANCESCO AMIM SOARES", valorEsperado: 46711 },
     { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 300000 },
     { nomeFuncionario: "LUANA ANDRESA DE OLIVEIRA", valorEsperado: 50242 },
     { nomeFuncionario: "RAISSA STEFANI SANCHES DA SILVA", valorEsperado: 7500 },
-    { nomeFuncionario: "THIAGO SILVERIO DOS REIS", valorEsperado: 439328 },
+    { nomeFuncionario: "THIAGO SILVERIO DOS REIS", valorEsperado: 367466 },
     { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 102748 },
     { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 277293 },
     { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 24200 },
@@ -999,7 +999,7 @@ const METAS_MENSAIS_FUNCIONARIO_CONSORCIO: Record<
     { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 48033 },
   ],
   5: [
-    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 195000 },
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 150000 },
     { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 34309 },
     { nomeFuncionario: "THIAGO SILVERIO DOS REIS", valorEsperado: 1001626 },
     { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 7500 },
