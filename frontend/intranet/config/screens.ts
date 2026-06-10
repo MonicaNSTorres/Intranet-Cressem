@@ -536,6 +536,14 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["notebook", "equipamento", "consulta", "ti"],
   },
   {
+    title: "Monitor de Alertas de Meta",
+    desc: "Resolver ocorrências abertas pelo monitor de metas.",
+    href: "/auth/monitor_alertas_meta",
+    group: "TI",
+    allowedGroups: [AD_GROUPS.SUPORTE],
+    keywords: ["monitor", "alerta", "meta", "grafana", "ocorrencia", "ocorrência", "suporte"],
+  },
+  {
     title: "Solicitação de Subsídio",
     desc: "Solicitar subsídio em ações de marketing.",
     href: "/auth/solicitacao_participacao",

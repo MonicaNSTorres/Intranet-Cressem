@@ -54,6 +54,16 @@ export type AuthMeResponse = {
   grupos: string[];
 };
 
+export type AvisoMetaNaoRetornada = {
+  nome: string;
+  mensagem: string;
+};
+
+export type ProducaoMetaFuncionarioResponse = {
+  rows: RelatorioFuncionarioItem[];
+  avisos_meta_nao_retornada: AvisoMetaNaoRetornada[];
+};
+
 export async function buscarUsuarioLogadoMetaFuncionario() {
   const { data } = await api.get<AuthMeResponse>("/v1/me");
   return data;
@@ -63,7 +73,9 @@ export async function buscarProducaoMetaRelatorioFuncionario(params: {
   tema: ChaveRelatorioFuncionario;
   periodo: string;
 }) {
-  const { data } = await api.get<RelatorioFuncionarioItem[]>(
+  const { data } = await api.get<
+    RelatorioFuncionarioItem[] | Partial<ProducaoMetaFuncionarioResponse>
+  >(
     "/v1/producao-meta-funcionario",
     {
       params: {
@@ -73,7 +85,19 @@ export async function buscarProducaoMetaRelatorioFuncionario(params: {
     }
   );
 
-  return data;
+  if (Array.isArray(data)) {
+    return {
+      rows: data,
+      avisos_meta_nao_retornada: [],
+    };
+  }
+
+  return {
+    rows: Array.isArray(data?.rows) ? data.rows : [],
+    avisos_meta_nao_retornada: Array.isArray(data?.avisos_meta_nao_retornada)
+      ? data.avisos_meta_nao_retornada
+      : [],
+  };
 }
 
 export async function buscarUltimaAtualizacaoMetaFuncionario() {

@@ -76,6 +76,7 @@ import { buscarAcessosSemana } from "../controllers/dashboard.controller";
 import { errorLogController } from "../controllers/errorlog.controller";
 import { termosMensaisCaixaController } from "../controllers/termos-mensais-caixa.controller";
 import { reservaSalaReuniaoController } from "../controllers/reserva-sala-reuniao.controller";
+import { monitorMetaAlertasController } from "../controllers/monitor-meta-alertas.controller";
 
 const routes = Router();
 
@@ -92,6 +93,20 @@ routes.get(
   (_req, res) => {
     return res.json({ ok: true });
   }
+);
+
+routes.get(
+  "/v1/monitor-meta-alertas",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE"]),
+  monitorMetaAlertasController.listar
+);
+
+routes.patch(
+  "/v1/monitor-meta-alertas/resolver",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE"]),
+  monitorMetaAlertasController.resolver
 );
 
 routes.get("/v1/associados/buscar-por-cpf", associadoController.buscarPorCpf);

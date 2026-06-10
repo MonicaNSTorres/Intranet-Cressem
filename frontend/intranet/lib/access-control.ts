@@ -214,6 +214,10 @@ export const PAGE_ACCESS = {
         allowedGroups: [AD_GROUPS.SUPORTE],
     },
 
+    monitorAlertasMeta: {
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+
     notebook: {
         allowedGroups: [
             AD_GROUPS.SUPORTE,

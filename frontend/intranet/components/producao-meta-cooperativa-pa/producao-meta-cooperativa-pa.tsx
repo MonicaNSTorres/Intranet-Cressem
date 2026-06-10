@@ -53,10 +53,8 @@ function formatarDataHoraBR(valor?: string | Date | null) {
     const dd = String(dt.getDate()).padStart(2, "0");
     const mm = String(dt.getMonth() + 1).padStart(2, "0");
     const yyyy = dt.getFullYear();
-    const hh = String(dt.getHours()).padStart(2, "0");
-    const min = String(dt.getMinutes()).padStart(2, "0");
 
-    return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+    return `${dd}/${mm}/${yyyy}`;
 }
 
 function formatarInteiroBR(valor: number) {

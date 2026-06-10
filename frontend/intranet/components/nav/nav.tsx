@@ -654,6 +654,11 @@ const Sidebar = () => {
                     allowedGroups: [AD_GROUPS.SUPORTE],
                 },
                 {
+                    label: "Monitor de Alertas",
+                    href: "/auth/monitor_alertas_meta",
+                    allowedGroups: [AD_GROUPS.SUPORTE],
+                },
+                {
                     label: "Termo de Responsabilidade TI",
                     href: "/auth/termo_responsabilidade_uso",
                     allowedGroups: [AD_GROUPS.SUPORTE],

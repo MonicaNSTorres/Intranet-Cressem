@@ -49,7 +49,7 @@ function sqlConsorcio() {
       PERIODO_REF AS (
         SELECT NVL(DT_INI_SEMANA, SYSDATE) AS DT_REF FROM PARAMS
       ),
-      CDN_BASE_ALL AS (
+      CDN_ORIGEM AS (
         SELECT
           NR_PA,
           TRUNC(
@@ -68,26 +68,75 @@ function sqlConsorcio() {
           UPPER(TRIM(NM_VENDEDOR)) AS NM_VENDEDOR
         FROM DBACRESSEM.CONSORCIO_MENSAL_NOVO
         WHERE DT_ADESAO IS NOT NULL
-        UNION ALL
+      ),
+      CDN_RAW AS (
         SELECT
-          4317 AS NR_PA,
-          TRUNC(
+          O.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY
+              NVL(TRIM(TO_CHAR(O.NR_PA)), ' '),
+              NVL(TRIM(TO_CHAR(O.NR_COOPERATIVA)), ' '),
+              O.DT_MOV,
+              NVL(O.NM_VENDEDOR, ' '),
+              NVL(O.VL_CONTRATADO_NUM,0)
+            ORDER BY
+              CASE WHEN O.SN_VENDA_CONCLUIDA = 'SIM' THEN 0 ELSE 1 END,
+              CASE WHEN O.SITUACAO_COTA <> 'EXCLUIDO' THEN 0 ELSE 1 END,
+              CASE WHEN O.DESC_VERSAO_COTA = 'ATIVA' THEN 0 ELSE 1 END,
+              O.DT_MOV
+          ) AS RN,
+          MAX(
             CASE
-              WHEN REGEXP_LIKE(TRIM(DT_ADESAO), '^\\d{2}/\\d{2}/\\d{4}$')
-                THEN TO_DATE(TRIM(DT_ADESAO), 'DD/MM/YYYY')
-              WHEN REGEXP_LIKE(TRIM(DT_ADESAO), '^\\d{4}-\\d{2}-\\d{2}$')
-                THEN TO_DATE(TRIM(DT_ADESAO), 'YYYY-MM-DD')
+              WHEN UPPER(TRIM(O.SITUACAO_COTA)) = 'EXCLUIDO' THEN 1
+              ELSE 0
             END
-          ) AS DT_MOV,
-          NVL(VL_CONTRATADO,0) AS VL_CONTRATADO_NUM,
+          ) OVER (
+            PARTITION BY
+              NVL(TRIM(TO_CHAR(O.NR_PA)), ' '),
+              NVL(TRIM(TO_CHAR(O.NR_COOPERATIVA)), ' '),
+              O.DT_MOV,
+              NVL(O.NM_VENDEDOR, ' '),
+              NVL(O.VL_CONTRATADO_NUM,0)
+          ) AS TEM_EXCLUIDO
+        FROM CDN_ORIGEM O
+      ),
+      CDN_DEDUP AS (
+        SELECT
+          NR_PA,
+          DT_MOV,
+          VL_CONTRATADO_NUM,
           SN_VENDA_CONCLUIDA,
           SITUACAO_COTA,
           DESC_VERSAO_COTA,
           NR_COOPERATIVA,
-          UPPER(TRIM(NM_VENDEDOR)) AS NM_VENDEDOR
-        FROM DBACRESSEM.CONSORCIO_MENSAL_NOVO
-        WHERE DT_ADESAO IS NOT NULL
-          AND REGEXP_LIKE(TRIM(NR_COOPERATIVA), '^\\d+$')
+          NM_VENDEDOR
+        FROM CDN_RAW
+        WHERE RN = 1
+          AND TEM_EXCLUIDO = 0
+      ),
+      CDN_BASE_ALL AS (
+        SELECT
+          NR_PA,
+          DT_MOV,
+          VL_CONTRATADO_NUM,
+          SN_VENDA_CONCLUIDA,
+          SITUACAO_COTA,
+          DESC_VERSAO_COTA,
+          NR_COOPERATIVA,
+          NM_VENDEDOR
+        FROM CDN_DEDUP
+        UNION ALL
+        SELECT
+          4317 AS NR_PA,
+          DT_MOV,
+          VL_CONTRATADO_NUM,
+          SN_VENDA_CONCLUIDA,
+          SITUACAO_COTA,
+          DESC_VERSAO_COTA,
+          NR_COOPERATIVA,
+          NM_VENDEDOR
+        FROM CDN_DEDUP
+        WHERE REGEXP_LIKE(TRIM(NR_COOPERATIVA), '^\\d+$')
           AND TO_NUMBER(TRIM(NR_COOPERATIVA)) = 4317
       ),
       CDN_BASE_AJUSTADA AS (

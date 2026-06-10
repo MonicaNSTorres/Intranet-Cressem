@@ -12,6 +12,7 @@ import {
   FaLayerGroup,
 } from "react-icons/fa";
 import {
+  type AvisoMetaNaoRetornada,
   buscarDatasRelatorioMetaFuncionario,
   buscarProducaoMetaRelatorioFuncionario,
   buscarUsuarioLogadoMetaFuncionario,
@@ -60,10 +61,8 @@ function formatarDataHoraBR(valor?: string | Date | null) {
   const dd = String(dt.getDate()).padStart(2, "0");
   const mm = String(dt.getMonth() + 1).padStart(2, "0");
   const yyyy = dt.getFullYear();
-  const hh = String(dt.getHours()).padStart(2, "0");
-  const min = String(dt.getMinutes()).padStart(2, "0");
 
-  return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+  return `${dd}/${mm}/${yyyy}`;
 }
 
 function normalizarTextoComparacao(valor: unknown) {
@@ -501,6 +500,9 @@ export function ProducaoMetaFuncionarioForm() {
 
   const [loading, setLoading] = useState(false);
   const [dados, setDados] = useState<RelatorioFuncionarioItem[]>([]);
+  const [avisosMetaNaoRetornada, setAvisosMetaNaoRetornada] = useState<
+    AvisoMetaNaoRetornada[]
+  >([]);
   const [erro, setErro] = useState("");
   const [datasRelatorioCache, setDatasRelatorioCache] = useState<
     RelatorioFuncionarioDataInfo[]
@@ -636,6 +638,7 @@ export function ProducaoMetaFuncionarioForm() {
 
     if (!temaBusca || !periodoBusca) {
       setDados([]);
+      setAvisosMetaNaoRetornada([]);
       return;
     }
 
@@ -648,13 +651,19 @@ export function ProducaoMetaFuncionarioForm() {
         periodo: periodoBusca,
       });
 
-      const lista = Array.isArray(resp) ? resp : resp ? [resp] : [];
+      const lista = Array.isArray(resp?.rows) ? resp.rows : [];
       setModoPeriodo(modoBusca);
       setDados(lista);
+      setAvisosMetaNaoRetornada(
+        Array.isArray(resp?.avisos_meta_nao_retornada)
+          ? resp.avisos_meta_nao_retornada
+          : []
+      );
     } catch (error) {
       console.error(error);
       setErro("Não foi possível carregar o relatório.");
       setDados([]);
+      setAvisosMetaNaoRetornada([]);
     } finally {
       setLoading(false);
     }
@@ -681,6 +690,7 @@ export function ProducaoMetaFuncionarioForm() {
 
     setTema(novoTema);
     setDados([]);
+    setAvisosMetaNaoRetornada([]);
     setErro("");
     setMesSelecionado("");
     setPeriodoSelecionado("");
@@ -704,6 +714,7 @@ export function ProducaoMetaFuncionarioForm() {
   function handleChangeMes(value: string) {
     setMesSelecionado(value);
     setDados([]);
+    setAvisosMetaNaoRetornada([]);
     setErro("");
 
     if (!value) {
@@ -733,6 +744,7 @@ export function ProducaoMetaFuncionarioForm() {
 
     if (!tema || !value) {
       setDados([]);
+      setAvisosMetaNaoRetornada([]);
       return;
     }
 
@@ -988,6 +1000,26 @@ export function ProducaoMetaFuncionarioForm() {
         </div>
 
         <div className="p-6">
+          {!loading && !erro && avisosMetaNaoRetornada.length > 0 && (
+            <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <div className="mb-2 flex items-center gap-2 font-semibold">
+                <FaInfoCircle />
+                Pessoas sem retorno de meta
+              </div>
+              <p className="mb-2 text-amber-800">
+                Os nomes abaixo fazem parte da sua visão, mas não aparecem no
+                relatório porque não tivemos retorno da meta deles.
+              </p>
+              <ul className="space-y-1">
+                {avisosMetaNaoRetornada.map((aviso) => (
+                  <li key={aviso.nome}>
+                    <strong>{aviso.nome}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-500">
               Carregando relatório...

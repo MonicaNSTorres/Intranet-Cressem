@@ -256,6 +256,27 @@ const METAS_MENSAIS_ENTRADA_COOPERADOS: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAPIRAÍ", valorEsperado: 13 },
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 184 },
+    { nomePa: "SEDE", valorEsperado: 48 },
+    { nomePa: "SUL", valorEsperado: 12 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 7 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 22 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 3 },
+    { nomePa: "CRUZEIRO", valorEsperado: 16 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 17 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 1 },
+    { nomePa: "JACAREÍ", valorEsperado: 10 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 1 },
+    { nomePa: "UBATUBA", valorEsperado: 16 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 1 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 8 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 22 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
 };
 
 const METAS_MENSAIS_FUNCIONARIO_ENTRADA_COOPERADOS: Record<
@@ -373,7 +394,6 @@ const METAS_MENSAIS_FUNCIONARIO_ENTRADA_COOPERADOS: Record<
     { nomeFuncionario: "CAROLINA BIANCA ALVARENGA DAUANNY", valorEsperado: 0 },
     { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 19 },
     { nomeFuncionario: "DIOMAR MORAES DE SOUSA RAMOS", valorEsperado: 6 },
-    { nomeFuncionario: "EDMUNDO DE PAULA", valorEsperado: 0 },
     { nomeFuncionario: "ELOA CRISTINA PRUDENTE", valorEsperado: 5 },
     { nomeFuncionario: "FABIANA RUFINO RESENDE", valorEsperado: 12 },
     { nomeFuncionario: "FERNANDA ALVES PEREIRA DE SOUZA", valorEsperado: 9 },
@@ -439,7 +459,6 @@ const METAS_MENSAIS_FUNCIONARIO_ENTRADA_COOPERADOS: Record<
     { nomeFuncionario: "LILIAN ALESSANDRA BICUDO", valorEsperado: 5 },
     { nomeFuncionario: "LUANA ANDRESA DE OLIVEIRA", valorEsperado: 6 },
     { nomeFuncionario: "MATHEUS GUILHERME COSTA SANTANA", valorEsperado: 2 },
-    { nomeFuncionario: "MISAEL OLIVEIRA COSTA PACE", valorEsperado: 1 },
     { nomeFuncionario: "MONICA COSTA DE MORAES", valorEsperado: 3 },
     { nomeFuncionario: "NATALIA GARCIA DOS SANTOS", valorEsperado: 1 },
     { nomeFuncionario: "NATHALIA VICTORIA MOREIRA MACHADO", valorEsperado: 1 },
@@ -449,6 +468,47 @@ const METAS_MENSAIS_FUNCIONARIO_ENTRADA_COOPERADOS: Record<
     { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 3 },
     { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 2 },
     { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 13 },
+  ],
+  5: [
+    { nomeFuncionario: "ADRIANO CASTRO SPEGIORIN", valorEsperado: 4 },
+    { nomeFuncionario: "AMANDA APARECIDA MEIRELES", valorEsperado: 9 },
+    { nomeFuncionario: "ANA CAROLINA MOTA HESPANHA RODRIGUES", valorEsperado: 1 },
+    { nomeFuncionario: "ANA CLARA DE SEIXAS RODRIGUES DOS SANTOS", valorEsperado: 1 },
+    { nomeFuncionario: "ANA KARINA SANTOS COELHO SENADOR", valorEsperado: 6 },
+    { nomeFuncionario: "ANA RAQUEL BARROS LOPES DE CAMPOS", valorEsperado: 10 },
+    { nomeFuncionario: "ARTHUR HENRIQUE DE OLIVEIRA ALVARENGA", valorEsperado: 9 },
+    { nomeFuncionario: "BRUNA ROBERTA OLIVEIRA DOS REIS SILVA", valorEsperado: 1 },
+    { nomeFuncionario: "CARLA GLASSER PANSERA DE FREITAS", valorEsperado: 12 },
+    { nomeFuncionario: "CAROLINA BIANCA ALVARENGA DAUANNY", valorEsperado: 3 },
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 11 },
+    { nomeFuncionario: "CLEIDIANA DA SILVA", valorEsperado: 3 },
+    { nomeFuncionario: "DIOMAR MORAES DE SOUSA RAMOS", valorEsperado: 6 },
+    { nomeFuncionario: "ELOA CRISTINA PRUDENTE", valorEsperado: 5 },
+    { nomeFuncionario: "FABIANA RUFINO RESENDE", valorEsperado: 14 },
+    { nomeFuncionario: "FERNANDA ALVES PEREIRA DE SOUZA", valorEsperado: 10 },
+    { nomeFuncionario: "FLAVIA CRISTINA VICTOR AZZOLINI", valorEsperado: 1 },
+    { nomeFuncionario: "GABRIELLI CRISTINE ROSA VIEIRA DOS SANTOS", valorEsperado: 2 },
+    { nomeFuncionario: "GEICE DOS REIS", valorEsperado: 1 },
+    { nomeFuncionario: "GILMAR APARECIDO CAVALCANTE DO PRADO", valorEsperado: 6 },
+    { nomeFuncionario: "GUSTAVO COLAFRANCESCO AMIM SOARES", valorEsperado: 5 },
+    { nomeFuncionario: "HEITOR PEIXOTO DE SOUZA", valorEsperado: 1 },
+    { nomeFuncionario: "ISABELA GARCIA MONTEIRO", valorEsperado: 3 },
+    { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 3 },
+    { nomeFuncionario: "KEZIA YORRANA PEREIRA DA SILVA GUALBERTO", valorEsperado: 4 },
+    { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 6 },
+    { nomeFuncionario: "LILIAN ALESSANDRA BICUDO", valorEsperado: 4 },
+    { nomeFuncionario: "LUANA ANDRESA DE OLIVEIRA", valorEsperado: 7 },
+    { nomeFuncionario: "LUCIENE LENZI DE CARVALHO GARCIA", valorEsperado: 2 },
+    { nomeFuncionario: "MAYARA MARIELI SILVA", valorEsperado: 1 },
+    { nomeFuncionario: "MONICA COSTA DE MORAES", valorEsperado: 3 },
+    { nomeFuncionario: "NATHALIA VICTORIA MOREIRA MACHADO", valorEsperado: 3 },
+    { nomeFuncionario: "PAMELA MICHELE MATTIAZZO", valorEsperado: 1 },
+    { nomeFuncionario: "PEDRO PAULO BITTENCOURT DE FARIA BARROS", valorEsperado: 7 },
+    { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 1 },
+    { nomeFuncionario: "STEPHANIE CAMILA MATOS SILVA", valorEsperado: 4 },
+    { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 1 },
+    { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 6 },
+    { nomeFuncionario: "GABRIELLE ALVES DOS SANTOS", valorEsperado: 1 },
   ],
 };
 
@@ -616,6 +676,48 @@ const METAS_MENSAIS_FUNCIONARIO_CONTA_CORRENTE_ABERTAS: Record<
     { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 2 },
     { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 13 },
   ],
+  5: [
+    { nomeFuncionario: "ADRIANO CASTRO SPEGIORIN", valorEsperado: 4 },
+    { nomeFuncionario: "AMANDA APARECIDA MEIRELES", valorEsperado: 10 },
+    { nomeFuncionario: "ANA CAROLINA MOTA HESPANHA RODRIGUES", valorEsperado: 1 },
+    { nomeFuncionario: "ANA CLARA DE SEIXAS RODRIGUES DOS SANTOS", valorEsperado: 1 },
+    { nomeFuncionario: "ANA KARINA SANTOS COELHO SENADOR", valorEsperado: 6 },
+    { nomeFuncionario: "ANA RAQUEL BARROS LOPES DE CAMPOS", valorEsperado: 11 },
+    { nomeFuncionario: "ARTHUR HENRIQUE DE OLIVEIRA ALVARENGA", valorEsperado: 4 },
+    { nomeFuncionario: "BRUNA ROBERTA OLIVEIRA DOS REIS SILVA", valorEsperado: 1 },
+    { nomeFuncionario: "CARLA GLASSER PANSERA DE FREITAS", valorEsperado: 11 },
+    { nomeFuncionario: "CAROLINA BIANCA ALVARENGA DAUANNY", valorEsperado: 4 },
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 11 },
+    { nomeFuncionario: "CLEIDIANA DA SILVA", valorEsperado: 3 },
+    { nomeFuncionario: "DIOMAR MORAES DE SOUSA RAMOS", valorEsperado: 5 },
+    { nomeFuncionario: "ELOA CRISTINA PRUDENTE", valorEsperado: 6 },
+    { nomeFuncionario: "FABIANA RUFINO RESENDE", valorEsperado: 15 },
+    { nomeFuncionario: "FERNANDA ALVES PEREIRA DE SOUZA", valorEsperado: 10 },
+    { nomeFuncionario: "FLAVIA CRISTINA VICTOR AZZOLINI", valorEsperado: 1 },
+    { nomeFuncionario: "GABRIELLI CRISTINE ROSA VIEIRA DOS SANTOS", valorEsperado: 2 },
+    { nomeFuncionario: "GEICE DOS REIS", valorEsperado: 1 },
+    { nomeFuncionario: "GILMAR APARECIDO CAVALCANTE DO PRADO", valorEsperado: 6 },
+    { nomeFuncionario: "GUSTAVO COLAFRANCESCO AMIM SOARES", valorEsperado: 5 },
+    { nomeFuncionario: "ISABELA GARCIA MONTEIRO", valorEsperado: 7 },
+    { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 3 },
+    { nomeFuncionario: "JANAINA DE LIMA TONETTO", valorEsperado: 1 },
+    { nomeFuncionario: "KEZIA YORRANA PEREIRA DA SILVA GUALBERTO", valorEsperado: 3 },
+    { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 7 },
+    { nomeFuncionario: "LILIAN ALESSANDRA BICUDO", valorEsperado: 7 },
+    { nomeFuncionario: "LUANA ANDRESA DE OLIVEIRA", valorEsperado: 6 },
+    { nomeFuncionario: "LUCIENE LENZI DE CARVALHO GARCIA", valorEsperado: 2 },
+    { nomeFuncionario: "MAYARA MARIELI SILVA", valorEsperado: 2 },
+    { nomeFuncionario: "MONICA COSTA DE MORAES", valorEsperado: 5 },
+    { nomeFuncionario: "NATALIA GARCIA DOS SANTOS", valorEsperado: 2 },
+    { nomeFuncionario: "NATHALIA VICTORIA MOREIRA MACHADO", valorEsperado: 3 },
+    { nomeFuncionario: "PAMELA MICHELE MATTIAZZO", valorEsperado: 1 },
+    { nomeFuncionario: "PEDRO PAULO BITTENCOURT DE FARIA BARROS", valorEsperado: 8 },
+    { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 2 },
+    { nomeFuncionario: "STEPHANIE CAMILA MATOS SILVA", valorEsperado: 3 },
+    { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 3 },
+    { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 6 },
+    { nomeFuncionario: "GABRIELLE ALVES DOS SANTOS", valorEsperado: 1 },
+  ],
 };
 
 const METAS_MENSAIS_FUNCIONARIO_SEGURO_GERAIS_NOVO: Record<
@@ -694,6 +796,23 @@ const METAS_MENSAIS_FUNCIONARIO_SEGURO_GERAIS_NOVO: Record<
     { nomeFuncionario: "VITORIA CAROLINE DOS SANTOS", valorEsperado: 1872.38 },
     { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 1354.43 },
   ],
+  5: [
+    { nomeFuncionario: "ADRIANA BATISTA DENARI DOS SANTOS", valorEsperado: 1098.95 },
+    { nomeFuncionario: "ADRIANO CASTRO SPEGIORIN", valorEsperado: 2518.58 },
+    { nomeFuncionario: "AMANDA APARECIDA MEIRELES", valorEsperado: 3226.08 },
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 4615.34 },
+    { nomeFuncionario: "FABIANA RUFINO RESENDE", valorEsperado: 389.4 },
+    { nomeFuncionario: "GEICE DOS REIS", valorEsperado: 478.8 },
+    { nomeFuncionario: "HEITOR PEIXOTO DE SOUZA", valorEsperado: 1301.48 },
+    { nomeFuncionario: "IAN DE MOURA PEREIRA E SILVA", valorEsperado: 7946.86 },
+    { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 4812.82 },
+    { nomeFuncionario: "NATHALIA VICTORIA MOREIRA MACHADO", valorEsperado: 2030.02 },
+    { nomeFuncionario: "PAMELA MICHELE MATTIAZZO", valorEsperado: 1537.51 },
+    { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 3473.29 },
+    { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 887.9 },
+    { nomeFuncionario: "VITORIA CAROLINE DOS SANTOS", valorEsperado: 8633.48 },
+    { nomeFuncionario: "GABRIELLE ALVES DOS SANTOS", valorEsperado: 3400.55 },
+  ],
 };
 
 const METAS_MENSAIS_FUNCIONARIO_SEGURO_VENDA_NOVA: Record<
@@ -713,6 +832,178 @@ const METAS_MENSAIS_FUNCIONARIO_SEGURO_VENDA_NOVA: Record<
     { nomeFuncionario: "PEDRO PAULO BITTENCOURT DE FARIA BARROS", valorEsperado: 21.16 },
     { nomeFuncionario: "RAISSA STEFANI SANCHES DA SILVA", valorEsperado: 35.26 },
     { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 178.78 },
+  ],
+  2: [
+    { nomeFuncionario: "AMANDA APARECIDA MEIRELES", valorEsperado: 69.27 },
+    { nomeFuncionario: "ANA KARINA SANTOS COELHO SENADOR", valorEsperado: 64.29 },
+    { nomeFuncionario: "CAROLINA BIANCA ALVARENGA DAUANNY", valorEsperado: 88.48 },
+    { nomeFuncionario: "CLEIDIANA DA SILVA", valorEsperado: 84.54 },
+    { nomeFuncionario: "DIOMAR MORAES DE SOUSA RAMOS", valorEsperado: 58.45 },
+    { nomeFuncionario: "FABIANA RUFINO RESENDE", valorEsperado: 50.8 },
+    { nomeFuncionario: "FERNANDA ALVES PEREIRA DE SOUZA", valorEsperado: 40.35 },
+    { nomeFuncionario: "FILLIP DE CARVALHO MIDOES E SILVA", valorEsperado: 46.78 },
+    { nomeFuncionario: "GABRIELLE ALVES DOS SANTOS", valorEsperado: 30.7 },
+    { nomeFuncionario: "GEICE DOS REIS", valorEsperado: 53.17 },
+    { nomeFuncionario: "HEITOR PEIXOTO DE SOUZA", valorEsperado: 157.5 },
+    { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 71.04 },
+    { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 37.2 },
+    { nomeFuncionario: "NATALIA GARCIA DOS SANTOS", valorEsperado: 115.61 },
+    { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 52.74 },
+    { nomeFuncionario: "THIAGO SILVERIO DOS REIS", valorEsperado: 1174.4 },
+    { nomeFuncionario: "VITORIA CAROLINE DOS SANTOS", valorEsperado: 235.99 },
+    { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 702.84 },
+  ],
+  3: [
+    { nomeFuncionario: "ADRIANO CASTRO SPEGIORIN", valorEsperado: 87.03 },
+    { nomeFuncionario: "AMANDA APARECIDA MEIRELES", valorEsperado: 139.15 },
+    { nomeFuncionario: "ANA KARINA SANTOS COELHO SENADOR", valorEsperado: 27.12 },
+    { nomeFuncionario: "ANA RAQUEL BARROS LOPES DE CAMPOS", valorEsperado: 36.59 },
+    { nomeFuncionario: "ANTONIO CARLOS DE ABREU FARIA", valorEsperado: 29.14 },
+    { nomeFuncionario: "CARLA GLASSER PANSERA DE FREITAS", valorEsperado: 138.08 },
+    { nomeFuncionario: "CAROLINA BIANCA ALVARENGA DAUANNY", valorEsperado: 267.47 },
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 315.73 },
+    { nomeFuncionario: "DIOMAR MORAES DE SOUSA RAMOS", valorEsperado: 119.67 },
+    { nomeFuncionario: "FABIANA RUFINO RESENDE", valorEsperado: 482.39 },
+    { nomeFuncionario: "FERNANDA ALVES PEREIRA DE SOUZA", valorEsperado: 64.49 },
+    { nomeFuncionario: "FILLIP DE CARVALHO MIDOES E SILVA", valorEsperado: 85.52 },
+    { nomeFuncionario: "FLAVIA CRISTINA VICTOR AZZOLINI", valorEsperado: 53.72 },
+    { nomeFuncionario: "GABRIELLI CRISTINE ROSA VIEIRA DOS SANTOS", valorEsperado: 50.22 },
+    { nomeFuncionario: "GEICE DOS REIS", valorEsperado: 59.46 },
+    { nomeFuncionario: "GUSTAVO COLAFRANCESCO AMIM SOARES", valorEsperado: 166.73 },
+    { nomeFuncionario: "HEITOR PEIXOTO DE SOUZA", valorEsperado: 183.6 },
+    { nomeFuncionario: "IAN DE MOURA PEREIRA E SILVA", valorEsperado: 351.37 },
+    { nomeFuncionario: "ISABELA GARCIA MONTEIRO", valorEsperado: 43.41 },
+    { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 117.06 },
+    { nomeFuncionario: "JULIA PAOLA PIMENTEL FERREIRA", valorEsperado: 296.39 },
+    { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 287.32 },
+    { nomeFuncionario: "LUANA ANDRESA DE OLIVEIRA", valorEsperado: 31.81 },
+    { nomeFuncionario: "NATALIA GARCIA DOS SANTOS", valorEsperado: 97.65 },
+    { nomeFuncionario: "NATHALIA VICTORIA MOREIRA MACHADO", valorEsperado: 60.81 },
+    { nomeFuncionario: "PEDRO PAULO BITTENCOURT DE FARIA BARROS", valorEsperado: 53.72 },
+    { nomeFuncionario: "RAISSA STEFANI SANCHES DA SILVA", valorEsperado: 162.08 },
+    { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 234.34 },
+    { nomeFuncionario: "STEPHANIE CAMILA MATOS SILVA", valorEsperado: 467.13 },
+    { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 84.97 },
+    { nomeFuncionario: "VITORIA CAROLINE DOS SANTOS", valorEsperado: 153.22 },
+    { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 322.81 },
+  ],
+  4: [
+    { nomeFuncionario: "ADRIANA BATISTA DENARI DOS SANTOS", valorEsperado: 276.02 },
+    { nomeFuncionario: "ANA RAQUEL BARROS LOPES DE CAMPOS", valorEsperado: 34.37 },
+    { nomeFuncionario: "CAROLINA BIANCA ALVARENGA DAUANNY", valorEsperado: 101.64 },
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 4064.54 },
+    { nomeFuncionario: "CLEIDIANA DA SILVA", valorEsperado: 216.24 },
+    { nomeFuncionario: "FABIANA RUFINO RESENDE", valorEsperado: 131.43 },
+    { nomeFuncionario: "GABRIELLI CRISTINE ROSA VIEIRA DOS SANTOS", valorEsperado: 124.89 },
+    { nomeFuncionario: "GUSTAVO COLAFRANCESCO AMIM SOARES", valorEsperado: 156.86 },
+    { nomeFuncionario: "HEITOR PEIXOTO DE SOUZA", valorEsperado: 105.43 },
+    { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 50.8 },
+    { nomeFuncionario: "JENNYFFER HELENA RODRIGUES DE JESUS", valorEsperado: 26.94 },
+    { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 237.53 },
+    { nomeFuncionario: "NATALIA GARCIA DOS SANTOS", valorEsperado: 101.73 },
+    { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 34.16 },
+    { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 430.78 },
+  ],
+  5: [
+    { nomeFuncionario: "FERNANDA ALVES PEREIRA DE SOUZA", valorEsperado: 56.6 },
+    { nomeFuncionario: "JULIA PAOLA PIMENTEL FERREIRA", valorEsperado: 50.31 },
+    { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 99.74 },
+    { nomeFuncionario: "NATALIA GARCIA DOS SANTOS", valorEsperado: 206.44 },
+  ],
+};
+
+const METAS_MENSAIS_FUNCIONARIO_SEGURO_RURAL: Record<
+  number,
+  MetaMensalFuncionarioEsperada[]
+> = {
+  1: [],
+  2: [],
+  3: [],
+  4: [],
+  5: [],
+};
+
+const METAS_MENSAIS_FUNCIONARIO_PREVIDENCIA_MI: Record<
+  number,
+  MetaMensalFuncionarioEsperada[]
+> = {
+  1: [
+    { nomeFuncionario: "ANA KARINA SANTOS COELHO SENADOR", valorEsperado: 1 },
+  ],
+  2: [
+    { nomeFuncionario: "CARLA GLASSER PANSERA DE FREITAS", valorEsperado: 1 },
+  ],
+  3: [],
+  4: [],
+  5: [],
+};
+
+const METAS_MENSAIS_FUNCIONARIO_PREVIDENCIA_VGBL: Record<
+  number,
+  MetaMensalFuncionarioEsperada[]
+> = {
+  1: [],
+  2: [],
+  3: [{ nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 1 },],
+  4: [
+      { nomeFuncionario: "GEICE DOS REIS", valorEsperado: 1 },
+      { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 1 },
+  ],
+  5: [
+    { nomeFuncionario: "GABRIELLE ALVES DOS SANTOS", valorEsperado: 1 },
+  ],
+};
+
+const METAS_MENSAIS_FUNCIONARIO_CONSORCIO: Record<
+  number,
+  MetaMensalFuncionarioEsperada[]
+> = {
+  1: [
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 112895 },
+    { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 21000 },
+    { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 73474 },
+    { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 23051 },
+  ],
+  2: [
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 30000 },
+    { nomeFuncionario: "FILLIP DE CARVALHO MIDOES E SILVA", valorEsperado: 7500 },
+    { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 17500 },
+    { nomeFuncionario: "THIAGO SILVERIO DOS REIS", valorEsperado: 217101 },
+    { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 15250 },
+    { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 23776 },
+  ],
+  3: [
+    { nomeFuncionario: "ADRIANO CASTRO SPEGIORIN", valorEsperado: 9000 },
+    { nomeFuncionario: "AMANDA APARECIDA MEIRELES", valorEsperado: 14500 },
+    { nomeFuncionario: "CARLA GLASSER PANSERA DE FREITAS", valorEsperado: 71862 },
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 1283292 },
+    { nomeFuncionario: "DIOMAR MORAES DE SOUSA RAMOS", valorEsperado: 44272 },
+    { nomeFuncionario: "GUSTAVO COLAFRANCESCO AMIM SOARES", valorEsperado: 46711 },
+    { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 300000 },
+    { nomeFuncionario: "LUANA ANDRESA DE OLIVEIRA", valorEsperado: 50242 },
+    { nomeFuncionario: "RAISSA STEFANI SANCHES DA SILVA", valorEsperado: 7500 },
+    { nomeFuncionario: "THIAGO SILVERIO DOS REIS", valorEsperado: 439328 },
+    { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 102748 },
+    { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 277293 },
+    { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 24200 },
+  ],
+  4: [
+    { nomeFuncionario: "AMANDA APARECIDA MEIRELES", valorEsperado: 15000 },
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 427500 },
+    { nomeFuncionario: "FABIANA RUFINO RESENDE", valorEsperado: 12000 },
+    { nomeFuncionario: "HEITOR PEIXOTO DE SOUZA", valorEsperado: 61757 },
+    { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 3500 },
+    { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 101700 },
+    { nomeFuncionario: "THIAGO SILVERIO DOS REIS", valorEsperado: 330000 },
+    { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 12000 },
+    { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 48033 },
+  ],
+  5: [
+    { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 195000 },
+    { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 34309 },
+    { nomeFuncionario: "THIAGO SILVERIO DOS REIS", valorEsperado: 1001626 },
+    { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 7500 },
+    { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 54774 },
   ],
 };
 
@@ -801,11 +1092,32 @@ const METAS_MENSAIS_CONTA_CORRENTE_ABERTAS: Record<number, MetaMensalEsperada[]>
     { nomePa: "TAPIRAÍ", valorEsperado: 12 },
     { nomePa: "SETOR PJ", valorEsperado: 39 },
   ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 198 },
+    { nomePa: "SEDE", valorEsperado: 50 },
+    { nomePa: "SUL", valorEsperado: 12 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 14 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 23 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 3 },
+    { nomePa: "CRUZEIRO", valorEsperado: 17 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 17 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 2 },
+    { nomePa: "JACAREÍ", valorEsperado: 13 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 1 },
+    { nomePa: "UBATUBA", valorEsperado: 18 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 1 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 1 },
+    { nomePa: "ILHABELA", valorEsperado: 5 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 21 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
 };
 
 const METAS_MENSAIS_CONSORCIO: Record<number, MetaMensalEsperada[]> = {
   1: [
-    { nomePa: "SICOOB CRESSEM", valorEsperado: 335620 },
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 230420 },
     { nomePa: "SEDE", valorEsperado: 94474 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
@@ -823,7 +1135,7 @@ const METAS_MENSAIS_CONSORCIO: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "ILHABELA", valorEsperado: 0 },
     { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
     { nomePa: "TAPIRAÍ", valorEsperado: 0 },
-    { nomePa: "SETOR PJ", valorEsperado: 241146 },
+    { nomePa: "SETOR PJ", valorEsperado: 135946 },
   ],
   2: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 311127 },
@@ -847,7 +1159,7 @@ const METAS_MENSAIS_CONSORCIO: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "SETOR PJ", valorEsperado: 270877 },
   ],
   3: [
-    { nomePa: "SICOOB CRESSEM", valorEsperado: 3481485 },
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 3469623 },
     { nomePa: "SEDE", valorEsperado: 887592 },
     { nomePa: "SUL", valorEsperado: 66393 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
@@ -865,22 +1177,151 @@ const METAS_MENSAIS_CONSORCIO: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "ILHABELA", valorEsperado: 0 },
     { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
     { nomePa: "TAPIRAÍ", valorEsperado: 71862 },
-    { nomePa: "SETOR PJ", valorEsperado: 1896624 },
+    { nomePa: "SETOR PJ", valorEsperado: 1674762 },
   ],
   4: [
-    { nomePa: "SICOOB CRESSEM", valorEsperado: 1055661 },
-    { nomePa: "SEDE", valorEsperado: 1025661 },
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 1062954 },
+    { nomePa: "SEDE", valorEsperado: 178957 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
     { nomePa: "CAÇAPAVA", valorEsperado: 0 },
-    { nomePa: "CRUZEIRO", valorEsperado: 0 },
-    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 30000 },
+    { nomePa: "CRUZEIRO", valorEsperado: 12000 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 15000 },
     { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
     { nomePa: "JACAREÍ", valorEsperado: 0 },
     { nomePa: "SANTA BRANCA", valorEsperado: 0 },
     { nomePa: "TAUBATÉ", valorEsperado: 0 },
     { nomePa: "UBATUBA", valorEsperado: 0 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 0 },
+    { nomePa: "SETOR PJ", valorEsperado: 856997 },
+  ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 1248209 },
+    { nomePa: "SEDE", valorEsperado: 41809 },
+    { nomePa: "SUL", valorEsperado: 0 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 0 },
+    { nomePa: "CRUZEIRO", valorEsperado: 0 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 0 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 0 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 0 },
+    { nomePa: "SETOR PJ", valorEsperado: 1206400 },
+  ],
+};
+
+const METAS_MENSAIS_EMPRESTIMO_BANCOOB: Record<number, MetaMensalEsperada[]> = {
+  1: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 52692.47 },
+    { nomePa: "SEDE", valorEsperado: 15213.51 },
+    { nomePa: "SUL", valorEsperado: 0 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 0 },
+    { nomePa: "CRUZEIRO", valorEsperado: 2586.62 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 0 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 0 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 34892.34 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
+  2: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 133920.83 },
+    { nomePa: "SEDE", valorEsperado: 67250.8 },
+    { nomePa: "SUL", valorEsperado: 30057.5 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 27964.31 },
+    { nomePa: "CRUZEIRO", valorEsperado: 0 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 0 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 0 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 8648.22 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
+  3: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 356462.63 },
+    { nomePa: "SEDE", valorEsperado: 26287.73 },
+    { nomePa: "SUL", valorEsperado: 39171.98 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 20684.66 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 88585.01 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 75379.57 },
+    { nomePa: "CRUZEIRO", valorEsperado: 24152.89 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 0 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 1408.81 },
+    { nomePa: "UBATUBA", valorEsperado: 0 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 80791.98 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
+  4: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 67022.05 },
+    { nomePa: "SEDE", valorEsperado: 0 },
+    { nomePa: "SUL", valorEsperado: 36113.92 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 26788.69 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 4119.44 },
+    { nomePa: "CRUZEIRO", valorEsperado: 0 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 0 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 0 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 0 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 88178.71 },
+    { nomePa: "SEDE", valorEsperado: 10302.34 },
+    { nomePa: "SUL", valorEsperado: 0 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 20597.62 },
+    { nomePa: "CRUZEIRO", valorEsperado: 0 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 50043.71 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 7235.04 },
     { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
     { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
     { nomePa: "ILHABELA", valorEsperado: 0 },
@@ -975,6 +1416,27 @@ const METAS_MENSAIS_PORTABILIDADE: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAPIRAÍ", valorEsperado: 168 },
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 5690 },
+    { nomePa: "SEDE", valorEsperado: 3924 },
+    { nomePa: "SUL", valorEsperado: 247 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 166 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 293 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 265 },
+    { nomePa: "CRUZEIRO", valorEsperado: 122 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 72 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 12 },
+    { nomePa: "JACAREÍ", valorEsperado: 80 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 4 },
+    { nomePa: "TAUBATÉ", valorEsperado: 12 },
+    { nomePa: "UBATUBA", valorEsperado: 184 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 19 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 15 },
+    { nomePa: "ILHABELA", valorEsperado: 104 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 5 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 167 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
 };
 
 const METAS_MENSAIS_VOLUME_TRANSACOES: Record<number, MetaMensalEsperada[]> = {
@@ -1062,6 +1524,27 @@ const METAS_MENSAIS_VOLUME_TRANSACOES: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAPIRAÍ", valorEsperado: 38346.81 },
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 9075990.32 },
+    { nomePa: "SEDE", valorEsperado: 6926613.58 },
+    { nomePa: "SUL", valorEsperado: 238438.41 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 213932.59 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 397710.18 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 233315.29 },
+    { nomePa: "CRUZEIRO", valorEsperado: 134544.09 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 219332.56 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 19344.46 },
+    { nomePa: "JACAREÍ", valorEsperado: 224964.7 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 3502.68 },
+    { nomePa: "TAUBATÉ", valorEsperado: 24276.23 },
+    { nomePa: "UBATUBA", valorEsperado: 153404.5 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 21014.31 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 27218.94 },
+    { nomePa: "ILHABELA", valorEsperado: 176989.19 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 4804.32 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 56584.29 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
 };
 
 const METAS_MENSAIS_SEGURO_GERAIS_NOVO: Record<number, MetaMensalEsperada[]> = {
@@ -1143,6 +1626,27 @@ const METAS_MENSAIS_SEGURO_GERAIS_NOVO: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAUBATÉ", valorEsperado: 373.47 },
     { nomePa: "UBATUBA", valorEsperado: 1872.9 },
     { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 0 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 49994.29 },
+    { nomePa: "SEDE", valorEsperado: 42178.78 },
+    { nomePa: "SUL", valorEsperado: 253.79 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 1611.27 },
+    { nomePa: "CRUZEIRO", valorEsperado: 389.4 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 3226.08 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 797.46 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 1537.51 },
     { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
     { nomePa: "ILHABELA", valorEsperado: 0 },
     { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
@@ -1236,6 +1740,27 @@ const METAS_MENSAIS_SEGURO_GERAIS_RENOVADO: Record<number, MetaMensalEsperada[]>
     { nomePa: "TAPIRAÍ", valorEsperado: 0 },
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 113479.3 },
+    { nomePa: "SEDE", valorEsperado: 93125.62 },
+    { nomePa: "SUL", valorEsperado: 4353.69 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 4020.85 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 5948.46 },
+    { nomePa: "CRUZEIRO", valorEsperado: 1611.27 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 0 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 0 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 4419.41 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 0 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
 };
 
 const METAS_MENSAIS_SEGURO_VENDA_NOVA: Record<number, MetaMensalEsperada[]> = {
@@ -1323,6 +1848,35 @@ const METAS_MENSAIS_SEGURO_VENDA_NOVA: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAPIRAÍ", valorEsperado: 0 },
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 3429.37 },
+    { nomePa: "SEDE", valorEsperado: 1877.17 },
+    { nomePa: "SUL", valorEsperado: 199.78 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 0 },
+    { nomePa: "CRUZEIRO", valorEsperado: 59.02 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 350.57 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 314.51 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 207.62 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 278.68 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 142.02 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
+};
+
+const METAS_MENSAIS_SEGURO_RURAL: Record<number, MetaMensalEsperada[]> = {
+  1: ORDEM_PADRAO_PA.map((nomePa) => ({ nomePa, valorEsperado: 0 })),
+  2: ORDEM_PADRAO_PA.map((nomePa) => ({ nomePa, valorEsperado: 0 })),
+  3: ORDEM_PADRAO_PA.map((nomePa) => ({ nomePa, valorEsperado: 0 })),
+  4: ORDEM_PADRAO_PA.map((nomePa) => ({ nomePa, valorEsperado: 0 })),
+  5: ORDEM_PADRAO_PA.map((nomePa) => ({ nomePa, valorEsperado: 0 })),
 };
 
 const METAS_MENSAIS_SEGURO_ARRECADACAO: Record<number, MetaMensalEsperada[]> = {
@@ -1410,12 +1964,32 @@ const METAS_MENSAIS_SEGURO_ARRECADACAO: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAPIRAÍ", valorEsperado: 0 },
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 53200.29 },
+    { nomePa: "SEDE", valorEsperado: 0 },
+    { nomePa: "SUL", valorEsperado: 0 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 0 },
+    { nomePa: "CRUZEIRO", valorEsperado: 0 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 0 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 0 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 0 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
 };
 
 const METAS_MENSAIS_FATURAMENTO_SIPAG: Record<number, MetaMensalEsperada[]> = {
   1: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 1285631.15 },
-    { nomePa: "SEDE", valorEsperado: 648162.92 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 426512.4 },
@@ -1436,7 +2010,6 @@ const METAS_MENSAIS_FATURAMENTO_SIPAG: Record<number, MetaMensalEsperada[]> = {
   ],
   2: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 1426319.98 },
-    { nomePa: "SEDE", valorEsperado: 395006.18 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 5 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 626267.16 },
@@ -1457,7 +2030,6 @@ const METAS_MENSAIS_FATURAMENTO_SIPAG: Record<number, MetaMensalEsperada[]> = {
   ],
   3: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 1293772.32 },
-    { nomePa: "SEDE", valorEsperado: 469379.13 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 5 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 466565.09 },
@@ -1478,7 +2050,6 @@ const METAS_MENSAIS_FATURAMENTO_SIPAG: Record<number, MetaMensalEsperada[]> = {
   ],
   4: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 1052160.28 },
-    { nomePa: "SEDE", valorEsperado: 405480.47 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 411784.17 },
@@ -1497,12 +2068,31 @@ const METAS_MENSAIS_FATURAMENTO_SIPAG: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAPIRAÍ", valorEsperado: 195488.52 },
     { nomePa: "SETOR PJ", valorEsperado: 405480.47 },
   ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 1682184.21 },
+    { nomePa: "SUL", valorEsperado: 0 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 630231.2 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 0 },
+    { nomePa: "CRUZEIRO", valorEsperado: 0 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 0 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 154347.79 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 11619 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 334834.28 },
+    { nomePa: "SETOR PJ", valorEsperado: 551151.94 },
+  ],
 };
 
 const METAS_MENSAIS_LIQUIDACAO_BAIXA: Record<number, MetaMensalEsperada[]> = {
   1: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 4969282.53 },
-    { nomePa: "SEDE", valorEsperado: 3794571.5 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 27854.93 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 280246.25 },
@@ -1523,7 +2113,6 @@ const METAS_MENSAIS_LIQUIDACAO_BAIXA: Record<number, MetaMensalEsperada[]> = {
   ],
   2: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 4110666.77 },
-    { nomePa: "SEDE", valorEsperado: 3032734.43 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 28128.2 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 136999.24 },
@@ -1544,7 +2133,6 @@ const METAS_MENSAIS_LIQUIDACAO_BAIXA: Record<number, MetaMensalEsperada[]> = {
   ],
   3: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 4693609.29 },
-    { nomePa: "SEDE", valorEsperado: 3492547.92 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 28018.65 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 216571.4 },
@@ -1565,7 +2153,6 @@ const METAS_MENSAIS_LIQUIDACAO_BAIXA: Record<number, MetaMensalEsperada[]> = {
   ],
   4: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 4969282.53 },
-    { nomePa: "SEDE", valorEsperado: 3794571.5 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 27854.93 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 280246.25 },
@@ -1583,6 +2170,26 @@ const METAS_MENSAIS_LIQUIDACAO_BAIXA: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
     { nomePa: "TAPIRAÍ", valorEsperado: 0 },
     { nomePa: "SETOR PJ", valorEsperado: 3794571.5 },
+  ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 4951652.62 },
+    { nomePa: "SUL", valorEsperado: 0 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 27593.33 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 433908.95 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 0 },
+    { nomePa: "CRUZEIRO", valorEsperado: 0 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 122046.82 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 164960.33 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 316175.64 },
+    { nomePa: "UBATUBA", valorEsperado: 4768 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 436634.96 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 190 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 0 },
+    { nomePa: "SETOR PJ", valorEsperado: 3445374.59 },
   ],
 };
 
@@ -1650,10 +2257,31 @@ const METAS_MENSAIS_PREVIDENCIA_MI: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAPIRAÍ", valorEsperado: 0 },
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
-    4: [
+  4: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 0 },
     { nomePa: "SEDE", valorEsperado: 0 },
     { nomePa: "SUL", valorEsperado: 0 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 0 },
+    { nomePa: "CRUZEIRO", valorEsperado: 0 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 0 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 0 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 0 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 1 },
+    { nomePa: "SEDE", valorEsperado: 0 },
+    { nomePa: "SUL", valorEsperado: 1 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
     { nomePa: "CAÇAPAVA", valorEsperado: 0 },
@@ -1695,7 +2323,7 @@ const METAS_MENSAIS_PREVIDENCIA_VGBL: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAPIRAÍ", valorEsperado: 0 },
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
-    2: [
+  2: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 1 },
     { nomePa: "SEDE", valorEsperado: 0 },
     { nomePa: "SUL", valorEsperado: 0 },
@@ -1716,7 +2344,7 @@ const METAS_MENSAIS_PREVIDENCIA_VGBL: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAPIRAÍ", valorEsperado: 0 },
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
-    3: [
+  3: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 2 },
     { nomePa: "SEDE", valorEsperado: 2 },
     { nomePa: "SUL", valorEsperado: 0 },
@@ -1737,10 +2365,31 @@ const METAS_MENSAIS_PREVIDENCIA_VGBL: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "TAPIRAÍ", valorEsperado: 0 },
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
-    4: [
+  4: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 2 },
     { nomePa: "SEDE", valorEsperado: 2 },
     { nomePa: "SUL", valorEsperado: 0 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
+    { nomePa: "CAÇAPAVA", valorEsperado: 0 },
+    { nomePa: "CRUZEIRO", valorEsperado: 0 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 0 },
+    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
+    { nomePa: "JACAREÍ", valorEsperado: 0 },
+    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
+    { nomePa: "TAUBATÉ", valorEsperado: 0 },
+    { nomePa: "UBATUBA", valorEsperado: 0 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
+    { nomePa: "ILHABELA", valorEsperado: 0 },
+    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 0 },
+    { nomePa: "SETOR PJ", valorEsperado: 0 },
+  ],
+  5: [
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 2 },
+    { nomePa: "SEDE", valorEsperado: 1 },
+    { nomePa: "SUL", valorEsperado: 1 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
     { nomePa: "CAÇAPAVA", valorEsperado: 0 },
@@ -1941,6 +2590,10 @@ function getMetasMensaisPorTema(tema: string, mes: number) {
     return METAS_MENSAIS_CONSORCIO[mes] || [];
   }
 
+  if (tema === "emprestimo_bancoob") {
+    return METAS_MENSAIS_EMPRESTIMO_BANCOOB[mes] || [];
+  }
+
   if (tema === "portabilidade") {
     return METAS_MENSAIS_PORTABILIDADE[mes] || [];
   }
@@ -1959,6 +2612,10 @@ function getMetasMensaisPorTema(tema: string, mes: number) {
 
   if (tema === "seguro_venda_nova") {
     return METAS_MENSAIS_SEGURO_VENDA_NOVA[mes] || [];
+  }
+
+  if (tema === "seguro_rural") {
+    return METAS_MENSAIS_SEGURO_RURAL[mes] || [];
   }
 
   if (tema === "seguro_arrecadacao") {
@@ -2001,6 +2658,22 @@ function getMetasMensaisFuncionarioPorTema(tema: string, mes: number) {
     return METAS_MENSAIS_FUNCIONARIO_SEGURO_VENDA_NOVA[mes] || [];
   }
 
+  if (tema === "seguro_rural") {
+    return METAS_MENSAIS_FUNCIONARIO_SEGURO_RURAL[mes] || [];
+  }
+
+  if (tema === "saldo_previdencia_mi") {
+    return METAS_MENSAIS_FUNCIONARIO_PREVIDENCIA_MI[mes] || [];
+  }
+
+  if (tema === "saldo_previdencia_vgbl") {
+    return METAS_MENSAIS_FUNCIONARIO_PREVIDENCIA_VGBL[mes] || [];
+  }
+
+  if (tema === "consorcio") {
+    return METAS_MENSAIS_FUNCIONARIO_CONSORCIO[mes] || [];
+  }
+
   return [];
 }
 
@@ -2008,11 +2681,13 @@ function getTituloMetaMensal(tema: string) {
   if (tema === "entrada_cooperados") return "Cooperados novos";
   if (tema === "conta_corrente_abertas") return "Conta corrente novas";
   if (tema === "consorcio") return "Consorcio";
+  if (tema === "emprestimo_bancoob") return "Emprestimo Bancoob";
   if (tema === "portabilidade") return "PortabSal";
   if (tema === "volume_transacoes") return "Cartoes - VOLUME_TRANSACOES_DIARIO";
   if (tema === "seguro_gerais_novo") return "Seguro Gerais novos";
   if (tema === "seguro_gerais_renovado") return "Seguro Gerais renovacoes";
   if (tema === "seguro_venda_nova") return "Seguro Venda Nova";
+  if (tema === "seguro_rural") return "Seguro Rural";
   if (tema === "seguro_arrecadacao") return "Seguro Vida Arrecadacao";
   if (tema === "faturamento_sipag") return "Sipag - FATURAMENTO_SIPAG_DIARIO";
   if (tema === "liquidacao_baixa") return "Cobranca - MOVIMENTO_LIQUIDACOES_BAIXA";
@@ -2024,6 +2699,9 @@ function getTituloMetaMensal(tema: string) {
 function getTituloMetaMensalFuncionario(tema: string) {
   if (tema === "entrada_cooperados") return "Funcionarios - Cooperados novos";
   if (tema === "conta_corrente_abertas") return "Funcionarios - Conta corrente novas";
+  if (tema === "consorcio") return "Funcionarios - Consorcio";
+  if (tema === "saldo_previdencia_mi") return "Funcionarios - Previdencia MI";
+  if (tema === "saldo_previdencia_vgbl") return "Funcionarios - Previdencia VGBL";
   return `Funcionarios - ${getTituloMetaMensal(tema)}`;
 }
 
@@ -2031,11 +2709,13 @@ function getRegraMetaMensal(tema: string) {
   if (tema === "entrada_cooperados") return "META_MENSAL_ENTRADA_COOPERADOS";
   if (tema === "conta_corrente_abertas") return "META_MENSAL_CONTA_CORRENTE_ABERTAS";
   if (tema === "consorcio") return "META_MENSAL_CONSORCIO";
+  if (tema === "emprestimo_bancoob") return "META_MENSAL_EMPRESTIMO_BANCOOB";
   if (tema === "portabilidade") return "META_MENSAL_PORTABILIDADE";
   if (tema === "volume_transacoes") return "META_MENSAL_VOLUME_TRANSACOES_DIARIO";
   if (tema === "seguro_gerais_novo") return "META_MENSAL_SEGURO_GERAIS_NOVO";
   if (tema === "seguro_gerais_renovado") return "META_MENSAL_SEGURO_GERAIS_RENOVADO";
   if (tema === "seguro_venda_nova") return "META_MENSAL_SEGURO_VENDA_NOVA";
+  if (tema === "seguro_rural") return "META_MENSAL_SEGURO_RURAL";
   if (tema === "seguro_arrecadacao") return "META_MENSAL_SEGURO_ARRECADACAO";
   if (tema === "faturamento_sipag") return "META_MENSAL_FATURAMENTO_SIPAG_DIARIO";
   if (tema === "liquidacao_baixa") return "META_MENSAL_MOVIMENTO_LIQUIDACOES_BAIXA";
@@ -2049,6 +2729,10 @@ function getRegraMetaMensalFuncionario(tema: string) {
   if (tema === "conta_corrente_abertas") return "META_MENSAL_FUNCIONARIO_CONTA_CORRENTE_ABERTAS";
   if (tema === "seguro_gerais_novo") return "META_MENSAL_FUNCIONARIO_SEGURO_GERAIS_NOVO";
   if (tema === "seguro_venda_nova") return "META_MENSAL_FUNCIONARIO_SEGURO_VENDA_NOVA";
+  if (tema === "seguro_rural") return "META_MENSAL_FUNCIONARIO_SEGURO_RURAL";
+  if (tema === "saldo_previdencia_mi") return "META_MENSAL_FUNCIONARIO_PREVIDENCIA_MI";
+  if (tema === "saldo_previdencia_vgbl") return "META_MENSAL_FUNCIONARIO_PREVIDENCIA_VGBL";
+  if (tema === "consorcio") return "META_MENSAL_FUNCIONARIO_CONSORCIO";
   return `META_MENSAL_FUNCIONARIO_${tema.toUpperCase()}`;
 }
 
@@ -2062,9 +2746,11 @@ function isTemaMetaFinanceira(tema: string) {
   return [
     "volume_transacoes",
     "consorcio",
+    "emprestimo_bancoob",
     "seguro_gerais_novo",
     "seguro_gerais_renovado",
     "seguro_venda_nova",
+    "seguro_rural",
     "seguro_arrecadacao",
     "faturamento_sipag",
     "liquidacao_baixa",

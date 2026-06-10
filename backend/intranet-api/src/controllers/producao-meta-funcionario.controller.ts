@@ -37,6 +37,11 @@ const DEBUG_FORCAR_GESTOR_NOME = String(
     process.env.META_PA_DEBUG_GERENTE_NOME ||
     ""
 ).trim();
+const NOMES_AVISO_META_NAO_RETORNADA = [
+    "MONICA COSTA DE MORAES",
+    "KEZIA YORRANA PEREIRA DA SILVA GUALBERTO",
+    "GILMAR APARECIDO CAVALCANTE DO PRADO",
+];
 
 const SQL_USUARIO_NIVEL = `
 SELECT
@@ -107,6 +112,31 @@ function rowNomeFuncionario(row: any) {
         row?.cpf_funcionario ||
         ""
     );
+}
+
+function montarAvisosMetaNaoRetornada(params: {
+    rowsFiltradas: any[];
+    verTudo: boolean;
+    nomesPermitidos: Set<string>;
+}) {
+    const nomesVisiveis = new Set(
+        (params.rowsFiltradas || [])
+            .map((row) => normalizeNomePessoa(rowNomeFuncionario(row)))
+            .filter((nome) => Boolean(nome))
+    );
+
+    return NOMES_AVISO_META_NAO_RETORNADA
+        .filter((nome) => {
+            const nomeNormalizado = normalizeNomePessoa(nome);
+            const podeVerNome =
+                params.verTudo || params.nomesPermitidos.has(nomeNormalizado);
+
+            return podeVerNome && !nomesVisiveis.has(nomeNormalizado);
+        })
+        .map((nome) => ({
+            nome,
+            mensagem: "não aparece porque não tivemos retorno da meta dele(a).",
+        }));
 }
 
 async function buscarNomesPermitidosSomenteGestor(nomeGestor: string) {
@@ -237,14 +267,19 @@ export const producaoMetaFuncionarioController = {
             const rows = (result.rows || []).map((row: any) => normalizeKeys(row));
 
             let rowsFiltradas = rows;
+            let verTudoAcesso = false;
+            let nomesPermitidosAcesso = new Set<string>();
 
             if (forcarNomeGestor) {
                 const nomesPermitidos = await buscarNomesPermitidosSomenteGestor(forcarNomeGestor);
+                nomesPermitidosAcesso = nomesPermitidos;
                 rowsFiltradas = rows.filter((row: any) =>
                     nomesPermitidos.has(normalizeNomePessoa(rowNomeFuncionario(row)))
                 );
             } else {
                 const perfilAcesso = await buscarPerfilAcessoMetaFuncionario(authReq.user);
+                verTudoAcesso = perfilAcesso.verTudo;
+                nomesPermitidosAcesso = perfilAcesso.nomesPermitidos;
                 rowsFiltradas = perfilAcesso.verTudo
                     ? rows
                     : rows.filter((row: any) =>
@@ -269,7 +304,14 @@ export const producaoMetaFuncionarioController = {
                 console.error("Erro ao registrar monitor meta funcionario:", monitorErr);
             }
 
-            return res.json(rowsFiltradas);
+            return res.json({
+                rows: rowsFiltradas,
+                avisos_meta_nao_retornada: montarAvisosMetaNaoRetornada({
+                    rowsFiltradas,
+                    verTudo: verTudoAcesso,
+                    nomesPermitidos: nomesPermitidosAcesso,
+                }),
+            });
         } catch (err: any) {
             console.error("producaoMetaFuncionarioController.listar erro:", err);
             return res.status(500).json({
