@@ -378,6 +378,10 @@ export const PAGE_ACCESS = {
 
     reservaSalaReuniao: {
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    },
+
+    cnab240: {
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     }
 
 

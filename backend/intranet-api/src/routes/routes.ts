@@ -77,6 +77,7 @@ import { errorLogController } from "../controllers/errorlog.controller";
 import { termosMensaisCaixaController } from "../controllers/termos-mensais-caixa.controller";
 import { reservaSalaReuniaoController } from "../controllers/reserva-sala-reuniao.controller";
 import { monitorMetaAlertasController } from "../controllers/monitor-meta-alertas.controller";
+import { cnab240Controller } from "../controllers/cnab240.controller";
 
 const routes = Router();
 
@@ -576,6 +577,11 @@ routes.get(
 routes.post(
   "/v1/migracao-contrato/gerar-arquivo",
   migracaoContratoController.gerarArquivo
+);
+
+routes.get(
+  "/v1/migracao-contrato/buscar-cpf/:cpf",
+  migracaoContratoController.buscarCpfMigracao //rota usada de fato na tela de migracao contrato
 );
 
 //cidade
@@ -1201,6 +1207,31 @@ routes.delete(
   "/v1/reserva_sala_reuniao/:id",
   authMiddleware,
   reservaSalaReuniaoController.cancelar
+);
+
+// cnab240
+routes.get(
+  "/v1/cnab240/remessas",
+  authMiddleware,
+  cnab240Controller.listarRemessas
+);
+
+routes.post(
+  "/v1/cnab240/gerar",
+  upload.single("file"),
+  cnab240Controller.gerarCnab240
+);
+
+routes.post(
+  "/v1/cnab240/importar-retorno",
+  upload.single("file"),
+  cnab240Controller.importarRetorno
+);
+
+routes.get(
+  "/v1/cnab240/favorecido/:cpf",
+  authMiddleware,
+  cnab240Controller.buscarFavorecidoPorCpf
 );
 
 export { routes };

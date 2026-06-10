@@ -4,15 +4,15 @@ import { registrarErroTela } from "./error_log.service";
 export type BuscarMigracaoContratoResponse =
   | { found: false }
   | {
-      found: true;
-      nascimento: string;
-      cargo: string;
-      salario: number;
-      admissao?: string;
-      cpf: string;
-      situacao: string;
-      matricula: string;
-    };
+    found: true;
+    nascimento: string;
+    cargo: string;
+    salario: number;
+    admissao?: string;
+    cpf: string;
+    situacao: string;
+    matricula: string;
+  };
 
 export type MigracaoContratoLinhaPayload = {
   DT_NASCIMENTO: string;
@@ -23,6 +23,20 @@ export type MigracaoContratoLinhaPayload = {
   DESC_SITUACAO: string;
   NR_MATRICULA: string;
 };
+
+//usado de fato na tela de migracao contrato
+export type BuscarMigracaoContratoAssociadoResponse =
+  | { found: false }
+  | {
+    found: true;
+    DT_NASCIMENTO: string;
+    NM_CARGO: string;
+    VL_RENDA_BRUTA: number;
+    DT_ADMISSAO: string;
+    NR_CPF_CNPJ: string;
+    DESC_SITUACAO: string;
+    NR_MATRICULA: string;
+  };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -108,7 +122,7 @@ export async function gerarArquivoMigracaoContrato(
         const json = await res.json();
         errorMessage = json?.error || errorMessage;
       } catch {
-        
+
       }
       throw new Error(errorMessage);
     }
@@ -123,6 +137,49 @@ export async function gerarArquivoMigracaoContrato(
         payload,
       },
       "MIGRACAO_CONTRATO_GERAR_ARQUIVO"
+    );
+
+    throw error;
+  }
+}
+
+//consulta correta usada na tela de migracao contrato
+export async function buscarMigracaoContratoAssociadoPorCpf(
+  cpf: string
+): Promise<BuscarMigracaoContratoAssociadoResponse> {
+  try {
+    if (!API_URL) {
+      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
+    }
+
+    const clean = onlyDigits(cpf);
+
+    const res = await fetch(
+      `${API_URL}/v1/migracao-contrato/buscar-cpf/${clean}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        cache: "no-store",
+      }
+    );
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(json?.error || "Falha na consulta do associado.");
+    }
+
+    return json as BuscarMigracaoContratoAssociadoResponse;
+  } catch (error: any) {
+    await registrarErroMigracaoContrato(
+      error,
+      {
+        endpoint: "/v1/migracao-contrato/buscar-cpf",
+        method: "GET",
+        cpf,
+      },
+      "MIGRACAO_CONTRATO_BUSCAR_CPF_ASSOCIADO"
     );
 
     throw error;

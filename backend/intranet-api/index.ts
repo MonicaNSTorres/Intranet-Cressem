@@ -57,6 +57,8 @@ const multerManagedPaths = new Set([
   "/v1/converter-arquivos",
   "/v1/estoque-consumiveis/importar-excel",
   "/v1/ferias_funcionarios/importar-excel",
+  "/v1/cnab240/gerar",
+  "/v1/cnab240/importar-retorno",
 ]);
 
 app.use((req, res, next) => {
