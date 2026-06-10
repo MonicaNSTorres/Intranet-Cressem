@@ -2,11 +2,11 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useState } from "react";
-import { FaFileAlt, FaPlus, FaTrash } from "react-icons/fa";
+import { FaFileAlt, FaTrash } from "react-icons/fa";
 import { formatCpfView, onlyDigits } from "@/utils/br";
 import {
-  buscarMigracaoContratoPorCpf,
-  type BuscarMigracaoContratoResponse,
+  buscarMigracaoContratoAssociadoPorCpf,
+  type BuscarMigracaoContratoAssociadoResponse,
   type MigracaoContratoLinhaPayload,
 } from "@/services/migracao_contrato.service";
 import { gerarArquivoMigracaoContratoTxt } from "@/lib/txt/gerarArquivoMigracaoContrato";
@@ -57,24 +57,24 @@ function generateId() {
 }
 
 function mapResponseToLinha(
-  data: Extract<BuscarMigracaoContratoResponse, { found: true }>
+  data: Extract<BuscarMigracaoContratoAssociadoResponse, { found: true }>
 ): LinhaMigracao {
   return {
     id: generateId(),
-    nascimento: data.nascimento || "",
-    cargo: data.cargo || "",
+    nascimento: data.DT_NASCIMENTO || "",
+    cargo: data.NM_CARGO || "",
     salario:
-      typeof data.salario === "number"
-        ? data.salario.toLocaleString("pt-BR", {
+      typeof data.VL_RENDA_BRUTA === "number"
+        ? data.VL_RENDA_BRUTA.toLocaleString("pt-BR", {
           style: "currency",
           currency: "BRL",
           minimumFractionDigits: 2,
         })
         : "",
-    admissao: data.admissao || data.nascimento || "",
-    cpf: data.cpf || "",
-    situacao: data.situacao || "",
-    matricula: data.matricula || "",
+    admissao: data.DT_ADMISSAO || "",
+    cpf: data.NR_CPF_CNPJ || "",
+    situacao: data.DESC_SITUACAO || "ATIVO",
+    matricula: data.NR_MATRICULA || "",
   };
 }
 
@@ -115,7 +115,7 @@ export function MigracaoContratoForm() {
     try {
       setLoadingBusca(true);
 
-      const result = await buscarMigracaoContratoPorCpf(cpfLimpo);
+      const result = await buscarMigracaoContratoAssociadoPorCpf(cpfLimpo);
 
       if (!result.found) {
         setErro("Nenhum associado encontrado para esse CPF.");

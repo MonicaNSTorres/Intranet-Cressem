@@ -199,7 +199,7 @@ export function PopupAvisoGate() {
 
             <div className="border-t border-slate-200 bg-white px-6 py-5">
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
+                {/*<button
                   type="button"
                   onClick={() => handleResposta("RECUSADO")}
                   disabled={submitting}
@@ -207,7 +207,7 @@ export function PopupAvisoGate() {
                 >
                   <FaTimes />
                   {popup.BOTAO_RECUSAR || "Recusar"}
-                </button>
+                </button>*/}
 
                 <button
                   type="button"

@@ -352,7 +352,7 @@ export function PopupAvisoForm() {
                                     <h3 className="text-sm font-semibold text-gray-900">Ações do usuário</h3>
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div className="grid grid-cols-1 gap-4">
                                     <div>
                                         <label className="mb-1.5 block text-xs font-medium text-gray-600">
                                             Botão aceitar
@@ -365,7 +365,7 @@ export function PopupAvisoForm() {
                                         />
                                     </div>
 
-                                    <div>
+                                    {/*<div>
                                         <label className="mb-1.5 block text-xs font-medium text-gray-600">
                                             Botão recusar
                                         </label>
@@ -375,7 +375,7 @@ export function PopupAvisoForm() {
                                             className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
                                             placeholder="Ex: Recusar"
                                         />
-                                    </div>
+                                    </div>*/}
                                 </div>
                             </div>
 
@@ -569,9 +569,9 @@ export function PopupAvisoForm() {
                                             <span className="inline-flex rounded-xl bg-secondary px-3 py-1.5 text-xs font-semibold text-white">
                                                 {form.botaoAceitar || "Aceitar"}
                                             </span>
-                                            <span className="inline-flex rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600">
+                                            {/*<span className="inline-flex rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600">
                                                 {form.botaoRecusar || "Recusar"}
-                                            </span>
+                                            </span>*/}
                                         </div>
                                     </div>
                                 </div>
