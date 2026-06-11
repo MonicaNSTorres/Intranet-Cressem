@@ -1097,7 +1097,7 @@ const METAS_MENSAIS_CONTA_CORRENTE_ABERTAS: Record<number, MetaMensalEsperada[]>
   ],
   5: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 198 },
-    { nomePa: "SEDE", valorEsperado: 22 },
+    { nomePa: "SEDE", valorEsperado: 28 },
     { nomePa: "SUL", valorEsperado: 12 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 14 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 23 },
@@ -1114,7 +1114,7 @@ const METAS_MENSAIS_CONTA_CORRENTE_ABERTAS: Record<number, MetaMensalEsperada[]>
     { nomePa: "ILHABELA", valorEsperado: 5 },
     { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
     { nomePa: "TAPIRAÍ", valorEsperado: 21 },
-    { nomePa: "SETOR PJ", valorEsperado: 28 },
+    { nomePa: "SETOR PJ", valorEsperado: 22 },
   ],
 };
 
@@ -2390,9 +2390,9 @@ const METAS_MENSAIS_PREVIDENCIA_VGBL: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
   5: [
-    { nomePa: "SICOOB CRESSEM", valorEsperado: 2 },
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 1 },
     { nomePa: "SEDE", valorEsperado: 1 },
-    { nomePa: "SUL", valorEsperado: 1 },
+    { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
     { nomePa: "CAÇAPAVA", valorEsperado: 0 },

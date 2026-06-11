@@ -52,11 +52,13 @@ function sqlConsorcio() {
       CDN_ORIGEM AS (
         SELECT
           NR_PA,
+          NR_CONTRATO,
+          NR_COTA,
           TRUNC(
             CASE
-              WHEN REGEXP_LIKE(TRIM(DT_ADESAO), '^\\d{2}/\\d{2}/\\d{4}$')
+              WHEN REGEXP_LIKE(TRIM(DT_ADESAO), '^\d{2}/\d{2}/\d{4}$')
                 THEN TO_DATE(TRIM(DT_ADESAO), 'DD/MM/YYYY')
-              WHEN REGEXP_LIKE(TRIM(DT_ADESAO), '^\\d{4}-\\d{2}-\\d{2}$')
+              WHEN REGEXP_LIKE(TRIM(DT_ADESAO), '^\d{4}-\d{2}-\d{2}$')
                 THEN TO_DATE(TRIM(DT_ADESAO), 'YYYY-MM-DD')
             END
           ) AS DT_MOV,
@@ -73,12 +75,10 @@ function sqlConsorcio() {
         SELECT
           O.*,
           ROW_NUMBER() OVER (
-            PARTITION BY
-              NVL(TRIM(TO_CHAR(O.NR_PA)), ' '),
-              NVL(TRIM(TO_CHAR(O.NR_COOPERATIVA)), ' '),
-              O.DT_MOV,
-              NVL(O.NM_VENDEDOR, ' '),
-              NVL(O.VL_CONTRATADO_NUM,0)
+          PARTITION BY
+            NVL(TRIM(TO_CHAR(NR_COOPERATIVA)), ' '),
+            NVL(TRIM(TO_CHAR(NR_CONTRATO)), ' '),
+            NVL(TRIM(TO_CHAR(NR_COTA)), ' ')
             ORDER BY
               CASE WHEN O.SN_VENDA_CONCLUIDA = 'SIM' THEN 0 ELSE 1 END,
               CASE WHEN O.SITUACAO_COTA <> 'EXCLUIDO' THEN 0 ELSE 1 END,
