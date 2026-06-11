@@ -32,6 +32,7 @@ export const monitorMetaAlertasController = {
       const tema = normalizarTexto(req.query.tema);
       const gravidade = normalizarTexto(req.query.gravidade);
       const entidade = normalizarTexto(req.query.entidade);
+      const tipoEntidade = normalizarTexto(req.query.tipo_entidade).toUpperCase();
 
       const where: string[] = [];
       const binds: Record<string, any> = {};
@@ -49,6 +50,14 @@ export const monitorMetaAlertasController = {
       if (entidade) {
         where.push("UPPER(A.NM_ENTIDADE) LIKE :entidade");
         binds.entidade = `%${entidade.toUpperCase()}%`;
+      }
+
+      if (tipoEntidade === "PA") {
+        where.push("UPPER(A.NM_ENTIDADE) LIKE 'PA:%'");
+      }
+
+      if (tipoEntidade === "FUNC") {
+        where.push("UPPER(A.NM_ENTIDADE) LIKE 'FUNC:%'");
       }
 
       if (tema) {
@@ -82,6 +91,24 @@ export const monitorMetaAlertasController = {
       const total = Number(countRow.TOTAL || 0);
       const total_pages = total > 0 ? Math.ceil(total / limit) : 1;
 
+      const sqlAgrupamentoTema = `
+        SELECT
+          NVL(REGEXP_SUBSTR(A.NM_OBSERVACAO, 'Tema=([^;]+)', 1, 1, NULL, 1), 'Sem tema') AS TEMA,
+          COUNT(*) AS TOTAL,
+          SUM(CASE WHEN A.SN_RESOLVIDO = 0 THEN 1 ELSE 0 END) AS ABERTOS,
+          SUM(CASE WHEN A.SN_RESOLVIDO = 1 THEN 1 ELSE 0 END) AS RESOLVIDOS
+        FROM DBACRESSEM.MONITOR_META_ALERTA A
+        ${whereSql}
+        GROUP BY NVL(REGEXP_SUBSTR(A.NM_OBSERVACAO, 'Tema=([^;]+)', 1, 1, NULL, 1), 'Sem tema')
+        ORDER BY ABERTOS DESC, TOTAL DESC, TEMA
+      `;
+
+      const agrupamentoResult = await oracleExecute(
+        sqlAgrupamentoTema,
+        binds,
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
       const sqlLista = `
         SELECT *
         FROM (
@@ -98,8 +125,14 @@ export const monitorMetaAlertasController = {
             ROW_NUMBER() OVER (
               ORDER BY
                 A.SN_RESOLVIDO ASC,
+                CASE UPPER(A.NM_GRAVIDADE)
+                  WHEN 'CRITICA' THEN 1
+                  WHEN 'ALTA' THEN 2
+                  WHEN 'MEDIA' THEN 3
+                  WHEN 'BAIXA' THEN 4
+                  ELSE 5
+                END ASC,
                 A.DT_EXECUCAO DESC,
-                A.NM_GRAVIDADE,
                 A.NM_ENTIDADE
             ) AS RN
           FROM DBACRESSEM.MONITOR_META_ALERTA A
@@ -143,6 +176,12 @@ export const monitorMetaAlertasController = {
           abertos: Number(countRow.ABERTOS || 0),
           resolvidos: Number(countRow.RESOLVIDOS || 0),
         },
+        agrupamento_tema: (agrupamentoResult.rows || []).map((row: any) => ({
+          tema: getRowString(row, "TEMA"),
+          total: Number(row.TOTAL || 0),
+          abertos: Number(row.ABERTOS || 0),
+          resolvidos: Number(row.RESOLVIDOS || 0),
+        })),
       });
     } catch (err: any) {
       console.error("listar alertas de meta erro:", err);

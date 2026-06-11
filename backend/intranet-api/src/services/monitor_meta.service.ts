@@ -440,7 +440,6 @@ const METAS_MENSAIS_FUNCIONARIO_ENTRADA_COOPERADOS: Record<
     { nomeFuncionario: "CARLA GLASSER PANSERA DE FREITAS", valorEsperado: 6 },
     { nomeFuncionario: "CAROLINA BIANCA ALVARENGA DAUANNY", valorEsperado: 1 },
     { nomeFuncionario: "CHRISTIAN JESUS SIQUEIRA", valorEsperado: 17 },
-    { nomeFuncionario: "CLEANDIZA ROCHA DOS SANTOS", valorEsperado: 1 },
     { nomeFuncionario: "CLEIDIANA DA SILVA", valorEsperado: 3 },
     { nomeFuncionario: "DIOMAR MORAES DE SOUSA RAMOS", valorEsperado: 5 },
     { nomeFuncionario: "ELOA CRISTINA PRUDENTE", valorEsperado: 4 },
@@ -944,10 +943,14 @@ const METAS_MENSAIS_FUNCIONARIO_PREVIDENCIA_VGBL: Record<
 > = {
   1: [],
   2: [],
-  3: [{ nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 1 },],
+  3: [
+      { nomeFuncionario: "ANA KARINA SANTOS COELHO SENADOR", valorEsperado: 1 },
+      { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 1 },
+
+  ],
   4: [
-      { nomeFuncionario: "GEICE DOS REIS", valorEsperado: 1 },
-      { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 1 },
+    { nomeFuncionario: "GEICE DOS REIS", valorEsperado: 1 },
+    { nomeFuncionario: "ISIS GRASIELA SANCHES RONDON", valorEsperado: 1 },
   ],
   5: [
     { nomeFuncionario: "GABRIELLE ALVES DOS SANTOS", valorEsperado: 1 },
@@ -1042,12 +1045,12 @@ const METAS_MENSAIS_CONTA_CORRENTE_ABERTAS: Record<number, MetaMensalEsperada[]>
     { nomePa: "JACAREÍ", valorEsperado: 8 },
     { nomePa: "SANTA BRANCA", valorEsperado: 0 },
     { nomePa: "TAUBATÉ", valorEsperado: 1 },
-    { nomePa: "UBATUBA", valorEsperado: 8 },
+    { nomePa: "UBATUBA", valorEsperado: 7 },
     { nomePa: "CARAGUATATUBA", valorEsperado: 1 },
     { nomePa: "SÃO SEBASTIÃO", valorEsperado: 3 },
-    { nomePa: "ILHABELA", valorEsperado: 9 },
+    { nomePa: "ILHABELA", valorEsperado: 4 },
     { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
-    { nomePa: "TAPIRAÍ", valorEsperado: 7 },
+    { nomePa: "TAPIRAÍ", valorEsperado: 0 },
     { nomePa: "SETOR PJ", valorEsperado: 30 },
   ],
   3: [
@@ -1094,7 +1097,7 @@ const METAS_MENSAIS_CONTA_CORRENTE_ABERTAS: Record<number, MetaMensalEsperada[]>
   ],
   5: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 198 },
-    { nomePa: "SEDE", valorEsperado: 50 },
+    { nomePa: "SEDE", valorEsperado: 22 },
     { nomePa: "SUL", valorEsperado: 12 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 14 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 23 },
@@ -1111,7 +1114,7 @@ const METAS_MENSAIS_CONTA_CORRENTE_ABERTAS: Record<number, MetaMensalEsperada[]>
     { nomePa: "ILHABELA", valorEsperado: 5 },
     { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
     { nomePa: "TAPIRAÍ", valorEsperado: 21 },
-    { nomePa: "SETOR PJ", valorEsperado: 0 },
+    { nomePa: "SETOR PJ", valorEsperado: 28 },
   ],
 };
 
@@ -2092,24 +2095,24 @@ const METAS_MENSAIS_FATURAMENTO_SIPAG: Record<number, MetaMensalEsperada[]> = {
 
 const METAS_MENSAIS_LIQUIDACAO_BAIXA: Record<number, MetaMensalEsperada[]> = {
   1: [
-    { nomePa: "SICOOB CRESSEM", valorEsperado: 4969282.53 },
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 4234373.68 },
     { nomePa: "SUL", valorEsperado: 0 },
-    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 27854.93 },
-    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 280246.25 },
+    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 67 },
+    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 155240.88 },
     { nomePa: "CAÇAPAVA", valorEsperado: 0 },
     { nomePa: "CRUZEIRO", valorEsperado: 0 },
-    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 129251.72 },
+    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 7449.67 },
     { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
-    { nomePa: "JACAREÍ", valorEsperado: 161120.42 },
+    { nomePa: "JACAREÍ", valorEsperado: 39116.92 },
     { nomePa: "SANTA BRANCA", valorEsperado: 0 },
-    { nomePa: "TAUBATÉ", valorEsperado: 193099.85 },
-    { nomePa: "UBATUBA", valorEsperado: 4863 },
-    { nomePa: "CARAGUATATUBA", valorEsperado: 374551.2 },
-    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 3723.66 },
+    { nomePa: "TAUBATÉ", valorEsperado: 43510.41 },
+    { nomePa: "UBATUBA", valorEsperado: 8560.94 },
+    { nomePa: "CARAGUATATUBA", valorEsperado: 371138.5 },
+    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 157520.98 },
     { nomePa: "ILHABELA", valorEsperado: 0 },
     { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
     { nomePa: "TAPIRAÍ", valorEsperado: 0 },
-    { nomePa: "SETOR PJ", valorEsperado: 3794571.5 },
+    { nomePa: "SETOR PJ", valorEsperado: 3451768.38 },
   ],
   2: [
     { nomePa: "SICOOB CRESSEM", valorEsperado: 4110666.77 },
@@ -2345,8 +2348,8 @@ const METAS_MENSAIS_PREVIDENCIA_VGBL: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
   3: [
-    { nomePa: "SICOOB CRESSEM", valorEsperado: 2 },
-    { nomePa: "SEDE", valorEsperado: 2 },
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 3 },
+    { nomePa: "SEDE", valorEsperado: 3 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },

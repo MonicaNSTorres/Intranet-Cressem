@@ -32,6 +32,12 @@ export type MonitorMetaAlertasResponse = {
     abertos: number;
     resolvidos: number;
   };
+  agrupamento_tema?: Array<{
+    tema: string | null;
+    total: number;
+    abertos: number;
+    resolvidos: number;
+  }>;
 };
 
 export async function listarMonitorMetaAlertas(params: {
@@ -40,6 +46,7 @@ export async function listarMonitorMetaAlertas(params: {
   tema?: string;
   gravidade?: string;
   entidade?: string;
+  tipo_entidade?: "PA" | "FUNC";
   page?: number;
   limit?: number;
 }) {
