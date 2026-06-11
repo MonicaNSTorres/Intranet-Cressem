@@ -37,21 +37,43 @@ const TEMAS_MOEDA = [
   "venda",
 ];
 
+const FORMATADOR_DATA_HORA_BR = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 function formatarData(value: string | null | undefined) {
   if (!value) return "-";
 
-  const data = new Date(value);
-  if (!Number.isNaN(data.getTime())) {
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(data);
+  const texto = String(value).trim();
+  if (!texto) return "-";
+
+  const dataComFuso = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(texto);
+  if (dataComFuso) {
+    const data = new Date(texto);
+    if (!Number.isNaN(data.getTime())) {
+      return FORMATADOR_DATA_HORA_BR.format(data);
+    }
   }
 
-  return String(value);
+  const dataLocal = texto.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?)?$/
+  );
+  if (dataLocal) {
+    const [, ano, mes, dia, hora = "00", minuto = "00"] = dataLocal;
+    return `${dia}/${mes}/${ano}, ${hora}:${minuto}`;
+  }
+
+  const data = new Date(texto);
+  if (!Number.isNaN(data.getTime())) {
+    return FORMATADOR_DATA_HORA_BR.format(data);
+  }
+
+  return texto;
 }
 
 function getBadgeGravidade(gravidade: string | null) {

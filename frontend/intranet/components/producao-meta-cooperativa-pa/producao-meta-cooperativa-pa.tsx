@@ -463,15 +463,21 @@ function formatarValorExibicaoRelatorio(
         return String(valor);
     }
 
-    if (temaAtual === "saldo_previdencia_vgbl") {
+    if (
+        temaAtual === "saldo_previdencia_mi" ||
+        temaAtual === "saldo_previdencia_vgbl"
+    ) {
         const numeroTema = parseNumeroBR(valor);
         if (Number.isNaN(numeroTema)) return String(valor);
 
         const camposInteirosContaCorrenteSaldo = new Set([
+            "producao_semanal",
             "producao_ano",
+            "meta_2026",
             "meta_ano",
             "falta_para_meta",
             "meta_semanal_ano",
+            "meta_semanal",
             "meta_mensal",
             "falta_para_meta_mensal",
             "gap_semanal"
@@ -502,6 +508,7 @@ function formatarValorExibicaoRelatorio(
     const camposInteiros = new Set([
         "feito_no_mes_vigente",
         "meta_semanal",
+        "meta_semanal_ano",
         "gap_semanal",
         "meta_2026",
         "meta_ano",
@@ -556,6 +563,8 @@ function calcularPercentualComMetaArredondada(
     const temasAlvo = new Set<ChaveRelatorioPA>([
         "entrada_cooperados",
         "conta_corrente_abertas",
+        "saldo_previdencia_mi",
+        "saldo_previdencia_vgbl",
     ]);
 
     if (!temaAtual || !temasAlvo.has(temaAtual)) return null;
@@ -982,6 +991,10 @@ export function ProducaoMetaCooperativaPAForm() {
         });
     }
 
+    const mostrarAvisoInconsistenciaSisbr =
+        (tema === "liquidacao_baixa" && mesSelecionado === "4") ||
+        (tema === "seguro_venda_nova" && ["3", "4"].includes(mesSelecionado));
+
     const avisoTema =
         tema === "consorcio"
             ? "Este relatório de consórcio possui atualização mensal."
@@ -1135,7 +1148,7 @@ export function ProducaoMetaCooperativaPAForm() {
                         </div>
                     </div>
 
-                    {(infoTema || avisoTema) && (
+                    {(infoTema || avisoTema || mostrarAvisoInconsistenciaSisbr) && (
                         <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr]">
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -1170,7 +1183,15 @@ export function ProducaoMetaCooperativaPAForm() {
                                     Observação
                                 </div>
                                 <p className="text-sm text-amber-800">
-                                    {avisoTema || "Os dados exibidos variam conforme o relatório e o período selecionados."}
+                                    {mostrarAvisoInconsistenciaSisbr ? (
+                                        <>
+                                            Atenção: foram identificadas inconsistências na base do{" "}
+                                            <strong>Sisbr Analítico</strong> para este período. Recomenda-se validar os
+                                            valores com cautela até a regularização da origem dos dados.
+                                        </>
+                                    ) : (
+                                        avisoTema || "Os dados exibidos variam conforme o relatório e o período selecionados."
+                                    )}
                                 </p>
                             </div>
                         </div>

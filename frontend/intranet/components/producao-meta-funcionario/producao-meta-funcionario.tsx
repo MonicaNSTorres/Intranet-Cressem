@@ -757,6 +757,9 @@ export function ProducaoMetaFuncionarioForm() {
       ? "Este relatório de consórcio possui atualização mensal."
       : "";
 
+  const mostrarAvisoInconsistenciaSisbr =
+    tema === "seguro_venda_nova" && ["3", "4"].includes(mesSelecionado);
+
   const mostrarMes =
     !!tema && !TEMAS_SOMENTE_ANO_FUNCIONARIO.has(tema as ChaveRelatorioFuncionario);
 
@@ -923,7 +926,7 @@ export function ProducaoMetaFuncionarioForm() {
             </div>
           </div>
 
-          {(infoTema || avisoTema) && (
+          {(infoTema || avisoTema || mostrarAvisoInconsistenciaSisbr) && (
             <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr]">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -958,8 +961,16 @@ export function ProducaoMetaFuncionarioForm() {
                   Observação
                 </div>
                 <p className="text-sm text-amber-800">
-                  {avisoTema ||
-                    "Os dados exibidos variam conforme o relatório e o período selecionados."}
+                  {mostrarAvisoInconsistenciaSisbr ? (
+                    <>
+                      Atenção: foram identificadas inconsistências na base do{" "}
+                      <strong>Sisbr Analítico</strong> para este período. Recomenda-se validar os
+                      valores com cautela até a regularização da origem dos dados.
+                    </>
+                  ) : (
+                    avisoTema ||
+                    "Os dados exibidos variam conforme o relatório e o período selecionados."
+                  )}
                 </p>
               </div>
             </div>
