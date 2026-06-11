@@ -103,6 +103,14 @@ function formatarValorExibicaoRelatorio(
         return formatarInteiroBR(numeroTema);
     }
 
+    if (
+        temaAtual === "portabilidade" &&
+        campo === "producao_semanal" &&
+        !Number.isNaN(numeroTema)
+    ) {
+        return formatarInteiroBR(numeroTema);
+    }
+
     if (temaAtual === "entrada_cooperados") {
         const numeroTema = parseNumeroBR(valor);
         if (Number.isNaN(numeroTema)) return String(valor);
