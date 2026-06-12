@@ -79,6 +79,11 @@ function formatarMoedaBR(valor: number) {
     return valor < 0 ? `-${absoluto}` : absoluto;
 }
 
+const TEMAS_OCULTAR_SETOR_PJ = new Set<ChaveRelatorioPA>([
+    "saldo_cooperados",
+    "conta_corrente_ativas",
+]);
+
 function formatarValorExibicaoRelatorio(
     campo: string,
     valor: unknown,
@@ -854,12 +859,22 @@ export function ProducaoMetaCooperativaPAForm() {
             });
 
             setModoPeriodo(modoBusca);
-            const dadosFiltrados =
-                temaBusca === "liquidacao_baixa" || temaBusca === "faturamento_sipag"
-                    ? ordenado.filter(
-                        (item) => Number(item?.numero_pa ?? item?.nr_pa ?? 0) !== 0
-                    )
-                    : ordenado;
+            const dadosFiltrados = ordenado.filter((item) => {
+                const numeroPa = Number(item?.numero_pa ?? item?.nr_pa ?? 0);
+
+                if (
+                    (temaBusca === "liquidacao_baixa" || temaBusca === "faturamento_sipag") &&
+                    numeroPa === 0
+                ) {
+                    return false;
+                }
+
+                if (TEMAS_OCULTAR_SETOR_PJ.has(temaBusca) && numeroPa === 95) {
+                    return false;
+                }
+
+                return true;
+            });
 
             setDados(dadosFiltrados);
         } catch (error) {

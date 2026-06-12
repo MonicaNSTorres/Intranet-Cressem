@@ -120,14 +120,51 @@ function formatarDataCurta(data?: string | null) {
   return data;
 }
 
+function parseMoeda(valor: any) {
+  if (valor === null || valor === undefined || valor === "") return NaN;
+  if (typeof valor === "number") return valor;
+
+  let texto = String(valor).trim();
+  if (!texto) return NaN;
+
+  texto = texto.replace(/\s/g, "").replace(/R\$/gi, "");
+
+  if (texto.includes(",")) {
+    texto = texto.replace(/\./g, "").replace(",", ".");
+  } else if (/^-?\d{1,3}(\.\d{3})+$/.test(texto)) {
+    texto = texto.replace(/\./g, "");
+  }
+
+  const numero = Number(texto);
+  return Number.isNaN(numero) ? NaN : numero;
+}
+
 function formatarMoeda(valor: any) {
-  const numero = Number(valor || 0);
+  const numero = parseMoeda(valor);
+
+  if (Number.isNaN(numero)) return String(valor || "");
 
   return numero.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2,
   });
+}
+
+function formatarCampoMoeda(valor: string) {
+  return valor ? formatarMoeda(valor) : "_____";
+}
+
+function formatarMoedaDigitada(valor: string) {
+  if (!valor) return "";
+
+  if (/R\$/i.test(valor)) {
+    const digitos = valor.replace(/\D/g, "");
+    if (!digitos) return "";
+    return formatarMoeda(Number(digitos) / 100);
+  }
+
+  return formatarMoeda(valor);
 }
 
 function CampoEditavel({
@@ -177,6 +214,10 @@ export function AuditoriaForm() {
       ...prev,
       [field]: value,
     }));
+  }
+
+  function updateFieldMoeda(field: CampoInlineKey, value: string) {
+    updateField(field, formatarMoedaDigitada(value));
   }
 
   async function preencherFormulario() {
@@ -266,19 +307,19 @@ export function AuditoriaForm() {
       `DESTACAMOS OS SEGUINTES PONTOS:`,
       `1. ATUALIZAÇÃO CADASTRAL EM DIA? ${form.atualizacao || "_____"} `,
       `2. PD OPERAÇÃO ${form.pd_operacao || "_____"} (BACEN ${form.bacen_codigo || "_____"}), TAXA DE JUROS ${form.taxa_juros || "_____"} EM ${form.parcelas || "_____"} DE ACORDO COM A POLÍTICA DE CRÉDITO.`,
-      `3. MARGEM DISPONÍVEL ${form.margem_disponivel || "_____"} `,
-      `4. EFETIVO? ${form.efetivo || "_____"} , LÍQUIDO? ${form.liquido || "_____"} `,
+      `3. MARGEM DISPONÍVEL ${formatarCampoMoeda(form.margem_disponivel)} `,
+      `4. EFETIVO? ${form.efetivo || "_____"} , LÍQUIDO? ${formatarCampoMoeda(form.liquido)} `,
       `5. ADMISSÃO NA EMPRESA ${form.admissao || "_____"} `,
       `6. CORRENTISTA? ${form.correntista || "_____"} PORTABILIDADE? ${form.portabilidade || "_____"} `,
       `7. CARTÃO DE CRÉDITO? ${form.cartao || "_____"} `,
       `8. RISCO ${form.risco || "_____"} , BACEN ${form.risco_bacen || "_____"} `,
-      `9. BENS MÓVEIS? ${form.bens_moveis || "_____"} , BENS IMÓVEIS? ${form.bens_imoveis || "_____"} `,
-      `10. CAPITAL ${form.capital || "_____"} `,
-      `11. EMPRÉSTIMO NA COOPERATIVA? ${form.emprestimo_cooperativa || "_____"} `,
+      `9. BENS MÓVEIS? ${formatarCampoMoeda(form.bens_moveis)} , BENS IMÓVEIS? ${formatarCampoMoeda(form.bens_imoveis)} `,
+      `10. CAPITAL ${formatarCampoMoeda(form.capital)} `,
+      `11. EMPRÉSTIMO NA COOPERATIVA? ${formatarCampoMoeda(form.emprestimo_cooperativa)} `,
       `12. IAP ${form.iap || "_____"} `,
-      `13. VALOR VENCIDO NO MERCADO ${form.valor_vencido || "_____"} `,
-      `14. VALOR A VENCER NO MERCADO ${form.valor_a_vencer || "_____"} `,
-      `15. PREJUÍZO NO MERCADO ${form.prejuizo || "_____"} `,
+      `13. VALOR VENCIDO NO MERCADO ${formatarCampoMoeda(form.valor_vencido)} `,
+      `14. VALOR A VENCER NO MERCADO ${formatarCampoMoeda(form.valor_a_vencer)} `,
+      `15. PREJUÍZO NO MERCADO ${formatarCampoMoeda(form.prejuizo)} `,
       `16. SERASA SCORE ${form.serasa_score || "_____"} , RESTRIÇÃO? ${form.restricao || "_____"} `,
       `17. DPS ${form.dps || "_____"} `,
       ``,
@@ -446,7 +487,7 @@ export function AuditoriaForm() {
           3. Margem disponível{" "}
           <CampoEditavel
             value={form.margem_disponivel}
-            onChange={(value) => updateField("margem_disponivel", value)}
+            onChange={(value) => updateFieldMoeda("margem_disponivel", value)}
             placeholder="R$"
           />
         </div>
@@ -461,7 +502,7 @@ export function AuditoriaForm() {
           , Líquido?{" "}
           <CampoEditavel
             value={form.liquido}
-            onChange={(value) => updateField("liquido", value)}
+            onChange={(value) => updateFieldMoeda("liquido", value)}
             placeholder="R$"
           />
         </div>
@@ -518,13 +559,13 @@ export function AuditoriaForm() {
           9. Bens móveis?{" "}
           <CampoEditavel
             value={form.bens_moveis}
-            onChange={(value) => updateField("bens_moveis", value)}
+            onChange={(value) => updateFieldMoeda("bens_moveis", value)}
             placeholder="R$"
           />
           , Bens imóveis?{" "}
           <CampoEditavel
             value={form.bens_imoveis}
-            onChange={(value) => updateField("bens_imoveis", value)}
+            onChange={(value) => updateFieldMoeda("bens_imoveis", value)}
             placeholder="R$"
           />
         </div>
@@ -533,7 +574,7 @@ export function AuditoriaForm() {
           10. Capital{" "}
           <CampoEditavel
             value={form.capital}
-            onChange={(value) => updateField("capital", value)}
+            onChange={(value) => updateFieldMoeda("capital", value)}
             placeholder="R$"
           />
         </div>
@@ -542,7 +583,7 @@ export function AuditoriaForm() {
           11. Empréstimo na cooperativa?{" "}
           <CampoEditavel
             value={form.emprestimo_cooperativa}
-            onChange={(value) => updateField("emprestimo_cooperativa", value)}
+            onChange={(value) => updateFieldMoeda("emprestimo_cooperativa", value)}
             placeholder="R$"
           />
         </div>
@@ -560,7 +601,7 @@ export function AuditoriaForm() {
           13. Valor vencido no mercado{" "}
           <CampoEditavel
             value={form.valor_vencido}
-            onChange={(value) => updateField("valor_vencido", value)}
+            onChange={(value) => updateFieldMoeda("valor_vencido", value)}
             placeholder="R$"
           />
         </div>
@@ -569,7 +610,7 @@ export function AuditoriaForm() {
           14. Valor a vencer no mercado{" "}
           <CampoEditavel
             value={form.valor_a_vencer}
-            onChange={(value) => updateField("valor_a_vencer", value)}
+            onChange={(value) => updateFieldMoeda("valor_a_vencer", value)}
             placeholder="R$"
           />
         </div>
@@ -578,7 +619,7 @@ export function AuditoriaForm() {
           15. Prejuízo no mercado{" "}
           <CampoEditavel
             value={form.prejuizo}
-            onChange={(value) => updateField("prejuizo", value)}
+            onChange={(value) => updateFieldMoeda("prejuizo", value)}
             placeholder="R$"
           />
         </div>
