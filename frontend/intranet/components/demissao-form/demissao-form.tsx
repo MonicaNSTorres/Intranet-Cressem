@@ -387,7 +387,8 @@ export function DemissaoForm() {
   }
 
   async function validarCamposParcelas() {
-    const totalADevolver = Math.abs(saldoFinal);
+    const totalADevolver = Number(Math.abs(saldoFinal).toFixed(2));
+    const valorPrimeiro = Number(parseBRL(valorPrimeiraParcela).toFixed(2));
 
     if (tipoFormulario !== "CREDOR") {
       setErro("Parcelas só podem ser adicionadas no formulário credor.");
@@ -399,7 +400,7 @@ export function DemissaoForm() {
       return false;
     }
 
-    if (!valorPrimeiraParcela || parseBRL(valorPrimeiraParcela) <= 0) {
+    if (!valorPrimeiraParcela || valorPrimeiro <= 0) {
       setErro("Preencha o valor da primeira parcela.");
       return false;
     }
@@ -412,7 +413,7 @@ export function DemissaoForm() {
     const dataValida = await validarDataPrimeiraParcela(dataPrimeiraParcela);
     if (!dataValida) return false;
 
-    if (parseBRL(valorPrimeiraParcela) > totalADevolver) {
+    if (valorPrimeiro > totalADevolver) {
       setErro("O valor da primeira parcela não pode ser maior que o total a devolver.");
       return false;
     }
@@ -427,8 +428,8 @@ export function DemissaoForm() {
     setErro("");
     setInfo("");
 
-    const valorTotal = Math.abs(saldoFinal);
-    const valorPrimeiro = parseBRL(valorPrimeiraParcela);
+    const valorTotal = Number(Math.abs(saldoFinal).toFixed(2));
+    const valorPrimeiro = Number(parseBRL(valorPrimeiraParcela).toFixed(2));
 
     const novasParcelas: ParcelaItem[] = [];
     let soma = 0;

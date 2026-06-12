@@ -1450,7 +1450,7 @@ ORDER BY PA.NR_PA
       FROM DUAL
     ),
 
-    P_BASE AS (
+    P_RAW AS (
       SELECT
         P.NR_PA,
         TRUNC(P.DT_COMPETENCIA) AS DT_MOV,
@@ -1467,29 +1467,44 @@ ORDER BY PA.NR_PA
           OR PR.DT_FIM_SEMANA IS NULL
           OR TRUNC(P.DT_COMPETENCIA) BETWEEN TRUNC(PR.DT_INI_SEMANA) AND TRUNC(PR.DT_FIM_SEMANA)
         )
+        AND P.NR_PA IS NOT NULL
         AND P.NR_PA <> 4317
+        AND TRIM(P.NR_CONTA_CORRENTE) IS NOT NULL
+    ),
 
-      UNION
+    P_DEDUP AS (
+      SELECT
+        NR_PA,
+        DT_MOV,
+        NR_CONTA_CORRENTE
+      FROM (
+        SELECT
+          R.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY R.NR_CONTA_CORRENTE
+            ORDER BY
+              R.DT_MOV,
+              R.NR_PA
+          ) AS RN
+        FROM P_RAW R
+      )
+      WHERE RN = 1
+    ),
+
+    P_BASE AS (
+      SELECT
+        NR_PA,
+        DT_MOV,
+        NR_CONTA_CORRENTE
+      FROM P_DEDUP
+
+      UNION ALL
 
       SELECT
         4317 AS NR_PA,
-        TRUNC(P.DT_COMPETENCIA) AS DT_MOV,
-        CASE
-          WHEN REGEXP_LIKE(TRIM(P.NR_CONTA_CORRENTE), '^[0-9]+$')
-            THEN TO_CHAR(TO_NUMBER(TRIM(P.NR_CONTA_CORRENTE)))
-          ELSE TRIM(P.NR_CONTA_CORRENTE)
-        END AS NR_CONTA_CORRENTE
-      FROM DBACRESSEM.PORTABILIDADE_DIARIO P
-      CROSS JOIN PARAMS PR
-      WHERE P.DT_COMPETENCIA IS NOT NULL
-        AND (
-          PR.DT_INI_SEMANA IS NULL
-          OR PR.DT_FIM_SEMANA IS NULL
-          OR TRUNC(P.DT_COMPETENCIA) BETWEEN TRUNC(PR.DT_INI_SEMANA) AND TRUNC(PR.DT_FIM_SEMANA)
-        )
-        AND REGEXP_LIKE(TRIM(P.NR_COOPERATIVA), '^[0-9]+$')
-        AND TO_NUMBER(TRIM(P.NR_COOPERATIVA)) = 4317
-        AND (P.NR_PA IS NULL OR P.NR_PA <> 4317)
+        DT_MOV,
+        NR_CONTA_CORRENTE
+      FROM P_DEDUP
     ),
 
     P_ANO AS (
