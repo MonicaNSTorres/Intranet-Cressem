@@ -1838,25 +1838,6 @@ const METAS_MENSAIS_SEGURO_VENDA_NOVA: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
   5: [
-    { nomePa: "SICOOB CRESSEM", valorEsperado: 3429.37 },
-    { nomePa: "SEDE", valorEsperado: 1877.17 },
-    { nomePa: "SUL", valorEsperado: 199.78 },
-    { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 0 },
-    { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 0 },
-    { nomePa: "CAÇAPAVA", valorEsperado: 0 },
-    { nomePa: "CRUZEIRO", valorEsperado: 59.02 },
-    { nomePa: "AGENCIA JAMBEIRO", valorEsperado: 350.57 },
-    { nomePa: "SANTO ANTÔNIO DO PINHAL", valorEsperado: 0 },
-    { nomePa: "JACAREÍ", valorEsperado: 314.51 },
-    { nomePa: "SANTA BRANCA", valorEsperado: 0 },
-    { nomePa: "TAUBATÉ", valorEsperado: 0 },
-    { nomePa: "UBATUBA", valorEsperado: 207.62 },
-    { nomePa: "CARAGUATATUBA", valorEsperado: 0 },
-    { nomePa: "SÃO SEBASTIÃO", valorEsperado: 0 },
-    { nomePa: "ILHABELA", valorEsperado: 278.68 },
-    { nomePa: "SALESÓPOLIS", valorEsperado: 0 },
-    { nomePa: "TAPIRAÍ", valorEsperado: 142.02 },
-    { nomePa: "SETOR PJ", valorEsperado: 0 },
   ],
 };
 
@@ -2121,7 +2102,7 @@ const METAS_MENSAIS_LIQUIDACAO_BAIXA: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "SETOR PJ", valorEsperado: 3032734.43 },
   ],
   3: [
-    { nomePa: "SICOOB CRESSEM", valorEsperado: 4693609.29 },
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 4693905.69 },
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 28018.65 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 216571.4 },
@@ -2141,7 +2122,7 @@ const METAS_MENSAIS_LIQUIDACAO_BAIXA: Record<number, MetaMensalEsperada[]> = {
     { nomePa: "SETOR PJ", valorEsperado: 3492547.92 },
   ],
   4: [
-    { nomePa: "SICOOB CRESSEM", valorEsperado: 4693905.69 },
+    { nomePa: "SICOOB CRESSEM", valorEsperado: 4969282.53},
     { nomePa: "SUL", valorEsperado: 0 },
     { nomePa: "CAMPOS DO JORDÃO", valorEsperado: 27854.93 },
     { nomePa: "AGÊNCIA PARAIBUNA", valorEsperado: 280246.25 },

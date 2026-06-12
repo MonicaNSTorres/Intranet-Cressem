@@ -613,23 +613,12 @@ function getSemanasDoMes(ano: number, mesIndex: number) {
     let cursor = new Date(mesInicio);
 
     while (cursor <= mesFim) {
-        // pula sábado/domingo e inicia semana em dia útil
-        while (cursor <= mesFim && (cursor.getDay() === 0 || cursor.getDay() === 6)) {
-            cursor.setDate(cursor.getDate() + 1);
-        }
-
-        if (cursor > mesFim) break;
-
         const inicioSemana = new Date(cursor);
         const fimSemana = new Date(cursor);
 
-        // avança até sexta-feira (ou fim do mês)
-        while (fimSemana.getDay() !== 5 && fimSemana < mesFim) {
+        // Semana corrida: fecha no domingo, mas sempre recortada ao mês.
+        while (fimSemana.getDay() !== 0 && fimSemana < mesFim) {
             fimSemana.setDate(fimSemana.getDate() + 1);
-            if (fimSemana.getDay() === 6) {
-                fimSemana.setDate(fimSemana.getDate() - 1);
-                break;
-            }
         }
 
         semanas.push({

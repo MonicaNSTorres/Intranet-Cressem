@@ -1138,6 +1138,30 @@ ORDER BY PA.NR_PA
 
       ROUND(NVL(M.META_ANO,0)/52,2) AS "meta_semanal_ano",
 
+      CASE
+        WHEN ROUND(NVL(M.META_ANO,0)/52,2) > 0
+          THEN ROUND(
+            (
+              (CASE
+                 WHEN P.NR_PA = 95 THEN
+                   NVL((
+                     SELECT SUM(NVL(B2.VL_COBRADO,0))
+                     FROM MLB_BASE_PERIODO B2
+                     WHERE B2.NR_PA IN (0,95)
+                   ),0)
+                 WHEN P.NR_PA = 4317 THEN
+                   NVL((
+                     SELECT SUM(NVL(B4.VL_COBRADO,0))
+                     FROM MLB_BASE_PERIODO B4
+                     WHERE B4.NR_PA <> 4317
+                   ),0)
+                 ELSE NVL(SW.PRODUCAO_SEMANAL,0)
+               END) / ROUND(NVL(M.META_ANO,0)/52,2)
+            ) * 100
+          , 2)
+        ELSE 0
+      END AS "porcentagem_semanal",
+
       (
         CASE
           WHEN P.NR_PA = 95 THEN
