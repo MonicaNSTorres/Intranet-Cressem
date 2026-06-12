@@ -970,7 +970,7 @@ const METAS_MENSAIS_FUNCIONARIO_CONSORCIO: Record<
     { nomeFuncionario: "LARISSA ROBERTA DA SILVA SOUSA", valorEsperado: 300000 },
     { nomeFuncionario: "LUANA ANDRESA DE OLIVEIRA", valorEsperado: 50242 },
     { nomeFuncionario: "RAISSA STEFANI SANCHES DA SILVA", valorEsperado: 7500 },
-    { nomeFuncionario: "THIAGO SILVERIO DOS REIS", valorEsperado: 367466 },
+    { nomeFuncionario: "THIAGO SILVERIO DOS REIS", valorEsperado: 439328 },
     { nomeFuncionario: "VERA LUCIA ZAGO", valorEsperado: 102748 },
     { nomeFuncionario: "YASMIN DE QUEIROZ LEMOS RIBEIRO", valorEsperado: 277293 },
     { nomeFuncionario: "ROBERTA RAMOS DIAS", valorEsperado: 24200 },
