@@ -82,6 +82,7 @@ function formatarMoedaBR(valor: number) {
 const TEMAS_OCULTAR_SETOR_PJ = new Set<ChaveRelatorioPA>([
     "saldo_cooperados",
     "conta_corrente_ativas",
+    "portabilidade",
 ]);
 
 function formatarValorExibicaoRelatorio(

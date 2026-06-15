@@ -2880,12 +2880,21 @@ function getInicioSemanaAtual() {
   return now;
 }
 
+function addDias(date: Date, dias: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + dias);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
 function deveMonitorarPeriodo(dtFimPeriodo: string) {
   const dtFim = parseBrDate(dtFimPeriodo);
   if (!dtFim) return false;
   const inicioSemanaAtual = getInicioSemanaAtual();
-  // Monitora somente períodos finalizados antes da semana atual.
-  return dtFim < inicioSemanaAtual;
+  const inicioSemanaAnterior = addDias(inicioSemanaAtual, -7);
+  // Monitora somente períodos finalizados antes da semana anterior.
+  // A semana atual e a anterior podem estar com dados atrasados.
+  return dtFim < inicioSemanaAnterior;
 }
 
 function calcularVariacaoPercentual(atual: number, anterior: number) {

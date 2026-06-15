@@ -158,13 +158,10 @@ function formatarCampoMoeda(valor: string) {
 function formatarMoedaDigitada(valor: string) {
   if (!valor) return "";
 
-  if (/R\$/i.test(valor)) {
-    const digitos = valor.replace(/\D/g, "");
-    if (!digitos) return "";
-    return formatarMoeda(Number(digitos) / 100);
-  }
+  const digitos = valor.replace(/\D/g, "");
+  if (!digitos) return "";
 
-  return formatarMoeda(valor);
+  return formatarMoeda(Number(digitos) / 100);
 }
 
 function CampoEditavel({
@@ -217,7 +214,10 @@ export function AuditoriaForm() {
   }
 
   function updateFieldMoeda(field: CampoInlineKey, value: string) {
-    updateField(field, formatarMoedaDigitada(value));
+    setForm((prev) => ({
+      ...prev,
+      [field]: formatarMoedaDigitada(value),
+    }));
   }
 
   async function preencherFormulario() {
