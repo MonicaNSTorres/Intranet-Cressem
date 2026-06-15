@@ -51,8 +51,14 @@ function onlyDigits(value: string) {
     return String(value || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(value: string) {
+    return String(value || "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+}
+
 function formatCpfCnpj(value: string) {
-    const digits = onlyDigits(value);
+    const digits = onlyCpfCnpjChars(value);
 
     if (digits.length <= 11) {
         return digits
@@ -352,8 +358,8 @@ export function CadastroReciboFinanceiroForm() {
                         String(usuarioResp?.nome || usuarioResp?.username || "").trim()
                     );
 
-                    const digits = onlyDigits(recibo.NR_CPF_CNPJ || "");
-                    setTipoFormulario(digits.length === 14 ? "PJ" : "PF");
+                    const documento = onlyCpfCnpjChars(recibo.NR_CPF_CNPJ || "");
+                    setTipoFormulario(documento.length === 14 ? "PJ" : "PF");
 
                     setParcelas(recibo.PARCELAS || []);
                     setPagamentos(recibo.PAGAMENTOS || []);
@@ -377,7 +383,7 @@ export function CadastroReciboFinanceiroForm() {
     }
 
     async function buscarAssociado() {
-        const documento = onlyDigits(cpfCnpj);
+        const documento = onlyCpfCnpjChars(cpfCnpj);
 
         if (!documento) {
             setErro("Informe um CPF/CNPJ.");
@@ -420,7 +426,7 @@ export function CadastroReciboFinanceiroForm() {
     }
 
     function validaCamposRecibo() {
-        if (!onlyDigits(cpfCnpj)) return "Preencha o CPF/CNPJ.";
+        if (!onlyCpfCnpjChars(cpfCnpj)) return "Preencha o CPF/CNPJ.";
         if (!nome.trim()) return "Preencha o nome do associado.";
         if (!dataRecibo) return "Selecione a data do recibo.";
         if (!cidade.trim()) return "Selecione a cidade.";
@@ -580,7 +586,7 @@ export function CadastroReciboFinanceiroForm() {
 
     function buildPayload(): ReciboFinanceiroPayload {
         return {
-            NR_CPF_CNPJ: onlyDigits(cpfCnpj),
+            NR_CPF_CNPJ: onlyCpfCnpjChars(cpfCnpj),
             NM_ASSOCIADO: nome.trim().toUpperCase(),
             NR_MATRICULA: matricula.trim(),
             NM_EMPRESA: empresa.trim().toUpperCase(),

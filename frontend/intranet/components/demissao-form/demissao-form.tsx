@@ -42,8 +42,14 @@ function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(value: string) {
+  return String(value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
 function formatCpfCnpjView(value: string) {
-  const digits = onlyDigits(value).slice(0, 14);
+  const digits = onlyCpfCnpjChars(value).slice(0, 14);
 
   if (digits.length <= 11) {
     if (digits.length <= 3) return digits;
@@ -649,7 +655,7 @@ export function DemissaoForm() {
       cursorInicio,
       e.key === "Backspace" ? "backspace" : "delete"
     );
-    setCpf(onlyDigits(novoValor).slice(0, 14));
+    setCpf(onlyCpfCnpjChars(novoValor).slice(0, 14));
   };
 
   return (
@@ -664,11 +670,10 @@ export function DemissaoForm() {
             <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
               <SearchInput
                 value={formatCpfCnpjView(cpf)}
-                onChange={(e) => setCpf(onlyDigits(e.target.value).slice(0, 14))}
+                onChange={(e) => setCpf(onlyCpfCnpjChars(e.target.value).slice(0, 14))}
                 onKeyDown={onDocumentoKeyDown}
-                placeholder="CPF/CNPJ (somente números)"
+                placeholder="CPF/CNPJ"
                 className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                inputMode="numeric"
                 maxLength={18}
               />
 

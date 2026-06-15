@@ -138,14 +138,20 @@ function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(value: string) {
+  return String(value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
 function isPJ(doc?: string) {
-  return onlyDigits(doc || "").length === 14;
+  return onlyCpfCnpjChars(doc || "").length === 14;
 }
 
 function formatCpfCnpjView(value?: string) {
-  const digits = onlyDigits(value || "");
+  const digits = onlyCpfCnpjChars(value || "");
 
-  if (digits.length <= 11) {
+  if (digits.length <= 11 && !/[A-Z]/.test(digits)) {
     const s = digits.slice(0, 11);
     if (s.length <= 3) return s;
     if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3)}`;
@@ -298,13 +304,15 @@ export function ConsultaAnaliseLimiteForm() {
     try {
       setLoading(true);
 
+      const docBusca = onlyCpfCnpjChars(txtAnalise);
+
       const isCpfOuCnpj =
-        onlyDigits(txtAnalise).length === 11 || onlyDigits(txtAnalise).length === 14;
+        docBusca.length === 11 || docBusca.length === 14;
 
       const response: ApiResponse = await listarAnalisesLimite({
         page,
         limit,
-        cpf: isCpfOuCnpj ? txtAnalise : "",
+        cpf: isCpfOuCnpj ? docBusca : "",
         nome: !isCpfOuCnpj ? txtAnalise : "",
       });
 
@@ -564,10 +572,10 @@ export function ConsultaAnaliseLimiteForm() {
               onChange={(e) => {
                 const value = e.target.value;
 
-                const onlyNumbers = value.replace(/\D/g, "");
+                const doc = onlyCpfCnpjChars(value);
 
-                if (onlyNumbers.length > 0) {
-                  setTxtAnalise(onlyNumbers.slice(0, 14));
+                if (doc.length > 0 && /^[A-Z0-9.\-\/]+$/i.test(value)) {
+                  setTxtAnalise(doc.slice(0, 14));
                 } else {
                   setTxtAnalise(value);
                 }

@@ -36,6 +36,12 @@ function onlyDigits(value: string) {
     return String(value || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(value: string) {
+    return String(value || "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+}
+
 function numberFromApi(value: any) {
     if (value === null || value === undefined || value === "") return 0;
 
@@ -45,7 +51,7 @@ function numberFromApi(value: any) {
 }
 
 function formatCpfCnpjView(value: string) {
-    const digits = onlyDigits(value);
+    const digits = onlyCpfCnpjChars(value);
 
     if (digits.length <= 11) {
         const s = digits.slice(0, 11);
@@ -64,7 +70,7 @@ function formatCpfCnpjView(value: string) {
 }
 
 function isCnpj(value: string) {
-    return onlyDigits(value).length === 14;
+    return onlyCpfCnpjChars(value).length === 14;
 }
 
 function isValidCpf(cpf: string) {
@@ -104,7 +110,7 @@ function isValidCnpj(cnpj: string) {
 }
 
 function validaCpfCnpj(value: string) {
-    const digits = onlyDigits(value);
+    const digits = onlyCpfCnpjChars(value);
     if (digits.length === 11) return isValidCpf(digits);
     if (digits.length === 14) return isValidCnpj(digits);
     return false;
@@ -272,7 +278,7 @@ export function AnaliseLimiteForm() {
             setErro("");
             setInfo("");
 
-            const digits = onlyDigits(cpf);
+            const digits = onlyCpfCnpjChars(cpf);
 
             if (!digits) {
                 setErro("Informe o CPF/CNPJ.");
@@ -455,7 +461,7 @@ export function AnaliseLimiteForm() {
 
     function buildPayload() {
         const base = {
-            NR_CPF_CNPJ_ASSOCIADO: onlyDigits(cpf),
+            NR_CPF_CNPJ_ASSOCIADO: onlyCpfCnpjChars(cpf),
             NM_ASSOCIADO: nome,
             NR_CELULAR: onlyDigits(celular),
             NR_CONTA_CORRENTE: contaCorrente,
@@ -699,8 +705,7 @@ export function AnaliseLimiteForm() {
                                         onChange={(e) => setCpf(e.target.value)}
                                         placeholder="Digite o CPF/CNPJ"
                                         className={inputBase}
-                                        inputMode="numeric"
-                                        maxLength={18}
+                                        maxLength={20}
                                     />
 
                                     <SearchButton loading={loading} label="Pesquisar" />

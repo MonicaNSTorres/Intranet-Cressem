@@ -35,3 +35,21 @@ export function formatCpfView(v: string) {
 export function onlyDigits(v: string) {
   return (v || "").replace(/\D/g, "");
 }
+
+export function onlyCpfCnpjChars(v: string) {
+  return (v || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+}
+
+export function formatCpfCnpjView(v: string) {
+  const s = onlyCpfCnpjChars(v).slice(0, 14);
+
+  if (s.length > 11 || /[A-Z]/.test(s)) {
+    return s
+      .replace(/^(.{2})(.)/, "$1.$2")
+      .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+      .replace(/\.(.{3})(.)/, ".$1/$2")
+      .replace(/(.{4})(.)$/, "$1-$2");
+  }
+
+  return formatCpfView(s);
+}

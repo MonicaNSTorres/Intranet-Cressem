@@ -75,6 +75,22 @@ export type RemessaCnab = {
     STATUS: string;
 };
 
+export type DetalheRemessaCnab = {
+    ID_DETALHE: number;
+    ID_LOTE: number;
+    NR_LOTE: number;
+    SEQ: number;
+    CPF: string;
+    BANCO: string;
+    AGENCIA: string;
+    CONTA: string;
+    DV_CONTA: string;
+    NOME: string;
+    VALOR: number;
+    TIPO: number;
+    CREATED_AT: string;
+};
+
 export async function buscarFavorecidoPorCpf(
     cpf: string
 ): Promise<FavorecidoCnab> {
@@ -91,10 +107,6 @@ export async function listarRemessas(): Promise<RemessaCnab[]> {
     return Array.isArray(response.data) ? response.data : [];
 }
 
-/**
- * Temporário:
- * ainda usa Excel enquanto não criamos o endpoint novo por JSON.
- */
 export async function gerarCnab240PorExcel(file: File): Promise<Blob> {
     const formData = new FormData();
     formData.append("file", file, file.name);
@@ -118,10 +130,7 @@ export async function gerarCnab240PorExcel(file: File): Promise<Blob> {
     return await response.blob();
 }
 
-/**
- * Próxima etapa:
- * vamos criar esse endpoint no backend para gerar pela tela.
- */
+
 export async function gerarCnab240PorTransferencias(
     transferencias: TransferenciaCnabPayload[]
 ): Promise<Blob> {
@@ -157,4 +166,14 @@ export async function importarRetorno(file: File): Promise<any> {
     }
 
     return await response.json();
+}
+
+export async function listarDetalhesRemessa(
+    idLote: number
+): Promise<DetalheRemessaCnab[]> {
+    const response = await api.get(
+        `/v1/cnab240/remessas/${idLote}/detalhes`
+    );
+
+    return Array.isArray(response.data) ? response.data : [];
 }

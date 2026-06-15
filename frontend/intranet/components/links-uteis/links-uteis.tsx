@@ -26,7 +26,9 @@ import {
     FaArchive,
     FaDesktop,
     FaBookReader,
-    FaCalendarCheck
+    FaCalendarCheck,
+    FaBell,
+    FaBarcode,
 } from "react-icons/fa";
 import { useMe } from "@/hooks/use-me";
 
@@ -174,6 +176,22 @@ const links: LinkItem[] = [
         href: "/auth/painel_glpi_estoque",
         icon: FaDesktop,
         category: "Estoque",
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+    {
+        title: "Monitor Meta Alerta",
+        description: "Monitoramento de metas para rastreamento e consistencia dos dados.",
+        href: "/auth/monitor_alertas_meta",
+        icon: FaBell,
+        category: "Dados",
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+    {
+        title: "CNAB240",
+        description: "Processo de geração de cnab.",
+        href: "/auth/cnab240",
+        icon: FaBarcode,
+        category: "Financeiro",
         allowedGroups: [AD_GROUPS.SUPORTE],
     },
     {

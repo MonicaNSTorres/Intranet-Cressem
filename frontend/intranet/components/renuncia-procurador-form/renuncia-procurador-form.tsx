@@ -35,7 +35,7 @@ const hojePartsBR = () => {
 };
 
 function formatCpfCnpjView(value: string) {
-    const digits = value.replace(/\D/g, "").slice(0, 14);
+    const digits = onlyCpfCnpjChars(value).slice(0, 14);
 
     if (digits.length <= 11) {
         return digits
@@ -49,6 +49,12 @@ function formatCpfCnpjView(value: string) {
         .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
         .replace(/\.(\d{3})(\d)/, ".$1/$2")
         .replace(/(\d{4})(\d)/, "$1-$2");
+}
+
+function onlyCpfCnpjChars(value: string) {
+    return String(value || "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
 }
 
 export function RenunciaProcuradorForm() {
@@ -128,7 +134,7 @@ export function RenunciaProcuradorForm() {
             renuncianteNome.trim() !== "" &&
             renuncianteCpf.replace(/\D/g, "").length === 11 &&
             outorganteNomeRazao.trim() !== "" &&
-            [11, 14].includes(outorganteCpfCnpj.replace(/\D/g, "").length) &&
+            [11, 14].includes(onlyCpfCnpjChars(outorganteCpfCnpj).length) &&
             numeroConta.trim() !== "" &&
             cidade.trim() !== "" &&
             dia.trim() !== "" &&
@@ -161,7 +167,6 @@ export function RenunciaProcuradorForm() {
                             onChange={(e) => setCpf(e.target.value)}
                             placeholder="CPF (somente números)"
                             className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                            inputMode="numeric"
                             maxLength={14}
                         />
 
@@ -241,7 +246,7 @@ export function RenunciaProcuradorForm() {
                     <input
                         value={formatCpfCnpjView(outorganteCpfCnpj)}
                         onChange={(e) =>
-                            setOutorganteCpfCnpj(e.target.value.replace(/\D/g, "").slice(0, 14))
+                            setOutorganteCpfCnpj(onlyCpfCnpjChars(e.target.value).slice(0, 14))
                         }
                         className="w-full border px-3 py-2 rounded"
                         placeholder="CPF ou CNPJ"

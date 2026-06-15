@@ -189,6 +189,22 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["termos mensais", "cadastrar", "termos", "caixa", "formulario"],
   },
   {
+    title: "Cnab240",
+    desc: "Processo de geração de cnab240.",
+    href: "/auth/cnab240",
+    group: "Financeiro",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TERMOS_MENSAIS_CAIXA],
+    keywords: ["termos mensais", "cadastrar", "termos", "caixa", "formulario"],
+  },
+  {
+    title: "Gerenciar Favorecidos",
+    desc: "Adicione ou edite favorecidos vinculados a geração do cnab240.",
+    href: "/auth/cnab240_favorecidos",
+    group: "Financeiro",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TERMOS_MENSAIS_CAIXA],
+    keywords: ["termos mensais", "cadastrar", "termos", "caixa", "formulario"],
+  },
+  {
     title: "Declaração de Rendimentos",
     desc: "Emitir ou acessar declaração de rendimentos.",
     href: "/auth/declaracao_rendimentos",

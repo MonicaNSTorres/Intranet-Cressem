@@ -28,8 +28,14 @@ function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(value: string) {
+  return String(value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
 function formatCpfCnpj(value?: string | null) {
-  const digits = onlyDigits(String(value || ""));
+  const digits = onlyCpfCnpjChars(String(value || ""));
 
   if (!digits) return "";
 
@@ -408,7 +414,7 @@ export function ConsultaReciboFinanceiroForm() {
                     onChange={(e) => {
                       const valor = e.target.value;
 
-                      if (/^[\d./-]*$/.test(valor)) {
+                      if (/^[a-zA-Z0-9./-]*$/.test(valor)) {
                         setBusca(formatCpfCnpj(valor));
                       } else {
                         setBusca(valor);
@@ -578,7 +584,7 @@ export function ConsultaReciboFinanceiroForm() {
                 </Field>
               </div>
 
-              {onlyDigits(reciboSelecionado.NR_CPF_CNPJ).length !== 14 && (
+              {onlyCpfCnpjChars(reciboSelecionado.NR_CPF_CNPJ || "").length !== 14 && (
                 <>
                   <div className="md:col-span-4">
                     <Field label="Matrícula">

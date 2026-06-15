@@ -516,11 +516,17 @@ function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(value: string) {
+  return String(value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
 function formatCpfCnpj(value?: string | null) {
-  const digits = onlyDigits(String(value || ""));
+  const digits = onlyCpfCnpjChars(String(value || ""));
   if (!digits) return "";
 
-  if (digits.length <= 11) {
+  if (digits.length <= 11 && !/[A-Z]/.test(digits)) {
     return digits
       .replace(/^(\d{3})(\d)/, "$1.$2")
       .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
@@ -530,10 +536,10 @@ function formatCpfCnpj(value?: string | null) {
 
   return digits
     .slice(0, 14)
-    .replace(/^(\d{2})(\d)/, "$1.$2")
-    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-    .replace(/\.(\d{3})(\d)/, ".$1/$2")
-    .replace(/(\d{4})(\d)/, "$1-$2");
+    .replace(/^(.{2})(.)/, "$1.$2")
+    .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+    .replace(/\.(.{3})(.)/, ".$1/$2")
+    .replace(/(.{4})(.)$/, "$1-$2");
 }
 
 function formatDateBR(dateISO?: string | null) {
@@ -624,7 +630,7 @@ async function printPdf(doc: jsPDF, nomeArquivo: string) {
     const cleanup = () => {
       try {
         window.URL.revokeObjectURL(blobUrl);
-      } catch {}
+      } catch { }
     };
 
     const runPrint = () => {
@@ -634,7 +640,7 @@ async function printPdf(doc: jsPDF, nomeArquivo: string) {
       try {
         win.focus();
         win.print();
-      } catch {}
+      } catch { }
 
       setTimeout(() => {
         cleanup();
@@ -644,7 +650,7 @@ async function printPdf(doc: jsPDF, nomeArquivo: string) {
 
     try {
       win.addEventListener("load", runPrint, { once: true });
-    } catch {}
+    } catch { }
 
     setTimeout(runPrint, 900);
   });

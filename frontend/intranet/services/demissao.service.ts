@@ -83,10 +83,14 @@ function onlyDigits(value: string) {
   return (value || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(value: string) {
+  return (value || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+}
+
 export async function buscarAssociadoDemissaoPorCpf(
   cpf: string
 ): Promise<DemissaoAssociadoResponse | null> {
-  const cpfLimpo = onlyDigits(cpf);
+  const cpfLimpo = onlyCpfCnpjChars(cpf);
 
   if (cpfLimpo.length !== 11 && cpfLimpo.length !== 14) return null;
 
@@ -117,7 +121,7 @@ export async function buscarCidadesDemissao(): Promise<
 export async function buscarConvenioDemissaoPorCpf(
   cpf: string
 ): Promise<ConvenioStatusResponse | null> {
-  const cpfLimpo = onlyDigits(cpf);
+  const cpfLimpo = onlyCpfCnpjChars(cpf);
 
   if (cpfLimpo.length !== 11 && cpfLimpo.length !== 14) return null;
 
@@ -134,7 +138,7 @@ export async function desativarConvenioDemissao(
   cpf: string,
   atendente: string
 ) {
-  const cpfLimpo = onlyDigits(cpf);
+  const cpfLimpo = onlyCpfCnpjChars(cpf);
 
   if (cpfLimpo.length !== 11 && cpfLimpo.length !== 14) {
     throw new Error("CPF/CNPJ inválido para desativação do convênio.");
