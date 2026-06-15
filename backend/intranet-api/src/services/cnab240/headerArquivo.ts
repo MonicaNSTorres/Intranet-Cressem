@@ -1,56 +1,132 @@
-import {
-    alpha,
-    assert240,
-    numeric,
-    spaces,
-} from "./cnab240Utils";
+type HeaderArquivoInput = {
+    codigoBanco: string;
+    nomeBanco: string;
 
-export type HeaderArquivoInput = {
-    codigoBanco?: string;
     empresaNome: string;
     empresaInscricao: string;
+
+    codigoConvenioBanco: string;
+
     agencia: string;
+    dvAgencia?: string;
+
     conta: string;
-    dvConta?: string;
+    dvConta: string;
+
     sequencialArquivo: number;
 };
 
+function padRight(valor: string | number, tamanho: number) {
+    return String(valor || "")
+        .substring(0, tamanho)
+        .padEnd(tamanho, " ");
+}
+
+function padLeft(
+    valor: string | number,
+    tamanho: number,
+    caractere = "0"
+) {
+    return String(valor || "")
+        .substring(0, tamanho)
+        .padStart(tamanho, caractere);
+}
+
 export function gerarHeaderArquivo({
-    codigoBanco = "756",
+    codigoBanco,
+    nomeBanco,
     empresaNome,
     empresaInscricao,
+    codigoConvenioBanco,
     agencia,
+    dvAgencia = " ",
     conta,
-    dvConta = "",
+    dvConta,
     sequencialArquivo,
-}: HeaderArquivoInput): string {
+}: HeaderArquivoInput) {
+    const agora = new Date();
 
-    const linha =
-        numeric(codigoBanco, 3) +               // 1-3
-        "0000" +                               // 4-7 lote
-        "0" +                                  // 8 tipo registro
-        spaces(9) +                            // 9-17 uso exclusivo FEBRABAN
-        "2" +                                  // 18 tipo inscrição empresa
-        numeric(empresaInscricao, 14) +        // 19-32 CNPJ
-        numeric(agencia, 5) +                  // 33-37 agência
-        " " +                                  // 38 DV agência
-        numeric(conta, 12) +                   // 39-50 conta
-        alpha(dvConta, 1) +                    // 51 DV conta
-        " " +                                  // 52 DV ag/conta
-        alpha(empresaNome, 30) +               // 53-82 nome empresa
-        alpha("SICOOB", 30) +                  // 83-112 nome banco
-        spaces(10) +                           // 113-122 uso exclusivo
-        "1" +                                  // 123 código remessa
-        new Date()
-            .toLocaleDateString("pt-BR")
-            .replace(/\D/g, "") +              // 124-131 data geração
-        new Date()
-            .toLocaleTimeString("pt-BR")
-            .replace(/\D/g, "")
-            .padEnd(6, "0") +                  // 132-137 hora geração
-        numeric(sequencialArquivo, 6) +        // 138-143 nº sequencial
-        "081" +                                // 144-146 versão layout
-        spaces(94);                            // completar até 240
+    const dataGeracao =
+        String(agora.getDate()).padStart(2, "0") +
+        String(agora.getMonth() + 1).padStart(2, "0") +
+        agora.getFullYear();
 
-    return assert240(linha.slice(0, 240).padEnd(240, " "), "Header Arquivo");
+    const horaGeracao =
+        String(agora.getHours()).padStart(2, "0") +
+        String(agora.getMinutes()).padStart(2, "0") +
+        "00";
+
+    return (
+        // Banco
+        padLeft(codigoBanco, 3) +
+
+        // Lote
+        "0000" +
+
+        // Registro
+        "0" +
+
+        // CNAB
+        " ".repeat(9) +
+
+        // Tipo inscrição
+        "2" +
+
+        // CNPJ empresa
+        padLeft(empresaInscricao.replace(/\D/g, ""), 14) +
+
+        // Convênio Santander
+        padRight(codigoConvenioBanco, 20) +
+
+        // Agência
+        padLeft(agencia, 5) +
+
+        // DV agência
+        padRight(dvAgencia, 1) +
+
+        // Conta
+        padLeft(conta, 12) +
+
+        // DV conta
+        padRight(dvConta, 1) +
+
+        // DV ag/conta
+        " " +
+
+        // Nome empresa
+        padRight(empresaNome.toUpperCase(), 30) +
+
+        // Nome banco
+        padRight(nomeBanco.toUpperCase(), 30) +
+
+        // CNAB
+        " ".repeat(10) +
+
+        // Remessa
+        "1" +
+
+        // Data geração
+        dataGeracao +
+
+        // Hora geração
+        horaGeracao +
+
+        // Sequencial arquivo
+        padLeft(sequencialArquivo, 6) +
+
+        // Layout arquivo
+        "103" +
+
+        // Densidade
+        "00000" +
+
+        // Reservado banco
+        " ".repeat(20) +
+
+        // Reservado empresa
+        " ".repeat(20) +
+
+        // CNAB final
+        " ".repeat(29)
+    );
 }

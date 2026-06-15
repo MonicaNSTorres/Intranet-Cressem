@@ -85,4 +85,42 @@ export const cnab240Controller = {
       });
     }
   },
+
+  async gerarCnab240PorTransferencias(req: Request, res: Response) {
+    try {
+      const transferencias = req.body?.transferencias;
+
+      const result = await cnab240Service.gerarCnab240PorTransferencias(
+        transferencias
+      );
+
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${result.nomeArquivo}"`
+      );
+
+      return res.status(200).send(result.conteudo);
+    } catch (error: any) {
+      return res.status(500).json({
+        error: "Falha ao gerar CNAB240 por transferências.",
+        details: error?.message || "Erro desconhecido",
+      });
+    }
+  },
+
+  async listarDetalhesRemessa(req: Request, res: Response) {
+    try {
+      const idLote = Number(req.params.id);
+
+      const data = await cnab240Service.listarDetalhesRemessa(idLote);
+
+      return res.status(200).json(data);
+    } catch (error: any) {
+      return res.status(500).json({
+        error: "Falha ao listar detalhes da remessa CNAB240.",
+        details: error?.message || "Erro desconhecido",
+      });
+    }
+  },
 };

@@ -1,70 +1,130 @@
-import {
-    alpha,
-    assert240,
-    money,
-    numeric,
-    spaces,
-    zeros,
-} from "./cnab240Utils";
 import { ICnabTransferencia } from "./types";
 
 export type SegmentoBInput = {
     transferencia: ICnabTransferencia;
     sequencialRegistro: number;
+    numeroLote: number;
     dataPagamento?: Date;
     codigoBanco?: string;
+
+    enderecoEmpresa: string;
+    numeroEmpresa: string;
+    complementoEmpresa?: string;
+    cidadeEmpresa: string;
+    cepEmpresa: string;
+    cepComplementoEmpresa: string;
+    ufEmpresa: string;
 };
 
-function formatDateDDMMAAAA(date: Date): string {
-    const dd = String(date.getDate()).padStart(2, "0");
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const yyyy = String(date.getFullYear());
-
-    return `${dd}${mm}${yyyy}`;
+function alpha(value: string | number, length: number) {
+    return String(value || "")
+        .substring(0, length)
+        .padEnd(length, " ");
 }
 
-function tipoInscricao(cpfCnpj: string): "1" | "2" {
-    const digits = numeric(cpfCnpj, 14).replace(/^0+/, "");
-
-    return digits.length > 11 ? "2" : "1";
+function numeric(value: string | number, length: number) {
+    return String(value || "")
+        .replace(/\D/g, "")
+        .substring(0, length)
+        .padStart(length, "0");
 }
 
 export function gerarSegmentoB({
     transferencia,
     sequencialRegistro,
+    numeroLote,
     dataPagamento = new Date(),
-    codigoBanco = "756",
-}: SegmentoBInput): string {
-    const linha =
-        numeric(codigoBanco, 3) +                    // 1-3 Banco
-        "0001" +                                     // 4-7 Lote
-        "3" +                                        // 8 Tipo registro
-        numeric(sequencialRegistro, 5) +             // 9-13 Nº registro no lote
-        "B" +                                        // 14 Segmento
-        spaces(3) +                                  // 15-17 CNAB
-        tipoInscricao(transferencia.cpfCnpj) +       // 18 Tipo inscrição
-        numeric(transferencia.cpfCnpj, 14) +         // 19-32 CPF/CNPJ
-        spaces(30) +                                 // 33-62 Logradouro
-        zeros(5) +                                   // 63-67 Número
-        spaces(15) +                                 // 68-82 Complemento
-        spaces(15) +                                 // 83-97 Bairro
-        spaces(20) +                                 // 98-117 Cidade
-        zeros(5) +                                   // 118-122 CEP
-        spaces(3) +                                  // 123-125 Complemento CEP
-        spaces(2) +                                  // 126-127 UF
-        formatDateDDMMAAAA(dataPagamento) +          // 128-135 Vencimento
-        money(transferencia.valor, 15) +             // 136-150 Valor documento
-        zeros(15) +                                  // 151-165 Abatimento
-        zeros(15) +                                  // 166-180 Desconto
-        zeros(15) +                                  // 181-195 Mora
-        zeros(15) +                                  // 196-210 Multa
-        alpha(String(transferencia.sequencia), 15) + // 211-225 Documento favorecido
-        "0" +                                        // 226 Aviso
-        spaces(6) +                                  // 227-232 Código UG
-        spaces(8);                                   // 233-240 CNAB
+    codigoBanco = "033",
 
-    return assert240(
-        linha.slice(0, 240).padEnd(240, " "),
-        "Segmento B"
+    enderecoEmpresa,
+    numeroEmpresa,
+    complementoEmpresa = "",
+    cidadeEmpresa,
+    cepEmpresa,
+    cepComplementoEmpresa,
+    ufEmpresa,
+}: SegmentoBInput): string {
+    const data =
+        String(dataPagamento.getDate()).padStart(2, "0") +
+        String(dataPagamento.getMonth() + 1).padStart(2, "0") +
+        dataPagamento.getFullYear();
+
+    const valor = Math.round(Number(transferencia.valor || 0) * 100);
+
+    return (
+        // Banco
+        numeric(codigoBanco, 3) +
+
+        // Lote
+        numeric(numeroLote, 4) +
+
+        // Tipo registro
+        "3" +
+
+        // Nº sequencial registro
+        numeric(sequencialRegistro, 5) +
+
+        // Segmento
+        "B" +
+
+        // CNAB
+        " ".repeat(3) +
+
+        // Tipo inscrição favorecido: 1 = CPF
+        "1" +
+
+        // CPF favorecido
+        numeric(transferencia.cpfCnpj, 14) +
+
+        // Logradouro
+        alpha(enderecoEmpresa, 30) +
+
+        // Número
+        numeric(numeroEmpresa, 5) +
+
+        // Complemento
+        alpha(complementoEmpresa, 15) +
+
+        // Bairro
+        alpha("", 15) +
+
+        // Cidade
+        alpha(cidadeEmpresa, 20) +
+
+        // CEP
+        numeric(cepEmpresa, 5) +
+
+        // Complemento CEP
+        numeric(cepComplementoEmpresa, 3) +
+
+        // UF
+        alpha(ufEmpresa, 2) +
+
+        // Data vencimento/pagamento
+        data +
+
+        // Valor documento
+        numeric(valor, 15) +
+
+        // Abatimento
+        numeric("", 15) +
+
+        // Desconto
+        numeric("", 15) +
+
+        // Mora
+        numeric("", 15) +
+
+        // Multa
+        numeric("", 15) +
+
+        // Documento favorecido
+        "0000           " +
+
+        // Aviso ao favorecido
+        "0" +
+
+        // Código UG centralizadora
+        "0000          "
     );
 }

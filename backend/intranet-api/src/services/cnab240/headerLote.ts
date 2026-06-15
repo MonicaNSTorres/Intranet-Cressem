@@ -1,56 +1,132 @@
-import {
-    alpha,
-    assert240,
-    numeric,
-    spaces,
-} from "./cnab240Utils";
+type HeaderLoteInput = {
+    codigoBanco: string;
 
-export type HeaderLoteInput = {
-    codigoBanco?: string;
     empresaInscricao: string;
+    codigoConvenioBanco: string;
     empresaNome: string;
+
     agencia: string;
+    dvAgencia?: string;
+
     conta: string;
-    dvConta?: string;
+    dvConta: string;
+
+    numeroLote: number;
+    formaLancamento: "01" | "41";
+
+    enderecoEmpresa: string;
+    numeroEmpresa: string;
+    complementoEmpresa?: string;
+    cidadeEmpresa: string;
+    cepEmpresa: string;
+    cepComplementoEmpresa: string;
+    ufEmpresa: string;
 };
 
+function padRight(valor: string | number, tamanho: number) {
+    return String(valor || "")
+        .substring(0, tamanho)
+        .padEnd(tamanho, " ");
+}
+
+function padLeft(
+    valor: string | number,
+    tamanho: number,
+    caractere = "0"
+) {
+    return String(valor || "")
+        .substring(0, tamanho)
+        .padStart(tamanho, caractere);
+}
+
 export function gerarHeaderLote({
-    codigoBanco = "756",
+    codigoBanco,
     empresaInscricao,
+    codigoConvenioBanco,
     empresaNome,
     agencia,
+    dvAgencia = " ",
     conta,
-    dvConta = "",
-}: HeaderLoteInput): string {
+    dvConta,
+    numeroLote,
+    formaLancamento,
+    enderecoEmpresa,
+    numeroEmpresa,
+    complementoEmpresa = "",
+    cidadeEmpresa,
+    cepEmpresa,
+    cepComplementoEmpresa,
+    ufEmpresa,
+}: HeaderLoteInput) {
+    return (
+        // Banco
+        padLeft(codigoBanco, 3) +
 
-    const linha =
-        numeric(codigoBanco, 3) +               // 1-3 Código Banco
-        "0001" +                                // 4-7 Lote
-        "1" +                                   // 8 Tipo Registro
-        "C" +                                   // 9 Tipo Operação
-        "20" +                                  // 10-11 Tipo Serviço
-        "01" +                                  // 12-13 Forma Lançamento
-        "045" +                                 // 14-16 Versão Layout
-        " " +                                   // 17 Uso FEBRABAN
-        "2" +                                   // 18 Tipo Inscrição Empresa
-        numeric(empresaInscricao, 14) +         // 19-32 CNPJ
-        numeric(agencia, 5) +                   // 33-37 Agência
-        " " +                                   // 38 DV Agência
-        numeric(conta, 12) +                    // 39-50 Conta
-        alpha(dvConta, 1) +                     // 51 DV Conta
-        " " +                                   // 52 DV Ag/Conta
-        alpha(empresaNome, 30) +                // 53-82 Nome Empresa
-        spaces(40) +                            // 83-122 Mensagem
-        spaces(30) +                            // 123-152 Logradouro
-        spaces(5) +                             // 153-157 Número
-        spaces(15) +                            // 158-172 Complemento
-        spaces(20) +                            // 173-192 Cidade
-        spaces(8) +                             // 193-200 CEP
-        spaces(2) +                             // 201-202 UF
-        spaces(38);                             // 203-240 Uso Exclusivo
+        // Lote
+        padLeft(numeroLote, 4) +
 
-    return assert240(
-        linha.slice(0, 240).padEnd(240, " "),
-        "Header Lote"
+        // Registro
+        "1" +
+
+        // Tipo operação + tipo serviço
+        "C20" +
+
+        // Forma lançamento: 01 crédito bancário / 41 TED
+        formaLancamento +
+
+        // Layout lote + CNAB
+        "046 " +
+
+        // Tipo inscrição
+        "2" +
+
+        // CNPJ
+        padLeft(empresaInscricao.replace(/\D/g, ""), 14) +
+
+        // Convênio Santander
+        padRight(codigoConvenioBanco, 20) +
+
+        // Agência
+        padLeft(agencia, 5) +
+
+        // DV agência
+        padRight(dvAgencia, 1) +
+
+        // Conta
+        padLeft(conta, 12) +
+
+        // DV conta
+        padRight(dvConta, 1) +
+
+        // DV agência/conta
+        " " +
+
+        // Nome empresa
+        padRight(empresaNome.toUpperCase(), 30) +
+
+        // Mensagem
+        " ".repeat(40) +
+
+        // Endereço empresa
+        padRight(enderecoEmpresa, 30) +
+
+        // Número endereço
+        padLeft(numeroEmpresa, 5) +
+
+        // Complemento
+        padRight(complementoEmpresa, 15) +
+
+        // Cidade
+        padRight(cidadeEmpresa, 20) +
+
+        // CEP + complemento CEP
+        padLeft(cepEmpresa, 5) +
+        padLeft(cepComplementoEmpresa, 3) +
+
+        // UF
+        padRight(ufEmpresa, 2) +
+
+        // CNAB final
+        " ".repeat(18)
     );
 }

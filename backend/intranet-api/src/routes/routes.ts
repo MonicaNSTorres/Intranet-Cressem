@@ -78,6 +78,7 @@ import { termosMensaisCaixaController } from "../controllers/termos-mensais-caix
 import { reservaSalaReuniaoController } from "../controllers/reserva-sala-reuniao.controller";
 import { monitorMetaAlertasController } from "../controllers/monitor-meta-alertas.controller";
 import { cnab240Controller } from "../controllers/cnab240.controller";
+import { cnab240FavorecidosController } from "../controllers/cnab-favorecidos.controller";
 
 const routes = Router();
 
@@ -1209,7 +1210,7 @@ routes.delete(
   reservaSalaReuniaoController.cancelar
 );
 
-// cnab240
+//cnab240
 routes.get(
   "/v1/cnab240/remessas",
   authMiddleware,
@@ -1233,6 +1234,31 @@ routes.get(
   authMiddleware,
   cnab240Controller.buscarFavorecidoPorCpf
 );
+
+routes.post(
+  "/v1/cnab240/gerar-transferencias",
+  authMiddleware,
+  cnab240Controller.gerarCnab240PorTransferencias
+);
+
+routes.get(
+  "/v1/cnab240/remessas/:id/detalhes",
+  authMiddleware,
+  cnab240Controller.listarDetalhesRemessa
+);
+
+//cnab240 favorecidos
+routes.get("/v1/cnab240/favorecidos", authMiddleware, cnab240FavorecidosController.listar);
+
+routes.get("/v1/cnab240/favorecidos/cpf/:cpf", authMiddleware, cnab240FavorecidosController.buscarPorCpf);
+
+routes.get("/v1/cnab240/favorecidos/:id", authMiddleware, cnab240FavorecidosController.buscarPorId);
+
+routes.post("/v1/cnab240/favorecidos", authMiddleware, cnab240FavorecidosController.criar);
+
+routes.put("/v1/cnab240/favorecidos/:id", authMiddleware, cnab240FavorecidosController.atualizar);
+
+routes.delete("/v1/cnab240/favorecidos/:id", authMiddleware, cnab240FavorecidosController.excluir);
 
 export { routes };
 
