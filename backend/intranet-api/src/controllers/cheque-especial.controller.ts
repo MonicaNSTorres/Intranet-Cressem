@@ -6,6 +6,12 @@ function onlyDigits(v: string) {
   return String(v || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(v: string) {
+  return String(v || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
 function normalizeSearch(value: string) {
   return String(value || "")
     .normalize("NFD")
@@ -90,9 +96,11 @@ export const chequeEspecialController = {
 
       const nomeNormalizado = normalizeSearch(nome);
       const termoBusca = nomeNormalizado ? `%${nomeNormalizado}%` : "%%";
+      const charsDocumento = onlyCpfCnpjChars(nome);
+      const termoDocumento = charsDocumento ? `%${charsDocumento}%` : null;
+
       const digitos = onlyDigits(nome);
       const termoDigitos = digitos ? `%${digitos}%` : null;
-      const temNumero = digitos ? 1 : 0;
 
       let filtroStatus = "";
 
@@ -113,7 +121,7 @@ export const chequeEspecialController = {
             OR UPPER(a.NM_ASSOCIADO) LIKE :nome
             OR UPPER(a.NM_ALTERACAO) LIKE :nome
             OR (:nomeNumerico IS NOT NULL AND TO_CHAR(a.NR_CONTA_CORRENTE) LIKE :nomeNumerico)
-            OR (:cpfNumerico IS NOT NULL AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico)
+            OR (:cpfCnpj IS NOT NULL AND REGEXP_REPLACE(UPPER(a.NR_CPF_CNPJ), '[^A-Z0-9]', '') LIKE :cpfCnpj)
 
           )
           ${filtroStatus}
@@ -121,7 +129,7 @@ export const chequeEspecialController = {
         {
           nome: termoBusca,
           nomeNumerico: termoDigitos,
-          cpfNumerico: termoDigitos,
+          cpfCnpj: termoDocumento,
         },
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
@@ -155,7 +163,7 @@ export const chequeEspecialController = {
               OR UPPER(a.NM_ASSOCIADO) LIKE :nome
               OR UPPER(a.NM_ALTERACAO) LIKE :nome
               OR (:nomeNumerico IS NOT NULL AND TO_CHAR(a.NR_CONTA_CORRENTE) LIKE :nomeNumerico)
-              OR (:cpfNumerico IS NOT NULL AND REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') LIKE :cpfNumerico)
+              OR (:cpfCnpj IS NOT NULL AND REGEXP_REPLACE(UPPER(a.NR_CPF_CNPJ), '[^A-Z0-9]', '') LIKE :cpfCnpj)
 
             )
             ${filtroStatus}
@@ -167,7 +175,7 @@ export const chequeEspecialController = {
         {
           nome: termoBusca,
           nomeNumerico: termoDigitos,
-          cpfNumerico: termoDigitos,
+          cpfCnpj: termoDocumento,
           offset,
           limit,
         },

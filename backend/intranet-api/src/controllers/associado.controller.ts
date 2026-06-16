@@ -6,15 +6,21 @@ function onlyDigits(v: string) {
     return (v || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(v: string) {
+    return String(v || "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+}
+
 export const associadoController = {
     async buscarPorCpf(req: Request, res: Response) {
         try {
             const cpfQuery = String(req.query.cpf || "");
-            const documento = onlyDigits(cpfQuery);
+            const documento = onlyCpfCnpjChars(cpfQuery);
 
             if (documento.length !== 11 && documento.length !== 14) {
                 return res.status(400).json({
-                    error: "CPF/CNPJ inválido (11 ou 14 dígitos).",
+                    error: "CPF/CNPJ inválido (11 ou 14 caracteres).",
                 });
             }
 
@@ -47,7 +53,7 @@ export const associadoController = {
             FETCH FIRST 1 ROWS ONLY
           ) AS NR_CONTA_CORRENTE
         FROM DBACRESSEM.ASSOCIADO_ANALITICO a
-        WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') = :documento
+        WHERE REGEXP_REPLACE(UPPER(a.NR_CPF_CNPJ), '[^A-Z0-9]', '') = :documento
           AND ROWNUM = 1
       `;
 

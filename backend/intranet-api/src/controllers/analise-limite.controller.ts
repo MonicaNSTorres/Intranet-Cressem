@@ -15,6 +15,12 @@ function onlyDigits(v: string) {
     return String(v || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(v: string) {
+    return String(v || "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+}
+
 function toNumber(v: any, fallback = 0) {
     if (v === null || v === undefined || v === "") return fallback;
 
@@ -152,7 +158,7 @@ async function salvarArquivoAnaliseNoServidorSMB(
     cpfCnpj: string
 ) {
     const shareRoot = getShareRoot();
-    const pastaAssociado = sanitizeFolderName(onlyDigits(cpfCnpj));
+    const pastaAssociado = sanitizeFolderName(onlyCpfCnpjChars(cpfCnpj));
     const fileName = sanitizeFolderName(
         arquivo.name || arquivo.filename || "assinatura.pdf"
     );
@@ -402,7 +408,7 @@ export const analiseLimiteController = {
       `;
 
             const binds = {
-                NR_CPF_CNPJ_ASSOCIADO: onlyDigits(NR_CPF_CNPJ_ASSOCIADO),
+                NR_CPF_CNPJ_ASSOCIADO: onlyCpfCnpjChars(NR_CPF_CNPJ_ASSOCIADO),
                 NM_ASSOCIADO: toTrim(NM_ASSOCIADO),
                 NR_CELULAR: onlyDigits(NR_CELULAR),
                 NM_EMPRESA: NM_EMPRESA ? toTrim(NM_EMPRESA) : null,
@@ -476,7 +482,7 @@ export const analiseLimiteController = {
 
     async listarPaginado(req: Request, res: Response) {
         try {
-            const cpf = onlyDigits(String(req.query.cpf || ""));
+            const cpf = onlyCpfCnpjChars(String(req.query.cpf || ""));
             const nome = String(req.query.nome || "").trim();
             const funcionario = String(req.query.funcionario || "").trim();
 
@@ -488,7 +494,7 @@ export const analiseLimiteController = {
             const bindsWhere: any = {};
 
             if (cpf) {
-                where += ` AND REGEXP_REPLACE(NR_CPF_CNPJ_ASSOCIADO, '[^0-9]', '') = :cpf `;
+                where += ` AND REGEXP_REPLACE(UPPER(NR_CPF_CNPJ_ASSOCIADO), '[^A-Z0-9]', '') = :cpf `;
                 bindsWhere.cpf = cpf;
             }
 
