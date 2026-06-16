@@ -276,6 +276,10 @@ export const PAGE_ACCESS = {
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     },
 
+    declaracaoResponsabilidadeHolerite: {
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    },
+
     auxilioCreche: {
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     },

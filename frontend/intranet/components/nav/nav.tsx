@@ -505,6 +505,11 @@ const Sidebar = () => {
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
                 },
                 {
+                    label: "Declaração Responsabilidade Holerite",
+                    href: "/auth/declaracao_responsabilidade_holerite",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
                     label: "Formulário DPS",
                     href: "/auth/formulario_dps",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],

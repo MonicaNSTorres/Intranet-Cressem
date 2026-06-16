@@ -335,6 +335,23 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["declaração", "declaracao", "presença", "presenca", "empréstimo", "emprestimo"],
   },
   {
+    title: "Declaração de Responsabilidade Holerite",
+    desc: "Gerar declaração de responsabilidade para desconto em holerite.",
+    href: "/auth/declaracao_responsabilidade_holerite",
+    group: "Formulários de Empréstimos",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    keywords: [
+      "declaração",
+      "declaracao",
+      "responsabilidade",
+      "holerite",
+      "desconto",
+      "consignado",
+      "emprestimo",
+      "empréstimo",
+    ],
+  },
+  {
     title: "Formulário DPS",
     desc: "Acesso ao formulário DPS.",
     href: "/auth/formulario_dps",

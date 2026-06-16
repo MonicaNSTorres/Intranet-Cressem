@@ -62,6 +62,14 @@ export type ContratoEmpresaItem = {
   OBS_CONTRATO?: string;
 };
 
+export type ContatoContratoItem = {
+  ID_RH_CONTATO?: number;
+  ID_CONTRATO?: number;
+  NM_RESPONSAVEL?: string;
+  NR_TELEFONE?: string;
+  DESC_EMAIL?: string;
+};
+
 export type ConsultaContratosParams = {
   page?: number;
   limit?: number;
@@ -92,5 +100,12 @@ export async function carregarTiposContratoConsulta() {
 
 export async function carregarSistemasConsignadosConsulta() {
   const { data } = await api.get<string[]>("/v1/contratos_empresas_sistema");
+  return data || [];
+}
+
+export async function listarContatosContratoConsulta(idContrato: number) {
+  const { data } = await api.get<ContatoContratoItem[]>(
+    `/v1/rh_contato_contrato_lista/${idContrato}`
+  );
   return data || [];
 }

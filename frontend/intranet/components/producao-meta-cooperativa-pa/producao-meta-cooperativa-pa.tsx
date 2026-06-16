@@ -85,6 +85,12 @@ const TEMAS_OCULTAR_SETOR_PJ = new Set<ChaveRelatorioPA>([
     "portabilidade",
 ]);
 
+const TEMAS_PERIODO_MENSAL = new Set<ChaveRelatorioPA>([
+    "consorcio",
+    "portabilidade",
+    "liquidacao_baixa",
+]);
+
 function formatarValorExibicaoRelatorio(
     campo: string,
     valor: unknown,
@@ -738,7 +744,7 @@ export function ProducaoMetaCooperativaPAForm() {
     const semanasOptions = useMemo(() => {
         if (!mesSelecionado || mesSelecionado === "__ANO__") return [];
         const opcoes = gerarSemanasDoMes(Number(mesSelecionado));
-        if (tema === "consorcio" || tema === "portabilidade") {
+        if (tema && TEMAS_PERIODO_MENSAL.has(tema)) {
             return opcoes.filter((item) => item.tipo === "mes_inteiro");
         }
         return opcoes;
@@ -950,7 +956,7 @@ export function ProducaoMetaCooperativaPAForm() {
             return;
         }
 
-        if (tema === "consorcio" || tema === "portabilidade") {
+        if (tema && TEMAS_PERIODO_MENSAL.has(tema)) {
             const opcaoMesInteiro = gerarSemanasDoMes(Number(value)).find(
                 (item) => item.tipo === "mes_inteiro"
             );
@@ -1001,8 +1007,8 @@ export function ProducaoMetaCooperativaPAForm() {
         (tema === "seguro_venda_nova" && ["3", "4"].includes(mesSelecionado));
 
     const avisoTema =
-        tema === "consorcio"
-            ? "Este relatório de consórcio possui atualização mensal."
+        tema && TEMAS_PERIODO_MENSAL.has(tema)
+            ? `Este relatório de ${temaLabel || "produção"} possui atualização mensal.`
             : "";
 
     const mostrarMes = !!tema && !TEMAS_SOMENTE_ANO.has(tema as ChaveRelatorioPA);

@@ -39,20 +39,28 @@ function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
 }
 
+
 function onlyCpfCnpjChars(value: string) {
   return String(value || "")
     .replace(/[^a-zA-Z0-9]/g, "")
     .toUpperCase();
 }
 
-function formatCnpj(value: string) {
-  const chars = onlyCpfCnpjChars(value).slice(0, 14);
+function formatCpfCnpj(value: string) {
+  const digits = onlyDigits(value).slice(0, 14);
 
-  return chars
-    .replace(/^(.{2})(.)/, "$1.$2")
-    .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
-    .replace(/\.(.{3})(.)/, ".$1/$2")
-    .replace(/(.{4})(.)$/, "$1-$2");
+  if (digits.length <= 11) {
+    return digits
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1-$2");
+  }
+
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
 }
 
 function phoneMask(value: string) {
@@ -275,7 +283,7 @@ export function CadastroContratoForm({
           );
 
           setRazaoSocial(contrato.NM_EMPRESA || "");
-          setCnpj(formatCnpj(contrato.NR_CNPJ || ""));
+          setCnpj(formatCpfCnpj(contrato.NR_CNPJ || ""));
           setContaCapital(String(contrato.CD_CONTA_CAPITAL || ""));
           setTipoTempoContrato(contrato.NM_TIPO_TEMPO_CONTRATO || "");
           setCidade(contrato.NM_CIDADE || "");
@@ -445,7 +453,7 @@ export function CadastroContratoForm({
 
   function validaCampos() {
     if (!razaoSocial.trim()) return "Preencha a razão social.";
-    if (!cnpj.trim()) return "Preencha o CNPJ.";
+    if (!cnpj.trim()) return "Preencha o CPF/CNPJ.";
     if (!contaCapital.trim()) return "Preencha a conta capital.";
     if (!tipoTempoContrato) return "Selecione o tipo de tempo de contrato.";
     if (!cidade.trim()) return "Selecione ou preencha a cidade.";
@@ -731,13 +739,13 @@ export function CadastroContratoForm({
           </div>
 
           <div className="md:col-span-4">
-            <Field label="CNPJ">
+            <Field label="CPF/CNPJ">
               <input
-                value={formatCnpj(cnpj)}
+                value={formatCpfCnpj(cnpj)}
                 onChange={(e) => setCnpj(e.target.value)}
                 className={inputBase}
                 maxLength={18}
-                placeholder="Informe o CNPJ"
+                placeholder="Informe o CPF ou CNPJ"
               />
             </Field>
           </div>
