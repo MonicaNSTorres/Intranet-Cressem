@@ -827,7 +827,7 @@ export function Cnab240Form() {
                                 </div>
                             </div>
 
-                            <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-5">
+                            {/*<div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-5">
                                 <div className="mb-4 flex items-center gap-2">
                                     <FaSyncAlt className="text-blue-600" />
                                     <h3 className="text-sm font-semibold text-gray-900">
@@ -869,7 +869,7 @@ export function Cnab240Form() {
                                         {conciliando ? "Conciliando..." : "Conciliar arquivo"}
                                     </button>
                                 </div>
-                            </div>
+                            </div>*/}
                         </div>
 
                         <div className="space-y-6">
@@ -1625,10 +1625,12 @@ function CardResumo({
     cor,
 }: {
     titulo: string;
-    valor: string;
+    valor: string | number;
     icone: React.ReactNode;
     cor: string;
 }) {
+    const valorFormatado = Number(valor || 0).toLocaleString("pt-BR");
+
     return (
         <div className="rounded-2xl bg-white/90 px-4 py-4 shadow-sm ring-1 ring-gray-100">
             <div className="flex items-center justify-between gap-3">
@@ -1636,7 +1638,10 @@ function CardResumo({
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                         {titulo}
                     </p>
-                    <p className="mt-2 text-2xl font-semibold text-gray-900">{valor}</p>
+
+                    <p className="mt-2 text-2xl font-semibold text-gray-900">
+                        {valorFormatado}
+                    </p>
                 </div>
 
                 <div

@@ -39,14 +39,20 @@ function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
 }
 
-function formatCnpj(value: string) {
-  const digits = onlyDigits(value).slice(0, 14);
+function onlyCpfCnpjChars(value: string) {
+  return String(value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
 
-  return digits
-    .replace(/^(\d{2})(\d)/, "$1.$2")
-    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-    .replace(/\.(\d{3})(\d)/, ".$1/$2")
-    .replace(/(\d{4})(\d)/, "$1-$2");
+function formatCnpj(value: string) {
+  const chars = onlyCpfCnpjChars(value).slice(0, 14);
+
+  return chars
+    .replace(/^(.{2})(.)/, "$1.$2")
+    .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+    .replace(/\.(.{3})(.)/, ".$1/$2")
+    .replace(/(.{4})(.)$/, "$1-$2");
 }
 
 function phoneMask(value: string) {
@@ -308,7 +314,7 @@ export function CadastroContratoForm({
         console.error(error);
         setErro(
           error?.response?.data?.error ||
-            "Não foi possível carregar os dados da tela."
+          "Não foi possível carregar os dados da tela."
         );
       } finally {
         setLoadingInicial(false);
@@ -399,9 +405,9 @@ export function CadastroContratoForm({
       prev.map((item, i) =>
         i === index
           ? {
-              ...item,
-              [campo]: campo === "NR_TELEFONE" ? phoneMask(valor) : valor,
-            }
+            ...item,
+            [campo]: campo === "NR_TELEFONE" ? phoneMask(valor) : valor,
+          }
           : item
       )
     );
@@ -468,7 +474,7 @@ export function CadastroContratoForm({
 
   function buildPayload(): ContratoEmpresaPayload {
     return {
-      NR_CNPJ: onlyDigits(cnpj),
+      NR_CNPJ: onlyCpfCnpjChars(cnpj),
       NM_EMPRESA: razaoSocial.trim().toUpperCase(),
       NM_CIDADE: cidade.trim().toUpperCase(),
       NM_TIPO_TEMPO_CONTRATO: tipoTempoContrato,
@@ -670,9 +676,8 @@ export function CadastroContratoForm({
 
   return (
     <div
-      className={`space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 ${
-        isModal ? "mx-auto w-full max-w-full" : "mx-auto w-full min-w-225"
-      }`}
+      className={`space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 ${isModal ? "mx-auto w-full max-w-full" : "mx-auto w-full min-w-225"
+        }`}
     >
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -1075,19 +1080,17 @@ export function CadastroContratoForm({
 
           <div className="md:col-span-6">
             <div
-              className={`grid gap-3 ${
-                modoEdicao ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
-              }`}
+              className={`grid gap-3 ${modoEdicao ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+                }`}
             >
               {modoEdicao ? (
                 <button
                   type="button"
                   onClick={() => setAtivo((old) => !old)}
-                  className={`inline-flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition cursor-pointer ${
-                    ativo
+                  className={`inline-flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition cursor-pointer ${ativo
                       ? "bg-third text-white hover:bg-secondary"
                       : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
+                    }`}
                 >
                   {ativo ? "Ativo" : "Inativo"}
                 </button>
@@ -1103,8 +1106,8 @@ export function CadastroContratoForm({
                 {loadingSalvar
                   ? "Salvando..."
                   : modoEdicao
-                  ? "Editar"
-                  : "Cadastrar"}
+                    ? "Editar"
+                    : "Cadastrar"}
               </ActionButton>
             </div>
           </div>

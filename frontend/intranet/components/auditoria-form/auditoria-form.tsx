@@ -87,10 +87,16 @@ function somenteNumeros(valor: string) {
   return valor.replace(/\D/g, "");
 }
 
-function formatarCpfCnpj(valor: string) {
-  const cleaned = somenteNumeros(valor);
+function onlyCpfCnpjChars(valor: string) {
+  return String(valor || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
 
-  if (cleaned.length <= 11) {
+function formatarCpfCnpj(valor: string) {
+  const cleaned = onlyCpfCnpjChars(valor).slice(0, 14);
+
+  if (cleaned.length <= 11 && !/[A-Z]/.test(cleaned)) {
     return cleaned
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d)/, "$1.$2")
@@ -194,7 +200,7 @@ export function AuditoriaForm() {
   const [info, setInfo] = useState("");
 
   const cpfCnpjLimpo = useMemo(
-    () => somenteNumeros(form.cpf_cnpj),
+    () => onlyCpfCnpjChars(form.cpf_cnpj),
     [form.cpf_cnpj]
   );
 
@@ -221,7 +227,7 @@ export function AuditoriaForm() {
   }
 
   async function preencherFormulario() {
-    const documento = somenteNumeros(form.cpf_cnpj);
+    const documento = onlyCpfCnpjChars(form.cpf_cnpj);
 
     if (!documento) {
       setErro("Digite um CPF ou CNPJ para buscar os dados.");

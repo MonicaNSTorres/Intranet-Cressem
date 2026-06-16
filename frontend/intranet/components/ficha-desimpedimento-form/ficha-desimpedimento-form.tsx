@@ -165,6 +165,18 @@ export function FichaDesimpedimentoForm() {
     setContasBancarias(updated);
   }
 
+  function montarEnderecoCompleto(data: any) {
+    return [
+      data.endereco,
+      data.nm_bairro,
+      data.nm_cidade,
+      data.nr_cep,
+    ]
+      .filter((v) => v && String(v).trim() !== "")
+      .map((v) => String(v).trim())
+      .join(", ");
+  }
+
   async function handleBuscarCpf() {
     const cpfLimpo = form.cpf.replace(/\D/g, "");
 
@@ -187,7 +199,7 @@ export function FichaDesimpedimentoForm() {
         cpf: data.cpf || cpfLimpo,
         prontuario: data.prontuario || "",
         empresa: data.empresa || "",
-        endereco: data.endereco || "",
+        endereco: montarEnderecoCompleto(data),
         nm_bairro: data.nm_bairro || "",
         nm_cidade: data.nm_cidade || "",
         nr_cep: data.nr_cep || "",
@@ -196,6 +208,7 @@ export function FichaDesimpedimentoForm() {
       }));
 
       setInfoCpf("Dados carregados com sucesso.");
+      console.log(data);
     } catch (error) {
       console.error("Erro ao buscar associado:", error);
       setErroCpf("Erro ao buscar associado por CPF.");

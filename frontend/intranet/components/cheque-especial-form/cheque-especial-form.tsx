@@ -37,21 +37,27 @@ function normalizeSearch(value?: string | null) {
         .trim();
 }
 
-function formatarCpfCnpj(value?: string | null) {
-    const digits = String(value || "").replace(/\D/g, "");
+function onlyCpfCnpjChars(value?: string | null) {
+    return String(value || "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+}
 
-    if (digits.length <= 11) {
-        return digits
+function formatarCpfCnpj(value?: string | null) {
+    const chars = onlyCpfCnpjChars(value).slice(0, 14);
+
+    if (chars.length <= 11 && !/[A-Z]/.test(chars)) {
+        return chars
             .replace(/^(\d{3})(\d)/, "$1.$2")
             .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
             .replace(/\.(\d{3})(\d)/, ".$1-$2");
     }
 
-    return digits
-        .replace(/^(\d{2})(\d)/, "$1.$2")
-        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-        .replace(/\.(\d{3})(\d)/, ".$1/$2")
-        .replace(/(\d{4})(\d)/, "$1-$2");
+    return chars
+        .replace(/^(.{2})(.)/, "$1.$2")
+        .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+        .replace(/\.(.{3})(.)/, ".$1/$2")
+        .replace(/(.{4})(.)$/, "$1-$2");
 }
 
 function getDataHojeFormatoAmericano() {

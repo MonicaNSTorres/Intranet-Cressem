@@ -96,6 +96,12 @@ function onlyDigits(v: string) {
   return (v || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(v: string) {
+  return (v || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
 function formatCpfView(v: string) {
   const s = onlyDigits(v).slice(0, 11);
   if (s.length <= 3) return s;
@@ -105,11 +111,13 @@ function formatCpfView(v: string) {
 }
 
 function formatCnpjView(v: string) {
-  const s = onlyDigits(v).slice(0, 14);
+  const s = onlyCpfCnpjChars(v).slice(0, 14);
+
   if (s.length <= 2) return s;
   if (s.length <= 5) return `${s.slice(0, 2)}.${s.slice(2)}`;
   if (s.length <= 8) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5)}`;
   if (s.length <= 12) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8)}`;
+
   return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}`;
 }
 
@@ -450,10 +458,9 @@ export function FaturamentoFormPJ() {
               <Field label="CNPJ">
                 <input
                   value={formatCnpjView(cnpj)}
-                  onChange={(e) => setCnpj(onlyDigits(e.target.value).slice(0, 14))}
+                  onChange={(e) => setCnpj(onlyCpfCnpjChars(e.target.value).slice(0, 14))}
                   className={inputBaseClassName()}
                   placeholder="00.000.000/0000-00"
-                  inputMode="numeric"
                   maxLength={18}
                 />
               </Field>

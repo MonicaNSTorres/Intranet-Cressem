@@ -39,17 +39,28 @@ function primeiroUltimoNome(nomeCompleto: string) {
 }
 
 function formatarCPFouCNPJ(valor: string) {
-  let value = String(valor || "").replace(/\D/g, "");
+  let value = String(valor || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
 
-  if (value.length <= 11) {
+  if (value.length <= 11 && !/[A-Z]/.test(value)) {
     value = value.replace(/(\d{3})(\d)/, "$1.$2");
     value = value.replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3");
     value = value.replace(/(\d{3})\.(\d{3})\.(\d{3})(\d{2})/, "$1.$2.$3-$4");
-  } else if (value.length === 14) {
-    value = value.replace(/^(\d{2})(\d)/, "$1.$2");
-    value = value.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-    value = value.replace(/\.(\d{3})(\d)/, ".$1/$2");
-    value = value.replace(/(\d{4})(\d)/, "$1-$2");
+  }
+
+  else {
+    if (value.length > 2)
+      value = value.replace(/^(.{2})(.+)/, "$1.$2");
+
+    if (value.length > 6)
+      value = value.replace(/^(.{2})\.(.{3})(.+)/, "$1.$2.$3");
+
+    if (value.length > 10)
+      value = value.replace(/^(.{2})\.(.{3})\.(.{3})(.+)/, "$1.$2.$3/$4");
+
+    if (value.length > 15)
+      value = value.replace(/^(.{2})\.(.{3})\.(.{3})\/(.{4})(.+)/, "$1.$2.$3/$4-$5");
   }
 
   return value;
@@ -230,14 +241,14 @@ export function GerenciamentoParticipacaoForm() {
       setSelected(completo);
       setInputGerencia(
         completo.NM_GERENCIA ||
-          (funcionarioTipo?.TIPO === "gerencia" ? funcionarioTipo.NM_FUNCIONARIO : "")
+        (funcionarioTipo?.TIPO === "gerencia" ? funcionarioTipo.NM_FUNCIONARIO : "")
       );
       setInputParecerGerenciaEscrito(completo.DESC_PARECER_GERENCIA || "");
       setInputResponsavelEvento(completo.NM_GERENTE_EVENTO || "");
       setInputSugestao(completo.NM_SUGESTAO_PARTICIPANTES || "");
       setInputDiretoria(
         completo.NM_DIRETORIA ||
-          (funcionarioTipo?.TIPO === "diretoria" ? funcionarioTipo.NM_FUNCIONARIO : "")
+        (funcionarioTipo?.TIPO === "diretoria" ? funcionarioTipo.NM_FUNCIONARIO : "")
       );
       setInputParecerDiretoria(completo.DESC_PARECER_ESCRITO_DIRETORIA || "");
       setInputConselho(completo.DESC_PARECER_ESCRITO_CONSELHO || "");
@@ -386,10 +397,10 @@ export function GerenciamentoParticipacaoForm() {
       setSelected((prev) =>
         prev
           ? {
-              ...prev,
-              ...data,
-              NM_ANDAMENTO: status1 || prev.NM_ANDAMENTO,
-            }
+            ...prev,
+            ...data,
+            NM_ANDAMENTO: status1 || prev.NM_ANDAMENTO,
+          }
           : prev
       );
       await buscarLista(paginaAtual);
@@ -630,11 +641,10 @@ export function GerenciamentoParticipacaoForm() {
                 <button
                   key={page}
                   onClick={() => buscarLista(page)}
-                  className={`rounded px-3 py-2 text-sm ${
-                    page === paginaAtual
+                  className={`rounded px-3 py-2 text-sm ${page === paginaAtual
                       ? "bg-secondary text-white"
                       : "border text-gray-700"
-                  }`}
+                    }`}
                 >
                   {page}
                 </button>
