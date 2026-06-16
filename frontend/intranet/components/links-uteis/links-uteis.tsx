@@ -389,6 +389,11 @@ const links: LinkItem[] = [
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
+                title: "Declaração Responsabilidade Holerite",
+                href: "/auth/declaracao_responsabilidade_holerite",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+            },
+            {
                 title: "Formulário DPS",
                 href: "/auth/formulario_dps",
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],

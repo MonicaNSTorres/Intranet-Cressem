@@ -263,30 +263,34 @@ export async function gerarPdfFormularioDps(o: PdfOpts) {
   const xNao = xSim + simW;
   const xDetalhe = xNao + naoW;
 
-  function formatTipoDiabetes(tipo: TipoDiabetes) {
-    if (tipo === "tipo1") return "Tipo 1";
-    if (tipo === "tipo2") return "Tipo 2";
-    if (tipo === "gestacional") return "Gestacional";
-    return "";
-  }
-
-  function formatTipoHepatite(tipo: TipoHepatite) {
-    if (tipo === "a") return "Hepatite A";
-    if (tipo === "b") return "Hepatite B";
-    if (tipo === "c") return "Hepatite C";
-    return "";
+  function marcadorDetalhe(checked: boolean) {
+    return checked ? "(X)" : "(  )";
   }
 
   function getDetalheDoenca(item: { key: keyof DoencasState; label: string }) {
-    if (item.key === "diabetes" && o.doencas.diabetes === "sim") {
-      return formatTipoDiabetes(o.tipoDiabetes) || "-";
+    const resposta = o.doencas[item.key];
+
+    if (item.key === "diabetes") {
+      if (resposta === "nao") return "";
+
+      return [
+        `${marcadorDetalhe(o.tipoDiabetes === "tipo1")} Tipo 1`,
+        `${marcadorDetalhe(o.tipoDiabetes === "tipo2")} Tipo 2`,
+        `${marcadorDetalhe(o.tipoDiabetes === "gestacional")} Gestacional`,
+      ].join("    ");
     }
 
-    if (item.key === "hepatite" && o.doencas.hepatite === "sim") {
-      return formatTipoHepatite(o.tipoHepatite) || "-";
+    if (item.key === "hepatite") {
+      if (resposta === "nao") return "";
+
+      return [
+        `${marcadorDetalhe(o.tipoHepatite === "a")} A`,
+        `${marcadorDetalhe(o.tipoHepatite === "b")} B`,
+        `${marcadorDetalhe(o.tipoHepatite === "c")} C`,
+      ].join("    ");
     }
 
-    return "-";
+    return "";
   }
 
   function drawCheckbox(centerX: number, centerY: number, checked: boolean) {

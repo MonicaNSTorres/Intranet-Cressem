@@ -182,7 +182,6 @@ export function FormularioDpsForm() {
     }
   }
 
-
   useEffect(() => {
     async function carregarCidadesAtendimento() {
       try {
@@ -207,10 +206,6 @@ export function FormularioDpsForm() {
   const formularioValido = useMemo(() => {
     const cpfValido = cpf.replace(/\D/g, "").length === 11;
 
-    const todasDoencasRespondidas = Object.values(doencas).every(
-      (resposta) => resposta === "sim" || resposta === "nao"
-    );
-
     if (!cpfValido) return false;
     if (!nome.trim()) return false;
     if (!estadoCivil) return false;
@@ -227,11 +222,6 @@ export function FormularioDpsForm() {
     if (!cep.trim()) return false;
     if (cep.replace(/\D/g, "").length !== 8) return false;
     if (!email.trim()) return false;
-
-    if (!todasDoencasRespondidas) return false;
-
-    if (doencas.diabetes === "sim" && !tipoDiabetes) return false;
-    if (doencas.hepatite === "sim" && !tipoHepatite) return false;
 
     if (!cidadeAtendimento.trim()) return false;
     if (!diaAtendimento.trim()) return false;
@@ -252,9 +242,6 @@ export function FormularioDpsForm() {
     estado,
     cep,
     email,
-    doencas,
-    tipoDiabetes,
-    tipoHepatite,
     cidadeAtendimento,
     diaAtendimento,
   ]);
