@@ -36,68 +36,110 @@ function sqlConsorcio() {
     WITH
       PARAMS AS (
         SELECT
-          TO_DATE(:dt_inicio,'DD/MM/YYYY') AS DT_INI_SEMANA,
-          TO_DATE(:dt_fim,'DD/MM/YYYY')    AS DT_FIM_SEMANA
+          TO_DATE(:dt_inicio, 'DD/MM/YYYY') AS DT_INI_SEMANA,
+          TO_DATE(:dt_fim, 'DD/MM/YYYY') AS DT_FIM_SEMANA
         FROM DUAL
       ),
+
       VENDEDORES_95 AS (
-        SELECT 'YASMIN DE QUEIROZ LEMOS RIBEIRO' AS NM FROM DUAL UNION ALL
-        SELECT 'CHRISTIAN JESUS SIQUEIRA' FROM DUAL UNION ALL
-        SELECT 'GUSTAVO COLAFRANCESCO AMIM SOARES' FROM DUAL UNION ALL
+        SELECT 'YASMIN DE QUEIROZ LEMOS RIBEIRO' AS NM FROM DUAL
+        UNION ALL
+        SELECT 'CHRISTIAN JESUS SIQUEIRA' FROM DUAL
+        UNION ALL
+        SELECT 'GUSTAVO COLAFRANCESCO AMIM SOARES' FROM DUAL
+        UNION ALL
         SELECT 'THIAGO SILVERIO DOS REIS' FROM DUAL
       ),
+
       PERIODO_REF AS (
-        SELECT NVL(DT_INI_SEMANA, SYSDATE) AS DT_REF FROM PARAMS
+        SELECT
+          NVL(DT_INI_SEMANA, SYSDATE) AS DT_REF
+        FROM PARAMS
       ),
+
       CDN_ORIGEM AS (
         SELECT
-        NR_PA,
-        NR_CONTRATO,
-        NR_COTA,
+          NR_PA,
+          NR_CONTRATO,
+          NR_COTA,
+
           TRUNC(
             CASE
-              WHEN REGEXP_LIKE(TRIM(DT_ADESAO), '^\\d{2}/\\d{2}/\\d{4}$')
-                THEN TO_DATE(TRIM(DT_ADESAO), 'DD/MM/YYYY')
-              WHEN REGEXP_LIKE(TRIM(DT_ADESAO), '^\\d{4}-\\d{2}-\\d{2}$')
-                THEN TO_DATE(TRIM(DT_ADESAO), 'YYYY-MM-DD')
+              WHEN REGEXP_LIKE(
+                TRIM(DT_ADESAO),
+                '^\\d{2}/\\d{2}/\\d{4}$'
+              )
+              THEN TO_DATE(
+                TRIM(DT_ADESAO),
+                'DD/MM/YYYY'
+              )
+
+              WHEN REGEXP_LIKE(
+                TRIM(DT_ADESAO),
+                '^\\d{4}-\\d{2}-\\d{2}$'
+              )
+              THEN TO_DATE(
+                TRIM(DT_ADESAO),
+                'YYYY-MM-DD'
+              )
             END
           ) AS DT_MOV,
-          NVL(VL_CONTRATADO,0) AS VL_CONTRATADO_NUM,
+
+          NVL(VL_CONTRATADO, 0) AS VL_CONTRATADO_NUM,
           SN_VENDA_CONCLUIDA,
           SITUACAO_COTA,
           DESC_VERSAO_COTA,
           NR_COOPERATIVA,
           UPPER(TRIM(NM_VENDEDOR)) AS NM_VENDEDOR
+
         FROM DBACRESSEM.CONSORCIO_MENSAL_NOVO
+
         WHERE DT_ADESAO IS NOT NULL
       ),
+
       CDN_RAW AS (
         SELECT
           O.*,
+
           ROW_NUMBER() OVER (
-        PARTITION BY
-          NVL(TRIM(TO_CHAR(NR_COOPERATIVA)), ' '),
-          NVL(TRIM(TO_CHAR(NR_CONTRATO)), ' '),
-          NVL(TRIM(TO_CHAR(NR_COTA)), ' ')
+            PARTITION BY
+              NVL(TRIM(TO_CHAR(NR_COOPERATIVA)), ' '),
+              NVL(TRIM(TO_CHAR(NR_CONTRATO)), ' '),
+              NVL(TRIM(TO_CHAR(NR_COTA)), ' ')
             ORDER BY
-              CASE WHEN O.SN_VENDA_CONCLUIDA = 'SIM' THEN 0 ELSE 1 END,
-              CASE WHEN O.SITUACAO_COTA <> 'EXCLUIDO' THEN 0 ELSE 1 END,
-              CASE WHEN O.DESC_VERSAO_COTA = 'ATIVA' THEN 0 ELSE 1 END,
+              CASE
+                WHEN O.SN_VENDA_CONCLUIDA = 'SIM' THEN 0
+                ELSE 1
+              END,
+
+              CASE
+                WHEN O.SITUACAO_COTA <> 'EXCLUIDO' THEN 0
+                ELSE 1
+              END,
+
+              CASE
+                WHEN O.DESC_VERSAO_COTA = 'ATIVA' THEN 0
+                ELSE 1
+              END,
+
               O.DT_MOV
           ) AS RN,
+
           MAX(
             CASE
               WHEN UPPER(TRIM(O.SITUACAO_COTA)) = 'EXCLUIDO' THEN 1
               ELSE 0
             END
           ) OVER (
-        PARTITION BY
-          NVL(TRIM(TO_CHAR(NR_COOPERATIVA)), ' '),
-          NVL(TRIM(TO_CHAR(NR_CONTRATO)), ' '),
-          NVL(TRIM(TO_CHAR(NR_COTA)), ' ')
+            PARTITION BY
+              NVL(TRIM(TO_CHAR(NR_COOPERATIVA)), ' '),
+              NVL(TRIM(TO_CHAR(NR_CONTRATO)), ' '),
+              NVL(TRIM(TO_CHAR(NR_COTA)), ' ')
           ) AS TEM_EXCLUIDO
+
         FROM CDN_ORIGEM O
       ),
+
       CDN_DEDUP AS (
         SELECT
           NR_PA,
@@ -108,10 +150,13 @@ function sqlConsorcio() {
           DESC_VERSAO_COTA,
           NR_COOPERATIVA,
           NM_VENDEDOR
+
         FROM CDN_RAW
+
         WHERE RN = 1
           AND TEM_EXCLUIDO = 0
       ),
+
       CDN_BASE_ALL AS (
         SELECT
           NR_PA,
@@ -122,8 +167,11 @@ function sqlConsorcio() {
           DESC_VERSAO_COTA,
           NR_COOPERATIVA,
           NM_VENDEDOR
+
         FROM CDN_DEDUP
+
         UNION ALL
+
         SELECT
           4317 AS NR_PA,
           DT_MOV,
@@ -133,22 +181,29 @@ function sqlConsorcio() {
           DESC_VERSAO_COTA,
           NR_COOPERATIVA,
           NM_VENDEDOR
+
         FROM CDN_DEDUP
-        WHERE REGEXP_LIKE(TRIM(NR_COOPERATIVA), '^\\d+$')
+
+        WHERE REGEXP_LIKE(
+                TRIM(NR_COOPERATIVA),
+                '^\\d+$'
+              )
           AND TO_NUMBER(TRIM(NR_COOPERATIVA)) = 4317
       ),
+
       CDN_BASE_AJUSTADA AS (
         SELECT
           CASE
             WHEN B.NR_PA = 0
-             AND EXISTS (
-               SELECT 1
-               FROM VENDEDORES_95 V
-               WHERE UPPER(TRIM(V.NM)) = B.NM_VENDEDOR
-             )
+            AND EXISTS (
+              SELECT 1
+              FROM VENDEDORES_95 V
+              WHERE UPPER(TRIM(V.NM)) = B.NM_VENDEDOR
+            )
             THEN 95
             ELSE B.NR_PA
           END AS NR_PA_EFETIVO,
+
           B.DT_MOV,
           B.VL_CONTRATADO_NUM,
           B.SN_VENDA_CONCLUIDA,
@@ -156,17 +211,445 @@ function sqlConsorcio() {
           B.DESC_VERSAO_COTA,
           B.NR_COOPERATIVA,
           B.NM_VENDEDOR AS NM_FUNCIONARIO
+
         FROM CDN_BASE_ALL B
       ),
+
       CDN_BASE AS (
-        SELECT B.*
+        SELECT
+          B.*
+
         FROM CDN_BASE_AJUSTADA B
+
+        CROSS JOIN PARAMS PR
+
+        WHERE
+          (
+            PR.DT_INI_SEMANA IS NULL
+            AND PR.DT_FIM_SEMANA IS NULL
+          )
+          OR
+          (
+            B.DT_MOV BETWEEN
+              NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+              AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+          )
+      ),
+
+      FUNCIONARIO_PA AS (
+        SELECT
+          X.NM_FUNCIONARIO,
+          X.NR_PA
+
+        FROM (
+          SELECT
+            B.NM_VENDEDOR AS NM_FUNCIONARIO,
+
+            CASE
+              WHEN B.NR_PA = 0
+              AND EXISTS (
+                SELECT 1
+                FROM VENDEDORES_95 V
+                WHERE UPPER(TRIM(V.NM)) = B.NM_VENDEDOR
+              )
+              THEN 95
+              ELSE B.NR_PA
+            END AS NR_PA,
+
+            ROW_NUMBER() OVER (
+              PARTITION BY B.NM_VENDEDOR
+              ORDER BY
+                B.DT_MOV DESC,
+
+                CASE
+                  WHEN B.NR_PA = 0
+                  AND EXISTS (
+                    SELECT 1
+                    FROM VENDEDORES_95 V
+                    WHERE UPPER(TRIM(V.NM)) = B.NM_VENDEDOR
+                  )
+                  THEN 95
+                  ELSE B.NR_PA
+                END DESC,
+
+                NVL(B.VL_CONTRATADO_NUM, -1) DESC,
+                NVL(
+                  TRIM(TO_CHAR(B.NR_COOPERATIVA)),
+                  'ZZZZZZ'
+                ) DESC,
+                NVL(B.SN_VENDA_CONCLUIDA, ' ') DESC,
+                NVL(B.SITUACAO_COTA, ' ') DESC,
+                NVL(B.DESC_VERSAO_COTA, ' ') DESC
+            ) AS RN
+
+          FROM CDN_BASE_ALL B
+
+          WHERE B.NM_VENDEDOR IS NOT NULL
+        ) X
+
+        WHERE X.RN = 1
+      ),
+
+      CONS_ANO AS (
+        SELECT
+          B.NR_PA_EFETIVO AS NR_PA,
+          B.NM_FUNCIONARIO,
+          EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
+          SUM(B.VL_CONTRATADO_NUM) AS PRODUCAO_ANO
+
+        FROM CDN_BASE_AJUSTADA B
+
+        CROSS JOIN PARAMS PR
+
+        WHERE B.DT_MOV BETWEEN
+              TRUNC(
+                NVL(PR.DT_FIM_SEMANA, SYSDATE),
+                'YYYY'
+              )
+              AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
+
+          AND B.SN_VENDA_CONCLUIDA = 'SIM'
+          AND B.SITUACAO_COTA <> 'EXCLUIDO'
+          AND B.DESC_VERSAO_COTA = 'ATIVA'
+
+        GROUP BY
+          B.NR_PA_EFETIVO,
+          B.NM_FUNCIONARIO,
+          EXTRACT(YEAR FROM B.DT_MOV)
+      ),
+
+      CONS_MES AS (
+        SELECT
+          B.NR_PA_EFETIVO AS NR_PA,
+          B.NM_FUNCIONARIO,
+          EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
+          EXTRACT(MONTH FROM B.DT_MOV) AS MES,
+          SUM(B.VL_CONTRATADO_NUM) AS PRODUCAO_MES
+
+        FROM CDN_BASE B
+
+        WHERE B.SN_VENDA_CONCLUIDA = 'SIM'
+          AND B.SITUACAO_COTA <> 'EXCLUIDO'
+          AND B.DESC_VERSAO_COTA = 'ATIVA'
+
+        GROUP BY
+          B.NR_PA_EFETIVO,
+          B.NM_FUNCIONARIO,
+          EXTRACT(YEAR FROM B.DT_MOV),
+          EXTRACT(MONTH FROM B.DT_MOV)
+      ),
+
+      CONS_SEMANAL AS (
+        SELECT
+          B.NR_PA_EFETIVO AS NR_PA,
+          B.NM_FUNCIONARIO,
+          EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
+          SUM(B.VL_CONTRATADO_NUM) AS PRODUCAO_SEMANAL
+
+        FROM CDN_BASE B
+
+        CROSS JOIN PARAMS PR
+
+        WHERE B.SN_VENDA_CONCLUIDA = 'SIM'
+          AND B.SITUACAO_COTA <> 'EXCLUIDO'
+          AND B.DESC_VERSAO_COTA = 'ATIVA'
+
+        GROUP BY
+          B.NR_PA_EFETIVO,
+          B.NM_FUNCIONARIO,
+          EXTRACT(YEAR FROM B.DT_MOV)
+      ),
+
+      META_BASE AS (
+        SELECT
+          X.NM_FUNCIONARIO,
+          X.ANO,
+          X.MES,
+          X.DT_MES,
+          X.QTD_META
+
+        FROM (
+          SELECT
+            UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
+            EXTRACT(YEAR FROM MF.DT_META) AS ANO,
+            EXTRACT(MONTH FROM MF.DT_META) AS MES,
+            TRUNC(MF.DT_META, 'MM') AS DT_MES,
+            NVL(MF.QTD_META, 0) AS QTD_META,
+
+            ROW_NUMBER() OVER (
+              PARTITION BY
+                UPPER(TRIM(MF.NM_FUNCIONARIO)),
+                TRUNC(MF.DT_META, 'MM')
+              ORDER BY
+                MF.ID_META_FUNCIONARIOS DESC
+            ) AS RN
+
+          FROM DBACRESSEM.META_FUNCIONARIOS MF
+
+          WHERE MF.CD_PRODUTO = 3
+            AND MF.NM_FUNCIONARIO IS NOT NULL
+            AND MF.DT_META IS NOT NULL
+        ) X
+
+        WHERE X.RN = 1
+      ),
+
+      META_ANO AS (
+        SELECT
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          SUM(MB.QTD_META) AS META_ANO
+
+        FROM META_BASE MB
+
+        GROUP BY
+          MB.NM_FUNCIONARIO,
+          MB.ANO
+      ),
+
+      META_MES AS (
+        SELECT
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          MB.MES,
+          MB.DT_MES,
+          MB.QTD_META AS META_MES
+
+        FROM META_BASE MB
+      ),
+
+      BASE_FUNCIONARIOS AS (
+        SELECT
+          NVL(FP.NR_PA, 0) AS NR_PA,
+          MA.NM_FUNCIONARIO,
+          MA.ANO
+
+        FROM META_ANO MA
+
+        LEFT JOIN FUNCIONARIO_PA FP
+          ON FP.NM_FUNCIONARIO = MA.NM_FUNCIONARIO
+      )
+
+    SELECT
+      BF.NM_FUNCIONARIO,
+
+      NVL(SW.PRODUCAO_SEMANAL, 0)
+        AS PRODUCAO_SEMANAL,
+
+      ROUND(
+        NVL(MM.META_MES, 0)
+        /
+        CEIL(
+          (
+            LAST_DAY(TRUNC(RF.DT_REF, 'MM'))
+            - TRUNC(RF.DT_REF, 'MM')
+            + 1
+          ) / 7
+        ),
+        0
+      ) AS META_SEMANAL_52,
+
+      CASE
+        WHEN ROUND(
+          NVL(MM.META_MES, 0)
+          /
+          CEIL(
+            (
+              LAST_DAY(TRUNC(RF.DT_REF, 'MM'))
+              - TRUNC(RF.DT_REF, 'MM')
+              + 1
+            ) / 7
+          ),
+          0
+        ) > 0
+
+        THEN ROUND(
+          (
+            NVL(SW.PRODUCAO_SEMANAL, 0)
+            /
+            ROUND(
+              NVL(MM.META_MES, 0)
+              /
+              CEIL(
+                (
+                  LAST_DAY(TRUNC(RF.DT_REF, 'MM'))
+                  - TRUNC(RF.DT_REF, 'MM')
+                  + 1
+                ) / 7
+              ),
+              0
+            )
+          ) * 100,
+          2
+        )
+
+        ELSE 0
+      END AS PORCENTAGEM_SEMANA,
+
+      NVL(SW.PRODUCAO_SEMANAL, 0)
+      -
+      ROUND(
+        NVL(MM.META_MES, 0)
+        /
+        CEIL(
+          (
+            LAST_DAY(TRUNC(RF.DT_REF, 'MM'))
+            - TRUNC(RF.DT_REF, 'MM')
+            + 1
+          ) / 7
+        ),
+        0
+      ) AS GAP_SEMANAL,
+
+      NVL(MJ.PRODUCAO_MES, 0)
+        AS PRODUCAO_MENSAL,
+
+      NVL(MM.META_MES, 0)
+        AS META_MENSAL,
+
+      CASE
+        WHEN NVL(MM.META_MES, 0) > 0
+        THEN ROUND(
+          (
+            NVL(MJ.PRODUCAO_MES, 0)
+            / MM.META_MES
+          ) * 100,
+          2
+        )
+        ELSE 0
+      END AS PERC_META_REALIZADA_MENSAL,
+
+      NVL(MJ.PRODUCAO_MES, 0)
+      - NVL(MM.META_MES, 0)
+        AS FALTA_PARA_META_MENSAL,
+
+      NVL(AY.PRODUCAO_ANO, 0)
+        AS PRODUCAO_ANO,
+
+      NVL(MA.META_ANO, 0)
+        AS META_2026,
+
+      CASE
+        WHEN NVL(MA.META_ANO, 0) > 0
+        THEN ROUND(
+          (
+            NVL(AY.PRODUCAO_ANO, 0)
+            / MA.META_ANO
+          ) * 100,
+          2
+        )
+        ELSE 0
+      END AS PERC_META_REALIZADA,
+
+      NVL(AY.PRODUCAO_ANO, 0)
+      - NVL(MA.META_ANO, 0)
+        AS FALTA_PARA_META
+
+    FROM BASE_FUNCIONARIOS BF
+
+    LEFT JOIN DBACRESSEM.PA P
+      ON P.NR_PA = BF.NR_PA
+
+    CROSS JOIN PARAMS PR
+    CROSS JOIN PERIODO_REF RF
+
+    LEFT JOIN META_ANO MA
+      ON MA.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND MA.ANO = BF.ANO
+
+    LEFT JOIN META_MES MM
+      ON MM.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND MM.ANO = BF.ANO
+    AND MM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+
+    LEFT JOIN CONS_ANO AY
+      ON AY.NR_PA = BF.NR_PA
+    AND AY.ANO = BF.ANO
+    AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
+    LEFT JOIN CONS_MES MJ
+      ON MJ.NR_PA = BF.NR_PA
+    AND MJ.ANO = BF.ANO
+    AND MJ.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND MJ.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
+    LEFT JOIN CONS_SEMANAL SW
+      ON SW.NR_PA = BF.NR_PA
+    AND SW.ANO = BF.ANO
+    AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
+    ORDER BY
+      BF.NM_FUNCIONARIO,
+      BF.ANO
+  `;
+}
+
+function sqlSeguroGeraisNovo() {
+  return `
+    WITH
+      PARAMS AS (
+        SELECT
+          TO_DATE(:dt_inicio, 'DD/MM/YYYY') AS DT_INI_SEMANA,
+          TO_DATE(:dt_fim, 'DD/MM/YYYY') AS DT_FIM_SEMANA
+        FROM DUAL
+      ),
+      ANGARIADORES_95 AS (
+        SELECT 'YASMIN QUEIROS LEMOS RIBEIRO' AS NM FROM DUAL UNION ALL
+        SELECT 'CHRISTIAN JESUS SIQUEIRA' FROM DUAL UNION ALL
+        SELECT 'THIAGO SILVERIO DOS REIS' FROM DUAL UNION ALL
+        SELECT 'THIAGO SILVÉRIO DOS REIS' FROM DUAL UNION ALL
+        SELECT 'GUSTAVO COLAFRANCESCO AMIM SOARES' FROM DUAL
+      ),
+      PERIODO_REF AS (
+        SELECT
+          NVL(DT_INI_SEMANA, SYSDATE) AS DT_REF
+        FROM PARAMS
+      ),
+      SGPD_BASE_ALL AS (
+        SELECT
+          CASE
+            WHEN REGEXP_LIKE(TRIM(NR_COOPERATIVA), '^[0-9]+$')
+            AND TO_NUMBER(TRIM(NR_COOPERATIVA)) = 4317
+            THEN 4317
+            ELSE NR_PA
+          END AS NR_PA,
+          TO_DATE(DT_MOVIMENTO, 'DD/MM/YYYY') AS DT_MOV,
+          NVL(VL_PREMIO_LIQUIDO, 0) AS VL_PREMIO_LIQUIDO_NUM,
+          UPPER(TRIM(NR_CPF_CNPJ_ANGARIADOR)) AS NM_FUNCIONARIO
+        FROM DBACRESSEM.SEGUROS_GERAIS_PRODUCAO_DIARIO
+        WHERE DT_MOVIMENTO IS NOT NULL
+          AND UPPER(DESC_TP_PROPOSTA) = 'SEGURO NOVO'
+      ),
+      SGPD_BASE_AJUSTADA AS (
+        SELECT
+          CASE
+            WHEN B.NR_PA = 0
+            AND EXISTS (
+              SELECT 1
+              FROM ANGARIADORES_95 A
+              WHERE UPPER(TRIM(A.NM)) = B.NM_FUNCIONARIO
+            )
+            THEN 95
+            ELSE B.NR_PA
+          END AS NR_PA_EFETIVO,
+          B.DT_MOV,
+          B.VL_PREMIO_LIQUIDO_NUM,
+          B.NM_FUNCIONARIO
+        FROM SGPD_BASE_ALL B
+      ),
+      SGPD_BASE AS (
+        SELECT
+          B.*
+        FROM SGPD_BASE_AJUSTADA B
         CROSS JOIN PARAMS PR
         WHERE
           (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
           OR
-          (B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                       AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31'))
+          (
+            B.DT_MOV BETWEEN
+              NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+              AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+          )
       ),
       FUNCIONARIO_PA AS (
         SELECT
@@ -174,116 +657,167 @@ function sqlConsorcio() {
           X.NR_PA
         FROM (
           SELECT
-            B.NM_VENDEDOR AS NM_FUNCIONARIO,
+            B.NM_FUNCIONARIO,
             CASE
               WHEN B.NR_PA = 0
-               AND EXISTS (
-                 SELECT 1
-                 FROM VENDEDORES_95 V
-                 WHERE UPPER(TRIM(V.NM)) = B.NM_VENDEDOR
-               )
+              AND EXISTS (
+                SELECT 1
+                FROM ANGARIADORES_95 A
+                WHERE UPPER(TRIM(A.NM)) = B.NM_FUNCIONARIO
+              )
               THEN 95
               ELSE B.NR_PA
             END AS NR_PA,
             ROW_NUMBER() OVER (
-              PARTITION BY B.NM_VENDEDOR
+              PARTITION BY B.NM_FUNCIONARIO
               ORDER BY
                 B.DT_MOV DESC,
-                CASE
-                  WHEN B.NR_PA = 0
-                   AND EXISTS (
-                     SELECT 1
-                     FROM VENDEDORES_95 V
-                     WHERE UPPER(TRIM(V.NM)) = B.NM_VENDEDOR
-                   )
-                  THEN 95
-                  ELSE B.NR_PA
-                END DESC,
-                NVL(B.VL_CONTRATADO_NUM, -1) DESC,
-                NVL(TRIM(TO_CHAR(B.NR_COOPERATIVA)), 'ZZZZZZ') DESC,
-                NVL(B.SN_VENDA_CONCLUIDA, ' ') DESC,
-                NVL(B.SITUACAO_COTA, ' ') DESC,
-                NVL(B.DESC_VERSAO_COTA, ' ') DESC
+                NVL(B.NR_PA, -1) DESC,
+                NVL(B.VL_PREMIO_LIQUIDO_NUM, -1) DESC
             ) AS RN
-          FROM CDN_BASE_ALL B
-          WHERE B.NM_VENDEDOR IS NOT NULL
+          FROM SGPD_BASE_ALL B
+          WHERE B.NM_FUNCIONARIO IS NOT NULL
         ) X
         WHERE X.RN = 1
       ),
-      CONS_ANO AS (
+      SGPD_ANO AS (
         SELECT
           B.NR_PA_EFETIVO AS NR_PA,
           B.NM_FUNCIONARIO,
           EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
-          SUM(B.VL_CONTRATADO_NUM) AS PRODUCAO_ANO
-        FROM CDN_BASE_AJUSTADA B
+          SUM(B.VL_PREMIO_LIQUIDO_NUM) AS PRODUCAO_ANO
+        FROM SGPD_BASE_AJUSTADA B
         CROSS JOIN PARAMS PR
-        WHERE B.DT_MOV BETWEEN TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-                           AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
-          AND B.SN_VENDA_CONCLUIDA = 'SIM'
-          AND B.SITUACAO_COTA <> 'EXCLUIDO'
-          AND B.DESC_VERSAO_COTA = 'ATIVA'
+        WHERE B.DT_MOV BETWEEN
+              TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
+              AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
         GROUP BY
           B.NR_PA_EFETIVO,
           B.NM_FUNCIONARIO,
           EXTRACT(YEAR FROM B.DT_MOV)
       ),
-      CONS_MES AS (
+      SGPD_MES AS (
         SELECT
           B.NR_PA_EFETIVO AS NR_PA,
           B.NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM B.DT_MOV)  AS ANO,
+          EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
           EXTRACT(MONTH FROM B.DT_MOV) AS MES,
-          SUM(B.VL_CONTRATADO_NUM) AS PRODUCAO_MES
-        FROM CDN_BASE B
-        WHERE B.SN_VENDA_CONCLUIDA = 'SIM'
-          AND B.SITUACAO_COTA <> 'EXCLUIDO'
-          AND B.DESC_VERSAO_COTA = 'ATIVA'
+          SUM(B.VL_PREMIO_LIQUIDO_NUM) AS PRODUCAO_MES
+        FROM SGPD_BASE B
         GROUP BY
           B.NR_PA_EFETIVO,
           B.NM_FUNCIONARIO,
           EXTRACT(YEAR FROM B.DT_MOV),
           EXTRACT(MONTH FROM B.DT_MOV)
       ),
-      CONS_SEMANAL AS (
+      SGPD_SEMANAL AS (
         SELECT
           B.NR_PA_EFETIVO AS NR_PA,
           B.NM_FUNCIONARIO,
           EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
-          SUM(B.VL_CONTRATADO_NUM) AS PRODUCAO_SEMANAL
-        FROM CDN_BASE B
+          SUM(B.VL_PREMIO_LIQUIDO_NUM) AS PRODUCAO_SEMANAL
+        FROM SGPD_BASE B
         CROSS JOIN PARAMS PR
-        WHERE B.SN_VENDA_CONCLUIDA = 'SIM'
-          AND B.SITUACAO_COTA <> 'EXCLUIDO'
-          AND B.DESC_VERSAO_COTA = 'ATIVA'
+        WHERE
+          (
+            PR.DT_INI_SEMANA IS NULL
+            AND PR.DT_FIM_SEMANA IS NULL
+            AND B.DT_MOV BETWEEN
+                TRUNC(SYSDATE, 'IW')
+                AND TRUNC(SYSDATE, 'IW') + 6
+          )
+          OR
+          (
+            (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
+            AND B.DT_MOV BETWEEN
+                NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+                AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+          )
         GROUP BY
           B.NR_PA_EFETIVO,
           B.NM_FUNCIONARIO,
           EXTRACT(YEAR FROM B.DT_MOV)
       ),
+      META_BASE AS (
+        SELECT
+          X.NM_FUNCIONARIO,
+          X.NM_FUNCIONARIO_NOME,
+          X.ANO,
+          X.MES,
+          X.QTD_META
+        FROM (
+          SELECT
+            UPPER(TRIM(MF.NR_CPF_CNPJ)) AS NM_FUNCIONARIO,
+            TRIM(MF.NM_FUNCIONARIO) AS NM_FUNCIONARIO_NOME,
+            EXTRACT(YEAR FROM MF.DT_META) AS ANO,
+            EXTRACT(MONTH FROM MF.DT_META) AS MES,
+            NVL(MF.QTD_META, 0) AS QTD_META,
+            ROW_NUMBER() OVER (
+              PARTITION BY
+                UPPER(TRIM(MF.NR_CPF_CNPJ)),
+                TRUNC(MF.DT_META, 'MM')
+              ORDER BY MF.ID_META_FUNCIONARIOS DESC
+            ) AS RN
+          FROM DBACRESSEM.META_FUNCIONARIOS MF
+          WHERE MF.CD_PRODUTO = 27
+            AND MF.NR_CPF_CNPJ IS NOT NULL
+            AND MF.DT_META IS NOT NULL
+        ) X
+        WHERE X.RN = 1
+      ),
       META_ANO AS (
         SELECT
-          UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-          SUM(NVL(MF.QTD_META, 0)) AS META_ANO
-        FROM DBACRESSEM.META_FUNCIONARIOS MF
-        WHERE MF.CD_PRODUTO = 3
+          MB.NM_FUNCIONARIO,
+          MAX(MB.NM_FUNCIONARIO_NOME) AS NM_FUNCIONARIO_NOME,
+          MB.ANO,
+          SUM(MB.QTD_META) AS META_ANO
+        FROM META_BASE MB
         GROUP BY
-          UPPER(TRIM(MF.NM_FUNCIONARIO)),
-          EXTRACT(YEAR FROM MF.DT_META)
+          MB.NM_FUNCIONARIO,
+          MB.ANO
       ),
       META_MES AS (
         SELECT
-          UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-          EXTRACT(MONTH FROM MF.DT_META) AS MES,
-          SUM(NVL(MF.QTD_META, 0)) AS META_MES
-        FROM DBACRESSEM.META_FUNCIONARIOS MF
-        WHERE MF.CD_PRODUTO = 3
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          MB.MES,
+          MB.QTD_META AS META_MES
+        FROM META_BASE MB
+      ),
+      SEMANAS_MES AS (
+        SELECT
+          ANO,
+          MES,
+          COUNT(DISTINCT SEMANA) AS QTD_SEMANAS_MES
+        FROM (
+          SELECT
+            EXTRACT(YEAR FROM DT_DIA) AS ANO,
+            EXTRACT(MONTH FROM DT_DIA) AS MES,
+            TO_NUMBER(TO_CHAR(DT_DIA, 'IW')) AS SEMANA
+          FROM (
+            SELECT
+              ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1)
+              + (NIVEL_DIA - 1) AS DT_DIA
+            FROM (
+              SELECT LEVEL AS NIVEL_MES
+              FROM DUAL
+              CONNECT BY LEVEL <= 36
+            ),
+            (
+              SELECT LEVEL AS NIVEL_DIA
+              FROM DUAL
+              CONNECT BY LEVEL <= 31
+            )
+            WHERE ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1)
+                  + (NIVEL_DIA - 1)
+                  <= LAST_DAY(
+                      ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1)
+                    )
+          )
+        )
         GROUP BY
-          UPPER(TRIM(MF.NM_FUNCIONARIO)),
-          EXTRACT(YEAR FROM MF.DT_META),
-          EXTRACT(MONTH FROM MF.DT_META)
+          ANO,
+          MES
       ),
       BASE_FUNCIONARIOS AS (
         SELECT
@@ -295,357 +829,185 @@ function sqlConsorcio() {
           ON FP.NM_FUNCIONARIO = MA.NM_FUNCIONARIO
       )
     SELECT
-      BF.NM_FUNCIONARIO,
-      NVL(SW.PRODUCAO_SEMANAL, 0) AS PRODUCAO_SEMANAL,
-      ROUND(NVL(MA.META_ANO, 0) / 52, 0) AS META_SEMANAL_52,
-      CASE
-        WHEN ROUND(NVL(MA.META_ANO, 0) / 52, 0) > 0
-          THEN ROUND((NVL(SW.PRODUCAO_SEMANAL,0) / ROUND(NVL(MA.META_ANO, 0) / 52, 0)) * 100, 2)
-        ELSE 0
-      END AS PORCENTAGEM_SEMANA,
-      NVL(SW.PRODUCAO_SEMANAL,0) - ROUND(NVL(MA.META_ANO, 0) / 52, 0) AS GAP_SEMANAL,
-      NVL(MJ.PRODUCAO_MES, 0) AS PRODUCAO_MENSAL,
-      NVL(MM.META_MES, 0) AS META_MENSAL,
-      CASE
-        WHEN NVL(MM.META_MES, 0) > 0
-          THEN ROUND((NVL(MJ.PRODUCAO_MES, 0) / MM.META_MES) * 100, 2)
-        ELSE 0
-      END AS PERC_META_REALIZADA_MENSAL,
-      NVL(MJ.PRODUCAO_MES, 0) - NVL(MM.META_MES, 0) AS FALTA_PARA_META_MENSAL,
-      NVL(AY.PRODUCAO_ANO, 0) AS PRODUCAO_ANO,
-      NVL(MA.META_ANO, 0) AS META_2026,
-      CASE
-        WHEN NVL(MA.META_ANO, 0) > 0
-          THEN ROUND((NVL(AY.PRODUCAO_ANO,0) / MA.META_ANO) * 100, 2)
-        ELSE 0
-      END AS PERC_META_REALIZADA,
-      (NVL(AY.PRODUCAO_ANO,0) - NVL(MA.META_ANO,0)) AS FALTA_PARA_META
-    FROM BASE_FUNCIONARIOS BF
-    LEFT JOIN DBACRESSEM.PA P
-      ON P.NR_PA = BF.NR_PA
-    CROSS JOIN PARAMS PR
-    CROSS JOIN PERIODO_REF RF
-    LEFT JOIN META_ANO MA
-      ON MA.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-    AND MA.ANO = BF.ANO
-    LEFT JOIN META_MES MM
-      ON MM.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-    AND MM.ANO = BF.ANO
-    AND MM.MES = EXTRACT(MONTH FROM RF.DT_REF)
-    LEFT JOIN CONS_ANO AY
-      ON AY.NR_PA = BF.NR_PA
-    AND AY.ANO = BF.ANO
-    AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-    LEFT JOIN CONS_MES MJ
-      ON MJ.NR_PA = BF.NR_PA
-    AND MJ.ANO = BF.ANO
-    AND MJ.MES = EXTRACT(MONTH FROM RF.DT_REF)
-    AND MJ.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-    LEFT JOIN CONS_SEMANAL SW
-      ON SW.NR_PA = BF.NR_PA
-    AND SW.ANO = BF.ANO
-    AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-    ORDER BY BF.NM_FUNCIONARIO, BF.ANO
-  `;
-}
-
-function sqlSeguroGeraisNovo() {
-  return `
-    WITH
-    PARAMS AS (
-      SELECT
-        TO_DATE(:dt_inicio, 'DD/MM/YYYY') AS DT_INI_SEMANA,
-        TO_DATE(:dt_fim, 'DD/MM/YYYY') AS DT_FIM_SEMANA  
-      FROM DUAL
-    ),
-    ANGARIADORES_95 AS (
-      SELECT 'YASMIN QUEIROS LEMOS RIBEIRO' AS NM FROM DUAL UNION ALL
-      SELECT 'CHRISTIAN JESUS SIQUEIRA' FROM DUAL UNION ALL
-      SELECT 'THIAGO SILVERIO DOS REIS' FROM DUAL UNION ALL
-      SELECT 'THIAGO SILV�RIO DOS REIS' FROM DUAL UNION ALL
-      SELECT 'GUSTAVO COLAFRANCESCO AMIM SOARES' FROM DUAL
-    ),
-    PERIODO_REF AS (
-      SELECT
-        NVL(DT_INI_SEMANA, SYSDATE) AS DT_REF
-      FROM PARAMS
-    ),
-    SGPD_BASE_ALL AS (
-      SELECT
-        CASE
-          WHEN REGEXP_LIKE(TRIM(NR_COOPERATIVA),'^[0-9]+$')
-           AND TO_NUMBER(TRIM(NR_COOPERATIVA)) = 4317
-          THEN 4317
-          ELSE NR_PA
-        END AS NR_PA,
-        TO_DATE(DT_MOVIMENTO,'DD/MM/YYYY') AS DT_MOV,
-        NVL(VL_PREMIO_LIQUIDO,0) AS VL_PREMIO_LIQUIDO_NUM,
-        UPPER(TRIM(NR_CPF_CNPJ_ANGARIADOR)) AS NM_FUNCIONARIO
-      FROM DBACRESSEM.SEGUROS_GERAIS_PRODUCAO_DIARIO
-      WHERE DT_MOVIMENTO IS NOT NULL
-        AND UPPER(DESC_TP_PROPOSTA) = 'SEGURO NOVO'
-    ),
-    SGPD_BASE_AJUSTADA AS (
-      SELECT
-        CASE
-          WHEN B.NR_PA = 0
-           AND EXISTS (
-             SELECT 1
-             FROM ANGARIADORES_95 A
-             WHERE UPPER(TRIM(A.NM)) = B.NM_FUNCIONARIO
-           )
-          THEN 95
-          ELSE B.NR_PA
-        END AS NR_PA_EFETIVO,
-        B.DT_MOV,
-        B.VL_PREMIO_LIQUIDO_NUM,
-        B.NM_FUNCIONARIO
-      FROM SGPD_BASE_ALL B
-    ),
-    SGPD_BASE AS (
-      SELECT
-        B.*
-      FROM SGPD_BASE_AJUSTADA B
-      CROSS JOIN PARAMS PR
-      WHERE
-        (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-        OR
-        (B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                     AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31'))
-    ),
-    FUNCIONARIO_PA AS (
-      SELECT
-        X.NM_FUNCIONARIO,
-        X.NR_PA
-      FROM (
-        SELECT
-          B.NM_FUNCIONARIO,
-          CASE
-            WHEN B.NR_PA = 0
-             AND EXISTS (
-               SELECT 1
-               FROM ANGARIADORES_95 A
-               WHERE UPPER(TRIM(A.NM)) = B.NM_FUNCIONARIO
-             )
-            THEN 95
-            ELSE B.NR_PA
-          END AS NR_PA,
-          ROW_NUMBER() OVER (
-            PARTITION BY B.NM_FUNCIONARIO
-            ORDER BY
-              B.DT_MOV DESC,
-              NVL(B.NR_PA, -1) DESC,
-              NVL(B.VL_PREMIO_LIQUIDO_NUM, -1) DESC
-          ) AS RN
-        FROM SGPD_BASE_ALL B
-        WHERE B.NM_FUNCIONARIO IS NOT NULL
-      ) X
-      WHERE X.RN = 1
-    ),
-    SGPD_ANO AS (
-      SELECT
-        B.NR_PA_EFETIVO AS NR_PA,
-        B.NM_FUNCIONARIO,
-        EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
-        SUM(B.VL_PREMIO_LIQUIDO_NUM) AS PRODUCAO_ANO
-      FROM SGPD_BASE_AJUSTADA B
-      CROSS JOIN PARAMS PR
-      WHERE B.DT_MOV BETWEEN TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-                         AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
-      GROUP BY
-        B.NR_PA_EFETIVO,
-        B.NM_FUNCIONARIO,
-        EXTRACT(YEAR FROM B.DT_MOV)
-    ),
-    SGPD_MES AS (
-      SELECT
-        B.NR_PA_EFETIVO AS NR_PA,
-        B.NM_FUNCIONARIO,
-        EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
-        EXTRACT(MONTH FROM B.DT_MOV) AS MES,
-        SUM(B.VL_PREMIO_LIQUIDO_NUM) AS PRODUCAO_MES
-      FROM SGPD_BASE B
-      GROUP BY
-        B.NR_PA_EFETIVO,
-        B.NM_FUNCIONARIO,
-        EXTRACT(YEAR FROM B.DT_MOV),
-        EXTRACT(MONTH FROM B.DT_MOV)
-    ),
-    SGPD_SEMANAL AS (
-      SELECT
-        B.NR_PA_EFETIVO AS NR_PA,
-        B.NM_FUNCIONARIO,
-        EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
-        SUM(B.VL_PREMIO_LIQUIDO_NUM) AS PRODUCAO_SEMANAL
-      FROM SGPD_BASE B
-      CROSS JOIN PARAMS PR
-      WHERE
-        (
-          (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-          AND B.DT_MOV BETWEEN TRUNC(SYSDATE,'IW') AND (TRUNC(SYSDATE,'IW') + 6)
-        )
-        OR
-        (
-          (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
-          AND B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                          AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
-        )
-      GROUP BY
-        B.NR_PA_EFETIVO,
-        B.NM_FUNCIONARIO,
-        EXTRACT(YEAR FROM B.DT_MOV)
-    ),
-    META_ANO AS (
-      SELECT
-        UPPER(TRIM(MF.NR_CPF_CNPJ)) AS NM_FUNCIONARIO,
-        MAX(MF.NM_FUNCIONARIO) AS NM_FUNCIONARIO_NOME,
-        EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-        SUM(NVL(MF.QTD_META, 0)) AS META_ANO
-      FROM DBACRESSEM.META_FUNCIONARIOS MF
-      WHERE MF.CD_PRODUTO = 27
-      GROUP BY
-        UPPER(TRIM(MF.NR_CPF_CNPJ)),
-        EXTRACT(YEAR FROM MF.DT_META)
-    ),
-    META_MES AS (
-      SELECT
-        UPPER(TRIM(MF.NR_CPF_CNPJ)) AS NM_FUNCIONARIO,
-        EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-        EXTRACT(MONTH FROM MF.DT_META) AS MES,
-        SUM(NVL(MF.QTD_META, 0)) AS META_MES
-      FROM DBACRESSEM.META_FUNCIONARIOS MF
-      WHERE MF.CD_PRODUTO = 27
-      GROUP BY
-        UPPER(TRIM(MF.NR_CPF_CNPJ)),
-        EXTRACT(YEAR FROM MF.DT_META),
-        EXTRACT(MONTH FROM MF.DT_META)
-    ),
-    SEMANAS_MES AS (
-      SELECT
-        ANO,
-        MES,
-        COUNT(DISTINCT SEMANA) AS QTD_SEMANAS_MES
-      FROM (
-        SELECT
-          EXTRACT(YEAR FROM DT_DIA) AS ANO,
-          EXTRACT(MONTH FROM DT_DIA) AS MES,
-          TO_NUMBER(TO_CHAR(DT_DIA, 'IW')) AS SEMANA
-        FROM (
-          SELECT
-            ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1) + (NIVEL_DIA - 1) AS DT_DIA
-          FROM (
-            SELECT LEVEL AS NIVEL_MES FROM DUAL CONNECT BY LEVEL <= 36
-          ),
-          (
-            SELECT LEVEL AS NIVEL_DIA FROM DUAL CONNECT BY LEVEL <= 31
-          )
-          WHERE ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1) + (NIVEL_DIA - 1)
-                <= LAST_DAY(ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1))
-        )
-      )
-      GROUP BY ANO, MES
-    ),
-    BASE_FUNCIONARIOS AS (
-      SELECT
-        NVL(FP.NR_PA, 0) AS NR_PA,
-        MA.NM_FUNCIONARIO,
-        MA.ANO
-      FROM META_ANO MA
-      LEFT JOIN FUNCIONARIO_PA FP
-        ON FP.NM_FUNCIONARIO = MA.NM_FUNCIONARIO
-    )
-    SELECT
       MA.NM_FUNCIONARIO_NOME AS NM_FUNCIONARIO,
       BF.NM_FUNCIONARIO AS CPF_FUNCIONARIO,
       BF.ANO,
       NVL(SW.PRODUCAO_SEMANAL, 0) AS PRODUCAO_SEMANAL,
+
       NVL(
         ROUND(
-          NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
-        , 2)
-      , 0) AS META_SEMANAL_MES,
-      ROUND(NVL(MA.META_ANO, 0) / 52, 2) AS META_SEMANAL_52,
+          NVL(MM.META_MES, 0)
+          / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0),
+          2
+        ),
+        0
+      ) AS META_SEMANAL_MES,
+
+      ROUND(
+        NVL(MA.META_ANO, 0) / 52,
+        2
+      ) AS META_SEMANAL_52,
+
       CASE
-        WHEN ROUND(NVL(MA.META_ANO, 0) / 52, 2) > 0 THEN
+        WHEN NVL(
           ROUND(
-            (NVL(SW.PRODUCAO_SEMANAL, 0) / ROUND(NVL(MA.META_ANO, 0) / 52, 2)) * 100
-          , 2)
+            NVL(MM.META_MES, 0)
+            / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0),
+            2
+          ),
+          0
+        ) > 0
+        THEN ROUND(
+          (
+            NVL(SW.PRODUCAO_SEMANAL, 0)
+            /
+            NVL(
+              ROUND(
+                NVL(MM.META_MES, 0)
+                / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0),
+                2
+              ),
+              0
+            )
+          ) * 100,
+          2
+        )
         ELSE 0
       END AS PORCENTAGEM_SEMANA,
+
       NVL(SW.PRODUCAO_SEMANAL, 0)
-      - ROUND(NVL(MA.META_ANO, 0) / 52, 2) AS GAP_SEMANAL,
+      -
+      NVL(
+        ROUND(
+          NVL(MM.META_MES, 0)
+          / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0),
+          2
+        ),
+        0
+      ) AS GAP_SEMANAL,
+
       NVL(MJ.PRODUCAO_MES, 0) AS PRODUCAO_MENSAL,
+
       NVL(MM.META_MES, 0) AS META_MENSAL,
+
       CASE
-        WHEN NVL(MM.META_MES, 0) > 0 THEN
-          ROUND((NVL(MJ.PRODUCAO_MES, 0) / MM.META_MES) * 100, 2)
+        WHEN NVL(MM.META_MES, 0) > 0
+        THEN ROUND(
+          (
+            NVL(MJ.PRODUCAO_MES, 0)
+            / MM.META_MES
+          ) * 100,
+          2
+        )
         ELSE 0
       END AS PERC_META_REALIZADA_MENSAL,
-      NVL(MJ.PRODUCAO_MES, 0) - NVL(MM.META_MES, 0) AS FALTA_PARA_META_MENSAL,
+
+      NVL(MJ.PRODUCAO_MES, 0)
+      - NVL(MM.META_MES, 0)
+        AS FALTA_PARA_META_MENSAL,
+
       CASE
-        WHEN BF.NR_PA = 95 THEN
-          NVL(AY95.PRODUCAO_ANO, 0)
-        WHEN BF.NR_PA = 0 THEN
-          NVL(AY.PRODUCAO_ANO, 0) - NVL(AY95.PRODUCAO_ANO, 0)
+        WHEN BF.NR_PA = 95
+        THEN NVL(AY95.PRODUCAO_ANO, 0)
+
+        WHEN BF.NR_PA = 0
+        THEN NVL(AY.PRODUCAO_ANO, 0)
+            - NVL(AY95.PRODUCAO_ANO, 0)
+
         ELSE NVL(AY.PRODUCAO_ANO, 0)
       END AS PRODUCAO_ANO,
+
       NVL(MA.META_ANO, 0) AS META_2026,
+
       CASE
-        WHEN NVL(MA.META_ANO, 0) > 0 THEN
-          ROUND(
-            (
-              CASE
-                WHEN BF.NR_PA = 95 THEN NVL(AY95.PRODUCAO_ANO, 0)
-                WHEN BF.NR_PA = 0 THEN NVL(AY.PRODUCAO_ANO, 0) - NVL(AY95.PRODUCAO_ANO, 0)
-                ELSE NVL(AY.PRODUCAO_ANO, 0)
-              END
-            ) / MA.META_ANO * 100
-          , 2)
+        WHEN NVL(MA.META_ANO, 0) > 0
+        THEN ROUND(
+          (
+            CASE
+              WHEN BF.NR_PA = 95
+              THEN NVL(AY95.PRODUCAO_ANO, 0)
+
+              WHEN BF.NR_PA = 0
+              THEN NVL(AY.PRODUCAO_ANO, 0)
+                  - NVL(AY95.PRODUCAO_ANO, 0)
+
+              ELSE NVL(AY.PRODUCAO_ANO, 0)
+            END
+            / MA.META_ANO
+          ) * 100,
+          2
+        )
         ELSE 0
       END AS PERC_META_REALIZADA,
+
       (
         CASE
-          WHEN BF.NR_PA = 95 THEN NVL(AY95.PRODUCAO_ANO, 0)
-          WHEN BF.NR_PA = 0 THEN NVL(AY.PRODUCAO_ANO, 0) - NVL(AY95.PRODUCAO_ANO, 0)
+          WHEN BF.NR_PA = 95
+          THEN NVL(AY95.PRODUCAO_ANO, 0)
+
+          WHEN BF.NR_PA = 0
+          THEN NVL(AY.PRODUCAO_ANO, 0)
+              - NVL(AY95.PRODUCAO_ANO, 0)
+
           ELSE NVL(AY.PRODUCAO_ANO, 0)
         END
       ) - NVL(MA.META_ANO, 0) AS FALTA_PARA_META
+
     FROM BASE_FUNCIONARIOS BF
+
     CROSS JOIN PARAMS PR
     CROSS JOIN PERIODO_REF RF
+
     LEFT JOIN META_ANO MA
       ON MA.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-     AND MA.ANO = BF.ANO
+    AND MA.ANO = BF.ANO
+
     LEFT JOIN META_MES MM
       ON MM.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-     AND MM.ANO = BF.ANO
-     AND MM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND MM.ANO = BF.ANO
+    AND MM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+
     LEFT JOIN SEMANAS_MES SM
       ON SM.ANO = BF.ANO
-     AND SM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND SM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+
     LEFT JOIN SGPD_ANO AY
       ON AY.NR_PA = BF.NR_PA
-     AND AY.ANO = BF.ANO
-     AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND AY.ANO = BF.ANO
+    AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
     LEFT JOIN SGPD_ANO AY95
       ON AY95.NR_PA = 95
-     AND AY95.ANO = BF.ANO
-     AND AY95.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND AY95.ANO = BF.ANO
+    AND AY95.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
     LEFT JOIN SGPD_MES MJ
       ON MJ.NR_PA = BF.NR_PA
-     AND MJ.ANO = BF.ANO
-     AND MJ.MES = EXTRACT(MONTH FROM RF.DT_REF)
-     AND MJ.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND MJ.ANO = BF.ANO
+    AND MJ.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND MJ.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
     LEFT JOIN SGPD_SEMANAL SW
       ON SW.NR_PA = BF.NR_PA
-     AND SW.ANO = BF.ANO
-     AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-    ORDER BY UPPER(TRIM(NVL(MA.NM_FUNCIONARIO_NOME, BF.NM_FUNCIONARIO))), BF.ANO
+    AND SW.ANO = BF.ANO
+    AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
+    ORDER BY
+      UPPER(
+        TRIM(
+          NVL(
+            MA.NM_FUNCIONARIO_NOME,
+            BF.NM_FUNCIONARIO
+          )
+        )
+      ),
+      BF.ANO
   `;
 }
 
 function sqlEntradaCooperados() {
   return `
+
     WITH
       PARAMS AS (
         SELECT
@@ -653,6 +1015,7 @@ function sqlEntradaCooperados() {
           TO_DATE(:dt_fim, 'DD/MM/YYYY') AS DT_FIM_SEMANA
         FROM DUAL
       ),
+
       FUNC_LOGIN AS (
         SELECT
           X.NM_LOGIN,
@@ -671,6 +1034,7 @@ function sqlEntradaCooperados() {
         ) X
         WHERE X.RN = 1
       ),
+
       FUNC_CAPITAL AS (
         SELECT
           FC.NR_CONTA_CAPITAL,
@@ -679,6 +1043,7 @@ function sqlEntradaCooperados() {
         WHERE FC.NR_CONTA_CAPITAL IS NOT NULL
           AND FC.NM_USUARIO IS NOT NULL
       ),
+
       AA_BASE_ALL AS (
         SELECT
           AA.NR_PA,
@@ -695,7 +1060,9 @@ function sqlEntradaCooperados() {
           AND AA.SN_CONTA_CAPITAL = 'ATIVO'
           AND FC.CD_DOCUMENTO = 'INC.C.'
           AND FL.NM_FUNCIONARIO IS NOT NULL
+
         UNION ALL
+
         SELECT
           4317 AS NR_PA,
           TRUNC(AA.DT_MATRICULA) AS DT_MOV,
@@ -714,6 +1081,7 @@ function sqlEntradaCooperados() {
           AND TO_NUMBER(TRIM(AA.NR_COOPERATIVA)) = 4317
           AND FL.NM_FUNCIONARIO IS NOT NULL
       ),
+
       AA_BASE AS (
         SELECT
           B.*
@@ -722,9 +1090,13 @@ function sqlEntradaCooperados() {
         WHERE
           (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
           OR
-          (B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                       AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31'))
+          (
+            B.DT_MOV BETWEEN
+              NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+              AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+          )
       ),
+
       FUNCIONARIO_PA AS (
         SELECT
           X.NM_FUNCIONARIO,
@@ -745,6 +1117,7 @@ function sqlEntradaCooperados() {
         ) X
         WHERE X.RN = 1
       ),
+
       AA_ANO AS (
         SELECT
           B.NM_FUNCIONARIO,
@@ -752,12 +1125,14 @@ function sqlEntradaCooperados() {
           COUNT(DISTINCT B.NR_CONTA_CAPITAL) AS PRODUCAO_ANO
         FROM AA_BASE_ALL B
         CROSS JOIN PARAMS PR
-        WHERE B.DT_MOV BETWEEN TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-                           AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
+        WHERE B.DT_MOV BETWEEN
+              TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
+              AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
         GROUP BY
           B.NM_FUNCIONARIO,
           EXTRACT(YEAR FROM B.DT_MOV)
       ),
+
       AA_SEMANAL AS (
         SELECT
           B.NM_FUNCIONARIO,
@@ -767,30 +1142,75 @@ function sqlEntradaCooperados() {
         CROSS JOIN PARAMS PR
         WHERE
           (
-            (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-            AND B.DT_MOV BETWEEN TRUNC(SYSDATE,'IW') AND (TRUNC(SYSDATE,'IW') + 6)
+            PR.DT_INI_SEMANA IS NULL
+            AND PR.DT_FIM_SEMANA IS NULL
+            AND B.DT_MOV BETWEEN
+                TRUNC(SYSDATE, 'IW')
+                AND TRUNC(SYSDATE, 'IW') + 6
           )
           OR
           (
-            (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
-            AND B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                            AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+            PR.DT_INI_SEMANA IS NOT NULL
+            OR PR.DT_FIM_SEMANA IS NOT NULL
           )
+          AND B.DT_MOV BETWEEN
+              NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+              AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
         GROUP BY
           B.NM_FUNCIONARIO,
           EXTRACT(YEAR FROM B.DT_MOV)
       ),
+
+      META_BASE AS (
+        SELECT
+          X.NM_FUNCIONARIO,
+          X.ANO,
+          X.MES_META,
+          X.QTD_META
+        FROM (
+          SELECT
+            UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
+            EXTRACT(YEAR FROM MF.DT_META) AS ANO,
+            TRUNC(MF.DT_META, 'MM') AS MES_META,
+            NVL(MF.QTD_META, 0) AS QTD_META,
+
+            ROW_NUMBER() OVER (
+              PARTITION BY
+                UPPER(TRIM(MF.NM_FUNCIONARIO)),
+                TRUNC(MF.DT_META, 'MM')
+              ORDER BY MF.ID_META_FUNCIONARIOS DESC
+            ) AS RN
+
+          FROM DBACRESSEM.META_FUNCIONARIOS MF
+          WHERE MF.CD_PRODUTO = 4
+            AND MF.NM_FUNCIONARIO IS NOT NULL
+            AND MF.DT_META IS NOT NULL
+        ) X
+        WHERE X.RN = 1
+      ),
+
+      /* Soma as metas mensais para obter a meta anual. */
       META_ANO AS (
         SELECT
-          UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-          SUM(NVL(MF.QTD_META, 0)) AS META_ANO
-        FROM DBACRESSEM.META_FUNCIONARIOS MF
-        WHERE MF.CD_PRODUTO = 4
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          SUM(MB.QTD_META) AS META_ANO
+        FROM META_BASE MB
         GROUP BY
-          UPPER(TRIM(MF.NM_FUNCIONARIO)),
-          EXTRACT(YEAR FROM MF.DT_META)
+          MB.NM_FUNCIONARIO,
+          MB.ANO
       ),
+
+      /* Meta específica de cada mês. */
+      META_MES AS (
+        SELECT
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          MB.MES_META,
+          MB.QTD_META AS META_MENSAL
+        FROM META_BASE MB
+      ),
+
       BASE_FUNCIONARIOS AS (
         SELECT
           NVL(FP.NR_PA, 0) AS NR_PA,
@@ -800,370 +1220,660 @@ function sqlEntradaCooperados() {
         LEFT JOIN FUNCIONARIO_PA FP
           ON FP.NM_FUNCIONARIO = MA.NM_FUNCIONARIO
       )
+
     SELECT
       BF.NM_FUNCIONARIO,
       BF.ANO,
+
       CASE
         WHEN BF.NR_PA = 95 THEN 0
         ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
       END AS PRODUCAO_SEMANAL,
+
       CASE
         WHEN BF.NR_PA = 95 THEN 0
         ELSE NVL(AY.PRODUCAO_ANO, 0) - NVL(MA.META_ANO, 0)
       END AS FALTA_PARA_META,
+
       ROUND(
-        (NVL(MA.META_ANO, 0) / 12) /
+        NVL(MM.META_MENSAL, 0) /
         CEIL(
           (
             LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
-            - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
+            - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM')
+            + 1
           ) / 7
-        )
-      , 0) AS META_SEMANAL,
+        ),
+        0
+      ) AS META_SEMANAL,
+
       CASE
         WHEN BF.NR_PA = 95 THEN 0
+
         WHEN ROUND(
-          (NVL(MA.META_ANO, 0) / 12) /
+          NVL(MM.META_MENSAL, 0) /
           CEIL(
             (
               LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
-              - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
+              - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM')
+              + 1
             ) / 7
+          ),
+          0
+        ) > 0
+
+        THEN (
+          NVL(SW.PRODUCAO_SEMANAL, 0) /
+          ROUND(
+            NVL(MM.META_MENSAL, 0) /
+            CEIL(
+              (
+                LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
+                - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM')
+                + 1
+              ) / 7
+            ),
+            0
           )
-        , 0) > 0
-          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) /
-            ROUND(
-              (NVL(MA.META_ANO, 0) / 12) /
-              CEIL(
-                (
-                  LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
-                  - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
-                ) / 7
-              )
-            , 0)
-          ) * 100
+        ) * 100
+
         ELSE 0
       END AS PORCENTAGEM_SEMANAL,
+
       CASE
         WHEN BF.NR_PA = 95 THEN 0
-        ELSE NVL(SW.PRODUCAO_SEMANAL, 0) - ROUND(
-          (NVL(MA.META_ANO, 0) / 12) /
-          CEIL(
-            (
-              LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
-              - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM') + 1
-            ) / 7
+
+        ELSE NVL(SW.PRODUCAO_SEMANAL, 0) -
+          ROUND(
+            NVL(MM.META_MENSAL, 0) /
+            CEIL(
+              (
+                LAST_DAY(TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM'))
+                - TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM')
+                + 1
+              ) / 7
+            ),
+            0
           )
-        , 0)
       END AS GAP_SEMANAL,
+
       CASE
         WHEN BF.NR_PA = 95 THEN 0
         ELSE NVL(SW.PRODUCAO_SEMANAL, 0)
       END AS PRODUCAO_MENSAL,
+
       CASE
         WHEN BF.NR_PA = 95 THEN 0
-        ELSE (NVL(MA.META_ANO, 0) / 12)
+        ELSE NVL(MM.META_MENSAL, 0)
       END AS META_MENSAL,
+
       CASE
         WHEN BF.NR_PA = 95 THEN 0
-        WHEN (NVL(MA.META_ANO, 0) / 12) > 0
-          THEN (NVL(SW.PRODUCAO_SEMANAL, 0) / (NVL(MA.META_ANO, 0) / 12)) * 100
+
+        WHEN NVL(MM.META_MENSAL, 0) > 0
+          THEN (
+            NVL(SW.PRODUCAO_SEMANAL, 0) /
+            MM.META_MENSAL
+          ) * 100
+
         ELSE 0
       END AS PERC_META_REALIZADA_MENSAL,
+
       CASE
         WHEN BF.NR_PA = 95 THEN 0
-        ELSE NVL(SW.PRODUCAO_SEMANAL, 0) - (NVL(MA.META_ANO, 0) / 12)
+        ELSE
+          NVL(SW.PRODUCAO_SEMANAL, 0)
+          - NVL(MM.META_MENSAL, 0)
       END AS FALTA_PARA_META_MENSAL,
+
       CASE
         WHEN BF.NR_PA = 95 THEN 0
         ELSE NVL(AY.PRODUCAO_ANO, 0)
       END AS PRODUCAO_ANO,
+
       NVL(MA.META_ANO, 0) AS META_2026,
+
       CASE
         WHEN BF.NR_PA = 95 THEN 0
+
         WHEN NVL(MA.META_ANO, 0) > 0
-          THEN (NVL(AY.PRODUCAO_ANO, 0) / MA.META_ANO) * 100
+          THEN (
+            NVL(AY.PRODUCAO_ANO, 0) /
+            MA.META_ANO
+          ) * 100
+
         ELSE 0
       END AS PERC_META_REALIZADA
+
     FROM BASE_FUNCIONARIOS BF
+
     CROSS JOIN PARAMS PR
+
     LEFT JOIN META_ANO MA
       ON MA.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-     AND MA.ANO = BF.ANO
+    AND MA.ANO = BF.ANO
+
+    LEFT JOIN META_MES MM
+      ON MM.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND MM.ANO = BF.ANO
+    AND MM.MES_META =
+        TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'MM')
+
     LEFT JOIN AA_ANO AY
       ON AY.ANO = BF.ANO
-     AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
     LEFT JOIN AA_SEMANAL SW
       ON SW.ANO = BF.ANO
-     AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-    ORDER BY BF.NM_FUNCIONARIO, BF.ANO
+    AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
+    ORDER BY
+      BF.NM_FUNCIONARIO,
+      BF.ANO
+
   `;
 }
 
 function sqlContaCorrenteAbertas() {
   return `
     WITH
-    PARAMS AS (
-      SELECT
-        TO_DATE(:dt_inicio,'DD/MM/YYYY') AS DT_INI,
-        TO_DATE(:dt_fim,'DD/MM/YYYY') AS DT_FIM
-      FROM DUAL
-    ),
-    PERIODO_REF AS (
-      SELECT
-        TRUNC(NVL(PR.DT_FIM, SYSDATE)) AS DT_REF_FIM,
-        TRUNC(NVL(PR.DT_FIM, SYSDATE), 'YYYY') AS DT_REF_INI_ANO
-      FROM PARAMS PR
-    ),
-    ANO_REF AS (
-      SELECT EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO
-      FROM PERIODO_REF PR
-    ),
-    META_ANO AS (
-      SELECT
-        UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NOME,
-        EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-        SUM(NVL(MF.QTD_META,0)) AS META_ANO
-      FROM DBACRESSEM.META_FUNCIONARIOS MF
-      CROSS JOIN ANO_REF AR
-      WHERE MF.CD_PRODUTO = 8
-        AND EXTRACT(YEAR FROM MF.DT_META) = AR.ANO
-      GROUP BY
-        UPPER(TRIM(MF.NM_FUNCIONARIO)),
-        EXTRACT(YEAR FROM MF.DT_META)
-    ),
-    CC_BASE_CANONICA AS (
-      SELECT DISTINCT
-        TRUNC(C.DT_ABERTURA_CONTA) AS DT_ABERTURA_CONTA,
-        TRIM(C.NR_CPF_RESPONSAVEL_CADASTRO) AS CPF,
-        UPPER(TRIM(C.NM_USUARIO_RESPONSAVEL_CADASTRO)) AS NOME_RESP,
-        C.NR_CONTA_CORRENTE,
-        CASE
-          WHEN REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}$')
-            THEN TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY')
-          WHEN REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2}$')
-            THEN TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY HH24:MI:SS')
-          WHEN REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{4}-\\d{2}-\\d{2}$')
-            THEN TO_DATE(TRIM(C.DT_MOVIMENTO), 'YYYY-MM-DD')
-          WHEN REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}$')
-            THEN TO_DATE(TRIM(C.DT_MOVIMENTO), 'YYYY-MM-DD HH24:MI:SS')
-        END AS DT_MOVIMENTO_DT
-      FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO_NORMALIZADO C
-      WHERE C.DT_MOVIMENTO IS NOT NULL
-        AND (
-          REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}$')
-          OR REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2}$')
-          OR REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{4}-\\d{2}-\\d{2}$')
-          OR REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}$')
-        )
-        AND C.DT_ABERTURA_CONTA IS NOT NULL
-        AND C.NM_MODALIDADE_CONTA = 'CONTA CORRENTE'
-        AND C.TP_CONTA_CORRENTE IN ('PESSOAS FÍSICAS','PESSOAS JURÍDICAS')
-        AND C.NM_SITUACAO_CONTA_CORRENTE IN
-            ('ATIVA','ATIVA BLOQUEADA','ATIVA BLOQUEADA JUDICIALMENTE')
-        AND C.NR_CPF_RESPONSAVEL_CADASTRO IS NOT NULL
-        AND C.NM_USUARIO_RESPONSAVEL_CADASTRO IS NOT NULL
-        AND TRUNC(
-          CASE
-            WHEN REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}$')
-              THEN TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY')
-            WHEN REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2}$')
-              THEN TO_DATE(TRIM(C.DT_MOVIMENTO), 'DD/MM/YYYY HH24:MI:SS')
-            WHEN REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{4}-\\d{2}-\\d{2}$')
-              THEN TO_DATE(TRIM(C.DT_MOVIMENTO), 'YYYY-MM-DD')
-            WHEN REGEXP_LIKE(TRIM(C.DT_MOVIMENTO), '^\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}$')
-              THEN TO_DATE(TRIM(C.DT_MOVIMENTO), 'YYYY-MM-DD HH24:MI:SS')
-          END,
-          'MM'
-        ) = TRUNC(C.DT_ABERTURA_CONTA, 'MM')
-    ),
-    CC_BASE_DEDUP AS (
-      SELECT
-        X.DT_ABERTURA_CONTA,
-        X.CPF,
-        X.NOME_RESP,
-        X.NR_CONTA_CORRENTE
-      FROM (
+      PARAMS AS (
         SELECT
-          C.DT_ABERTURA_CONTA,
-          C.CPF,
-          C.NOME_RESP,
+          TO_DATE(:dt_inicio, 'DD/MM/YYYY') AS DT_INI,
+          TO_DATE(:dt_fim, 'DD/MM/YYYY') AS DT_FIM
+        FROM DUAL
+      ),
+
+      PERIODO_REF AS (
+        SELECT
+          TRUNC(NVL(PR.DT_FIM, SYSDATE)) AS DT_REF_FIM,
+          TRUNC(NVL(PR.DT_FIM, SYSDATE), 'YYYY') AS DT_REF_INI_ANO
+        FROM PARAMS PR
+      ),
+
+      ANO_REF AS (
+        SELECT
+          EXTRACT(YEAR FROM PR.DT_REF_FIM) AS ANO
+        FROM PERIODO_REF PR
+      ),
+
+      META_BASE AS (
+        SELECT
+          X.NOME,
+          X.ANO,
+          X.MES_META,
+          X.QTD_META
+        FROM (
+          SELECT
+            UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NOME,
+            EXTRACT(YEAR FROM MF.DT_META) AS ANO,
+            TRUNC(MF.DT_META, 'MM') AS MES_META,
+            NVL(MF.QTD_META, 0) AS QTD_META,
+
+            ROW_NUMBER() OVER (
+              PARTITION BY
+                UPPER(TRIM(MF.NM_FUNCIONARIO)),
+                TRUNC(MF.DT_META, 'MM')
+              ORDER BY
+                MF.ID_META_FUNCIONARIOS DESC
+            ) AS RN
+
+          FROM DBACRESSEM.META_FUNCIONARIOS MF
+          CROSS JOIN ANO_REF AR
+          WHERE MF.CD_PRODUTO = 8
+            AND MF.DT_META IS NOT NULL
+            AND MF.NM_FUNCIONARIO IS NOT NULL
+            AND EXTRACT(YEAR FROM MF.DT_META) = AR.ANO
+        ) X
+        WHERE X.RN = 1
+      ),
+
+      META_ANO AS (
+        SELECT
+          MB.NOME,
+          MB.ANO,
+          SUM(MB.QTD_META) AS META_ANO
+        FROM META_BASE MB
+        GROUP BY
+          MB.NOME,
+          MB.ANO
+      ),
+
+      META_MES AS (
+        SELECT
+          MB.NOME,
+          MB.ANO,
+          MB.MES_META,
+          MB.QTD_META AS META_MENSAL
+        FROM META_BASE MB
+      ),
+
+      CC_BASE_CANONICA AS (
+        SELECT DISTINCT
+          TRUNC(C.DT_ABERTURA_CONTA) AS DT_ABERTURA_CONTA,
+          TRIM(C.NR_CPF_RESPONSAVEL_CADASTRO) AS CPF,
+          UPPER(TRIM(C.NM_USUARIO_RESPONSAVEL_CADASTRO)) AS NOME_RESP,
           C.NR_CONTA_CORRENTE,
-          ROW_NUMBER() OVER (
-            PARTITION BY
-              C.NR_CONTA_CORRENTE,
-              C.DT_ABERTURA_CONTA
-            ORDER BY
-              C.DT_MOVIMENTO_DT ASC,
-              NVL(C.CPF, '99999999999999'),
-              NVL(C.NOME_RESP, 'ZZZZZZ')
-          ) AS RN
-        FROM CC_BASE_CANONICA C
-      ) X
-      WHERE X.RN = 1
-    ),
-    BASE_CC AS (
-      SELECT
-        C.DT_ABERTURA_CONTA AS DT_MOV,
-        C.CPF,
-        C.NR_CONTA_CORRENTE
-      FROM CC_BASE_DEDUP C
-      CROSS JOIN PERIODO_REF PR
-      WHERE C.DT_ABERTURA_CONTA >= PR.DT_REF_INI_ANO
-        AND C.DT_ABERTURA_CONTA < PR.DT_REF_FIM + 1
-    ),
-    PROD_ANO AS (
-      SELECT
-        B.CPF,
-        AR.ANO,
-        COUNT(DISTINCT B.NR_CONTA_CORRENTE) AS PRODUCAO_ANO
-      FROM BASE_CC B
-      CROSS JOIN ANO_REF AR
-      GROUP BY
-        B.CPF,
-        AR.ANO
-    ),
-    PROD_MES AS (
-      SELECT
-        B.CPF,
-        AR.ANO,
-        EXTRACT(MONTH FROM B.DT_MOV) AS MES,
-        COUNT(DISTINCT B.NR_CONTA_CORRENTE) AS PRODUCAO_MES
-      FROM BASE_CC B
-      CROSS JOIN ANO_REF AR
-      GROUP BY
-        B.CPF,
-        AR.ANO,
-        EXTRACT(MONTH FROM B.DT_MOV)
-    ),
-    PROD_SEMANA AS (
-      SELECT
-        B.CPF,
-        AR.ANO,
-        COUNT(DISTINCT B.NR_CONTA_CORRENTE) AS PRODUCAO_SEMANAL
-      FROM BASE_CC B
-      CROSS JOIN PARAMS PR
-      CROSS JOIN ANO_REF AR
-      WHERE B.DT_MOV BETWEEN TRUNC(PR.DT_INI) AND TRUNC(PR.DT_FIM)
-      GROUP BY
-        B.CPF,
-        AR.ANO
-    ),
-    RESPONSAVEL_CPF AS (
-      SELECT
-        C.CPF,
-        C.NOME_RESP
-      FROM CC_BASE_DEDUP C
-      CROSS JOIN PERIODO_REF PR
-      WHERE C.DT_ABERTURA_CONTA >= PR.DT_REF_INI_ANO
-        AND C.DT_ABERTURA_CONTA < PR.DT_REF_FIM + 1
-      GROUP BY
-        C.CPF,
-        C.NOME_RESP
-    ),
-    RESPONSAVEL_EXATO AS (
-      SELECT
-        MA.NOME,
-        MA.ANO,
-        MAX(RC.CPF) AS CPF
-      FROM META_ANO MA
-      LEFT JOIN RESPONSAVEL_CPF RC
-        ON RC.NOME_RESP = MA.NOME
-      GROUP BY
-        MA.NOME,
-        MA.ANO
-    ),
-    RESPONSAVEL_FUZZY AS (
-      SELECT
-        MA.NOME,
-        MA.ANO,
-        MAX(RC.CPF) AS CPF
-      FROM META_ANO MA
-      LEFT JOIN RESPONSAVEL_EXATO RE
-        ON RE.NOME = MA.NOME
-       AND RE.ANO = MA.ANO
-      JOIN RESPONSAVEL_CPF RC
-        ON RC.NOME_RESP LIKE '%' || MA.NOME || '%'
-        OR MA.NOME LIKE '%' || RC.NOME_RESP || '%'
-      WHERE RE.CPF IS NULL
-      GROUP BY
-        MA.NOME,
-        MA.ANO
-    ),
-    FUNCIONARIOS AS (
-      SELECT
-        NVL(RE.CPF, RF.CPF) AS CPF,
-        MA.NOME,
-        MA.ANO
-      FROM META_ANO MA
-      LEFT JOIN RESPONSAVEL_EXATO RE
-        ON RE.NOME = MA.NOME
-       AND RE.ANO = MA.ANO
-      LEFT JOIN RESPONSAVEL_FUZZY RF
-        ON RF.NOME = MA.NOME
-       AND RF.ANO = MA.ANO
-    )
+
+          CASE
+            WHEN REGEXP_LIKE(
+              TRIM(C.DT_MOVIMENTO),
+              '^\\d{2}/\\d{2}/\\d{4}$'
+            )
+              THEN TO_DATE(
+                TRIM(C.DT_MOVIMENTO),
+                'DD/MM/YYYY'
+              )
+
+            WHEN REGEXP_LIKE(
+              TRIM(C.DT_MOVIMENTO),
+              '^\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2}$'
+            )
+              THEN TO_DATE(
+                TRIM(C.DT_MOVIMENTO),
+                'DD/MM/YYYY HH24:MI:SS'
+              )
+
+            WHEN REGEXP_LIKE(
+              TRIM(C.DT_MOVIMENTO),
+              '^\\d{4}-\\d{2}-\\d{2}$'
+            )
+              THEN TO_DATE(
+                TRIM(C.DT_MOVIMENTO),
+                'YYYY-MM-DD'
+              )
+
+            WHEN REGEXP_LIKE(
+              TRIM(C.DT_MOVIMENTO),
+              '^\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}$'
+            )
+              THEN TO_DATE(
+                TRIM(C.DT_MOVIMENTO),
+                'YYYY-MM-DD HH24:MI:SS'
+              )
+          END AS DT_MOVIMENTO_DT
+
+        FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO_NORMALIZADO C
+
+        WHERE C.DT_MOVIMENTO IS NOT NULL
+
+          AND (
+            REGEXP_LIKE(
+              TRIM(C.DT_MOVIMENTO),
+              '^\\d{2}/\\d{2}/\\d{4}$'
+            )
+            OR REGEXP_LIKE(
+              TRIM(C.DT_MOVIMENTO),
+              '^\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2}$'
+            )
+            OR REGEXP_LIKE(
+              TRIM(C.DT_MOVIMENTO),
+              '^\\d{4}-\\d{2}-\\d{2}$'
+            )
+            OR REGEXP_LIKE(
+              TRIM(C.DT_MOVIMENTO),
+              '^\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}$'
+            )
+          )
+
+          AND C.DT_ABERTURA_CONTA IS NOT NULL
+          AND C.NM_MODALIDADE_CONTA = 'CONTA CORRENTE'
+
+          AND C.TP_CONTA_CORRENTE IN (
+            'PESSOAS FÍSICAS',
+            'PESSOAS JURÍDICAS'
+          )
+
+          AND C.NM_SITUACAO_CONTA_CORRENTE IN (
+            'ATIVA',
+            'ATIVA BLOQUEADA',
+            'ATIVA BLOQUEADA JUDICIALMENTE'
+          )
+
+          AND C.NR_CPF_RESPONSAVEL_CADASTRO IS NOT NULL
+          AND C.NM_USUARIO_RESPONSAVEL_CADASTRO IS NOT NULL
+
+          AND TRUNC(
+            CASE
+              WHEN REGEXP_LIKE(
+                TRIM(C.DT_MOVIMENTO),
+                '^\\d{2}/\\d{2}/\\d{4}$'
+              )
+                THEN TO_DATE(
+                  TRIM(C.DT_MOVIMENTO),
+                  'DD/MM/YYYY'
+                )
+
+              WHEN REGEXP_LIKE(
+                TRIM(C.DT_MOVIMENTO),
+                '^\\d{2}/\\d{2}/\\d{4}\\s+\\d{2}:\\d{2}:\\d{2}$'
+              )
+                THEN TO_DATE(
+                  TRIM(C.DT_MOVIMENTO),
+                  'DD/MM/YYYY HH24:MI:SS'
+                )
+
+              WHEN REGEXP_LIKE(
+                TRIM(C.DT_MOVIMENTO),
+                '^\\d{4}-\\d{2}-\\d{2}$'
+              )
+                THEN TO_DATE(
+                  TRIM(C.DT_MOVIMENTO),
+                  'YYYY-MM-DD'
+                )
+
+              WHEN REGEXP_LIKE(
+                TRIM(C.DT_MOVIMENTO),
+                '^\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}$'
+              )
+                THEN TO_DATE(
+                  TRIM(C.DT_MOVIMENTO),
+                  'YYYY-MM-DD HH24:MI:SS'
+                )
+            END,
+            'MM'
+          ) = TRUNC(C.DT_ABERTURA_CONTA, 'MM')
+      ),
+
+      CC_BASE_DEDUP AS (
+        SELECT
+          X.DT_ABERTURA_CONTA,
+          X.CPF,
+          X.NOME_RESP,
+          X.NR_CONTA_CORRENTE
+        FROM (
+          SELECT
+            C.DT_ABERTURA_CONTA,
+            C.CPF,
+            C.NOME_RESP,
+            C.NR_CONTA_CORRENTE,
+
+            ROW_NUMBER() OVER (
+              PARTITION BY
+                C.NR_CONTA_CORRENTE,
+                C.DT_ABERTURA_CONTA
+              ORDER BY
+                C.DT_MOVIMENTO_DT ASC,
+                NVL(C.CPF, '99999999999999'),
+                NVL(C.NOME_RESP, 'ZZZZZZ')
+            ) AS RN
+
+          FROM CC_BASE_CANONICA C
+        ) X
+        WHERE X.RN = 1
+      ),
+
+      BASE_CC AS (
+        SELECT
+          C.DT_ABERTURA_CONTA AS DT_MOV,
+          C.CPF,
+          C.NR_CONTA_CORRENTE
+        FROM CC_BASE_DEDUP C
+        CROSS JOIN PERIODO_REF PR
+        WHERE C.DT_ABERTURA_CONTA >= PR.DT_REF_INI_ANO
+          AND C.DT_ABERTURA_CONTA < PR.DT_REF_FIM + 1
+      ),
+
+      PROD_ANO AS (
+        SELECT
+          B.CPF,
+          AR.ANO,
+          COUNT(DISTINCT B.NR_CONTA_CORRENTE) AS PRODUCAO_ANO
+        FROM BASE_CC B
+        CROSS JOIN ANO_REF AR
+        GROUP BY
+          B.CPF,
+          AR.ANO
+      ),
+
+      PROD_MES AS (
+        SELECT
+          B.CPF,
+          AR.ANO,
+          EXTRACT(MONTH FROM B.DT_MOV) AS MES,
+          COUNT(DISTINCT B.NR_CONTA_CORRENTE) AS PRODUCAO_MES
+        FROM BASE_CC B
+        CROSS JOIN ANO_REF AR
+        GROUP BY
+          B.CPF,
+          AR.ANO,
+          EXTRACT(MONTH FROM B.DT_MOV)
+      ),
+
+      PROD_SEMANA AS (
+        SELECT
+          B.CPF,
+          AR.ANO,
+          COUNT(DISTINCT B.NR_CONTA_CORRENTE) AS PRODUCAO_SEMANAL
+        FROM BASE_CC B
+        CROSS JOIN PARAMS PR
+        CROSS JOIN ANO_REF AR
+        WHERE B.DT_MOV BETWEEN
+              TRUNC(PR.DT_INI)
+              AND TRUNC(PR.DT_FIM)
+        GROUP BY
+          B.CPF,
+          AR.ANO
+      ),
+
+      RESPONSAVEL_CPF AS (
+        SELECT
+          C.CPF,
+          C.NOME_RESP
+        FROM CC_BASE_DEDUP C
+        CROSS JOIN PERIODO_REF PR
+        WHERE C.DT_ABERTURA_CONTA >= PR.DT_REF_INI_ANO
+          AND C.DT_ABERTURA_CONTA < PR.DT_REF_FIM + 1
+        GROUP BY
+          C.CPF,
+          C.NOME_RESP
+      ),
+
+      RESPONSAVEL_EXATO AS (
+        SELECT
+          MA.NOME,
+          MA.ANO,
+          MAX(RC.CPF) AS CPF
+        FROM META_ANO MA
+        LEFT JOIN RESPONSAVEL_CPF RC
+          ON RC.NOME_RESP = MA.NOME
+        GROUP BY
+          MA.NOME,
+          MA.ANO
+      ),
+
+      RESPONSAVEL_FUZZY AS (
+        SELECT
+          MA.NOME,
+          MA.ANO,
+          MAX(RC.CPF) AS CPF
+        FROM META_ANO MA
+
+        LEFT JOIN RESPONSAVEL_EXATO RE
+          ON RE.NOME = MA.NOME
+        AND RE.ANO = MA.ANO
+
+        JOIN RESPONSAVEL_CPF RC
+          ON RC.NOME_RESP LIKE '%' || MA.NOME || '%'
+          OR MA.NOME LIKE '%' || RC.NOME_RESP || '%'
+
+        WHERE RE.CPF IS NULL
+
+        GROUP BY
+          MA.NOME,
+          MA.ANO
+      ),
+
+      FUNCIONARIOS AS (
+        SELECT
+          NVL(RE.CPF, RF.CPF) AS CPF,
+          MA.NOME,
+          MA.ANO
+        FROM META_ANO MA
+
+        LEFT JOIN RESPONSAVEL_EXATO RE
+          ON RE.NOME = MA.NOME
+        AND RE.ANO = MA.ANO
+
+        LEFT JOIN RESPONSAVEL_FUZZY RF
+          ON RF.NOME = MA.NOME
+        AND RF.ANO = MA.ANO
+      )
+
     SELECT
       F.CPF AS NR_CPF_RESPONSAVEL_CADASTRO,
       F.NOME AS NM_FUNCIONARIO,
       F.ANO AS ANO_REFERENCIA,
-      NVL(M1.PRODUCAO_MES,0) AS PRODUCAO_JANEIRO,
-      NVL(M2.PRODUCAO_MES,0) AS PRODUCAO_FEVEREIRO,
-      NVL(M3.PRODUCAO_MES,0) AS PRODUCAO_MARCO,
-      NVL(SW.PRODUCAO_SEMANAL,0) AS PRODUCAO_SEMANAL,
-      ROUND(NVL(MA.META_ANO,0)/52,2) AS META_SEMANAL_52,
+
+      NVL(M1.PRODUCAO_MES, 0) AS PRODUCAO_JANEIRO,
+      NVL(M2.PRODUCAO_MES, 0) AS PRODUCAO_FEVEREIRO,
+      NVL(M3.PRODUCAO_MES, 0) AS PRODUCAO_MARCO,
+
+      NVL(SW.PRODUCAO_SEMANAL, 0) AS PRODUCAO_SEMANAL,
+
+      ROUND(
+        NVL(MM.META_MENSAL, 0) /
+        CEIL(
+          (
+            LAST_DAY(TRUNC(NVL(PR.DT_FIM, SYSDATE), 'MM'))
+            - TRUNC(NVL(PR.DT_FIM, SYSDATE), 'MM')
+            + 1
+          ) / 7
+        ),
+        2
+      ) AS META_SEMANAL_52,
+
       CASE
-        WHEN ROUND(NVL(MA.META_ANO,0)/52,2) > 0 THEN
+        WHEN ROUND(
+          NVL(MM.META_MENSAL, 0) /
+          CEIL(
+            (
+              LAST_DAY(TRUNC(NVL(PR.DT_FIM, SYSDATE), 'MM'))
+              - TRUNC(NVL(PR.DT_FIM, SYSDATE), 'MM')
+              + 1
+            ) / 7
+          ),
+          2
+        ) > 0
+        THEN
           ROUND(
-            (NVL(SW.PRODUCAO_SEMANAL,0) / ROUND(NVL(MA.META_ANO,0)/52,2)) * 100
-          ,2)
+            (
+              NVL(SW.PRODUCAO_SEMANAL, 0) /
+              ROUND(
+                NVL(MM.META_MENSAL, 0) /
+                CEIL(
+                  (
+                    LAST_DAY(TRUNC(NVL(PR.DT_FIM, SYSDATE), 'MM'))
+                    - TRUNC(NVL(PR.DT_FIM, SYSDATE), 'MM')
+                    + 1
+                  ) / 7
+                ),
+                2
+              )
+            ) * 100,
+            2
+          )
         ELSE 0
       END AS PORCENTAGEM_SEMANA,
-      NVL(SW.PRODUCAO_SEMANAL,0) - ROUND(NVL(MA.META_ANO,0)/52,2) AS GAP_SEMANAL,
-      NVL(MV.PRODUCAO_MES,0) AS PRODUCAO_MENSAL,
-      (NVL(MA.META_ANO,0)/12) AS META_MENSAL,
+
+      NVL(SW.PRODUCAO_SEMANAL, 0)
+      -
+      ROUND(
+        NVL(MM.META_MENSAL, 0) /
+        CEIL(
+          (
+            LAST_DAY(TRUNC(NVL(PR.DT_FIM, SYSDATE), 'MM'))
+            - TRUNC(NVL(PR.DT_FIM, SYSDATE), 'MM')
+            + 1
+          ) / 7
+        ),
+        2
+      ) AS GAP_SEMANAL,
+
+      NVL(MV.PRODUCAO_MES, 0) AS PRODUCAO_MENSAL,
+
+      NVL(MM.META_MENSAL, 0) AS META_MENSAL,
+
       CASE
-        WHEN (NVL(MA.META_ANO,0)/12) > 0 THEN
-          (NVL(MV.PRODUCAO_MES,0) / (NVL(MA.META_ANO,0)/12)) * 100
+        WHEN NVL(MM.META_MENSAL, 0) > 0
+        THEN
+          (
+            NVL(MV.PRODUCAO_MES, 0) /
+            MM.META_MENSAL
+          ) * 100
         ELSE 0
       END AS PERC_META_REALIZADA_MENSAL,
-      NVL(MV.PRODUCAO_MES,0) - (NVL(MA.META_ANO,0)/12) AS FALTA_PARA_META_MENSAL,
-      NVL(PA.PRODUCAO_ANO,0) AS PRODUCAO_ANO,
-      ROUND(NVL(MA.META_ANO,0)) AS META_ANO,
+
+      NVL(MV.PRODUCAO_MES, 0)
+      - NVL(MM.META_MENSAL, 0)
+        AS FALTA_PARA_META_MENSAL,
+
+      NVL(PA.PRODUCAO_ANO, 0) AS PRODUCAO_ANO,
+
+      ROUND(NVL(MA.META_ANO, 0)) AS META_ANO,
+
       CASE
-        WHEN NVL(MA.META_ANO,0) > 0 THEN
-          ROUND((NVL(PA.PRODUCAO_ANO,0) / MA.META_ANO) * 100, 2)
+        WHEN NVL(MA.META_ANO, 0) > 0
+        THEN
+          ROUND(
+            (
+              NVL(PA.PRODUCAO_ANO, 0) /
+              MA.META_ANO
+            ) * 100,
+            2
+          )
         ELSE 0
       END AS PERC_META_REALIZADA,
-      NVL(PA.PRODUCAO_ANO,0) - NVL(MA.META_ANO,0) AS FALTA_PARA_META
+
+      NVL(PA.PRODUCAO_ANO, 0)
+      - NVL(MA.META_ANO, 0)
+        AS FALTA_PARA_META
+
     FROM FUNCIONARIOS F
+
     CROSS JOIN PARAMS PR
+
     LEFT JOIN META_ANO MA
       ON MA.NOME = F.NOME
-     AND MA.ANO = F.ANO
+    AND MA.ANO = F.ANO
+
+    LEFT JOIN META_MES MM
+      ON MM.NOME = F.NOME
+    AND MM.ANO = F.ANO
+    AND MM.MES_META =
+        TRUNC(NVL(PR.DT_FIM, SYSDATE), 'MM')
+
     LEFT JOIN PROD_ANO PA
       ON PA.CPF = F.CPF
-     AND PA.ANO = F.ANO
+    AND PA.ANO = F.ANO
+
     LEFT JOIN PROD_MES M1
       ON M1.CPF = F.CPF
-     AND M1.ANO = F.ANO
-     AND M1.MES = 1
+    AND M1.ANO = F.ANO
+    AND M1.MES = 1
+
     LEFT JOIN PROD_MES M2
       ON M2.CPF = F.CPF
-     AND M2.ANO = F.ANO
-     AND M2.MES = 2
+    AND M2.ANO = F.ANO
+    AND M2.MES = 2
+
     LEFT JOIN PROD_MES M3
       ON M3.CPF = F.CPF
-     AND M3.ANO = F.ANO
-     AND M3.MES = 3
+    AND M3.ANO = F.ANO
+    AND M3.MES = 3
+
     LEFT JOIN PROD_MES MV
       ON MV.CPF = F.CPF
-     AND MV.ANO = F.ANO
-     AND MV.MES = EXTRACT(MONTH FROM PR.DT_FIM)
+    AND MV.ANO = F.ANO
+    AND MV.MES = EXTRACT(MONTH FROM PR.DT_FIM)
+
     LEFT JOIN PROD_SEMANA SW
       ON SW.CPF = F.CPF
-     AND SW.ANO = F.ANO
-    ORDER BY F.NOME, F.ANO
+    AND SW.ANO = F.ANO
+
+    ORDER BY
+      F.NOME,
+      F.ANO
   `;
 }
 
@@ -1443,7 +2153,9 @@ function sqlSeguroRural() {
           UPPER(TRIM(SR.NM_ANGARIADOR)) AS NM_FUNCIONARIO
         FROM DBACRESSEM.SEGUROS_RURAL_PRODUCAO_DIARIO SR
         WHERE SR.DT_EMISSAO_APOLICE IS NOT NULL
+
         UNION ALL
+
         SELECT
           4317 AS NR_PA,
           TRUNC(SR.DT_EMISSAO_APOLICE) AS DT_MOV,
@@ -1460,10 +2172,16 @@ function sqlSeguroRural() {
         FROM SRC_BASE_ALL B
         CROSS JOIN PARAMS PR
         WHERE
-          (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
+          (
+            PR.DT_INI_SEMANA IS NULL
+            AND PR.DT_FIM_SEMANA IS NULL
+          )
           OR
-          (B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                       AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31'))
+          (
+            B.DT_MOV BETWEEN
+              NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+              AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+          )
       ),
       FUNCIONARIO_PA AS (
         SELECT
@@ -1521,68 +2239,88 @@ function sqlSeguroRural() {
         CROSS JOIN PARAMS PR
         WHERE
           (
-            (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
-            AND B.DT_MOV BETWEEN TRUNC(SYSDATE,'IW') AND (TRUNC(SYSDATE,'IW') + 6)
+            PR.DT_INI_SEMANA IS NULL
+            AND PR.DT_FIM_SEMANA IS NULL
+            AND B.DT_MOV BETWEEN
+              TRUNC(SYSDATE, 'IW')
+              AND TRUNC(SYSDATE, 'IW') + 6
           )
           OR
           (
-            (PR.DT_INI_SEMANA IS NOT NULL OR PR.DT_FIM_SEMANA IS NOT NULL)
-            AND B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                            AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+            (
+              PR.DT_INI_SEMANA IS NOT NULL
+              OR PR.DT_FIM_SEMANA IS NOT NULL
+            )
+            AND B.DT_MOV BETWEEN
+              NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+              AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
           )
         GROUP BY
           B.NR_PA,
           B.NM_FUNCIONARIO,
           EXTRACT(YEAR FROM B.DT_MOV)
       ),
+      META_BASE AS (
+        SELECT
+          X.NM_FUNCIONARIO,
+          X.ANO,
+          X.MES,
+          X.QTD_META
+        FROM (
+          SELECT
+            UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
+            EXTRACT(YEAR FROM MF.DT_META) AS ANO,
+            EXTRACT(MONTH FROM MF.DT_META) AS MES,
+            NVL(MF.QTD_META, 0) AS QTD_META,
+            ROW_NUMBER() OVER (
+              PARTITION BY
+                UPPER(TRIM(MF.NM_FUNCIONARIO)),
+                TRUNC(MF.DT_META, 'MM')
+              ORDER BY MF.ID_META_FUNCIONARIOS DESC
+            ) AS RN
+          FROM DBACRESSEM.META_FUNCIONARIOS MF
+          WHERE MF.CD_PRODUTO = 24
+            AND MF.NM_FUNCIONARIO IS NOT NULL
+            AND MF.DT_META IS NOT NULL
+        ) X
+        WHERE X.RN = 1
+      ),
       META_ANO AS (
         SELECT
-          UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-          SUM(NVL(MF.QTD_META, 0)) AS META_ANO
-        FROM DBACRESSEM.META_FUNCIONARIOS MF
-        WHERE MF.CD_PRODUTO = 24
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          SUM(MB.QTD_META) AS META_ANO
+        FROM META_BASE MB
         GROUP BY
-          UPPER(TRIM(MF.NM_FUNCIONARIO)),
-          EXTRACT(YEAR FROM MF.DT_META)
+          MB.NM_FUNCIONARIO,
+          MB.ANO
       ),
       META_MES AS (
         SELECT
-          UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-          EXTRACT(MONTH FROM MF.DT_META) AS MES,
-          SUM(NVL(MF.QTD_META, 0)) AS META_MES
-        FROM DBACRESSEM.META_FUNCIONARIOS MF
-        WHERE MF.CD_PRODUTO = 24
-        GROUP BY
-          UPPER(TRIM(MF.NM_FUNCIONARIO)),
-          EXTRACT(YEAR FROM MF.DT_META),
-          EXTRACT(MONTH FROM MF.DT_META)
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          MB.MES,
+          MB.QTD_META AS META_MES
+        FROM META_BASE MB
       ),
       SEMANAS_MES AS (
         SELECT
-          ANO,
-          MES,
-          COUNT(DISTINCT SEMANA) AS QTD_SEMANAS_MES
+          EXTRACT(YEAR FROM D.DT_DIA) AS ANO,
+          EXTRACT(MONTH FROM D.DT_DIA) AS MES,
+          COUNT(
+            DISTINCT TO_CHAR(D.DT_DIA, 'IYYY-IW')
+          ) AS QTD_SEMANAS_MES
         FROM (
           SELECT
-            EXTRACT(YEAR FROM DT_DIA) AS ANO,
-            EXTRACT(MONTH FROM DT_DIA) AS MES,
-            TO_NUMBER(TO_CHAR(DT_DIA, 'IW')) AS SEMANA
-          FROM (
-            SELECT
-              ADD_MONTHS(DATE '2020-01-01', NIVEL_MES - 1) + (NIVEL_DIA - 1) AS DT_DIA
-            FROM (
-              SELECT LEVEL AS NIVEL_MES FROM DUAL CONNECT BY LEVEL <= 24
-            ),
-            (
-              SELECT LEVEL AS NIVEL_DIA FROM DUAL CONNECT BY LEVEL <= 31
-            )
-            WHERE ADD_MONTHS(DATE '2020-01-01', NIVEL_MES - 1) + (NIVEL_DIA - 1)
-                  <= LAST_DAY(ADD_MONTHS(DATE '2020-01-01', NIVEL_MES - 1))
-          )
-        )
-        GROUP BY ANO, MES
+            TRUNC(RF.DT_REF, 'MM') + LEVEL - 1 AS DT_DIA
+          FROM PERIODO_REF RF
+          CONNECT BY
+            TRUNC(RF.DT_REF, 'MM') + LEVEL - 1
+            <= LAST_DAY(RF.DT_REF)
+        ) D
+        GROUP BY
+          EXTRACT(YEAR FROM D.DT_DIA),
+          EXTRACT(MONTH FROM D.DT_DIA)
       ),
       BASE_FUNCIONARIOS AS (
         SELECT
@@ -1596,77 +2334,138 @@ function sqlSeguroRural() {
     SELECT
       BF.NM_FUNCIONARIO,
       BF.ANO,
+
       NVL(SW.PRODUCAO_SEMANAL, 0) AS PRODUCAO_SEMANAL,
+
       NVL(
         ROUND(
-          NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
-        , 2)
-      , 0) AS META_SEMANAL,
+          NVL(MM.META_MES, 0)
+          / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0),
+          2
+        ),
+        0
+      ) AS META_SEMANAL,
+
       NVL(MM.META_MES, 0) AS META_MENSAL,
-      ROUND(NVL(MA.META_ANO, 0) / 52, 2) AS META_SEMANAL_52,
+
+      ROUND(
+        NVL(MA.META_ANO, 0) / 52,
+        2
+      ) AS META_SEMANAL_52,
+
       CASE
         WHEN NVL(
           ROUND(
-            NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
-          , 2)
-        , 0) > 0
-          THEN ROUND(
-            (NVL(SW.PRODUCAO_SEMANAL,0) / NVL(
+            NVL(MM.META_MES, 0)
+            / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0),
+            2
+          ),
+          0
+        ) > 0
+        THEN ROUND(
+          (
+            NVL(SW.PRODUCAO_SEMANAL, 0)
+            /
+            NVL(
               ROUND(
-                NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
-              , 2)
-            , 0)) * 100
-          , 2)
+                NVL(MM.META_MES, 0)
+                / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0),
+                2
+              ),
+              0
+            )
+          ) * 100,
+          2
+        )
         ELSE 0
       END AS PORCENTAGEM_SEMANA,
-      NVL(SW.PRODUCAO_SEMANAL,0)
-      - NVL(
-          ROUND(
-            NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
-          , 2)
-        , 0) AS GAP_SEMANAL,
+
+      NVL(SW.PRODUCAO_SEMANAL, 0)
+      -
+      NVL(
+        ROUND(
+          NVL(MM.META_MES, 0)
+          / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0),
+          2
+        ),
+        0
+      ) AS GAP_SEMANAL,
+
       NVL(MJ.PRODUCAO_MES, 0) AS PRODUCAO_MENSAL,
+
       CASE
         WHEN NVL(MM.META_MES, 0) > 0
-          THEN ROUND((NVL(MJ.PRODUCAO_MES, 0) / MM.META_MES) * 100, 2)
+        THEN ROUND(
+          (
+            NVL(MJ.PRODUCAO_MES, 0)
+            / MM.META_MES
+          ) * 100,
+          2
+        )
         ELSE 0
       END AS PERC_META_REALIZADA_MENSAL,
-      NVL(MJ.PRODUCAO_MES, 0) - NVL(MM.META_MES, 0) AS FALTA_PARA_META_MENSAL,
+
+      NVL(MJ.PRODUCAO_MES, 0)
+      - NVL(MM.META_MES, 0)
+        AS FALTA_PARA_META_MENSAL,
+
       NVL(AY.PRODUCAO_ANO, 0) AS PRODUCAO_ANO,
+
       NVL(MA.META_ANO, 0) AS META_2026,
+
       CASE
         WHEN NVL(MA.META_ANO, 0) > 0
-          THEN ROUND((NVL(AY.PRODUCAO_ANO,0) / MA.META_ANO) * 100, 2)
+        THEN ROUND(
+          (
+            NVL(AY.PRODUCAO_ANO, 0)
+            / MA.META_ANO
+          ) * 100,
+          2
+        )
         ELSE 0
       END AS PERC_META_REALIZADA,
-      NVL(AY.PRODUCAO_ANO,0) - NVL(MA.META_ANO,0) AS FALTA_PARA_META
+
+      NVL(AY.PRODUCAO_ANO, 0)
+      - NVL(MA.META_ANO, 0)
+        AS FALTA_PARA_META
+
     FROM BASE_FUNCIONARIOS BF
+
     CROSS JOIN PARAMS PR
     CROSS JOIN PERIODO_REF RF
+
     LEFT JOIN META_ANO MA
       ON MA.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-     AND MA.ANO = BF.ANO
+    AND MA.ANO = BF.ANO
+
     LEFT JOIN META_MES MM
       ON MM.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-     AND MM.ANO = BF.ANO
-     AND MM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND MM.ANO = BF.ANO
+    AND MM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+
     LEFT JOIN SEMANAS_MES SM
       ON SM.ANO = BF.ANO
-     AND SM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND SM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+
     LEFT JOIN SRC_ANO AY
       ON AY.NR_PA = BF.NR_PA
-     AND AY.ANO = BF.ANO
-     AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND AY.ANO = BF.ANO
+    AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
     LEFT JOIN SRC_MES MJ
       ON MJ.NR_PA = BF.NR_PA
-     AND MJ.ANO = BF.ANO
-     AND MJ.MES = EXTRACT(MONTH FROM RF.DT_REF)
-     AND MJ.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND MJ.ANO = BF.ANO
+    AND MJ.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND MJ.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
     LEFT JOIN SRC_SEMANAL SW
       ON SW.NR_PA = BF.NR_PA
-     AND SW.ANO = BF.ANO
-     AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-    ORDER BY BF.NM_FUNCIONARIO, BF.ANO
+    AND SW.ANO = BF.ANO
+    AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
+    ORDER BY
+      BF.NM_FUNCIONARIO,
+      BF.ANO
   `;
 }
 
@@ -1707,7 +2506,9 @@ function sqlSaldoPrevidenciaMi() {
           F.NM_FUNCIONARIO
         FROM PMDN_FONTE F
         WHERE F.NR_PA <> 4317
+
         UNION ALL
+
         SELECT
           4317 AS NR_PA,
           F.DT_MOV,
@@ -1724,11 +2525,15 @@ function sqlSaldoPrevidenciaMi() {
         FROM PMDN_BASE_ALL B
         CROSS JOIN PARAMS PR
         WHERE
-          (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
+          (
+            PR.DT_INI_SEMANA IS NULL
+            AND PR.DT_FIM_SEMANA IS NULL
+          )
           OR
           (
-            B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                         AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+            B.DT_MOV BETWEEN
+              NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+              AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
           )
       ),
       FUNCIONARIO_PA AS (
@@ -1754,16 +2559,21 @@ function sqlSaldoPrevidenciaMi() {
         SELECT
           B.NR_PA,
           B.NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE)) AS ANO,
+          EXTRACT(
+            YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE)
+          ) AS ANO,
           COUNT(1) AS PRODUCAO_ANO
         FROM PMDN_BASE_ALL B
         CROSS JOIN PARAMS PR
-        WHERE B.DT_MOV BETWEEN TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-                           AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
+        WHERE B.DT_MOV BETWEEN
+              TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
+              AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
         GROUP BY
           B.NR_PA,
           B.NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE))
+          EXTRACT(
+            YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE)
+          )
       ),
       PMDN_MES AS (
         SELECT
@@ -1783,38 +2593,61 @@ function sqlSaldoPrevidenciaMi() {
         SELECT
           B.NR_PA,
           B.NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE)) AS ANO,
+          EXTRACT(
+            YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE)
+          ) AS ANO,
           COUNT(1) AS PRODUCAO_SEMANAL
         FROM PMDN_BASE B
         CROSS JOIN PARAMS PR
         GROUP BY
           B.NR_PA,
           B.NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE))
+          EXTRACT(
+            YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE)
+          )
+      ),
+      META_BASE AS (
+        SELECT
+          X.NM_FUNCIONARIO,
+          X.ANO,
+          X.MES,
+          X.QTD_META
+        FROM (
+          SELECT
+            UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
+            EXTRACT(YEAR FROM MF.DT_META) AS ANO,
+            EXTRACT(MONTH FROM MF.DT_META) AS MES,
+            NVL(MF.QTD_META, 0) AS QTD_META,
+            ROW_NUMBER() OVER (
+              PARTITION BY
+                UPPER(TRIM(MF.NM_FUNCIONARIO)),
+                TRUNC(MF.DT_META, 'MM')
+              ORDER BY MF.ID_META_FUNCIONARIOS DESC
+            ) AS RN
+          FROM DBACRESSEM.META_FUNCIONARIOS MF
+          WHERE MF.CD_PRODUTO = 19
+            AND MF.NM_FUNCIONARIO IS NOT NULL
+            AND MF.DT_META IS NOT NULL
+        ) X
+        WHERE X.RN = 1
       ),
       META_ANO AS (
         SELECT
-          UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-          SUM(NVL(MF.QTD_META, 0)) AS META_ANO
-        FROM DBACRESSEM.META_FUNCIONARIOS MF
-        WHERE MF.CD_PRODUTO = 19
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          SUM(MB.QTD_META) AS META_ANO
+        FROM META_BASE MB
         GROUP BY
-          UPPER(TRIM(MF.NM_FUNCIONARIO)),
-          EXTRACT(YEAR FROM MF.DT_META)
+          MB.NM_FUNCIONARIO,
+          MB.ANO
       ),
       META_MES AS (
         SELECT
-          UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-          EXTRACT(MONTH FROM MF.DT_META) AS MES,
-          SUM(NVL(MF.QTD_META, 0)) AS META_MES
-        FROM DBACRESSEM.META_FUNCIONARIOS MF
-        WHERE MF.CD_PRODUTO = 19
-        GROUP BY
-          UPPER(TRIM(MF.NM_FUNCIONARIO)),
-          EXTRACT(YEAR FROM MF.DT_META),
-          EXTRACT(MONTH FROM MF.DT_META)
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          MB.MES,
+          MB.QTD_META AS META_MES
+        FROM META_BASE MB
       ),
       SEMANAS_MES AS (
         SELECT
@@ -1828,18 +2661,28 @@ function sqlSaldoPrevidenciaMi() {
             TO_NUMBER(TO_CHAR(DT_DIA, 'IW')) AS SEMANA
           FROM (
             SELECT
-              ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1) + (NIVEL_DIA - 1) AS DT_DIA
+              ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1)
+              + (NIVEL_DIA - 1) AS DT_DIA
             FROM (
-              SELECT LEVEL AS NIVEL_MES FROM DUAL CONNECT BY LEVEL <= 36
+              SELECT LEVEL AS NIVEL_MES
+              FROM DUAL
+              CONNECT BY LEVEL <= 36
             ),
             (
-              SELECT LEVEL AS NIVEL_DIA FROM DUAL CONNECT BY LEVEL <= 31
+              SELECT LEVEL AS NIVEL_DIA
+              FROM DUAL
+              CONNECT BY LEVEL <= 31
             )
-            WHERE ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1) + (NIVEL_DIA - 1)
-                  <= LAST_DAY(ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1))
+            WHERE ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1)
+                  + (NIVEL_DIA - 1)
+                  <= LAST_DAY(
+                      ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1)
+                    )
           )
         )
-        GROUP BY ANO, MES
+        GROUP BY
+          ANO,
+          MES
       ),
       BASE_FUNCIONARIOS AS (
         SELECT
@@ -1853,79 +2696,168 @@ function sqlSaldoPrevidenciaMi() {
     SELECT
       BF.NM_FUNCIONARIO,
       BF.ANO,
-      ROUND(NVL(SW.PRODUCAO_SEMANAL, 0), 0) AS PRODUCAO_SEMANAL,
+
+      ROUND(
+        NVL(SW.PRODUCAO_SEMANAL, 0),
+        0
+      ) AS PRODUCAO_SEMANAL,
+
       CASE
-        WHEN NVL(MM.META_MES, 0) = 0 THEN 0
-        ELSE CEIL(NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0))
+        WHEN NVL(MM.META_MES, 0) = 0
+          THEN 0
+        ELSE CEIL(
+          NVL(MM.META_MES, 0)
+          / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+        )
       END AS META_SEMANAL,
+
       CASE
         WHEN (
           CASE
-            WHEN NVL(MM.META_MES, 0) = 0 THEN 0
-            ELSE CEIL(NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0))
+            WHEN NVL(MM.META_MES, 0) = 0
+              THEN 0
+            ELSE CEIL(
+              NVL(MM.META_MES, 0)
+              / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+            )
           END
         ) > 0
           THEN ROUND(
-            NVL(SW.PRODUCAO_SEMANAL, 0) /
+            NVL(SW.PRODUCAO_SEMANAL, 0)
+            /
             (
               CASE
-                WHEN NVL(MM.META_MES, 0) = 0 THEN 0
-                ELSE CEIL(NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0))
+                WHEN NVL(MM.META_MES, 0) = 0
+                  THEN 0
+                ELSE CEIL(
+                  NVL(MM.META_MES, 0)
+                  / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+                )
               END
-            ) * 100
-          , 2)
+            ) * 100,
+            2
+          )
         ELSE 0
       END AS PORCENTAGEM_SEMANA,
-      ROUND(NVL(SW.PRODUCAO_SEMANAL, 0), 0)
-      - (
-          CASE
-            WHEN NVL(MM.META_MES, 0) = 0 THEN 0
-            ELSE CEIL(NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0))
-          END
-        ) AS GAP_SEMANAL,
-      ROUND(NVL(MJ.PRODUCAO_MES, 0), 0) AS PRODUCAO_MENSAL,
-      ROUND(NVL(MM.META_MES, 0), 0) AS META_MENSAL,
+
+      ROUND(
+        NVL(SW.PRODUCAO_SEMANAL, 0),
+        0
+      )
+      -
+      (
+        CASE
+          WHEN NVL(MM.META_MES, 0) = 0
+            THEN 0
+          ELSE CEIL(
+            NVL(MM.META_MES, 0)
+            / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+          )
+        END
+      ) AS GAP_SEMANAL,
+
+      ROUND(
+        NVL(MJ.PRODUCAO_MES, 0),
+        0
+      ) AS PRODUCAO_MENSAL,
+
+      ROUND(
+        NVL(MM.META_MES, 0),
+        0
+      ) AS META_MENSAL,
+
       CASE
         WHEN NVL(MM.META_MES, 0) > 0
-          THEN ROUND((NVL(MJ.PRODUCAO_MES, 0) / MM.META_MES) * 100, 2)
+          THEN ROUND(
+            (
+              NVL(MJ.PRODUCAO_MES, 0)
+              / MM.META_MES
+            ) * 100,
+            2
+          )
         ELSE 0
       END AS PERC_META_REALIZADA_MENSAL,
-      ROUND(NVL(MJ.PRODUCAO_MES, 0), 0) - ROUND(NVL(MM.META_MES, 0), 0) AS FALTA_PARA_META_MENSAL,
-      ROUND(NVL(AY.PRODUCAO_ANO, 0), 0) AS PRODUCAO_ANO,
-      ROUND(NVL(MA.META_ANO, 0), 0) AS META_2026,
+
+      ROUND(
+        NVL(MJ.PRODUCAO_MES, 0),
+        0
+      )
+      -
+      ROUND(
+        NVL(MM.META_MES, 0),
+        0
+      ) AS FALTA_PARA_META_MENSAL,
+
+      ROUND(
+        NVL(AY.PRODUCAO_ANO, 0),
+        0
+      ) AS PRODUCAO_ANO,
+
+      ROUND(
+        NVL(MA.META_ANO, 0),
+        0
+      ) AS META_2026,
+
       CASE
         WHEN NVL(MA.META_ANO, 0) > 0
-          THEN ROUND((NVL(AY.PRODUCAO_ANO, 0) / MA.META_ANO) * 100, 2)
+          THEN ROUND(
+            (
+              NVL(AY.PRODUCAO_ANO, 0)
+              / MA.META_ANO
+            ) * 100,
+            2
+          )
         ELSE 0
       END AS PERC_META_REALIZADA,
-      ROUND(NVL(AY.PRODUCAO_ANO, 0), 0) - ROUND(NVL(MA.META_ANO, 0), 0) AS FALTA_PARA_META
+
+      ROUND(
+        NVL(AY.PRODUCAO_ANO, 0),
+        0
+      )
+      -
+      ROUND(
+        NVL(MA.META_ANO, 0),
+        0
+      ) AS FALTA_PARA_META
+
     FROM BASE_FUNCIONARIOS BF
+
     CROSS JOIN PARAMS PR
     CROSS JOIN PERIODO_REF RF
+
     LEFT JOIN META_ANO MA
       ON MA.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-     AND MA.ANO = BF.ANO
+    AND MA.ANO = BF.ANO
+
     LEFT JOIN META_MES MM
       ON MM.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-     AND MM.ANO = BF.ANO
-     AND MM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND MM.ANO = BF.ANO
+    AND MM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+
     LEFT JOIN SEMANAS_MES SM
       ON SM.ANO = BF.ANO
-     AND SM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND SM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+
     LEFT JOIN PMDN_ANO AY
       ON AY.NR_PA = BF.NR_PA
-     AND AY.ANO = BF.ANO
-     AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND AY.ANO = BF.ANO
+    AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
     LEFT JOIN PMDN_MES MJ
       ON MJ.NR_PA = BF.NR_PA
-     AND MJ.ANO = BF.ANO
-     AND MJ.MES = EXTRACT(MONTH FROM RF.DT_REF)
-     AND MJ.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND MJ.ANO = BF.ANO
+    AND MJ.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND MJ.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
     LEFT JOIN PMDN_SEMANA SW
       ON SW.NR_PA = BF.NR_PA
-     AND SW.ANO = BF.ANO
-     AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-    ORDER BY BF.NM_FUNCIONARIO, BF.ANO
+    AND SW.ANO = BF.ANO
+    AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
+    ORDER BY
+      BF.NM_FUNCIONARIO,
+      BF.ANO
+
   `;
 }
 
@@ -1961,7 +2893,9 @@ function sqlSaldoPrevidenciaVgbl() {
             'A2R-RISCO PREVI DIGITAL'
           )
           AND PVPD.NR_APOLICE_CERTIFICADO_SEGURO IS NOT NULL
+
         UNION ALL
+
         SELECT
           4317 AS NR_PA,
           TRUNC(PVPD.DT_PROPOSTA) AS DT_MOV,
@@ -1978,7 +2912,7 @@ function sqlSaldoPrevidenciaVgbl() {
             'A2R-RISCO PREVI DIGITAL'
           )
           AND PVPD.NR_APOLICE_CERTIFICADO_SEGURO IS NOT NULL
-          AND REGEXP_LIKE(TRIM(PVPD.NR_COOPERATIVA), '^\\d+$')
+          AND REGEXP_LIKE(TRIM(PVPD.NR_COOPERATIVA), '^\d+$')
           AND TO_NUMBER(TRIM(PVPD.NR_COOPERATIVA)) = 4317
       ),
       PVPD_BASE AS (
@@ -1989,8 +2923,11 @@ function sqlSaldoPrevidenciaVgbl() {
         WHERE
           (PR.DT_INI_SEMANA IS NULL AND PR.DT_FIM_SEMANA IS NULL)
           OR
-          (B.DT_MOV BETWEEN NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
-                       AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31'))
+          (
+            B.DT_MOV BETWEEN
+              NVL(PR.DT_INI_SEMANA, DATE '1900-01-01')
+              AND NVL(PR.DT_FIM_SEMANA, DATE '2999-12-31')
+          )
       ),
       FUNCIONARIO_PA AS (
         SELECT
@@ -2020,8 +2957,9 @@ function sqlSaldoPrevidenciaVgbl() {
           COUNT(DISTINCT B.NR_APOLICE_CERTIFICADO_SEGURO) AS PRODUCAO_ANO
         FROM PVPD_BASE_ALL B
         CROSS JOIN PARAMS PR
-        WHERE B.DT_MOV BETWEEN TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
-                           AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
+        WHERE B.DT_MOV BETWEEN
+              TRUNC(NVL(PR.DT_FIM_SEMANA, SYSDATE), 'YYYY')
+              AND NVL(PR.DT_FIM_SEMANA, SYSDATE)
         GROUP BY
           B.NR_PA,
           B.NM_FUNCIONARIO,
@@ -2031,7 +2969,7 @@ function sqlSaldoPrevidenciaVgbl() {
         SELECT
           B.NR_PA,
           B.NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM B.DT_MOV)  AS ANO,
+          EXTRACT(YEAR FROM B.DT_MOV) AS ANO,
           EXTRACT(MONTH FROM B.DT_MOV) AS MES,
           COUNT(DISTINCT B.NR_APOLICE_CERTIFICADO_SEGURO) AS PRODUCAO_MES
         FROM PVPD_BASE_ALL B
@@ -2054,29 +2992,48 @@ function sqlSaldoPrevidenciaVgbl() {
           B.NM_FUNCIONARIO,
           EXTRACT(YEAR FROM NVL(PR.DT_FIM_SEMANA, SYSDATE))
       ),
+      META_BASE AS (
+        SELECT
+          X.NM_FUNCIONARIO,
+          X.ANO,
+          X.MES,
+          X.QTD_META
+        FROM (
+          SELECT
+            UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
+            EXTRACT(YEAR FROM MF.DT_META) AS ANO,
+            EXTRACT(MONTH FROM MF.DT_META) AS MES,
+            NVL(MF.QTD_META, 0) AS QTD_META,
+            ROW_NUMBER() OVER (
+              PARTITION BY
+                UPPER(TRIM(MF.NM_FUNCIONARIO)),
+                TRUNC(MF.DT_META, 'MM')
+              ORDER BY MF.ID_META_FUNCIONARIOS DESC
+            ) AS RN
+          FROM DBACRESSEM.META_FUNCIONARIOS MF
+          WHERE MF.CD_PRODUTO = 20
+            AND MF.NM_FUNCIONARIO IS NOT NULL
+            AND MF.DT_META IS NOT NULL
+        ) X
+        WHERE X.RN = 1
+      ),
       META_ANO AS (
         SELECT
-          UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-          SUM(NVL(MF.QTD_META, 0)) AS META_ANO
-        FROM DBACRESSEM.META_FUNCIONARIOS MF
-        WHERE MF.CD_PRODUTO = 20
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          SUM(MB.QTD_META) AS META_ANO
+        FROM META_BASE MB
         GROUP BY
-          UPPER(TRIM(MF.NM_FUNCIONARIO)),
-          EXTRACT(YEAR FROM MF.DT_META)
+          MB.NM_FUNCIONARIO,
+          MB.ANO
       ),
       META_MES AS (
         SELECT
-          UPPER(TRIM(MF.NM_FUNCIONARIO)) AS NM_FUNCIONARIO,
-          EXTRACT(YEAR FROM MF.DT_META) AS ANO,
-          EXTRACT(MONTH FROM MF.DT_META) AS MES,
-          SUM(NVL(MF.QTD_META, 0)) AS META_MES
-        FROM DBACRESSEM.META_FUNCIONARIOS MF
-        WHERE MF.CD_PRODUTO = 20
-        GROUP BY
-          UPPER(TRIM(MF.NM_FUNCIONARIO)),
-          EXTRACT(YEAR FROM MF.DT_META),
-          EXTRACT(MONTH FROM MF.DT_META)
+          MB.NM_FUNCIONARIO,
+          MB.ANO,
+          MB.MES,
+          MB.QTD_META AS META_MES
+        FROM META_BASE MB
       ),
       SEMANAS_MES AS (
         SELECT
@@ -2090,18 +3047,28 @@ function sqlSaldoPrevidenciaVgbl() {
             TO_NUMBER(TO_CHAR(DT_DIA, 'IW')) AS SEMANA
           FROM (
             SELECT
-              ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1) + (NIVEL_DIA - 1) AS DT_DIA
+              ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1)
+              + (NIVEL_DIA - 1) AS DT_DIA
             FROM (
-              SELECT LEVEL AS NIVEL_MES FROM DUAL CONNECT BY LEVEL <= 36
+              SELECT LEVEL AS NIVEL_MES
+              FROM DUAL
+              CONNECT BY LEVEL <= 36
             ),
             (
-              SELECT LEVEL AS NIVEL_DIA FROM DUAL CONNECT BY LEVEL <= 31
+              SELECT LEVEL AS NIVEL_DIA
+              FROM DUAL
+              CONNECT BY LEVEL <= 31
             )
-            WHERE ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1) + (NIVEL_DIA - 1)
-                  <= LAST_DAY(ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1))
+            WHERE ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1)
+                  + (NIVEL_DIA - 1)
+                  <= LAST_DAY(
+                      ADD_MONTHS(DATE '2025-01-01', NIVEL_MES - 1)
+                    )
           )
         )
-        GROUP BY ANO, MES
+        GROUP BY
+          ANO,
+          MES
       ),
       BASE_FUNCIONARIOS AS (
         SELECT
@@ -2116,76 +3083,163 @@ function sqlSaldoPrevidenciaVgbl() {
     SELECT
       BF.NM_FUNCIONARIO,
       BF.ANO,
-      ROUND(NVL(SW.PRODUCAO_SEMANAL, 0), 0) AS PRODUCAO_SEMANAL,
+
+      ROUND(
+        NVL(SW.PRODUCAO_SEMANAL, 0),
+        0
+      ) AS PRODUCAO_SEMANAL,
+
       CASE
-        WHEN NVL(MM.META_MES, 0) = 0 THEN 0
-        ELSE CEIL(NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0))
+        WHEN NVL(MM.META_MES, 0) = 0
+          THEN 0
+        ELSE CEIL(
+          NVL(MM.META_MES, 0)
+          / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+        )
       END AS META_SEMANAL,
+
       CASE
         WHEN (
           CASE
-            WHEN NVL(MM.META_MES, 0) = 0 THEN 0
-            ELSE CEIL(NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0))
+            WHEN NVL(MM.META_MES, 0) = 0
+              THEN 0
+            ELSE CEIL(
+              NVL(MM.META_MES, 0)
+              / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+            )
           END
         ) > 0
           THEN ROUND(
-            NVL(SW.PRODUCAO_SEMANAL, 0) /
+            NVL(SW.PRODUCAO_SEMANAL, 0)
+            /
             (
               CASE
-                WHEN NVL(MM.META_MES, 0) = 0 THEN 0
-                ELSE CEIL(NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0))
+                WHEN NVL(MM.META_MES, 0) = 0
+                  THEN 0
+                ELSE CEIL(
+                  NVL(MM.META_MES, 0)
+                  / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+                )
               END
-            ) * 100
-          , 2)
+            ) * 100,
+            2
+          )
         ELSE 0
       END AS PORCENTAGEM_SEMANA,
-      ROUND(NVL(SW.PRODUCAO_SEMANAL, 0), 0)
-      - (
-          CASE
-            WHEN NVL(MM.META_MES, 0) = 0 THEN 0
-            ELSE CEIL(NVL(MM.META_MES, 0) / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0))
-          END
-        ) AS GAP_SEMANAL,
-      ROUND(NVL(MJ.PRODUCAO_MES, 0), 0) AS PRODUCAO_MENSAL,
-      ROUND(NVL(MM.META_MES, 0), 0) AS META_MENSAL,
+
+      ROUND(
+        NVL(SW.PRODUCAO_SEMANAL, 0),
+        0
+      )
+      -
+      (
+        CASE
+          WHEN NVL(MM.META_MES, 0) = 0
+            THEN 0
+          ELSE CEIL(
+            NVL(MM.META_MES, 0)
+            / NULLIF(NVL(SM.QTD_SEMANAS_MES, 0), 0)
+          )
+        END
+      ) AS GAP_SEMANAL,
+
+      ROUND(
+        NVL(MJ.PRODUCAO_MES, 0),
+        0
+      ) AS PRODUCAO_MENSAL,
+
+      ROUND(
+        NVL(MM.META_MES, 0),
+        0
+      ) AS META_MENSAL,
+
       CASE
         WHEN NVL(MM.META_MES, 0) > 0
-          THEN ROUND((NVL(MJ.PRODUCAO_MES, 0) / MM.META_MES) * 100, 2)
+          THEN ROUND(
+            (
+              NVL(MJ.PRODUCAO_MES, 0)
+              / MM.META_MES
+            ) * 100,
+            2
+          )
         ELSE 0
       END AS PERC_META_REALIZADA_MENSAL,
-      ROUND(NVL(MJ.PRODUCAO_MES, 0), 0) - ROUND(NVL(MM.META_MES, 0), 0) AS FALTA_PARA_META_MENSAL,
-      ROUND(NVL(AY.PRODUCAO_ANO, 0), 0) AS PRODUCAO_ANO,
-      ROUND(NVL(BF.META_ANO, 0), 0) AS META_2026,
+
+      ROUND(
+        NVL(MJ.PRODUCAO_MES, 0),
+        0
+      )
+      -
+      ROUND(
+        NVL(MM.META_MES, 0),
+        0
+      ) AS FALTA_PARA_META_MENSAL,
+
+      ROUND(
+        NVL(AY.PRODUCAO_ANO, 0),
+        0
+      ) AS PRODUCAO_ANO,
+
+      ROUND(
+        NVL(BF.META_ANO, 0),
+        0
+      ) AS META_2026,
+
       CASE
         WHEN NVL(BF.META_ANO, 0) > 0
-          THEN ROUND((NVL(AY.PRODUCAO_ANO, 0) / BF.META_ANO) * 100, 2)
+          THEN ROUND(
+            (
+              NVL(AY.PRODUCAO_ANO, 0)
+              / BF.META_ANO
+            ) * 100,
+            2
+          )
         ELSE 0
       END AS PERC_META_REALIZADA,
-      ROUND(NVL(AY.PRODUCAO_ANO, 0), 0) - ROUND(NVL(BF.META_ANO, 0), 0) AS FALTA_PARA_META
+
+      ROUND(
+        NVL(AY.PRODUCAO_ANO, 0),
+        0
+      )
+      -
+      ROUND(
+        NVL(BF.META_ANO, 0),
+        0
+      ) AS FALTA_PARA_META
+
     FROM BASE_FUNCIONARIOS BF
+
     CROSS JOIN PARAMS PR
     CROSS JOIN PERIODO_REF RF
+
     LEFT JOIN META_MES MM
       ON MM.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-     AND MM.ANO = BF.ANO
-     AND MM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND MM.ANO = BF.ANO
+    AND MM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+
     LEFT JOIN SEMANAS_MES SM
       ON SM.ANO = BF.ANO
-     AND SM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND SM.MES = EXTRACT(MONTH FROM RF.DT_REF)
+
     LEFT JOIN PVPD_ANO AY
       ON AY.NR_PA = BF.NR_PA
-     AND AY.ANO = BF.ANO
-     AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND AY.ANO = BF.ANO
+    AND AY.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
     LEFT JOIN PVPD_MES MJ
       ON MJ.NR_PA = BF.NR_PA
-     AND MJ.ANO = BF.ANO
-     AND MJ.MES = EXTRACT(MONTH FROM RF.DT_REF)
-     AND MJ.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+    AND MJ.ANO = BF.ANO
+    AND MJ.MES = EXTRACT(MONTH FROM RF.DT_REF)
+    AND MJ.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
     LEFT JOIN PVPD_SEMANA SW
       ON SW.NR_PA = BF.NR_PA
-     AND SW.ANO = BF.ANO
-     AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
-    ORDER BY BF.NM_FUNCIONARIO, BF.ANO
+    AND SW.ANO = BF.ANO
+    AND SW.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
+
+    ORDER BY
+      BF.NM_FUNCIONARIO,
+      BF.ANO
   `;
 }
 
