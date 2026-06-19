@@ -32,7 +32,10 @@ function normalizeKeys(row: any) {
 }
 
 const AD_GROUP_SUPORTE = "GG_USERS_SUPORTE";
+const DEBUG_ACESSO_ATIVO =
+    String(process.env.META_DEBUG_ACESSO_ATIVO || "").trim().toLowerCase() === "true";
 const DEBUG_FORCAR_GESTOR_NOME = String(
+    process.env.META_DEBUG_GESTOR_NOME ||
     process.env.META_FUNC_DEBUG_GESTOR_NOME ||
     process.env.META_PA_DEBUG_GERENTE_NOME ||
     ""
@@ -43,7 +46,7 @@ const NOMES_AVISO_META_NAO_RETORNADA = [
     "GILMAR APARECIDO CAVALCANTE DO PRADO",
 ];
 
-const SQL_USUARIO_NIVEL = `
+const SQL_FUNCIONARIO_POR_NOME = `
 SELECT
   f.ID_FUNCIONARIO,
   UPPER(TRIM(NVL(c.NM_NIVEL, ''))) AS NM_NIVEL,
@@ -51,15 +54,6 @@ SELECT
 FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
 LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM c
   ON c.ID_CARGO = f.ID_CARGO
-WHERE UPPER(TRIM(NVL(f.NM_LOGIN, ''))) = UPPER(TRIM(:login))
-FETCH FIRST 1 ROWS ONLY
-`;
-
-const SQL_FUNCIONARIO_POR_NOME = `
-SELECT
-  f.ID_FUNCIONARIO,
-  UPPER(TRIM(NVL(f.NM_FUNCIONARIO, ''))) AS NM_FUNCIONARIO
-FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
 WHERE UPPER(TRIM(NVL(f.NM_FUNCIONARIO, ''))) = UPPER(TRIM(:nome_funcionario))
 FETCH FIRST 1 ROWS ONLY
 `;
@@ -167,11 +161,10 @@ async function buscarNomesPermitidosSomenteGestor(nomeGestor: string) {
 }
 
 async function buscarPerfilAcessoMetaFuncionario(user?: AuthenticatedRequest["user"]) {
-    const login = String(user?.sub || "").trim();
     const nomeAd = String(user?.nome_completo || "").trim();
     const grupos = Array.isArray(user?.grupos) ? user!.grupos! : [];
 
-    if (!login && !nomeAd) {
+    if (!nomeAd) {
         return {
             verTudo: false,
             nomesPermitidos: new Set<string>(),
@@ -187,25 +180,26 @@ async function buscarPerfilAcessoMetaFuncionario(user?: AuthenticatedRequest["us
 
     let nomeFuncionario = "";
     let idFuncionario = 0;
+    let nmNivel = "";
 
-    if (login) {
-        const perfilResult = await oracleExecute(
-            SQL_USUARIO_NIVEL,
-            { login },
-            { outFormat: oracledb.OUT_FORMAT_OBJECT }
-        );
+    const funcionarioResult = await oracleExecute(
+        SQL_FUNCIONARIO_POR_NOME,
+        { nome_funcionario: nomeAd },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
 
-        const perfil: any = perfilResult.rows?.[0] || {};
-        const nmNivel = toUpperTrim(perfil.NM_NIVEL);
-        idFuncionario = Number(perfil.ID_FUNCIONARIO || 0);
-        nomeFuncionario = String(perfil.NM_FUNCIONARIO || "").trim();
+    const funcionario: any = funcionarioResult.rows?.[0] || {};
+    if (funcionario.ID_FUNCIONARIO) {
+        idFuncionario = Number(funcionario.ID_FUNCIONARIO || 0);
+        nomeFuncionario = String(funcionario.NM_FUNCIONARIO || "").trim();
+        nmNivel = toUpperTrim(funcionario.NM_NIVEL);
+    }
 
-        if (nmNivel === "DIRETORIA") {
-            return {
-                verTudo: true,
-                nomesPermitidos: new Set<string>(),
-            };
-        }
+    if (nmNivel === "DIRETORIA") {
+        return {
+            verTudo: true,
+            nomesPermitidos: new Set<string>(),
+        };
     }
 
     const nomesPermitidos = new Set<string>();
@@ -227,9 +221,11 @@ export const producaoMetaFuncionarioController = {
     async listar(req: Request, res: Response) {
         try {
             const authReq = req as AuthenticatedRequest;
-            const forcarNomeGestor = String(
-                req.query.forcar_nome_gestor || DEBUG_FORCAR_GESTOR_NOME || ""
-            ).trim();
+            const forcarNomeGestor = DEBUG_ACESSO_ATIVO
+                ? String(
+                    req.query.forcar_nome_gestor || DEBUG_FORCAR_GESTOR_NOME || ""
+                ).trim()
+                : "";
             const tema = String(req.query.tema || "").trim();
             const data = String(req.query.data || "").trim();
 

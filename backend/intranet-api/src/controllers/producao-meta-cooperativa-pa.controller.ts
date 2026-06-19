@@ -52,29 +52,54 @@ function normalizeKeys(row: any) {
 }
 
 const AD_GROUP_SUPORTE = "GG_USERS_SUPORTE";
+const DEBUG_ACESSO_ATIVO =
+  String(process.env.META_DEBUG_ACESSO_ATIVO || "").trim().toLowerCase() === "true";
+const DEBUG_FORCAR_GERENTE_NOME = String(
+  process.env.META_DEBUG_GESTOR_NOME ||
+  process.env.META_PA_DEBUG_GERENTE_NOME ||
+  process.env.META_FUNC_DEBUG_GESTOR_NOME ||
+  ""
+).trim();
 
-const SQL_USUARIO_NIVEL = `
+const SQL_FUNCIONARIO_POR_NOME = `
 SELECT
+  f.ID_FUNCIONARIO,
   UPPER(TRIM(NVL(c.NM_NIVEL, ''))) AS NM_NIVEL,
   UPPER(TRIM(NVL(f.NM_FUNCIONARIO, ''))) AS NM_FUNCIONARIO
 FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
 LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM c
   ON c.ID_CARGO = f.ID_CARGO
-WHERE UPPER(TRIM(NVL(f.NM_LOGIN, ''))) = UPPER(TRIM(:login))
+WHERE UPPER(TRIM(NVL(f.NM_FUNCIONARIO, ''))) = UPPER(TRIM(:nome_funcionario))
 FETCH FIRST 1 ROWS ONLY
 `;
 
-const SQL_PA_GESTAO_GERENTE = `
+const SQL_SUBORDINADOS_POR_GESTOR = `
+SELECT DISTINCT
+  UPPER(TRIM(NVL(f.NM_FUNCIONARIO, ''))) AS NM_FUNCIONARIO
+FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+WHERE f.ID_FUNCIONARIO IS NOT NULL
+  AND UPPER(TRIM(NVL(f.NM_FUNCIONARIO, ''))) IS NOT NULL
+START WITH f.CD_GERENCIA = :id_gestor
+CONNECT BY NOCYCLE PRIOR f.ID_FUNCIONARIO = f.CD_GERENCIA
+`;
+
+const SQL_PA_GESTAO = `
 SELECT DISTINCT
   TRIM(NR_PA) AS NR_PA
+  , UPPER(TRIM(NVL(NM_GERENTE, ''))) AS NM_GERENTE
 FROM DBACRESSEM.PA_GESTAO
-WHERE
-  UPPER(TRIM(NM_GERENTE)) = UPPER(TRIM(:nome_gerente))
-  OR UPPER(TRIM(NM_GERENTE)) = UPPER(TRIM(:nome_funcionario))
+WHERE NR_PA IS NOT NULL
+  AND NM_GERENTE IS NOT NULL
 `;
 
 function toUpperTrim(value: any) {
   return String(value || "").trim().toUpperCase();
+}
+
+function normalizeNomePessoa(value: any) {
+  return toUpperTrim(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function hasGroup(grupos: string[], target: string) {
@@ -87,12 +112,44 @@ function parseNumeroPa(value: any) {
   return txt;
 }
 
+async function buscarNomesSubordinadosPorId(idGestor: number) {
+  if (!idGestor) return new Set<string>();
+
+  const subordinadosResult = await oracleExecute(
+    SQL_SUBORDINADOS_POR_GESTOR,
+    { id_gestor: idGestor },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  return new Set<string>(
+    (subordinadosResult.rows || [])
+      .map((row: any) => normalizeNomePessoa(row.NM_FUNCIONARIO))
+      .filter((nome: string) => Boolean(nome))
+  );
+}
+
+async function buscarPaPermitidosPorNomes(nomesPermitidos: Set<string>) {
+  if (!nomesPermitidos.size) return new Set<string>();
+
+  const paGestaoResult = await oracleExecute(
+    SQL_PA_GESTAO,
+    {},
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  return new Set<string>(
+    (paGestaoResult.rows || [])
+      .filter((row: any) => nomesPermitidos.has(normalizeNomePessoa(row.NM_GERENTE)))
+      .map((row: any) => parseNumeroPa(row.NR_PA))
+      .filter((nrPa: string) => Boolean(nrPa))
+  );
+}
+
 async function buscarPerfilAcessoMetaPA(user?: AuthenticatedRequest["user"]) {
-  const login = String(user?.sub || "").trim();
   const nomeAd = String(user?.nome_completo || "").trim();
   const grupos = Array.isArray(user?.grupos) ? user!.grupos! : [];
 
-  if (!login && !nomeAd) {
+  if (!nomeAd) {
     return {
       verTudo: false,
       nrPaPermitidos: new Set<string>(),
@@ -107,12 +164,13 @@ async function buscarPerfilAcessoMetaPA(user?: AuthenticatedRequest["user"]) {
   }
 
   const perfilResult = await oracleExecute(
-    SQL_USUARIO_NIVEL,
-    { login },
+    SQL_FUNCIONARIO_POR_NOME,
+    { nome_funcionario: nomeAd },
     { outFormat: oracledb.OUT_FORMAT_OBJECT }
   );
 
   const perfil: any = perfilResult.rows?.[0] || {};
+  const idFuncionario = Number(perfil.ID_FUNCIONARIO || 0);
   const nmNivel = toUpperTrim(perfil.NM_NIVEL);
   const nomeFuncionario = String(perfil.NM_FUNCIONARIO || "").trim();
 
@@ -123,20 +181,16 @@ async function buscarPerfilAcessoMetaPA(user?: AuthenticatedRequest["user"]) {
     };
   }
 
-  const paGestaoResult = await oracleExecute(
-    SQL_PA_GESTAO_GERENTE,
-    {
-      nome_gerente: nomeAd,
-      nome_funcionario: nomeFuncionario || nomeAd,
-    },
-    { outFormat: oracledb.OUT_FORMAT_OBJECT }
-  );
+  const nomesPermitidos = new Set<string>();
+  if (nomeAd) nomesPermitidos.add(normalizeNomePessoa(nomeAd));
+  if (nomeFuncionario) nomesPermitidos.add(normalizeNomePessoa(nomeFuncionario));
 
-  const nrPaPermitidos = new Set<string>(
-    (paGestaoResult.rows || [])
-      .map((row: any) => parseNumeroPa(row.NR_PA))
-      .filter((nrPa: string) => Boolean(nrPa))
-  );
+  if (idFuncionario) {
+    const nomesSubordinados = await buscarNomesSubordinadosPorId(idFuncionario);
+    nomesSubordinados.forEach((nome) => nomesPermitidos.add(nome));
+  }
+
+  const nrPaPermitidos = await buscarPaPermitidosPorNomes(nomesPermitidos);
 
   return {
     verTudo: false,
@@ -354,6 +408,11 @@ export const producaoMetaCooperativaPaController = {
   async listar(req: Request, res: Response) {
     try {
       const authReq = req as AuthenticatedRequest;
+      const forcarNomeGestor = DEBUG_ACESSO_ATIVO
+        ? String(
+          req.query.forcar_nome_gestor || DEBUG_FORCAR_GERENTE_NOME || ""
+        ).trim()
+        : "";
 
       const tema = normalizarTemaEntrada(String(req.query.tema || ""));
       const data = String(req.query.data || "").trim();
@@ -381,7 +440,14 @@ export const producaoMetaCooperativaPaController = {
 
       const rows = (result.rows || []).map((row: any) => normalizeKeys(row));
 
-      const perfilAcesso = await buscarPerfilAcessoMetaPA(authReq.user);
+      const perfilAcesso = forcarNomeGestor
+        ? await buscarPerfilAcessoMetaPA({
+          // A simulação deve usar apenas a hierarquia do gestor informado.
+          sub: "",
+          nome_completo: forcarNomeGestor,
+          grupos: [],
+        } as AuthenticatedRequest["user"])
+        : await buscarPerfilAcessoMetaPA(authReq.user);
 
       const rowsFiltradas = perfilAcesso.verTudo
         ? rows
