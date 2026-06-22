@@ -46,12 +46,24 @@ Esta branch é utilizada para:
 
 ---
 
+## 📚 Documentação
+
+Guia técnico de referência:
+
+[`docs/GUIA_COMPLETO_DO_PROJETO.md`](docs/GUIA_COMPLETO_DO_PROJETO.md)
+
+Manual didático para aprender o projeto passo a passo:
+
+[`docs/MANUAL_DIDATICO_DO_PROJETO.md`](docs/MANUAL_DIDATICO_DO_PROJETO.md)
+
+---
+
 ## 🛠️ Como rodar o projeto
 
 ### 🔧 Backend
 
 ```bash
-cd backend
+cd backend/intranet-api
 npm install
 npm run dev
 ```
@@ -61,7 +73,7 @@ npm run dev
 ### 💻 Frontend
 
 ```bash
-cd frontend
+cd frontend/intranet
 npm install
 npm run dev
 ```

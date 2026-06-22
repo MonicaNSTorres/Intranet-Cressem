@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   FaBell,
   FaCheckCircle,
+  FaDatabase,
+  FaEnvelope,
   FaExclamationTriangle,
   FaEye,
   FaFilter,
@@ -15,10 +17,13 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import {
+  detalharMonitorMetaAlerta,
   listarMonitorMetaAlertas,
   resolverMonitorMetaAlerta,
   type MonitorMetaAlerta,
+  type OrigemAlertaMeta,
   type StatusAlertaMeta,
+  type TipoCargaAlertaMeta,
 } from "@/services/monitor_meta_alertas.service";
 
 const GRAVIDADES = ["CRITICA", "ALTA", "MEDIA", "BAIXA"];
@@ -167,14 +172,81 @@ function diferenca(item: MonitorMetaAlerta) {
 }
 
 function getTema(item: MonitorMetaAlerta) {
+  if (getOrigem(item) === "CARGA") {
+    return (
+      buscarObservacao(item, "Rotina") ||
+      String(item.nm_entidade || "").split("|")[0] ||
+      "Carga sem rotina"
+    );
+  }
+
   return buscarObservacao(item, "Tema") || "Sem tema";
 }
 
 function getPeriodo(item: MonitorMetaAlerta) {
+  if (getOrigem(item) === "CARGA") {
+    return (
+      buscarObservacao(item, "Etapa") ||
+      String(item.nm_entidade || "").split("|")[1] ||
+      "-"
+    );
+  }
+
   return buscarObservacao(item, "Mes") || buscarObservacao(item, "Periodo") || "-";
 }
 
+function getRunId(item: MonitorMetaAlerta) {
+  return (
+    buscarObservacao(item, "RunId") ||
+    String(item.nm_entidade || "").split("|")[2] ||
+    "-"
+  );
+}
+
+function getMensagemCarga(item: MonitorMetaAlerta) {
+  const mensagem = String(item.vl_encontrado || "").trim();
+  if (mensagem && Number.isNaN(Number(mensagem))) return mensagem;
+
+  return (
+    buscarObservacao(item, "Mensagem") ||
+    item.carga_detalhes ||
+    "Nenhuma mensagem detalhada foi registrada."
+  );
+}
+
+function getQuantidadeInvalidaCarga(item: MonitorMetaAlerta) {
+  const total = Number(item.carga_qtd_linhas);
+  const validas = Number(item.carga_qtd_validas);
+  if (!Number.isFinite(total) || !Number.isFinite(validas)) return null;
+  return Math.max(total - validas, 0);
+}
+
+function separarOcorrenciaEmail(mensagem: string | null) {
+  const texto = String(mensagem || "").trim();
+  const [identificacao, ...partesAssunto] = texto.split(/\s*\|\s*Assunto:\s*/i);
+
+  return {
+    identificacao: identificacao || "E-mail esperado",
+    assunto: partesAssunto.join(" | ").trim() || "-",
+  };
+}
+
+function getOrigem(item: MonitorMetaAlerta): OrigemAlertaMeta | "OUTRO" {
+  const origem = buscarObservacao(item, "Origem").toUpperCase();
+  if (origem === "CARGA") return "CARGA";
+  if (origem === "META") return "META";
+
+  if (buscarObservacao(item, "Tela").toLowerCase().startsWith("producao_meta_")) {
+    return "META";
+  }
+
+  if (String(item.nm_entidade || "").includes("|")) return "CARGA";
+  return "OUTRO";
+}
+
 function getTipoEntidadeLabel(item: MonitorMetaAlerta) {
+  if (getOrigem(item) === "CARGA") return "Automação de carga";
+
   const entidade = String(item.nm_entidade || "").toUpperCase();
 
   if (entidade.startsWith("FUNC:")) return "Funcionário";
@@ -211,11 +283,13 @@ function getMensagemErro(error: unknown, fallback: string) {
 
 export function MonitorMetaAlertas() {
   const [status, setStatus] = useState<StatusAlertaMeta>("aberto");
+  const [origem, setOrigem] = useState<"" | OrigemAlertaMeta>("");
   const [tela, setTela] = useState("");
   const [tema, setTema] = useState("");
   const [gravidade, setGravidade] = useState("");
   const [entidade, setEntidade] = useState("");
   const [tipoEntidade, setTipoEntidade] = useState<"" | "PA" | "FUNC">("");
+  const [tipoCarga, setTipoCarga] = useState<"" | TipoCargaAlertaMeta>("");
   const [page, setPage] = useState(1);
 
   const [items, setItems] = useState<MonitorMetaAlerta[]>([]);
@@ -229,10 +303,14 @@ export function MonitorMetaAlertas() {
   const [info, setInfo] = useState("");
   const [resolvendoId, setResolvendoId] = useState<string | null>(null);
   const [alertaDetalhe, setAlertaDetalhe] = useState<MonitorMetaAlerta | null>(null);
+  const [ocorrenciasRelacionadas, setOcorrenciasRelacionadas] = useState<
+    MonitorMetaAlerta[]
+  >([]);
+  const [carregandoDetalhes, setCarregandoDetalhes] = useState(false);
 
   const filtrosAtivos = useMemo(() => {
-    return [tela, tema, gravidade, entidade, tipoEntidade].filter(Boolean).length;
-  }, [entidade, gravidade, tela, tema, tipoEntidade]);
+    return [origem, tela, tema, gravidade, entidade, tipoEntidade, tipoCarga].filter(Boolean).length;
+  }, [entidade, gravidade, origem, tela, tema, tipoCarga, tipoEntidade]);
 
   const paginasVisiveis = useMemo(() => {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -242,11 +320,43 @@ export function MonitorMetaAlertas() {
     return extrairObservacao(alertaDetalhe?.nm_observacao || null);
   }, [alertaDetalhe]);
 
+  const detalhesExecucao = useMemo(() => {
+    if (!alertaDetalhe) return [];
+    return [alertaDetalhe, ...ocorrenciasRelacionadas];
+  }, [alertaDetalhe, ocorrenciasRelacionadas]);
+
+  const ehConferenciaEmails = useMemo(() => {
+    return alertaDetalhe
+      ? getTema(alertaDetalhe).toUpperCase() === "CONFERENCIA EMAILS ROTINAS"
+      : false;
+  }, [alertaDetalhe]);
+
+  const errosConferenciaEmails = useMemo(() => {
+    if (!ehConferenciaEmails) return [];
+    return detalhesExecucao.filter(
+      (ocorrencia) => String(ocorrencia.nm_regra || "").toUpperCase() === "ERRO_LINHA"
+    );
+  }, [detalhesExecucao, ehConferenciaEmails]);
+
+  const resumoConferenciaEmails = useMemo(() => {
+    if (!ehConferenciaEmails) return "";
+
+    const resumoExecucao = detalhesExecucao.find(
+      (ocorrencia) => String(ocorrencia.nm_regra || "").toUpperCase() === "OBSERVACAO"
+    );
+
+    return (
+      resumoExecucao?.vl_encontrado ||
+      `${errosConferenciaEmails.length} e-mail(s) esperado(s) não encontrado(s).`
+    );
+  }, [detalhesExecucao, ehConferenciaEmails, errosConferenciaEmails.length]);
+
   async function carregar(
     pagina = page,
     filtrosOverride?: {
       tema?: string;
       tipoEntidade?: "" | "PA" | "FUNC";
+      tipoCarga?: "" | TipoCargaAlertaMeta;
       limparTema?: boolean;
     }
   ) {
@@ -256,14 +366,17 @@ export function MonitorMetaAlertas() {
 
       const temaConsulta = filtrosOverride?.limparTema ? "" : filtrosOverride?.tema ?? tema;
       const tipoEntidadeConsulta = filtrosOverride?.tipoEntidade ?? tipoEntidade;
+      const tipoCargaConsulta = filtrosOverride?.tipoCarga ?? tipoCarga;
 
       const data = await listarMonitorMetaAlertas({
         status,
+        origem: origem || undefined,
         tela: tela || undefined,
         tema: temaConsulta || undefined,
         gravidade: gravidade || undefined,
         entidade: entidade || undefined,
         tipo_entidade: tipoEntidadeConsulta || undefined,
+        tipo_carga: tipoCargaConsulta || undefined,
         page: pagina,
         limit: 10,
       });
@@ -277,6 +390,9 @@ export function MonitorMetaAlertas() {
       else if (filtrosOverride?.tema !== undefined) setTema(filtrosOverride.tema);
       if (filtrosOverride?.tipoEntidade !== undefined) {
         setTipoEntidade(filtrosOverride.tipoEntidade);
+      }
+      if (filtrosOverride?.tipoCarga !== undefined) {
+        setTipoCarga(filtrosOverride.tipoCarga);
       }
     } catch (error: unknown) {
       console.error(error);
@@ -294,10 +410,12 @@ export function MonitorMetaAlertas() {
 
   function limparFiltros() {
     setTela("");
+    setOrigem("");
     setTema("");
     setGravidade("");
     setEntidade("");
     setTipoEntidade("");
+    setTipoCarga("");
     setInfo("");
     setErro("");
     setPage(1);
@@ -327,6 +445,24 @@ export function MonitorMetaAlertas() {
       setErro(getMensagemErro(error, "Falha ao resolver alerta."));
     } finally {
       setResolvendoId(null);
+    }
+  }
+
+  async function abrirDetalhes(item: MonitorMetaAlerta) {
+    setAlertaDetalhe(item);
+    setOcorrenciasRelacionadas([]);
+
+    if (getOrigem(item) !== "CARGA") return;
+
+    try {
+      setCarregandoDetalhes(true);
+      const data = await detalharMonitorMetaAlerta(item.id_alerta);
+      setOcorrenciasRelacionadas(data.ocorrencias || []);
+    } catch (error) {
+      console.error(error);
+      setOcorrenciasRelacionadas([]);
+    } finally {
+      setCarregandoDetalhes(false);
     }
   }
 
@@ -364,10 +500,10 @@ export function MonitorMetaAlertas() {
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#00AE9D]">
                 <FaLayerGroup />
-                Pendências por tema
+                Pendências por contexto
               </div>
               <p className="mt-1 text-sm text-gray-500">
-                Resumo dos alertas filtrados para priorizar a conferência.
+                Resumo por tema de meta ou rotina de carga.
               </p>
             </div>
           </div>
@@ -420,7 +556,7 @@ export function MonitorMetaAlertas() {
               Filtros
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              Consulte as ocorrências gravadas pelo monitor de metas.
+              Consulte separadamente alertas das metas e das automações de carga.
             </p>
           </div>
 
@@ -436,7 +572,7 @@ export function MonitorMetaAlertas() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-6">
           <label className="space-y-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
             Status
             <select
@@ -454,6 +590,26 @@ export function MonitorMetaAlertas() {
           </label>
 
           <label className="space-y-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Origem
+            <select
+              value={origem}
+              onChange={(event) => {
+                setOrigem(event.target.value as "" | OrigemAlertaMeta);
+                setTema("");
+                setTela("");
+                setTipoEntidade("");
+                setTipoCarga("");
+                setPage(1);
+              }}
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-gray-700 outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10"
+            >
+              <option value="">Todas</option>
+              <option value="META">Metas</option>
+              <option value="CARGA">Cargas</option>
+            </select>
+          </label>
+
+          <label className="space-y-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
             Tela
             <input
               value={tela}
@@ -464,11 +620,11 @@ export function MonitorMetaAlertas() {
           </label>
 
           <label className="space-y-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Tema
+            {origem === "CARGA" ? "Rotina" : "Tema / rotina"}
             <input
               value={tema}
               onChange={(event) => setTema(event.target.value)}
-              placeholder="consorcio"
+              placeholder={origem === "CARGA" ? "CONTA_CAPITAL..." : "consorcio"}
               className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium normal-case tracking-normal text-gray-700 outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10"
             />
           </label>
@@ -500,6 +656,7 @@ export function MonitorMetaAlertas() {
           </label>
         </div>
 
+        {origem !== "CARGA" && (
         <div className="mt-5">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
             Tipo de alerta
@@ -547,6 +704,74 @@ export function MonitorMetaAlertas() {
             })}
           </div>
         </div>
+        )}
+
+        {origem === "CARGA" && (
+          <div className="mt-5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Tipo de carga
+            </p>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {[
+                {
+                  icon: FaListUl,
+                  label: "Todas",
+                  description: "Inserções e conferência de e-mails",
+                  value: "" as const,
+                },
+                {
+                  icon: FaDatabase,
+                  label: "Inserções",
+                  description: "Importações e processamento de arquivos",
+                  value: "INSERCAO" as const,
+                },
+                {
+                  icon: FaEnvelope,
+                  label: "Conferência de e-mails",
+                  description: "Rotinas e mensagens esperadas",
+                  value: "EMAIL" as const,
+                },
+              ].map((option) => {
+                const Icon = option.icon;
+                const ativo = tipoCarga === option.value;
+
+                return (
+                  <button
+                    key={option.label}
+                    type="button"
+                    onClick={() => {
+                      const proximoTipo =
+                        ativo && option.value !== "" ? "" : option.value;
+
+                      carregar(1, {
+                        tipoCarga: proximoTipo,
+                      });
+                    }}
+                    className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition hover:border-[#00AE9D] hover:shadow-sm ${
+                      ativo
+                        ? "border-[#00AE9D] bg-[#00AE9D]/10 text-[#006f65] shadow-sm"
+                        : "border-gray-200 bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                        ativo ? "bg-[#00AE9D] text-white" : "bg-white text-gray-500"
+                      }`}
+                    >
+                      <Icon size={16} />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-bold">{option.label}</span>
+                      <span className="mt-0.5 block text-xs font-medium text-gray-500">
+                        {option.description}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <div className="mt-4 flex justify-end">
           <button
             type="button"
@@ -579,11 +804,17 @@ export function MonitorMetaAlertas() {
               <tr>
                 <th className="px-4 py-3">Execução</th>
                 <th className="px-4 py-3">Gravidade</th>
-                <th className="px-4 py-3">Tema / Período</th>
+                <th className="px-4 py-3">Contexto</th>
                 <th className="px-4 py-3">Entidade</th>
-                <th className="px-4 py-3">Esperado</th>
-                <th className="px-4 py-3">Encontrado</th>
-                <th className="px-4 py-3">Diferença</th>
+                <th className="px-4 py-3">
+                  {origem === "CARGA" ? "Status da carga" : "Esperado"}
+                </th>
+                <th className="px-4 py-3">
+                  {origem === "CARGA" ? "Ocorrência" : "Encontrado"}
+                </th>
+                <th className="px-4 py-3">
+                  {origem === "CARGA" ? "Linhas inválidas" : "Diferença"}
+                </th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Ação</th>
               </tr>
@@ -607,6 +838,8 @@ export function MonitorMetaAlertas() {
 
               {!loading && items.map((item) => {
                 const resolvido = Number(item.sn_resolvido) === 1;
+                const ehCarga = getOrigem(item) === "CARGA";
+                const qtdInvalidasCarga = getQuantidadeInvalidaCarga(item);
 
                 return (
                   <tr key={item.id_alerta} className="align-top transition hover:bg-gray-50/70">
@@ -623,9 +856,12 @@ export function MonitorMetaAlertas() {
                       </span>
                     </td>
                     <td className="min-w-56 px-4 py-3">
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-[#00AE9D]">
+                        {getOrigem(item)}
+                      </p>
                       <p className="font-semibold text-gray-900">{getTema(item)}</p>
                       <span className="mt-2 inline-flex rounded-full border border-[#00AE9D]/30 bg-[#00AE9D]/10 px-2.5 py-1 text-xs font-bold text-[#006f65]">
-                        Período: {getPeriodo(item)}
+                        {getOrigem(item) === "CARGA" ? "Etapa" : "Período"}: {getPeriodo(item)}
                       </span>
                     </td>
                     <td className="min-w-56 px-4 py-3">
@@ -635,13 +871,27 @@ export function MonitorMetaAlertas() {
                       <p className="mt-1 font-medium text-gray-800">{limparEntidade(item.nm_entidade)}</p>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                      {formatarValor(item.vl_esperado, item)}
+                      {ehCarga ? (
+                        <span className="font-semibold text-gray-800">
+                          {item.carga_status || "-"}
+                        </span>
+                      ) : (
+                        formatarValor(item.vl_esperado, item)
+                      )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                      {formatarValor(item.vl_encontrado, item)}
+                    <td className={`${ehCarga ? "min-w-80" : "whitespace-nowrap"} px-4 py-3 text-gray-700`}>
+                      {ehCarga ? (
+                        <p className="line-clamp-3 text-sm leading-5 text-gray-800">
+                          {getMensagemCarga(item)}
+                        </p>
+                      ) : (
+                        formatarValor(item.vl_encontrado, item)
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 font-semibold text-gray-900">
-                      {diferenca(item)}
+                      {ehCarga
+                        ? qtdInvalidasCarga?.toLocaleString("pt-BR") ?? "-"
+                        : diferenca(item)}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -657,7 +907,7 @@ export function MonitorMetaAlertas() {
                     <td className="whitespace-nowrap px-4 py-3 text-right">
                       <button
                         type="button"
-                        onClick={() => setAlertaDetalhe(item)}
+                        onClick={() => abrirDetalhes(item)}
                         className="mr-2 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 transition hover:border-[#00AE9D] hover:text-[#008578]"
                       >
                         <FaEye size={12} />
@@ -730,6 +980,168 @@ export function MonitorMetaAlertas() {
             </div>
 
             <div className="max-h-[calc(90vh-92px)] overflow-y-auto px-6 py-5">
+              {getOrigem(alertaDetalhe) === "CARGA" ? (
+                <>
+                  <div className="rounded-2xl border border-red-100 bg-red-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-red-600">
+                      {ehConferenciaEmails ? "Resumo da conferência" : "Mensagem da ocorrência"}
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm font-medium leading-6 text-red-900">
+                      {ehConferenciaEmails
+                        ? resumoConferenciaEmails
+                        : getMensagemCarga(alertaDetalhe)}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Status da carga
+                      </p>
+                      <p className="mt-2 text-lg font-bold text-gray-900">
+                        {alertaDetalhe.carga_status || "-"}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Linhas recebidas
+                      </p>
+                      <p className="mt-2 text-lg font-bold text-gray-900">
+                        {alertaDetalhe.carga_qtd_linhas?.toLocaleString("pt-BR") ?? "-"}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Linhas válidas
+                      </p>
+                      <p className="mt-2 text-lg font-bold text-gray-900">
+                        {alertaDetalhe.carga_qtd_validas?.toLocaleString("pt-BR") ?? "-"}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Linhas inválidas
+                      </p>
+                      <p className="mt-2 text-lg font-bold text-red-700">
+                        {getQuantidadeInvalidaCarga(alertaDetalhe)?.toLocaleString("pt-BR") ?? "-"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-gray-200 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Identificação da execução
+                    </p>
+                    <div className="mt-3 grid gap-2 text-sm text-gray-700 sm:grid-cols-2">
+                      <p><strong>Rotina:</strong> {getTema(alertaDetalhe)}</p>
+                      <p><strong>Etapa:</strong> {getPeriodo(alertaDetalhe)}</p>
+                      <p>
+                        <strong>Data da execução:</strong>{" "}
+                        {formatarData(
+                          alertaDetalhe.carga_dt_execucao ||
+                            alertaDetalhe.dt_execucao
+                        )}
+                      </p>
+                      <p><strong>Regra:</strong> {alertaDetalhe.nm_regra || "-"}</p>
+                      <p className="sm:col-span-2 break-all">
+                        <strong>Run ID:</strong> {getRunId(alertaDetalhe)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {ehConferenciaEmails ? (
+                    <div className="mt-4 rounded-2xl border border-gray-200 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        E-mails não encontrados
+                      </p>
+
+                      {carregandoDetalhes && (
+                        <p className="mt-3 text-sm text-gray-500">
+                          Carregando e-mails da execução...
+                        </p>
+                      )}
+
+                      {!carregandoDetalhes && errosConferenciaEmails.length > 0 && (
+                        <div className="mt-3 overflow-hidden rounded-xl border border-gray-200">
+                          <table className="min-w-full text-left text-sm">
+                            <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                              <tr>
+                                <th className="px-4 py-3">Rotina esperada</th>
+                                <th className="px-4 py-3">Assunto</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {errosConferenciaEmails.map((ocorrencia) => {
+                                const email = separarOcorrenciaEmail(
+                                  ocorrencia.vl_encontrado
+                                );
+
+                                return (
+                                  <tr key={ocorrencia.id_alerta}>
+                                    <td className="px-4 py-3 font-semibold text-gray-900">
+                                      {email.identificacao}
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-700">
+                                      {email.assunto}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {!carregandoDetalhes && errosConferenciaEmails.length === 0 && (
+                        <p className="mt-3 text-sm text-gray-400">
+                          Nenhum e-mail ausente foi detalhado nesta execução.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                  <div className="mt-4 rounded-2xl border border-gray-200 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Ocorrências relacionadas desta execução
+                    </p>
+
+                    {carregandoDetalhes && (
+                      <p className="mt-3 text-sm text-gray-500">
+                        Carregando detalhes da execução...
+                      </p>
+                    )}
+
+                    {!carregandoDetalhes && ocorrenciasRelacionadas.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {ocorrenciasRelacionadas.map((ocorrencia) => (
+                          <div
+                            key={ocorrencia.id_alerta}
+                            className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
+                                {ocorrencia.nm_gravidade || "Ocorrência"}
+                              </span>
+                              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                {ocorrencia.nm_regra || "Sem regra"}
+                              </span>
+                            </div>
+                            <p className="mt-2 whitespace-pre-wrap text-sm font-medium leading-5 text-gray-900">
+                              {ocorrencia.vl_encontrado || "Sem descrição."}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {!carregandoDetalhes && ocorrenciasRelacionadas.length === 0 && (
+                      <p className="mt-3 text-sm text-gray-400">
+                        Nenhuma outra ocorrência foi registrada nesta execução.
+                      </p>
+                    )}
+                  </div>
+                  )}
+                </>
+              ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -756,7 +1168,9 @@ export function MonitorMetaAlertas() {
                   </p>
                 </div>
               </div>
+              )}
 
+              {getOrigem(alertaDetalhe) !== "CARGA" && (
               <div className="mt-5 rounded-2xl border border-gray-200 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Regra
@@ -765,7 +1179,9 @@ export function MonitorMetaAlertas() {
                   {alertaDetalhe.nm_regra || "-"}
                 </p>
               </div>
+              )}
 
+              {getOrigem(alertaDetalhe) !== "CARGA" && (
               <div className="mt-5 rounded-2xl border border-gray-200 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Observações técnicas
@@ -801,6 +1217,7 @@ export function MonitorMetaAlertas() {
                   </table>
                 </div>
               </div>
+              )}
 
               <div className="mt-5 flex justify-end gap-2">
                 <button

@@ -7,6 +7,7 @@ const JWT_SECRET: Secret =
 export interface AuthenticatedRequest extends Request {
   user?: {
     sub: string;
+    email?: string;
     nome_completo?: string;
     department?: string;
     physicalDeliveryOfficeName?: string;

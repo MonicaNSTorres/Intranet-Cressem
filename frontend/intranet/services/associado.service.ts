@@ -18,6 +18,8 @@ export type BuscarPorCpfResponse =
       uf?: string;
       cep?: string;
       empresa?: string;
+      cargo?: string;
+      data_matricula_cooperativa?: string;
       endereco?: string;
       telefone?: string;
       email?: string;

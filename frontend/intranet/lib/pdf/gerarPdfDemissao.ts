@@ -104,13 +104,13 @@ async function loadImageDataURL(url: string) {
 
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  const optimizedDataUrl = canvas.toDataURL("image/jpeg", 0.72);
+  const optimizedDataUrl = canvas.toDataURL("image/png");
 
   return {
     dataUrl: optimizedDataUrl,
     width: canvas.width,
     height: canvas.height,
-    type: "JPEG" as const,
+    type: "PNG" as const,
   };
 }
 
@@ -544,6 +544,7 @@ export async function gerarPdfDemissao(data: GerarPdfDemissaoData) {
   doc.setTextColor(0, 0, 0);
   doc.save(`demissao_${sanitize(data.nome || "associado")}.pdf`);
 }
+
 
 
 

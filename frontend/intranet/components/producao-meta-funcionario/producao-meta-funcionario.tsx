@@ -10,6 +10,7 @@ import {
   FaFilter,
   FaInfoCircle,
   FaLayerGroup,
+  FaUser,
 } from "react-icons/fa";
 import {
   buscarDatasRelatorioMetaFuncionario,
@@ -494,6 +495,7 @@ export function ProducaoMetaFuncionarioForm() {
   const [tema, setTema] = useState<ChaveRelatorioFuncionario | "">("");
   const [mesSelecionado, setMesSelecionado] = useState("");
   const [periodoSelecionado, setPeriodoSelecionado] = useState("");
+  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState("");
   const [modoPeriodo, setModoPeriodo] =
     useState<ModoPeriodoFuncionario>("semana");
 
@@ -523,7 +525,7 @@ export function ProducaoMetaFuncionarioForm() {
     return getConfigAjustadaPorPeriodoFuncionario(tema, modoPeriodo);
   }, [tema, modoPeriodo]);
 
-  const dadosFiltrados = useMemo(() => {
+  const dadosDisponiveis = useMemo(() => {
     const alvo = "COLABORADOR SANTA BRANCA";
 
     return (dados || []).filter((item) => {
@@ -539,6 +541,42 @@ export function ProducaoMetaFuncionarioForm() {
       return temMetaAcimaDeUm(item);
     });
   }, [dados]);
+
+  const funcionariosOptions = useMemo(() => {
+    const nomes = dadosDisponiveis
+      .map((item) =>
+        String(
+          item?.nm_funcionario ??
+            (item as Record<string, unknown>)?.NM_FUNCIONARIO ??
+            (item as Record<string, unknown>)?.funcionario ??
+            (item as Record<string, unknown>)?.FUNCIONARIO ??
+            ""
+        ).trim()
+      )
+      .filter(Boolean);
+
+    return Array.from(new Set(nomes)).sort((a, b) =>
+      a.localeCompare(b, "pt-BR")
+    );
+  }, [dadosDisponiveis]);
+
+  const dadosFiltrados = useMemo(() => {
+    if (!funcionarioSelecionado) return dadosDisponiveis;
+
+    const funcionarioNormalizado =
+      normalizarTextoComparacao(funcionarioSelecionado);
+
+    return dadosDisponiveis.filter((item) => {
+      const nome =
+        item?.nm_funcionario ??
+        (item as Record<string, unknown>)?.NM_FUNCIONARIO ??
+        (item as Record<string, unknown>)?.funcionario ??
+        (item as Record<string, unknown>)?.FUNCIONARIO ??
+        "";
+
+      return normalizarTextoComparacao(nome) === funcionarioNormalizado;
+    });
+  }, [dadosDisponiveis, funcionarioSelecionado]);
 
   const temaLabel = useMemo(() => {
     return TIPOS_RELATORIO_FUNCIONARIO_OPTIONS.flatMap((grupo) => grupo.options).find(
@@ -674,6 +712,15 @@ export function ProducaoMetaFuncionarioForm() {
     carregarInfoTema(tema);
   }, [tema, datasRelatorioCache]);
 
+  useEffect(() => {
+    if (
+      funcionarioSelecionado &&
+      !funcionariosOptions.includes(funcionarioSelecionado)
+    ) {
+      setFuncionarioSelecionado("");
+    }
+  }, [funcionarioSelecionado, funcionariosOptions]);
+
   async function handleChangeTema(value: string) {
     const novoTema = value as ChaveRelatorioFuncionario | "";
 
@@ -682,6 +729,7 @@ export function ProducaoMetaFuncionarioForm() {
     setErro("");
     setMesSelecionado("");
     setPeriodoSelecionado("");
+    setFuncionarioSelecionado("");
     setModoPeriodo("semana");
 
     if (!novoTema) return;
@@ -822,7 +870,7 @@ export function ProducaoMetaFuncionarioForm() {
         </div>
 
         <div className="p-6">
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr_1fr]">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_0.9fr_1fr_1.1fr]">
             <div>
               <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
                 <FaFilter className="text-[#79B729]" />
@@ -922,6 +970,27 @@ export function ProducaoMetaFuncionarioForm() {
                     </option>
                   ))
                 )}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <FaUser className="text-[#00796B]" />
+                Funcionário
+              </label>
+
+              <select
+                value={funcionarioSelecionado}
+                onChange={(e) => setFuncionarioSelecionado(e.target.value)}
+                disabled={!funcionariosOptions.length}
+                className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 shadow-sm outline-none transition-all disabled:cursor-not-allowed disabled:bg-gray-100 focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+              >
+                <option value="">Todos os funcionários</option>
+                {funcionariosOptions.map((nome) => (
+                  <option key={nome} value={nome}>
+                    {nome}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

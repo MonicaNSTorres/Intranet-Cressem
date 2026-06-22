@@ -8,6 +8,8 @@ const api = axios.create({
 });
 
 export type StatusAlertaMeta = "aberto" | "resolvido" | "todos";
+export type OrigemAlertaMeta = "META" | "CARGA";
+export type TipoCargaAlertaMeta = "INSERCAO" | "EMAIL";
 
 export type MonitorMetaAlerta = {
   id_alerta: string;
@@ -19,6 +21,11 @@ export type MonitorMetaAlerta = {
   vl_esperado: string | null;
   sn_resolvido: number;
   nm_observacao: string | null;
+  carga_status?: string | null;
+  carga_qtd_linhas?: number | null;
+  carga_qtd_validas?: number | null;
+  carga_dt_execucao?: string | null;
+  carga_detalhes?: string | null;
 };
 
 export type MonitorMetaAlertasResponse = {
@@ -42,17 +49,30 @@ export type MonitorMetaAlertasResponse = {
 
 export async function listarMonitorMetaAlertas(params: {
   status?: StatusAlertaMeta;
+  origem?: OrigemAlertaMeta;
   tela?: string;
   tema?: string;
   gravidade?: string;
   entidade?: string;
   tipo_entidade?: "PA" | "FUNC";
+  tipo_carga?: TipoCargaAlertaMeta;
   page?: number;
   limit?: number;
 }) {
   const response = await api.get<MonitorMetaAlertasResponse>(
     "/v1/monitor-meta-alertas",
     { params }
+  );
+
+  return response.data;
+}
+
+export async function detalharMonitorMetaAlerta(id: string) {
+  const response = await api.get<{ ocorrencias: MonitorMetaAlerta[] }>(
+    "/v1/monitor-meta-alertas/detalhes",
+    {
+      params: { id_alerta: id },
+    }
   );
 
   return response.data;

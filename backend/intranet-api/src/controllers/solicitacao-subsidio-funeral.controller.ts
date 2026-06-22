@@ -1,0 +1,1628 @@
+import { Request, Response } from "express";
+import oracledb from "oracledb";
+import fs from "fs/promises";
+import path from "path";
+import { getOraclePool } from "../config/oracle.pool";
+import { sendEmail } from "../services/email.service";
+import { setAuditoriaContext } from "../services/oracle.service";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
+
+function onlyDigits(value: string) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function toNumber(value: any, fallback = 0) {
+  if (value === null || value === undefined || value === "") return fallback;
+  const n =
+    typeof value === "string"
+      ? Number(String(value).replace(/\./g, "").replace(",", "."))
+      : Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+const TIPO_ANEXO_DOCUMENTOS = "DOCUMENTOS_GERAIS";
+const TIPO_ANEXO_TERMO_ASSINADO = "AUTORIZACAO_ASSINADA_SOLICITANTE";
+const TIPO_ANEXO_TERMO_DIRETORIA = "AUTORIZACAO_ASSINADA_DIRETORIA";
+const AD_GROUP_SUPORTE = "GG_USERS_SUPORTE";
+const AD_GROUP_FINANCEIRO = "GG_USERS_FIN";
+const AD_GROUP_FINANCEIRO_CADASTRO = "GG_INTRANET_CADASTRO_FIN";
+const AD_GROUP_GERENCIA_DIRETORIA = "GG_USERS_GERENCIA_DIRETORIA";
+
+function toUpperTrim(value: any) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function hasGroup(grupos: string[], target: string) {
+  const alvo = toUpperTrim(target);
+  return grupos.some((grupo) => toUpperTrim(grupo) === alvo);
+}
+
+function normalizarTipoAnexo(tipo: any) {
+  const valor = String(tipo || "").trim().toUpperCase();
+
+  if (!valor) return TIPO_ANEXO_DOCUMENTOS;
+
+  if (
+    ["DOCUMENTACAO_UNICA", "DOCUMENTOS_GERAIS", "DOCUMENTOS", "DOCUMENTACAO"].includes(
+      valor
+    )
+  ) {
+    return TIPO_ANEXO_DOCUMENTOS;
+  }
+
+  if (
+    [
+      "AUTORIZACAO_GERADA",
+      "AUTORIZACAO_ASSINADA_SOLICITANTE",
+      "TERMO_GERADO_ASSINADO",
+      "TERMO_ASSINADO",
+      "TERMO_SOLICITANTE",
+    ].includes(valor)
+  ) {
+    return TIPO_ANEXO_TERMO_ASSINADO;
+  }
+
+  if (
+    [
+      "AUTORIZACAO_ASSINADA_DIRETORIA",
+      "TERMO_ASSINADO_DIRETORIA",
+      "TERMO_DIRETORIA",
+      "TERMO_DIRETORIA_ASSINADO",
+    ].includes(valor)
+  ) {
+    return TIPO_ANEXO_TERMO_DIRETORIA;
+  }
+
+  return valor;
+}
+
+function termoAssinadoTravado(status: any) {
+  return [
+    "AGUARDANDO_FINANCEIRO",
+    "AGUARDANDO_DIRETORIA",
+    "FINALIZADO",
+    "CANCELADO",
+  ].includes(String(status || "").trim());
+}
+
+function parseJsonIfNeeded<T = any>(value: any, fallback: T): T {
+  if (value === null || value === undefined || value === "") return fallback;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return fallback;
+    }
+  }
+  return value as T;
+}
+
+function sanitizeFileName(name: string) {
+  return String(name || "arquivo")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w.\-]+/g, "_");
+}
+
+function sanitizeFolderName(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function extFromMime(mime: string) {
+  const map: Record<string, string> = {
+    "application/pdf": ".pdf",
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/webp": ".webp",
+  };
+
+  return map[mime] || ".bin";
+}
+
+function parseBase64File(dataUrl: string | null, nomeOriginal?: string | null) {
+  if (!dataUrl || typeof dataUrl !== "string") return null;
+
+  const match = dataUrl.match(/^data:(.+?);base64,(.+)$/);
+  if (!match) return null;
+
+  const mime = match[1];
+  const base64 = match[2];
+  const buffer = Buffer.from(base64, "base64");
+  let ext = path.extname(nomeOriginal || "");
+  if (!ext) ext = extFromMime(mime);
+
+  return {
+    buffer,
+    mime,
+    ext,
+    nomeOriginal: sanitizeFileName(nomeOriginal || `arquivo${ext}`),
+  };
+}
+
+async function ensureDir(dirPath: string) {
+  await fs.mkdir(dirPath, { recursive: true });
+}
+
+function getBasePath() {
+  return (
+    process.env.SUBSIDIO_FUNERAL_BASE_PATH ||
+    "\\\\10.0.107.251\\dados$\\CRM\\SUBSIDIO_FUNERAL"
+  );
+}
+
+async function removeFileIfExists(filePath: string | null | undefined) {
+  if (!filePath) return;
+  try {
+    await fs.unlink(filePath);
+  } catch {
+    // ignora
+  }
+}
+
+async function salvarAnexo(
+  dataUrl: string | null,
+  nomeOriginal: string | null | undefined,
+  idSolicitacao: number,
+  indice: number,
+  nomeAssociado?: string | null
+) {
+  const parsed = parseBase64File(dataUrl, nomeOriginal);
+  if (!parsed) return null;
+
+  const pastaAssociado = sanitizeFolderName(nomeAssociado || "SEM_ASSOCIADO");
+  const baseDir = path.join(
+    getBasePath(),
+    pastaAssociado,
+    `SOLICITACAO_${idSolicitacao}`
+  );
+
+  await ensureDir(baseDir);
+
+  const finalName = sanitizeFileName(
+    `${String(indice + 1).padStart(2, "0")}_${parsed.nomeOriginal}`
+  );
+  const finalPath = path.join(baseDir, finalName);
+  await fs.writeFile(finalPath, parsed.buffer);
+
+  return {
+    finalPath,
+    mime: parsed.mime,
+  };
+}
+
+function escapeHtml(value: any) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatCpfEmail(value?: string) {
+  const cpf = onlyDigits(String(value || ""));
+  if (cpf.length !== 11) return escapeHtml(value || "");
+  return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`;
+}
+
+function formatCurrencyBRL(value: any) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  });
+}
+
+function formatParentescoEmail(solicitacao: any) {
+  const parentesco = String(solicitacao?.TP_PARENTESCO || "").trim().toUpperCase();
+  if (parentesco === "OUTRO") {
+    return String(solicitacao?.DS_PARENTESCO_OUTRO || "").trim() || "Outro";
+  }
+  return parentesco || "-";
+}
+
+function montarLinhaInfoEmail(label: string, value: any) {
+  return `
+    <tr>
+      <td style="width:34%;padding:11px 14px;background:#f8faf9;border-bottom:1px solid #e8eeeb;font-weight:700;color:#2f3a35;">
+        ${escapeHtml(label)}
+      </td>
+      <td style="padding:11px 14px;border-bottom:1px solid #e8eeeb;color:#1f2933;">
+        ${escapeHtml(value || "-")}
+      </td>
+    </tr>
+  `;
+}
+
+function montarWrapperEmail(conteudo: string) {
+  return `
+    <div style="margin:0;padding:0;background:#f3f6f4;font-family:Arial,Helvetica,sans-serif;color:#1f2933;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;background:#f3f6f4;">
+        <tr>
+          <td align="center" style="padding:24px 12px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="760" style="width:100%;max-width:760px;border-collapse:separate;background:#ffffff;border:1px solid #dfe7e2;border-radius:14px;overflow:hidden;">
+              ${conteudo}
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+function parseMailList(value: string | string[] | null | undefined) {
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => String(item || "").split(","))
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function addMails(destinatarios: Set<string>, value: string | string[] | null | undefined) {
+  for (const email of parseMailList(value)) {
+    destinatarios.add(email);
+  }
+}
+
+function getEmailFinanceiro() {
+  return process.env.REEMBOLSO_FINANCEIRO_EMAIL || process.env.FINANCEIRO_EMAIL || "";
+}
+
+function getEmailDiretoria() {
+  return (
+    process.env.SUBSIDIO_FUNERAL_DIRETORIA_EMAIL ||
+    process.env.REEMBOLSO_DIRETORIA_EMAIL ||
+    process.env.DIRETORIA_EMAIL ||
+    ""
+  );
+}
+
+function getDebugEmail() {
+  return String(
+    process.env.SUBSIDIO_FUNERAL_DEBUG_EMAIL ||
+      process.env.REEMBOLSO_DEBUG_EMAIL ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function aplicarDebugDestinatarios(destinatarios: string[]) {
+  const debugEmail = getDebugEmail();
+  if (!debugEmail) return destinatarios;
+  return [debugEmail];
+}
+
+async function buscarContatoFuncionarioPorNome(
+  connection: oracledb.Connection,
+  nomeFuncionario: string
+) {
+  const nome = String(nomeFuncionario || "").trim();
+  if (!nome) return null;
+
+  const result = await connection.execute(
+    `
+      SELECT
+        TRIM(f.NM_FUNCIONARIO) AS NM_FUNCIONARIO,
+        TRIM(f.EMAIL) AS EMAIL
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) = UPPER(TRIM(:nomeFuncionario))
+      FETCH FIRST 1 ROWS ONLY
+    `,
+    { nomeFuncionario: nome },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  const row: any = result.rows?.[0];
+  if (!row) return null;
+
+  return {
+    NM_FUNCIONARIO: String(row.NM_FUNCIONARIO || "").trim(),
+    EMAIL: String(row.EMAIL || "").trim(),
+  };
+}
+
+async function buscarContatoFuncionarioPorId(
+  connection: oracledb.Connection,
+  idFuncionario: number
+) {
+  if (!idFuncionario) return null;
+
+  const result = await connection.execute(
+    `
+      SELECT
+        TRIM(f.NM_FUNCIONARIO) AS NM_FUNCIONARIO,
+        TRIM(f.EMAIL) AS EMAIL
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      WHERE f.ID_FUNCIONARIO = :idFuncionario
+      FETCH FIRST 1 ROWS ONLY
+    `,
+    { idFuncionario },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  const row: any = result.rows?.[0];
+  if (!row) return null;
+
+  return {
+    NM_FUNCIONARIO: String(row.NM_FUNCIONARIO || "").trim(),
+    EMAIL: String(row.EMAIL || "").trim(),
+  };
+}
+
+function normalizarNivelHierarquia(value: string) {
+  const nivel = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+
+  if (nivel.includes("DIRETOR")) return "DIRETORIA";
+  return "";
+}
+
+async function buscarFuncionarioHierarquiaPorNome(
+  connection: oracledb.Connection,
+  nome: string
+) {
+  const result = await connection.execute(
+    `
+      SELECT
+        f.ID_FUNCIONARIO,
+        f.CD_GERENCIA,
+        UPPER(TRIM(NVL(c.NM_NIVEL, ''))) AS NM_NIVEL
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM c
+        ON c.ID_CARGO = f.ID_CARGO
+      WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) = UPPER(TRIM(:nome))
+      FETCH FIRST 1 ROWS ONLY
+    `,
+    { nome: String(nome || "").trim() },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  return (result.rows?.[0] as any) || null;
+}
+
+async function buscarNivelPorIdFuncionario(
+  connection: oracledb.Connection,
+  idFuncionario: number
+) {
+  const result = await connection.execute(
+    `
+      SELECT
+        f.ID_FUNCIONARIO,
+        f.CD_GERENCIA,
+        UPPER(TRIM(NVL(c.NM_NIVEL, ''))) AS NM_NIVEL
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM c
+        ON c.ID_CARGO = f.ID_CARGO
+      WHERE f.ID_FUNCIONARIO = :idFuncionario
+      FETCH FIRST 1 ROWS ONLY
+    `,
+    { idFuncionario },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  return (result.rows?.[0] as any) || null;
+}
+
+async function buscarEmailDiretoriaPorHierarquia(
+  connection: oracledb.Connection,
+  nomeUsuarioAbertura: string
+) {
+  const solicitante = await buscarFuncionarioHierarquiaPorNome(
+    connection,
+    nomeUsuarioAbertura
+  );
+
+  let proximoId = Number(solicitante?.CD_GERENCIA || 0);
+  const visitados = new Set<number>();
+  let limite = 0;
+
+  while (proximoId && !visitados.has(proximoId) && limite < 20) {
+    visitados.add(proximoId);
+    limite += 1;
+
+    const superior = await buscarNivelPorIdFuncionario(connection, proximoId);
+    if (!superior) break;
+
+    if (normalizarNivelHierarquia(String(superior.NM_NIVEL || "")) === "DIRETORIA") {
+      const contato = await buscarContatoFuncionarioPorId(
+        connection,
+        Number(superior.ID_FUNCIONARIO || 0)
+      );
+      return contato?.EMAIL || "";
+    }
+
+    proximoId = Number(superior.CD_GERENCIA || 0);
+  }
+
+  return "";
+}
+
+function montarHtmlEmailSubsidio(params: {
+  idSolicitacao: number;
+  titulo: string;
+  introducao: string;
+  solicitacao: any;
+  observacao?: string | null;
+}) {
+  const conteudo = `
+    <tr>
+      <td style="background:#006b3f;padding:22px 26px;color:#ffffff;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;opacity:.9;">
+          Subsídio funeral
+        </div>
+        <h2 style="margin:6px 0 0;font-size:22px;line-height:1.3;font-weight:700;">
+          ${escapeHtml(params.titulo)}
+        </h2>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:24px 26px;">
+        <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#4b5563;">
+          ${escapeHtml(params.introducao)}
+        </p>
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;border-spacing:0;border:1px solid #e1e8e4;border-radius:10px;overflow:hidden;margin-bottom:18px;">
+          ${montarLinhaInfoEmail("Status", params.solicitacao.ST_SOLICITACAO)}
+          ${montarLinhaInfoEmail("Solicitante", params.solicitacao.NM_SOLICITANTE)}
+          ${montarLinhaInfoEmail("CPF solicitante", formatCpfEmail(params.solicitacao.NR_CPF_SOLICITANTE))}
+          ${montarLinhaInfoEmail("Parentesco do solicitante", formatParentescoEmail(params.solicitacao))}
+          ${montarLinhaInfoEmail("Associado falecido", params.solicitacao.NM_ASSOCIADO)}
+          ${montarLinhaInfoEmail("CPF associado", formatCpfEmail(params.solicitacao.NR_CPF_ASSOCIADO))}
+          ${montarLinhaInfoEmail("Valor liberado", formatCurrencyBRL(params.solicitacao.VL_SUBSIDIO_APROVADO))}
+          ${params.observacao ? montarLinhaInfoEmail("Observação", params.observacao) : ""}
+        </table>
+        <p style="margin:0;font-size:12px;line-height:1.5;color:#6b7280;">
+          Este e-mail foi enviado automaticamente pelo sistema.
+        </p>
+      </td>
+    </tr>
+  `;
+
+  return montarWrapperEmail(conteudo);
+}
+
+async function enviarEmailFluxoSubsidio(
+  connection: oracledb.Connection,
+  params: {
+    idSolicitacao: number;
+    solicitacao: any;
+    tipo: "FINANCEIRO" | "DIRETORIA" | "SOLICITANTE" | "FINANCEIRO_SOLICITANTE";
+    titulo: string;
+    introducao: string;
+    observacao?: string | null;
+  }
+) {
+  const destinatarios = new Set<string>();
+
+  if (params.tipo === "FINANCEIRO" || params.tipo === "FINANCEIRO_SOLICITANTE") {
+    addMails(destinatarios, getEmailFinanceiro());
+  }
+
+  if (params.tipo === "DIRETORIA") {
+    addMails(destinatarios, getEmailDiretoria());
+    if (!destinatarios.size) {
+      addMails(
+        destinatarios,
+        await buscarEmailDiretoriaPorHierarquia(
+          connection,
+          String(params.solicitacao.NM_USUARIO_ABERTURA || "")
+        )
+      );
+    }
+  }
+
+  if (params.tipo === "SOLICITANTE" || params.tipo === "FINANCEIRO_SOLICITANTE") {
+    const contato = await buscarContatoFuncionarioPorNome(
+      connection,
+      String(params.solicitacao.NM_USUARIO_ABERTURA || "")
+    );
+    addMails(destinatarios, contato?.EMAIL);
+    addMails(destinatarios, String(params.solicitacao.LOGIN_USUARIO_ABERTURA || "").includes("@") ? params.solicitacao.LOGIN_USUARIO_ABERTURA : "");
+  }
+
+  const emailsOriginais = Array.from(destinatarios);
+  const emails = aplicarDebugDestinatarios(emailsOriginais);
+  if (!emails.length) {
+    return {
+      enviado: false,
+      destinatarios: [],
+      motivo: "Nenhum destinatário configurado/encontrado para esta transição.",
+    };
+  }
+
+  const subject = `Subsídio funeral - ${params.titulo}`;
+  const html = montarHtmlEmailSubsidio({
+    idSolicitacao: params.idSolicitacao,
+    titulo: params.titulo,
+    introducao: params.introducao,
+    solicitacao: params.solicitacao,
+    observacao: params.observacao,
+  });
+
+  await sendEmail(emails, subject, html);
+
+  return {
+    enviado: true,
+    destinatarios: emails,
+    destinatarios_originais: emailsOriginais,
+    debug_email_ativo: Boolean(getDebugEmail()),
+    subject,
+  };
+}
+
+async function inserirHistorico(
+  connection: oracledb.Connection,
+  params: {
+    idSolicitacao: number;
+    statusAnterior?: string | null;
+    statusNovo: string;
+    acao: string;
+    observacao?: string | null;
+    nomeUsuario?: string | null;
+    loginUsuario?: string | null;
+  }
+) {
+  await connection.execute(
+    `
+      INSERT INTO DBACRESSEM.SUBSIDIO_FUNERAL_HISTORICO (
+        ID_SUBSIDIO_FUNERAL,
+        ST_ANTERIOR,
+        ST_NOVO,
+        DS_ACAO,
+        DS_OBSERVACAO,
+        NM_USUARIO,
+        LOGIN_USUARIO,
+        DT_ACAO
+      ) VALUES (
+        :ID_SUBSIDIO_FUNERAL,
+        :ST_ANTERIOR,
+        :ST_NOVO,
+        :DS_ACAO,
+        :DS_OBSERVACAO,
+        :NM_USUARIO,
+        :LOGIN_USUARIO,
+        SYSDATE
+      )
+    `,
+    {
+      ID_SUBSIDIO_FUNERAL: params.idSolicitacao,
+      ST_ANTERIOR: params.statusAnterior || null,
+      ST_NOVO: params.statusNovo,
+      DS_ACAO: params.acao,
+      DS_OBSERVACAO: params.observacao || null,
+      NM_USUARIO: params.nomeUsuario || null,
+      LOGIN_USUARIO: params.loginUsuario || null,
+    },
+    { autoCommit: false }
+  );
+}
+
+function validarCadastro(body: any) {
+  const anexos = parseJsonIfNeeded<any[]>(body.ANEXOS, []);
+  const possuiDocumentacao = anexos.some(
+    (item) => normalizarTipoAnexo(item?.TP_ANEXO) === TIPO_ANEXO_DOCUMENTOS
+  );
+
+  if (!String(body.NM_SOLICITANTE || "").trim()) return "Preencha o nome do solicitante.";
+  if (onlyDigits(body.NR_CPF_SOLICITANTE).length !== 11) return "CPF do solicitante inválido.";
+  if (!String(body.TP_PARENTESCO || "").trim()) return "Selecione o parentesco.";
+  if (String(body.TP_PARENTESCO || "").trim() === "OUTRO" && !String(body.DS_PARENTESCO_OUTRO || "").trim()) {
+    return "Informe o parentesco quando selecionar Outros.";
+  }
+  if (!String(body.DS_PROFISSAO_SOLICITANTE || "").trim()) return "Preencha a profissão do solicitante.";
+  if (!String(body.NM_ASSOCIADO || "").trim()) return "Preencha o nome do associado.";
+  if (onlyDigits(body.NR_CPF_ASSOCIADO).length !== 11) return "CPF do associado inválido.";
+  if (!String(body.DT_OBITO || "").trim()) return "Preencha a data do óbito.";
+  if (!String(body.NM_LOCAL_TRABALHO || "").trim()) return "Preencha o local de trabalho do associado.";
+  if (toNumber(body.VL_CUSTO_SERVICO, -1) < 0) return "Informe o custo do serviço.";
+  if (toNumber(body.VL_SUBSIDIO_APROVADO, -1) < 0) return "Informe o valor liberado.";
+  if (toNumber(body.VL_SUBSIDIO_APROVADO, 0) > 2000) return "O valor liberado não pode ultrapassar R$ 2.000,00.";
+  if (!String(body.NM_PRESTADOR_SERVICO || "").trim()) return "Preencha o nome do prestador de serviço.";
+  if (!onlyDigits(body.NR_CPF_CNPJ_PRESTADOR || "").trim()) return "Preencha o CPF/CNPJ do prestador de serviço.";
+  if (!String(body.NM_TITULAR_CONTA || "").trim()) return "Preencha o nome do titular da conta.";
+  if (onlyDigits(body.NR_CPF_TITULAR_CONTA || "").length !== 11) return "CPF do titular da conta inválido.";
+  if (!String(body.CD_BANCO || "").trim()) return "Preencha o código do banco.";
+  if (!String(body.NM_BANCO || "").trim()) return "Preencha o nome do banco.";
+  if (!String(body.CD_AGENCIA || "").trim()) return "Preencha a agência.";
+  if (!String(body.NR_CONTA || "").trim()) return "Preencha a conta.";
+  if (!String(body.TP_CONTA || "").trim()) return "Selecione o tipo de conta.";
+  if (!possuiDocumentacao) return "Anexe a documentação obrigatória antes de salvar a solicitação.";
+  return null;
+}
+
+function possuiAnexoLista(anexos: any[], tipo: string) {
+  return Array.isArray(anexos)
+    ? anexos.some((item) => normalizarTipoAnexo(item?.TP_ANEXO || item?.tipo) === tipo)
+    : false;
+}
+
+async function buscarSolicitacao(connection: oracledb.Connection, id: number) {
+  const result = await connection.execute(
+    `
+      SELECT
+        s.*,
+        TO_CHAR(s.DT_SOLICITACAO, 'YYYY-MM-DD') AS DT_SOLICITACAO_FMT,
+        TO_CHAR(s.DT_ASSOCIACAO, 'YYYY-MM-DD') AS DT_ASSOCIACAO_FMT,
+        TO_CHAR(s.DT_OBITO, 'YYYY-MM-DD') AS DT_OBITO_FMT,
+        TO_CHAR(s.DT_ENVIO_DIRETORIA, 'YYYY-MM-DD') AS DT_ENVIO_DIRETORIA_FMT,
+        TO_CHAR(s.DT_APROVACAO_DIRETORIA, 'YYYY-MM-DD') AS DT_APROVACAO_DIRETORIA_FMT,
+        TO_CHAR(s.DT_ENVIO_FINANCEIRO, 'YYYY-MM-DD') AS DT_ENVIO_FINANCEIRO_FMT,
+        TO_CHAR(s.DT_FINALIZACAO, 'YYYY-MM-DD') AS DT_FINALIZACAO_FMT,
+        TO_CHAR(s.DT_CRIACAO, 'YYYY-MM-DD') AS DT_CRIACAO_FMT,
+        TO_CHAR(s.DT_ATUALIZACAO, 'YYYY-MM-DD') AS DT_ATUALIZACAO_FMT
+      FROM DBACRESSEM.SOLICITACAO_SUBSIDIO_FUNERAL s
+      WHERE s.ID_SUBSIDIO_FUNERAL = :id
+    `,
+    { id },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  return (result.rows?.[0] as any) || null;
+}
+
+async function buscarAnexos(connection: oracledb.Connection, id: number) {
+  const result = await connection.execute(
+    `
+      SELECT
+        a.ID_SUBSIDIO_FUNERAL_ANEXO,
+        a.ID_SUBSIDIO_FUNERAL,
+        a.TP_ANEXO,
+        a.NM_ARQUIVO_ORIGINAL,
+        a.DS_CAMINHO_ARQUIVO,
+        a.DS_MIME_TYPE,
+        a.NR_TAMANHO_BYTES,
+        a.NM_USUARIO_UPLOAD,
+        a.LOGIN_USUARIO_UPLOAD,
+        TO_CHAR(a.DT_UPLOAD, 'YYYY-MM-DD HH24:MI:SS') AS DT_UPLOAD,
+        a.SN_ATIVO
+      FROM DBACRESSEM.SUBSIDIO_FUNERAL_ANEXO a
+      WHERE a.ID_SUBSIDIO_FUNERAL = :id
+        AND NVL(a.SN_ATIVO, 1) = 1
+      ORDER BY a.ID_SUBSIDIO_FUNERAL_ANEXO
+    `,
+    { id },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  return (result.rows || []) as any[];
+}
+
+function possuiAnexo(anexos: any[], tipo: string) {
+  const tipoNormalizado = normalizarTipoAnexo(tipo);
+  return anexos.some((item) => normalizarTipoAnexo(item.TP_ANEXO) === tipoNormalizado);
+}
+
+function getPerfilPermissaoSubsidio(req: AuthenticatedRequest, solicitacao?: any) {
+  const loginUsuario = String(req.user?.sub || "").trim();
+  const grupos = Array.isArray(req.user?.grupos) ? req.user!.grupos! : [];
+
+  const isSuporte = hasGroup(grupos, AD_GROUP_SUPORTE);
+  const isFinanceiro =
+    hasGroup(grupos, AD_GROUP_FINANCEIRO) ||
+    hasGroup(grupos, AD_GROUP_FINANCEIRO_CADASTRO);
+  const isDiretoria = hasGroup(grupos, AD_GROUP_GERENCIA_DIRETORIA);
+  const isSolicitanteAtual =
+    Boolean(toUpperTrim(loginUsuario)) &&
+    toUpperTrim(loginUsuario) === toUpperTrim(solicitacao?.LOGIN_USUARIO_ABERTURA);
+
+  return {
+    isSuporte,
+    isFinanceiro,
+    isDiretoria,
+    isSolicitanteAtual,
+    podeVisualizar: isSuporte || isFinanceiro || isDiretoria || isSolicitanteAtual,
+  };
+}
+
+async function buscarHistorico(connection: oracledb.Connection, id: number) {
+  const result = await connection.execute(
+    `
+      SELECT
+        h.ID_SUBSIDIO_FUNERAL_HIST,
+        h.ST_ANTERIOR,
+        h.ST_NOVO,
+        h.DS_ACAO,
+        h.DS_OBSERVACAO,
+        h.NM_USUARIO,
+        h.LOGIN_USUARIO,
+        TO_CHAR(h.DT_ACAO, 'YYYY-MM-DD HH24:MI:SS') AS DT_ACAO
+      FROM DBACRESSEM.SUBSIDIO_FUNERAL_HISTORICO h
+      WHERE h.ID_SUBSIDIO_FUNERAL = :id
+      ORDER BY h.ID_SUBSIDIO_FUNERAL_HIST
+    `,
+    { id },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  return (result.rows || []) as any[];
+}
+
+export const solicitacaoSubsidioFuneralController = {
+  async cadastrar(req: Request, res: Response) {
+    const erro = validarCadastro(req.body);
+    if (erro) return res.status(400).json({ error: erro });
+
+    const pool = await getOraclePool();
+    const connection = await pool.getConnection();
+
+    try {
+      setAuditoriaContext(connection, req);
+
+      const anexos = parseJsonIfNeeded<any[]>(req.body.ANEXOS, []);
+
+      const insertResult = await connection.execute(
+        `
+          INSERT INTO DBACRESSEM.SOLICITACAO_SUBSIDIO_FUNERAL (
+            ST_SOLICITACAO,
+            DT_SOLICITACAO,
+            NM_USUARIO_ABERTURA,
+            LOGIN_USUARIO_ABERTURA,
+            NM_SOLICITANTE,
+            NR_CPF_SOLICITANTE,
+            TP_PARENTESCO,
+            DS_PARENTESCO_OUTRO,
+            DS_PROFISSAO_SOLICITANTE,
+            ID_ASSOCIADO,
+            NR_CPF_ASSOCIADO,
+            NM_ASSOCIADO,
+            NR_MATRICULA_ASSOCIADO,
+            NM_LOCAL_TRABALHO,
+            DS_CARGO_ASSOCIADO,
+            DT_ASSOCIACAO,
+            DT_OBITO,
+            VL_CUSTO_SERVICO,
+            VL_SUBSIDIO_APROVADO,
+            NM_PRESTADOR_SERVICO,
+            NR_CPF_CNPJ_PRESTADOR,
+            NM_TITULAR_CONTA,
+            NR_CPF_TITULAR_CONTA,
+            CD_BANCO,
+            NM_BANCO,
+            CD_AGENCIA,
+            NR_CONTA,
+            TP_CONTA,
+            CHAVE_PIX,
+            DS_OBSERVACAO,
+            DS_MOTIVO_DEVOLUCAO,
+            DT_CRIACAO,
+            SN_ATIVO
+          ) VALUES (
+            :ST_SOLICITACAO,
+            NVL(TO_DATE(:DT_SOLICITACAO, 'YYYY-MM-DD'), SYSDATE),
+            :NM_USUARIO_ABERTURA,
+            :LOGIN_USUARIO_ABERTURA,
+            :NM_SOLICITANTE,
+            :NR_CPF_SOLICITANTE,
+            :TP_PARENTESCO,
+            :DS_PARENTESCO_OUTRO,
+            :DS_PROFISSAO_SOLICITANTE,
+            :ID_ASSOCIADO,
+            :NR_CPF_ASSOCIADO,
+            :NM_ASSOCIADO,
+            :NR_MATRICULA_ASSOCIADO,
+            :NM_LOCAL_TRABALHO,
+            :DS_CARGO_ASSOCIADO,
+            TO_DATE(:DT_ASSOCIACAO, 'YYYY-MM-DD'),
+            TO_DATE(:DT_OBITO, 'YYYY-MM-DD'),
+            :VL_CUSTO_SERVICO,
+            :VL_SUBSIDIO_APROVADO,
+            :NM_PRESTADOR_SERVICO,
+            :NR_CPF_CNPJ_PRESTADOR,
+            :NM_TITULAR_CONTA,
+            :NR_CPF_TITULAR_CONTA,
+            :CD_BANCO,
+            :NM_BANCO,
+            :CD_AGENCIA,
+            :NR_CONTA,
+            :TP_CONTA,
+            :CHAVE_PIX,
+            :DS_OBSERVACAO,
+            :DS_MOTIVO_DEVOLUCAO,
+            SYSDATE,
+            1
+          )
+          RETURNING ID_SUBSIDIO_FUNERAL INTO :ID_SUBSIDIO_FUNERAL_OUT
+        `,
+        {
+          ST_SOLICITACAO: String(req.body.ST_SOLICITACAO || "AGUARDANDO_ASSINATURA_SOLICITANTE").trim(),
+          DT_SOLICITACAO: String(req.body.DT_SOLICITACAO || "").trim() || null,
+          NM_USUARIO_ABERTURA: String(req.body.NM_USUARIO_ABERTURA || "").trim() || null,
+          LOGIN_USUARIO_ABERTURA: String(req.body.LOGIN_USUARIO_ABERTURA || "").trim() || null,
+          NM_SOLICITANTE: String(req.body.NM_SOLICITANTE || "").trim(),
+          NR_CPF_SOLICITANTE: onlyDigits(req.body.NR_CPF_SOLICITANTE),
+          TP_PARENTESCO: String(req.body.TP_PARENTESCO || "").trim(),
+          DS_PARENTESCO_OUTRO: String(req.body.DS_PARENTESCO_OUTRO || "").trim() || null,
+          DS_PROFISSAO_SOLICITANTE: String(req.body.DS_PROFISSAO_SOLICITANTE || "").trim() || null,
+          ID_ASSOCIADO: req.body.ID_ASSOCIADO ? Number(req.body.ID_ASSOCIADO) : null,
+          NR_CPF_ASSOCIADO: onlyDigits(req.body.NR_CPF_ASSOCIADO),
+          NM_ASSOCIADO: String(req.body.NM_ASSOCIADO || "").trim(),
+          NR_MATRICULA_ASSOCIADO: String(req.body.NR_MATRICULA_ASSOCIADO || "").trim() || null,
+          NM_LOCAL_TRABALHO: String(req.body.NM_LOCAL_TRABALHO || "").trim() || null,
+          DS_CARGO_ASSOCIADO: String(req.body.DS_CARGO_ASSOCIADO || "").trim() || null,
+          DT_ASSOCIACAO: String(req.body.DT_ASSOCIACAO || "").trim() || null,
+          DT_OBITO: String(req.body.DT_OBITO || "").trim(),
+          VL_CUSTO_SERVICO: toNumber(req.body.VL_CUSTO_SERVICO),
+          VL_SUBSIDIO_APROVADO: toNumber(req.body.VL_SUBSIDIO_APROVADO),
+          NM_PRESTADOR_SERVICO: String(req.body.NM_PRESTADOR_SERVICO || "").trim() || null,
+          NR_CPF_CNPJ_PRESTADOR: onlyDigits(req.body.NR_CPF_CNPJ_PRESTADOR || ""),
+          NM_TITULAR_CONTA: String(req.body.NM_TITULAR_CONTA || "").trim(),
+          NR_CPF_TITULAR_CONTA: onlyDigits(req.body.NR_CPF_TITULAR_CONTA || ""),
+          CD_BANCO: String(req.body.CD_BANCO || "").trim() || null,
+          NM_BANCO: String(req.body.NM_BANCO || "").trim() || null,
+          CD_AGENCIA: String(req.body.CD_AGENCIA || "").trim() || null,
+          NR_CONTA: String(req.body.NR_CONTA || "").trim() || null,
+          TP_CONTA: String(req.body.TP_CONTA || "").trim() || null,
+          CHAVE_PIX: String(req.body.CHAVE_PIX || "").trim() || null,
+          DS_OBSERVACAO: String(req.body.DS_OBSERVACAO || "").trim() || null,
+          DS_MOTIVO_DEVOLUCAO: String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
+          ID_SUBSIDIO_FUNERAL_OUT: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+        },
+        { autoCommit: false }
+      );
+
+      const idSolicitacao = Number(
+        ((insertResult.outBinds as any)?.ID_SUBSIDIO_FUNERAL_OUT || [])[0]
+      );
+
+      if (!Number.isFinite(idSolicitacao) || idSolicitacao <= 0) {
+        throw new Error("Não foi possível obter o ID gerado da solicitação.");
+      }
+
+      for (let i = 0; i < anexos.length; i++) {
+        const anexo = anexos[i];
+        const salvo = await salvarAnexo(
+          anexo.ARQUIVO || null,
+          anexo.NM_ARQUIVO_ORIGINAL || null,
+          idSolicitacao,
+          i,
+          req.body.NM_ASSOCIADO
+        );
+
+        await connection.execute(
+          `
+            INSERT INTO DBACRESSEM.SUBSIDIO_FUNERAL_ANEXO (
+              ID_SUBSIDIO_FUNERAL,
+              TP_ANEXO,
+              NM_ARQUIVO_ORIGINAL,
+              DS_CAMINHO_ARQUIVO,
+              DS_MIME_TYPE,
+              NR_TAMANHO_BYTES,
+              NM_USUARIO_UPLOAD,
+              LOGIN_USUARIO_UPLOAD,
+              DT_UPLOAD,
+              SN_ATIVO
+            ) VALUES (
+              :ID_SUBSIDIO_FUNERAL,
+              :TP_ANEXO,
+              :NM_ARQUIVO_ORIGINAL,
+              :DS_CAMINHO_ARQUIVO,
+              :DS_MIME_TYPE,
+              :NR_TAMANHO_BYTES,
+              :NM_USUARIO_UPLOAD,
+              :LOGIN_USUARIO_UPLOAD,
+              SYSDATE,
+              1
+            )
+          `,
+          {
+            ID_SUBSIDIO_FUNERAL: idSolicitacao,
+            TP_ANEXO: normalizarTipoAnexo(anexo.TP_ANEXO),
+            NM_ARQUIVO_ORIGINAL: String(anexo.NM_ARQUIVO_ORIGINAL || "arquivo").trim(),
+            DS_CAMINHO_ARQUIVO: salvo?.finalPath || null,
+            DS_MIME_TYPE: salvo?.mime || null,
+            NR_TAMANHO_BYTES: Number(anexo.NR_TAMANHO_BYTES || 0) || null,
+            NM_USUARIO_UPLOAD: String(req.body.NM_USUARIO_ABERTURA || "").trim() || null,
+            LOGIN_USUARIO_UPLOAD: String(req.body.LOGIN_USUARIO_ABERTURA || "").trim() || null,
+          },
+          { autoCommit: false }
+        );
+      }
+
+      await inserirHistorico(connection, {
+        idSolicitacao,
+        statusNovo: String(req.body.ST_SOLICITACAO || "AGUARDANDO_ASSINATURA_SOLICITANTE").trim(),
+        acao: "CRIACAO",
+        observacao: "Solicitação criada.",
+        nomeUsuario: req.body.NM_USUARIO_ABERTURA,
+        loginUsuario: req.body.LOGIN_USUARIO_ABERTURA,
+      });
+
+      await connection.commit();
+
+      return res.status(201).json({
+        ok: true,
+        id: idSolicitacao,
+        message: "Solicitação de subsídio funeral cadastrada com sucesso.",
+      });
+    } catch (err: any) {
+      await connection.rollback();
+      console.error("cadastrar subsidio funeral erro:", err);
+      return res.status(500).json({
+        error: "Falha ao cadastrar solicitação de subsídio funeral.",
+        details: String(err?.message || err),
+      });
+    } finally {
+      await connection.close();
+    }
+  },
+
+  async editar(req: AuthenticatedRequest, res: Response) {
+    const idSolicitacao = Number(req.body.ID_SUBSIDIO_FUNERAL);
+    if (!Number.isFinite(idSolicitacao) || idSolicitacao <= 0) {
+      return res.status(400).json({ error: "ID_SUBSIDIO_FUNERAL inválido." });
+    }
+
+    const erro = validarCadastro(req.body);
+    if (erro) return res.status(400).json({ error: erro });
+
+    const pool = await getOraclePool();
+    const connection = await pool.getConnection();
+
+    try {
+      setAuditoriaContext(connection, req);
+
+      const atual = await buscarSolicitacao(connection, idSolicitacao);
+      if (!atual) {
+        return res.status(404).json({ error: "Solicitação não encontrada." });
+      }
+
+      const perfil = getPerfilPermissaoSubsidio(req, atual);
+      if (!perfil.podeVisualizar) {
+        return res.status(403).json({
+          error: "Você não tem permissão para editar esta solicitação.",
+        });
+      }
+
+      if (!perfil.isSolicitanteAtual) {
+        return res.status(403).json({
+          error: "Somente quem abriu a solicitação pode editar este cadastro.",
+        });
+      }
+
+      let anexos = parseJsonIfNeeded<any[]>(req.body.ANEXOS, []);
+      const anexosAtuais = await buscarAnexos(connection, idSolicitacao);
+      const termoAssinadoAtual = anexosAtuais.find(
+        (item) => normalizarTipoAnexo(item.TP_ANEXO) === TIPO_ANEXO_TERMO_ASSINADO
+      );
+
+      if (termoAssinadoAtual && termoAssinadoTravado(atual.ST_SOLICITACAO)) {
+        anexos = anexos.filter(
+          (item) => normalizarTipoAnexo(item.TP_ANEXO) !== TIPO_ANEXO_TERMO_ASSINADO
+        );
+        anexos.push({
+          TP_ANEXO: TIPO_ANEXO_TERMO_ASSINADO,
+          NM_ARQUIVO_ORIGINAL: termoAssinadoAtual.NM_ARQUIVO_ORIGINAL,
+          DS_CAMINHO_ARQUIVO: termoAssinadoAtual.DS_CAMINHO_ARQUIVO,
+          DS_MIME_TYPE: termoAssinadoAtual.DS_MIME_TYPE,
+          NR_TAMANHO_BYTES: termoAssinadoAtual.NR_TAMANHO_BYTES,
+          ARQUIVO: null,
+        });
+      }
+
+      const retornandoAoFinanceiro = String(atual.ST_SOLICITACAO || "").trim() === "DEVOLVIDO_AO_ATENDIMENTO";
+
+      if (retornandoAoFinanceiro) {
+        if (!possuiAnexoLista(anexos, TIPO_ANEXO_DOCUMENTOS)) {
+          return res.status(400).json({
+            error: "Na devolução, mantenha ou reenvie a documentação obrigatória antes de salvar.",
+          });
+        }
+
+        if (!possuiAnexoLista(anexos, TIPO_ANEXO_TERMO_ASSINADO)) {
+          return res.status(400).json({
+            error: "Na devolução, mantenha ou reenvie o termo assinado pelo solicitante antes de salvar.",
+          });
+        }
+      }
+
+      await connection.execute(
+        `
+          UPDATE DBACRESSEM.SOLICITACAO_SUBSIDIO_FUNERAL
+             SET NM_SOLICITANTE = :NM_SOLICITANTE,
+                 NR_CPF_SOLICITANTE = :NR_CPF_SOLICITANTE,
+                 TP_PARENTESCO = :TP_PARENTESCO,
+                 DS_PARENTESCO_OUTRO = :DS_PARENTESCO_OUTRO,
+                 DS_PROFISSAO_SOLICITANTE = :DS_PROFISSAO_SOLICITANTE,
+                 ID_ASSOCIADO = :ID_ASSOCIADO,
+                 NR_CPF_ASSOCIADO = :NR_CPF_ASSOCIADO,
+                 NM_ASSOCIADO = :NM_ASSOCIADO,
+                 NR_MATRICULA_ASSOCIADO = :NR_MATRICULA_ASSOCIADO,
+                 NM_LOCAL_TRABALHO = :NM_LOCAL_TRABALHO,
+                 DS_CARGO_ASSOCIADO = :DS_CARGO_ASSOCIADO,
+                 DT_ASSOCIACAO = TO_DATE(:DT_ASSOCIACAO, 'YYYY-MM-DD'),
+                 DT_OBITO = TO_DATE(:DT_OBITO, 'YYYY-MM-DD'),
+                 VL_CUSTO_SERVICO = :VL_CUSTO_SERVICO,
+                 VL_SUBSIDIO_APROVADO = :VL_SUBSIDIO_APROVADO,
+                 NM_PRESTADOR_SERVICO = :NM_PRESTADOR_SERVICO,
+                 NR_CPF_CNPJ_PRESTADOR = :NR_CPF_CNPJ_PRESTADOR,
+                 NM_TITULAR_CONTA = :NM_TITULAR_CONTA,
+                 NR_CPF_TITULAR_CONTA = :NR_CPF_TITULAR_CONTA,
+                 CD_BANCO = :CD_BANCO,
+                 NM_BANCO = :NM_BANCO,
+                 CD_AGENCIA = :CD_AGENCIA,
+                 NR_CONTA = :NR_CONTA,
+                 TP_CONTA = :TP_CONTA,
+                 CHAVE_PIX = :CHAVE_PIX,
+                 DS_OBSERVACAO = :DS_OBSERVACAO,
+                 DS_MOTIVO_DEVOLUCAO = :DS_MOTIVO_DEVOLUCAO,
+                 ST_SOLICITACAO = :ST_SOLICITACAO,
+                 DT_ENVIO_FINANCEIRO = :DT_ENVIO_FINANCEIRO,
+                 DT_ATUALIZACAO = SYSDATE
+           WHERE ID_SUBSIDIO_FUNERAL = :ID_SUBSIDIO_FUNERAL
+        `,
+        {
+          ID_SUBSIDIO_FUNERAL: idSolicitacao,
+          NM_SOLICITANTE: String(req.body.NM_SOLICITANTE || "").trim(),
+          NR_CPF_SOLICITANTE: onlyDigits(req.body.NR_CPF_SOLICITANTE),
+          TP_PARENTESCO: String(req.body.TP_PARENTESCO || "").trim(),
+          DS_PARENTESCO_OUTRO: String(req.body.DS_PARENTESCO_OUTRO || "").trim() || null,
+          DS_PROFISSAO_SOLICITANTE: String(req.body.DS_PROFISSAO_SOLICITANTE || "").trim() || null,
+          ID_ASSOCIADO: req.body.ID_ASSOCIADO ? Number(req.body.ID_ASSOCIADO) : null,
+          NR_CPF_ASSOCIADO: onlyDigits(req.body.NR_CPF_ASSOCIADO),
+          NM_ASSOCIADO: String(req.body.NM_ASSOCIADO || "").trim(),
+          NR_MATRICULA_ASSOCIADO: String(req.body.NR_MATRICULA_ASSOCIADO || "").trim() || null,
+          NM_LOCAL_TRABALHO: String(req.body.NM_LOCAL_TRABALHO || "").trim() || null,
+          DS_CARGO_ASSOCIADO: String(req.body.DS_CARGO_ASSOCIADO || "").trim() || null,
+          DT_ASSOCIACAO: String(req.body.DT_ASSOCIACAO || "").trim() || null,
+          DT_OBITO: String(req.body.DT_OBITO || "").trim(),
+          VL_CUSTO_SERVICO: toNumber(req.body.VL_CUSTO_SERVICO),
+          VL_SUBSIDIO_APROVADO: toNumber(req.body.VL_SUBSIDIO_APROVADO),
+          NM_PRESTADOR_SERVICO: String(req.body.NM_PRESTADOR_SERVICO || "").trim() || null,
+          NR_CPF_CNPJ_PRESTADOR: onlyDigits(req.body.NR_CPF_CNPJ_PRESTADOR || ""),
+          NM_TITULAR_CONTA: String(req.body.NM_TITULAR_CONTA || "").trim(),
+          NR_CPF_TITULAR_CONTA: onlyDigits(req.body.NR_CPF_TITULAR_CONTA || ""),
+          CD_BANCO: String(req.body.CD_BANCO || "").trim() || null,
+          NM_BANCO: String(req.body.NM_BANCO || "").trim() || null,
+          CD_AGENCIA: String(req.body.CD_AGENCIA || "").trim() || null,
+          NR_CONTA: String(req.body.NR_CONTA || "").trim() || null,
+          TP_CONTA: String(req.body.TP_CONTA || "").trim() || null,
+          CHAVE_PIX: String(req.body.CHAVE_PIX || "").trim() || null,
+          DS_OBSERVACAO: String(req.body.DS_OBSERVACAO || "").trim() || null,
+          DS_MOTIVO_DEVOLUCAO: retornandoAoFinanceiro ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
+          ST_SOLICITACAO: retornandoAoFinanceiro ? "AGUARDANDO_FINANCEIRO" : String(atual.ST_SOLICITACAO || "").trim(),
+          DT_ENVIO_FINANCEIRO: retornandoAoFinanceiro ? new Date() : null,
+        },
+        { autoCommit: false }
+      );
+
+      await connection.execute(
+        `
+          UPDATE DBACRESSEM.SUBSIDIO_FUNERAL_ANEXO
+             SET SN_ATIVO = 0
+           WHERE ID_SUBSIDIO_FUNERAL = :id
+        `,
+        { id: idSolicitacao },
+        { autoCommit: false }
+      );
+
+      for (let i = 0; i < anexos.length; i++) {
+        const anexo = anexos[i];
+
+        let caminhoArquivo = String(anexo.DS_CAMINHO_ARQUIVO || "").trim() || null;
+        let mimeType = String(anexo.DS_MIME_TYPE || "").trim() || null;
+
+        if (String(anexo.ARQUIVO || "").startsWith("data:")) {
+          const salvo = await salvarAnexo(
+            anexo.ARQUIVO,
+            anexo.NM_ARQUIVO_ORIGINAL || null,
+            idSolicitacao,
+            i,
+            req.body.NM_ASSOCIADO
+          );
+          caminhoArquivo = salvo?.finalPath || null;
+          mimeType = salvo?.mime || null;
+        }
+
+        await connection.execute(
+          `
+            INSERT INTO DBACRESSEM.SUBSIDIO_FUNERAL_ANEXO (
+              ID_SUBSIDIO_FUNERAL,
+              TP_ANEXO,
+              NM_ARQUIVO_ORIGINAL,
+              DS_CAMINHO_ARQUIVO,
+              DS_MIME_TYPE,
+              NR_TAMANHO_BYTES,
+              NM_USUARIO_UPLOAD,
+              LOGIN_USUARIO_UPLOAD,
+              DT_UPLOAD,
+              SN_ATIVO
+            ) VALUES (
+              :ID_SUBSIDIO_FUNERAL,
+              :TP_ANEXO,
+              :NM_ARQUIVO_ORIGINAL,
+              :DS_CAMINHO_ARQUIVO,
+              :DS_MIME_TYPE,
+              :NR_TAMANHO_BYTES,
+              :NM_USUARIO_UPLOAD,
+              :LOGIN_USUARIO_UPLOAD,
+              SYSDATE,
+              1
+            )
+          `,
+          {
+            ID_SUBSIDIO_FUNERAL: idSolicitacao,
+            TP_ANEXO: normalizarTipoAnexo(anexo.TP_ANEXO),
+            NM_ARQUIVO_ORIGINAL: String(anexo.NM_ARQUIVO_ORIGINAL || "arquivo").trim(),
+            DS_CAMINHO_ARQUIVO: caminhoArquivo,
+            DS_MIME_TYPE: mimeType,
+            NR_TAMANHO_BYTES: Number(anexo.NR_TAMANHO_BYTES || 0) || null,
+            NM_USUARIO_UPLOAD: String(req.body.NM_USUARIO_ABERTURA || "").trim() || null,
+            LOGIN_USUARIO_UPLOAD: String(req.body.LOGIN_USUARIO_ABERTURA || "").trim() || null,
+          },
+          { autoCommit: false }
+        );
+      }
+
+      const novoStatus = retornandoAoFinanceiro ? "AGUARDANDO_FINANCEIRO" : String(atual.ST_SOLICITACAO || "").trim();
+
+      await inserirHistorico(connection, {
+        idSolicitacao,
+        statusAnterior: atual.ST_SOLICITACAO,
+        statusNovo: novoStatus,
+        acao: retornandoAoFinanceiro ? "REENVIO_ATENDIMENTO" : "EDICAO",
+        observacao: retornandoAoFinanceiro ? "Solicitação corrigida e reenviada ao financeiro." : "Solicitação atualizada.",
+        nomeUsuario: req.body.NM_USUARIO_ABERTURA,
+        loginUsuario: req.body.LOGIN_USUARIO_ABERTURA,
+      });
+
+      await connection.commit();
+
+      let notificacao: any = { enviado: false, destinatarios: [] };
+      if (retornandoAoFinanceiro) {
+        try {
+          notificacao = await enviarEmailFluxoSubsidio(connection, {
+            idSolicitacao,
+            solicitacao: {
+              ...atual,
+              ST_SOLICITACAO: novoStatus,
+            },
+            tipo: "FINANCEIRO",
+            titulo: "Documentação corrigida e reenviada ao financeiro",
+            introducao:
+              "O atendimento atualizou os anexos da solicitação devolvida e o processo voltou para conferência do financeiro.",
+          });
+        } catch (emailErr: any) {
+          console.error("[SUBSIDIO_FUNERAL] Erro ao enviar e-mail no reenvio da edição:", emailErr);
+          notificacao = {
+            enviado: false,
+            destinatarios: [],
+            erro: String(emailErr?.message || emailErr),
+          };
+        }
+      }
+
+      return res.json({
+        ok: true,
+        id: idSolicitacao,
+        status: novoStatus,
+        motivoDevolucao: retornandoAoFinanceiro ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
+        notificacao,
+        message: retornandoAoFinanceiro
+          ? "Solicitação atualizada e reenviada ao financeiro com sucesso."
+          : "Solicitação de subsídio funeral atualizada com sucesso.",
+      });
+    } catch (err: any) {
+      await connection.rollback();
+      console.error("editar subsidio funeral erro:", err);
+      return res.status(500).json({
+        error: "Falha ao editar solicitação de subsídio funeral.",
+        details: String(err?.message || err),
+      });
+    } finally {
+      await connection.close();
+    }
+  },
+
+  async buscarPorId(req: AuthenticatedRequest, res: Response) {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ error: "ID inválido." });
+    }
+
+    const pool = await getOraclePool();
+    const connection = await pool.getConnection();
+
+    try {
+      const solicitacao = await buscarSolicitacao(connection, id);
+      if (!solicitacao) {
+        return res.status(404).json({ error: "Solicitação não encontrada." });
+      }
+
+      const perfil = getPerfilPermissaoSubsidio(req, solicitacao);
+      if (!perfil.podeVisualizar) {
+        return res.status(403).json({
+          error: "Você não tem permissão para visualizar esta solicitação.",
+        });
+      }
+
+      const anexos = await buscarAnexos(connection, id);
+      const historico = await buscarHistorico(connection, id);
+
+      return res.json({
+        ...solicitacao,
+        DT_SOLICITACAO: solicitacao.DT_SOLICITACAO_FMT,
+        DT_ASSOCIACAO: solicitacao.DT_ASSOCIACAO_FMT,
+        DT_OBITO: solicitacao.DT_OBITO_FMT,
+        DT_ENVIO_DIRETORIA: solicitacao.DT_ENVIO_DIRETORIA_FMT,
+        DT_APROVACAO_DIRETORIA: solicitacao.DT_APROVACAO_DIRETORIA_FMT,
+        DT_ENVIO_FINANCEIRO: solicitacao.DT_ENVIO_FINANCEIRO_FMT,
+        DT_FINALIZACAO: solicitacao.DT_FINALIZACAO_FMT,
+        DT_CRIACAO: solicitacao.DT_CRIACAO_FMT,
+        DT_ATUALIZACAO: solicitacao.DT_ATUALIZACAO_FMT,
+        ANEXOS: anexos,
+        HISTORICO: historico,
+      });
+    } catch (err: any) {
+      console.error("buscar subsidio funeral por id erro:", err);
+      return res.status(500).json({
+        error: "Falha ao buscar solicitação.",
+        details: String(err?.message || err),
+      });
+    } finally {
+      await connection.close();
+    }
+  },
+
+  async atualizarStatus(req: AuthenticatedRequest, res: Response) {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ error: "ID inválido." });
+    }
+
+    const acao = String(req.body.acao || "").trim().toUpperCase();
+    const observacao = String(req.body.observacao || "").trim() || null;
+    const nomeResponsavel = String(req.body.nomeResponsavel || "").trim() || null;
+    const loginResponsavel = String(req.body.loginResponsavel || "").trim() || null;
+
+    const pool = await getOraclePool();
+    const connection = await pool.getConnection();
+
+    try {
+      setAuditoriaContext(connection, req);
+
+      const atual = await buscarSolicitacao(connection, id);
+      if (!atual) {
+        return res.status(404).json({ error: "Solicitação não encontrada." });
+      }
+
+      const perfil = getPerfilPermissaoSubsidio(req, atual);
+      if (!perfil.podeVisualizar) {
+        return res.status(403).json({
+          error: "Você não tem permissão para atuar nesta solicitação.",
+        });
+      }
+
+      let novoStatus = String(atual.ST_SOLICITACAO || "").trim();
+      let extraSql = "";
+      const bindsExtra: Record<string, any> = {};
+
+      const anexosAtuais = await buscarAnexos(connection, id);
+      const statusAtual = String(atual.ST_SOLICITACAO || "").trim();
+      const podeAtuarComoSolicitante =
+        perfil.isSolicitanteAtual &&
+        ["AGUARDANDO_ASSINATURA_SOLICITANTE", "DEVOLVIDO_AO_ATENDIMENTO"].includes(statusAtual);
+      const podeAtuarComoFinanceiro =
+        perfil.isFinanceiro && statusAtual === "AGUARDANDO_FINANCEIRO";
+      const podeAtuarComoDiretoria =
+        perfil.isDiretoria && statusAtual === "AGUARDANDO_DIRETORIA";
+
+      if (acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
+        if (!podeAtuarComoSolicitante) {
+          return res.status(403).json({
+            error: "Somente quem abriu a solicitação pode reenviar ao financeiro.",
+          });
+        }
+
+        if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_DOCUMENTOS)) {
+          return res.status(400).json({
+            error: "Anexe a documentação obrigatória antes de enviar ao financeiro.",
+          });
+        }
+
+        if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_TERMO_ASSINADO)) {
+          return res.status(400).json({
+            error: "Anexe o termo assinado pelo solicitante antes de enviar ao financeiro.",
+          });
+        }
+
+        novoStatus = "AGUARDANDO_FINANCEIRO";
+        extraSql =
+          ", DT_ENVIO_FINANCEIRO = SYSDATE, DS_MOTIVO_DEVOLUCAO = NULL";
+      } else if (acao === "APROVAR_FINANCEIRO") {
+        if (!podeAtuarComoFinanceiro) {
+          return res.status(403).json({
+            error: "Somente o financeiro pode enviar esta solicitação para a diretoria.",
+          });
+        }
+
+        if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_DOCUMENTOS)) {
+          return res.status(400).json({
+            error: "A documentação obrigatória precisa estar anexada para aprovar.",
+          });
+        }
+
+        novoStatus = "AGUARDANDO_DIRETORIA";
+        extraSql =
+          ", DT_ENVIO_DIRETORIA = SYSDATE, NM_RESP_FINANCEIRO = :NM_RESP_FINANCEIRO, DS_MOTIVO_DEVOLUCAO = NULL";
+        bindsExtra.NM_RESP_FINANCEIRO = nomeResponsavel;
+      } else if (acao === "ENVIAR_DIRETORIA") {
+        if (!podeAtuarComoFinanceiro) {
+          return res.status(403).json({
+            error: "Somente o financeiro pode enviar esta solicitação para a diretoria.",
+          });
+        }
+
+        novoStatus = "AGUARDANDO_DIRETORIA";
+        extraSql = ", DT_ENVIO_DIRETORIA = SYSDATE, DS_MOTIVO_DEVOLUCAO = NULL";
+      } else if (acao === "APROVAR_DIRETORIA") {
+        if (!podeAtuarComoDiretoria) {
+          return res.status(403).json({
+            error: "Somente a diretoria pode aprovar esta solicitação nesta etapa.",
+          });
+        }
+
+        if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_TERMO_DIRETORIA)) {
+          return res.status(400).json({
+            error: "Anexe o termo assinado pela diretoria antes de devolver ao financeiro.",
+          });
+        }
+
+        novoStatus = "AGUARDANDO_FINANCEIRO";
+        extraSql =
+          ", DT_APROVACAO_DIRETORIA = SYSDATE, DT_ENVIO_FINANCEIRO = SYSDATE, NM_RESP_DIRETORIA = :NM_RESP_DIRETORIA, DS_MOTIVO_DEVOLUCAO = NULL";
+        bindsExtra.NM_RESP_DIRETORIA = nomeResponsavel;
+      } else if (acao === "REPROVAR_DIRETORIA") {
+        if (!podeAtuarComoDiretoria) {
+          return res.status(403).json({
+            error: "Somente a diretoria pode reprovar esta solicitação nesta etapa.",
+          });
+        }
+
+        if (!observacao) {
+          return res.status(400).json({
+            error: "Informe o motivo da reprovação.",
+          });
+        }
+
+        novoStatus = "CANCELADO";
+        extraSql =
+          ", NM_RESP_DIRETORIA = :NM_RESP_DIRETORIA, DS_MOTIVO_DEVOLUCAO = :DS_MOTIVO_DEVOLUCAO";
+        bindsExtra.NM_RESP_DIRETORIA = nomeResponsavel;
+        bindsExtra.DS_MOTIVO_DEVOLUCAO = observacao;
+      } else if (acao === "DEVOLVER_ATENDIMENTO") {
+        if (!podeAtuarComoFinanceiro) {
+          return res.status(403).json({
+            error: "Somente o financeiro pode devolver esta solicitação ao atendimento.",
+          });
+        }
+
+        novoStatus = "DEVOLVIDO_AO_ATENDIMENTO";
+        extraSql = ", DS_MOTIVO_DEVOLUCAO = :DS_MOTIVO_DEVOLUCAO";
+        bindsExtra.DS_MOTIVO_DEVOLUCAO = observacao;
+      } else if (acao === "FINALIZAR") {
+        if (!podeAtuarComoFinanceiro) {
+          return res.status(403).json({
+            error: "Somente o financeiro pode finalizar esta solicitação.",
+          });
+        }
+
+        novoStatus = "FINALIZADO";
+        extraSql =
+          ", DT_FINALIZACAO = SYSDATE, NM_RESP_FINANCEIRO = :NM_RESP_FINANCEIRO, DS_MOTIVO_DEVOLUCAO = NULL";
+        bindsExtra.NM_RESP_FINANCEIRO = nomeResponsavel;
+      } else if (acao === "CANCELAR") {
+        novoStatus = "CANCELADO";
+      } else {
+        return res.status(400).json({ error: "Ação inválida." });
+      }
+
+      await connection.execute(
+        `
+          UPDATE DBACRESSEM.SOLICITACAO_SUBSIDIO_FUNERAL
+             SET ST_SOLICITACAO = :ST_SOLICITACAO,
+                 DT_ATUALIZACAO = SYSDATE
+                 ${extraSql}
+           WHERE ID_SUBSIDIO_FUNERAL = :ID_SUBSIDIO_FUNERAL
+        `,
+        {
+          ST_SOLICITACAO: novoStatus,
+          ID_SUBSIDIO_FUNERAL: id,
+          ...bindsExtra,
+        },
+        { autoCommit: false }
+      );
+
+      await inserirHistorico(connection, {
+        idSolicitacao: id,
+        statusAnterior: atual.ST_SOLICITACAO,
+        statusNovo: novoStatus,
+        acao,
+        observacao,
+        nomeUsuario: nomeResponsavel,
+        loginUsuario: loginResponsavel,
+      });
+
+      await connection.commit();
+
+      let notificacao: any = { enviado: false, destinatarios: [] };
+      try {
+        const solicitacaoEmail = {
+          ...atual,
+          ST_SOLICITACAO: novoStatus,
+        };
+
+        if (acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
+          notificacao = await enviarEmailFluxoSubsidio(connection, {
+            idSolicitacao: id,
+            solicitacao: solicitacaoEmail,
+            tipo: "FINANCEIRO",
+            titulo: "Aguardando conferência do financeiro",
+            introducao:
+              "O termo assinado foi anexado e a solicitação está aguardando conferência da documentação pelo financeiro.",
+            observacao,
+          });
+        } else if (acao === "APROVAR_FINANCEIRO") {
+          notificacao = await enviarEmailFluxoSubsidio(connection, {
+            idSolicitacao: id,
+            solicitacao: solicitacaoEmail,
+            tipo: "DIRETORIA",
+            titulo: "Aguardando assinatura da diretoria",
+            introducao:
+              "A documentação foi conferida pelo financeiro e a solicitação está aguardando assinatura/anexo da diretoria.",
+            observacao,
+          });
+        } else if (acao === "DEVOLVER_ATENDIMENTO") {
+          notificacao = await enviarEmailFluxoSubsidio(connection, {
+            idSolicitacao: id,
+            solicitacao: solicitacaoEmail,
+            tipo: "SOLICITANTE",
+            titulo: "Documentação devolvida para ajuste",
+            introducao:
+              "O financeiro devolveu a solicitação para correção da documentação. Ajuste os anexos e reenvie pelo gerenciamento.",
+            observacao,
+          });
+        } else if (acao === "APROVAR_DIRETORIA") {
+          notificacao = await enviarEmailFluxoSubsidio(connection, {
+            idSolicitacao: id,
+            solicitacao: solicitacaoEmail,
+            tipo: "FINANCEIRO_SOLICITANTE",
+            titulo: "Diretoria assinou a solicitação",
+            introducao:
+              "A diretoria anexou o termo assinado. A solicitação voltou para o financeiro realizar o depósito.",
+            observacao,
+          });
+        } else if (acao === "REPROVAR_DIRETORIA") {
+          notificacao = await enviarEmailFluxoSubsidio(connection, {
+            idSolicitacao: id,
+            solicitacao: solicitacaoEmail,
+            tipo: "SOLICITANTE",
+            titulo: "Solicitação reprovada pela diretoria",
+            introducao:
+              "A diretoria analisou e reprovou a solicitação de subsídio funeral. Consulte abaixo o motivo informado.",
+            observacao,
+          });
+        } else if (acao === "FINALIZAR") {
+          notificacao = await enviarEmailFluxoSubsidio(connection, {
+            idSolicitacao: id,
+            solicitacao: solicitacaoEmail,
+            tipo: "SOLICITANTE",
+            titulo: "Solicitação finalizada",
+            introducao:
+              "O financeiro marcou a solicitação como concluída após o depósito.",
+            observacao,
+          });
+        }
+      } catch (emailErr: any) {
+        console.error("[SUBSIDIO_FUNERAL] Erro ao enviar e-mail:", emailErr);
+        notificacao = {
+          enviado: false,
+          destinatarios: [],
+          erro: String(emailErr?.message || emailErr),
+        };
+      }
+
+      return res.json({
+        ok: true,
+        id,
+        status: novoStatus,
+        notificacao,
+        message: "Status atualizado com sucesso.",
+      });
+    } catch (err: any) {
+      await connection.rollback();
+      console.error("atualizar status subsidio funeral erro:", err);
+      return res.status(500).json({
+        error: "Falha ao atualizar o status da solicitação.",
+        details: String(err?.message || err),
+      });
+    } finally {
+      await connection.close();
+    }
+  },
+
+  async downloadAnexo(req: Request, res: Response) {
+    try {
+      const caminho = String(req.body.caminho || "").trim();
+      if (!caminho) {
+        return res.status(400).json({ error: "Caminho do arquivo não informado." });
+      }
+
+      const arquivoBuffer = await fs.readFile(caminho);
+      const nomeArquivo = path.basename(caminho);
+
+      res.setHeader("Content-Disposition", `attachment; filename="${nomeArquivo}"`);
+      return res.end(arquivoBuffer);
+    } catch (err: any) {
+      console.error("download anexo subsidio funeral erro:", err);
+      return res.status(500).json({
+        error: "Falha ao baixar anexo.",
+        details: String(err?.message || err),
+      });
+    }
+  },
+
+  async resumoEmail(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ error: "ID inválido." });
+    }
+
+    const pool = await getOraclePool();
+    const connection = await pool.getConnection();
+
+    try {
+      const solicitacao = await buscarSolicitacao(connection, id);
+      if (!solicitacao) {
+        return res.status(404).json({ error: "Solicitação não encontrada." });
+      }
+
+      const html = `
+        <table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+          <tr>
+            <td style="padding:18px 24px;background:#7BC51D;color:#fff;font-size:18px;font-weight:700;">
+              Solicitação de Subsídio Funeral
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              <p style="margin:0 0 14px 0;color:#1f2933;">
+                ${escapeHtml(solicitacao.NM_SOLICITANTE)} abriu uma solicitação para o associado ${escapeHtml(solicitacao.NM_ASSOCIADO)}.
+              </p>
+              <table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;border:1px solid #e5ebe8;">
+                <tr><td style="padding:10px;font-weight:700;background:#f8faf9;">Status</td><td style="padding:10px;">${escapeHtml(solicitacao.ST_SOLICITACAO)}</td></tr>
+                <tr><td style="padding:10px;font-weight:700;background:#f8faf9;">Solicitante</td><td style="padding:10px;">${escapeHtml(solicitacao.NM_SOLICITANTE)}</td></tr>
+                <tr><td style="padding:10px;font-weight:700;background:#f8faf9;">Parentesco</td><td style="padding:10px;">${escapeHtml(formatParentescoEmail(solicitacao))}</td></tr>
+                <tr><td style="padding:10px;font-weight:700;background:#f8faf9;">Associado</td><td style="padding:10px;">${escapeHtml(solicitacao.NM_ASSOCIADO)}</td></tr>
+                <tr><td style="padding:10px;font-weight:700;background:#f8faf9;">Valor liberado</td><td style="padding:10px;">R$ ${Number(solicitacao.VL_SUBSIDIO_APROVADO || 0).toFixed(2)}</td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      `;
+
+      return res.json({ html });
+    } catch (err: any) {
+      return res.status(500).json({
+        error: "Falha ao gerar resumo.",
+        details: String(err?.message || err),
+      });
+    } finally {
+      await connection.close();
+    }
+  },
+};
