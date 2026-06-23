@@ -7,6 +7,12 @@ function onlyDigits(v: string) {
     return String(v || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(v: string) {
+    return String(v || "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+}
+
 function toTrim(v: any) {
     return String(v || "").trim();
 }
@@ -254,7 +260,7 @@ export const reciboCrmController = {
             const result = await conn.execute(
                 sql,
                 {
-                    NR_CPF_CNPJ: onlyDigits(NR_CPF_CNPJ),
+                    NR_CPF_CNPJ: onlyCpfCnpjChars(NR_CPF_CNPJ),
                     NM_ASSOCIADO: toUpperTrim(NM_ASSOCIADO),
                     NR_MATRICULA: NR_MATRICULA ? toTrim(NR_MATRICULA) : null,
                     NM_EMPRESA: NM_EMPRESA ? toUpperTrim(NM_EMPRESA) : null,
@@ -288,7 +294,7 @@ export const reciboCrmController = {
             if (conn) {
                 try {
                     await conn.rollback();
-                } catch {}
+                } catch { }
             }
 
             console.error("criar recibo crm erro:", err);
@@ -300,7 +306,7 @@ export const reciboCrmController = {
             if (conn) {
                 try {
                     await conn.close();
-                } catch {}
+                } catch { }
             }
         }
     },
@@ -374,7 +380,7 @@ export const reciboCrmController = {
                 sql,
                 {
                     ID_RECIBO_CRM: id,
-                    NR_CPF_CNPJ: onlyDigits(NR_CPF_CNPJ),
+                    NR_CPF_CNPJ: onlyCpfCnpjChars(NR_CPF_CNPJ),
                     NM_ASSOCIADO: toUpperTrim(NM_ASSOCIADO),
                     NR_MATRICULA: NR_MATRICULA ? toTrim(NR_MATRICULA) : null,
                     NM_EMPRESA: NM_EMPRESA ? toUpperTrim(NM_EMPRESA) : null,
@@ -418,7 +424,7 @@ export const reciboCrmController = {
             if (conn) {
                 try {
                     await conn.rollback();
-                } catch {}
+                } catch { }
             }
 
             console.error("editar recibo crm erro:", err);
@@ -430,7 +436,7 @@ export const reciboCrmController = {
             if (conn) {
                 try {
                     await conn.close();
-                } catch {}
+                } catch { }
             }
         }
     },
@@ -530,12 +536,12 @@ export const reciboCrmController = {
                 filtros.push(`
         (
           UPPER(NM_ASSOCIADO) LIKE '%' || UPPER(:nome) || '%'
-          OR NR_CPF_CNPJ LIKE '%' || :nomeDigits || '%'
+          OR REGEXP_REPLACE(UPPER(NR_CPF_CNPJ), '[^A-Z0-9]', '') LIKE '%' || :nomeDocumento || '%'
           OR UPPER(NM_FUNCIONARIO) LIKE '%' || UPPER(:nome) || '%'
         )
       `);
                 bindsWhere.nome = nome;
-                bindsWhere.nomeDigits = onlyDigits(nome);
+                bindsWhere.nomeDocumento = onlyCpfCnpjChars(nome);
             }
 
             if (dia) {
@@ -654,7 +660,7 @@ export const reciboCrmController = {
             if (conn) {
                 try {
                     await conn.rollback();
-                } catch {}
+                } catch { }
             }
 
             console.error("excluir recibo crm erro:", err);
@@ -666,7 +672,7 @@ export const reciboCrmController = {
             if (conn) {
                 try {
                     await conn.close();
-                } catch {}
+                } catch { }
             }
         }
     },

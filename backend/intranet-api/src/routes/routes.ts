@@ -79,6 +79,9 @@ import { reservaSalaReuniaoController } from "../controllers/reserva-sala-reunia
 import { monitorMetaAlertasController } from "../controllers/monitor-meta-alertas.controller";
 import { cnab240Controller } from "../controllers/cnab240.controller";
 import { cnab240FavorecidosController } from "../controllers/cnab-favorecidos.controller";
+import { cnab240CcoController } from "../controllers/cnab240-cco.controller";
+import { cnab240AgenciasController } from "../controllers/cnab240-agencias.controller";
+import { leiloesController } from "../controllers/leiloes.controller";
 
 const routes = Router();
 
@@ -1259,6 +1262,141 @@ routes.post("/v1/cnab240/favorecidos", authMiddleware, cnab240FavorecidosControl
 routes.put("/v1/cnab240/favorecidos/:id", authMiddleware, cnab240FavorecidosController.atualizar);
 
 routes.delete("/v1/cnab240/favorecidos/:id", authMiddleware, cnab240FavorecidosController.excluir);
+
+//cnab240 cco
+routes.get(
+  "/v1/cnab240/cco",
+  authMiddleware,
+  cnab240CcoController.listar
+);
+
+routes.get(
+  "/v1/cnab240/cco/:id",
+  authMiddleware,
+  cnab240CcoController.buscarPorId
+);
+
+routes.post(
+  "/v1/cnab240/cco",
+  authMiddleware,
+  cnab240CcoController.criar
+);
+
+routes.put(
+  "/v1/cnab240/cco/:id",
+  authMiddleware,
+  cnab240CcoController.atualizar
+);
+
+routes.delete(
+  "/v1/cnab240/cco/:id",
+  authMiddleware,
+  cnab240CcoController.excluir
+);
+
+routes.post(
+  "/v1/cnab240/cco/importar-massa",
+  authMiddleware,
+  cnab240CcoController.importarEmMassa
+);
+
+//cnab agencias
+routes.get(
+  "/v1/cnab240/agencias",
+  authMiddleware,
+  cnab240AgenciasController.listar
+);
+
+routes.get(
+  "/v1/cnab240/agencias/:id",
+  authMiddleware,
+  cnab240AgenciasController.buscarPorId
+);
+
+routes.post(
+  "/v1/cnab240/agencias",
+  authMiddleware,
+  cnab240AgenciasController.criar
+);
+
+routes.put(
+  "/v1/cnab240/agencias/:id",
+  authMiddleware,
+  cnab240AgenciasController.atualizar
+);
+
+routes.delete(
+  "/v1/cnab240/agencias/:id",
+  authMiddleware,
+  cnab240AgenciasController.excluir
+);
+
+routes.post(
+  "/v1/cnab240/agencias/importar-massa",
+  authMiddleware,
+  cnab240AgenciasController.importarEmMassa
+);
+
+//leiloes
+routes.get(
+  "/v1/leiloes",
+  authMiddleware,
+  leiloesController.listar
+);
+
+routes.get(
+  "/v1/leiloes/:id",
+  authMiddleware,
+  leiloesController.buscarPorId
+);
+
+routes.post(
+  "/v1/leiloes",
+  authMiddleware,
+  leiloesController.criar
+);
+
+routes.put(
+  "/v1/leiloes/:id",
+  authMiddleware,
+  leiloesController.atualizar
+);
+
+routes.delete(
+  "/v1/leiloes/:id",
+  authMiddleware,
+  leiloesController.excluir
+);
+
+routes.get(
+  "/v1/leiloes/:id/lances",
+  authMiddleware,
+  leiloesController.listarLances
+);
+
+routes.post(
+  "/v1/leiloes/:id/lances",
+  authMiddleware,
+  leiloesController.darLance
+);
+
+routes.get(
+  "/v1/leiloes/:id/vencedor",
+  authMiddleware,
+  leiloesController.buscarVencedor
+);
+
+routes.get(
+  "/v1/leiloes-finalizados",
+  authMiddleware,
+  leiloesController.listarFinalizados
+);
+
+routes.get(
+  "/v1/leiloes-dashboard",
+  authMiddleware,
+  leiloesController.dashboard
+);
 
 export { routes };
 

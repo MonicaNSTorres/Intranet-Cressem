@@ -6838,3 +6838,91 @@ ERRO AO SALVAR NO ORACLE:
 NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
 ==============================
 
+
+==============================
+DATA: 2026-06-19T13:22:02.386Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/cadastro_reembolso_despesa
+ORIGEM: POPUP_AVISO_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Erro ao consultar popup pendente.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:2320:9
+settle@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:3562:16
+onloadend@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:4078:218
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-19T13:22:42.679Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/cadastro_reembolso_despesa
+ORIGEM: CADASTRO_REEMBOLSO_DESPESA_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Erro ao listar cidades
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:2320:9
+settle@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:3562:16
+onloadend@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:4078:218
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-19T13:22:42.685Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/cadastro_reembolso_despesa
+ORIGEM: CADASTRO_REEMBOLSO_DESPESA_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Falha ao listar tipos de despesa.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:2320:9
+settle@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:3562:16
+onloadend@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:4078:218
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-06-19T13:43:04.354Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/leiloes
+ORIGEM: leiloes.service.ts
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0
+ERRO: Request failed with status code 404
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:2320:9
+settle@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:3562:16
+onloadend@http://localhost:3000/_next/static/chunks/cf76a_14843237._.js:4078:218
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-510: connection to host 10.0.107.216 port 1521 timed out. Request exceeded "transportConnectTimeout" of 20 seconds. (CONNECTION_ID=iszgrtizM666uawN5nCbYg==)
+==============================
+

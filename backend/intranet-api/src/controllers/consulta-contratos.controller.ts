@@ -6,6 +6,12 @@ function onlyDigits(v: string) {
   return String(v || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(v: string) {
+  return String(v || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
 function toTrim(v: any) {
   return String(v || "").trim();
 }
@@ -18,7 +24,7 @@ export const consultaContratosController = {
   async listarPaginado(req: Request, res: Response) {
     try {
       const NM_EMPRESA = toTrim(req.query.NM_EMPRESA);
-      const NR_CNPJ = onlyDigits(String(req.query.NR_CNPJ || ""));
+      const NR_CNPJ = onlyCpfCnpjChars(String(req.query.NR_CNPJ || ""));
       const NM_CIDADE = toTrim(req.query.NM_CIDADE);
       const NM_TIPO_CONTRATO = toTrim(req.query.NM_TIPO_CONTRATO);
       const NM_SISTEMA_CONSIG = toTrim(req.query.NM_SISTEMA_CONSIG);
@@ -37,7 +43,7 @@ export const consultaContratosController = {
       }
 
       if (NR_CNPJ) {
-        where += ` AND REGEXP_REPLACE(NR_CNPJ, '[^0-9]', '') = :NR_CNPJ `;
+        where += ` AND REGEXP_REPLACE(UPPER(NR_CNPJ), '[^A-Z0-9]', '') = :NR_CNPJ `;
         bindsWhere.NR_CNPJ = NR_CNPJ;
       }
 

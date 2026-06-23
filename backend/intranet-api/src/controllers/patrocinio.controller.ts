@@ -18,6 +18,12 @@ function onlyDigits(value: string) {
     return String(value || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(value: string) {
+    return String(value || "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+}
+
 function toNumber(value: any, fallback = 0) {
     if (value === null || value === undefined || value === "") return fallback;
     const n = Number(String(value).replace(",", "."));
@@ -80,7 +86,7 @@ function capitalizeWords(value: string) {
 }
 
 function formatarCpfOuCnpj(valor: string) {
-    const value = onlyDigits(valor);
+    const value = onlyCpfCnpjChars(valor);
 
     if (value.length <= 11) {
         return value
@@ -90,10 +96,10 @@ function formatarCpfOuCnpj(valor: string) {
     }
 
     return value
-        .replace(/^(\d{2})(\d)/, "$1.$2")
-        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-        .replace(/\.(\d{3})(\d)/, ".$1/$2")
-        .replace(/(\d{4})(\d)/, "$1-$2");
+        .replace(/^(.{2})(.)/, "$1.$2")
+        .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+        .replace(/\.(.{3})(.)/, ".$1/$2")
+        .replace(/(.{4})(.)$/, "$1-$2");
 }
 
 function getMimeTypeByFileName(filePath: string) {
@@ -504,7 +510,7 @@ function buildParticipacaoDedupeKey(params: {
 
     return [
         normalizeDedupeText(body.NM_SOLICITANTE),
-        onlyDigits(String(body.NR_CPF_CNPJ || "")),
+        onlyCpfCnpjChars(String(body.NR_CPF_CNPJ || "")),
         normalizeDedupeText(body.NM_FUNCIONARIO),
         normalizeDedupeText(body.NM_CIDADE),
         String(body.DT_SOLICITACAO || "").trim(),
@@ -710,7 +716,7 @@ export const patrocinioController = {
                 {
                     ID_PATROCINIO: idPatrocinio,
                     NM_SOLICITANTE: toNullableString(body.NM_SOLICITANTE),
-                    NR_CPF_CNPJ: onlyDigits(body.NR_CPF_CNPJ),
+                    NR_CPF_CNPJ: onlyCpfCnpjChars(body.NR_CPF_CNPJ),
                     VL_PATROCINIO: toNullableNumber(body.VL_PATROCINIO),
                     NM_FUNCIONARIO: toNullableString(body.NM_FUNCIONARIO),
                     DIR_OFICIO: oficioPath,
@@ -938,7 +944,7 @@ export const patrocinioController = {
         (
           :pesquisa = '%%'
           OR UPPER(p.NM_SOLICITANTE) LIKE :pesquisa
-          OR REGEXP_REPLACE(p.NR_CPF_CNPJ, '[^0-9]', '') LIKE REGEXP_REPLACE(:pesquisa, '[^0-9]', '')
+          OR REGEXP_REPLACE(UPPER(p.NR_CPF_CNPJ), '[^A-Z0-9]', '') LIKE REGEXP_REPLACE(UPPER(:pesquisa), '[^A-Z0-9]', '')
           OR UPPER(p.NM_ANDAMENTO) LIKE :pesquisa
         )
       `;

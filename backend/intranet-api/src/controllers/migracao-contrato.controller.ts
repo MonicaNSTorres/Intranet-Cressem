@@ -6,6 +6,12 @@ function onlyDigits(v: string) {
   return String(v || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(v: string) {
+  return String(v || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
 function formatDateToISO(value: any): string {
   if (!value) return "";
 
@@ -85,7 +91,7 @@ function gerarLinhaSisbr(item: any) {
 }
 
 export const migracaoContratoController = {
-  async buscarPorCpf(req: Request, res: Response) { //consulta usada na tela despesas ou patrocinio
+  async buscarPorCpf(req: Request, res: Response) {
     try {
       const cpfParam = String(req.params.cpf || "");
       const cpf = onlyDigits(cpfParam);
@@ -147,10 +153,12 @@ export const migracaoContratoController = {
   async buscarCpfMigracao(req: Request, res: Response) {
     try {
       const cpfParam = String(req.params.cpf || "");
-      const cpf = onlyDigits(cpfParam);
+      const cpf = onlyCpfCnpjChars(cpfParam);
 
-      if (cpf.length !== 11) {
-        return res.status(400).json({ error: "CPF inválido (11 dígitos)." });
+      if (![11, 14].includes(cpf.length)) {
+        return res.status(400).json({
+          error: "CPF/CNPJ inválido (11 ou 14 caracteres).",
+        });
       }
 
       const sql = `
@@ -163,7 +171,7 @@ export const migracaoContratoController = {
         'ATIVO' AS SN_ATIVO,
         AA.NR_MATRICULA
       FROM DBACRESSEM.ASSOCIADO_ANALITICO AA
-      WHERE REGEXP_REPLACE(AA.NR_CPF_CNPJ, '[^0-9]', '') = :cpf
+      WHERE REGEXP_REPLACE(UPPER(AA.NR_CPF_CNPJ), '[^A-Z0-9]', '') = :cpf
         AND ROWNUM = 1
     `;
 

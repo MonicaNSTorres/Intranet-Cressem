@@ -9,6 +9,12 @@ function onlyDigits(v: string) {
   return String(v || "").replace(/\D/g, "");
 }
 
+function onlyCpfCnpjChars(v: string) {
+  return String(v || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
 function toNumber(v: any) {
   if (v === null || v === undefined || v === "") return 0;
   const n = Number(v);
@@ -118,7 +124,7 @@ export const resgateCapitalController = {
   async buscarEmprestimosPorCpf(req: Request, res: Response) {
     try {
       const cpfQuery = String(req.query.cpf || "");
-      const cpf = onlyDigits(cpfQuery);
+      const cpf = onlyCpfCnpjChars(cpfQuery);
 
       if (!cpf) {
         return res.status(400).json({ error: "CPF/CNPJ não informado." });
@@ -129,7 +135,7 @@ export const resgateCapitalController = {
           ID_CLIENTE,
           SL_DEVEDOR_DIA
         FROM DBACRESSEM.ASSOCIADO_ANALITICO
-        WHERE REGEXP_REPLACE(NR_CPF_CNPJ, '[^0-9]', '') = :cpf
+        WHERE REGEXP_REPLACE(UPPER(NR_CPF_CNPJ), '[^A-Z0-9]', '') = :cpf
           AND ROWNUM = 1
       `;
 
@@ -176,7 +182,7 @@ export const resgateCapitalController = {
   async buscarIdAssociado(req: Request, res: Response) {
     try {
       const cpfQuery = String(req.query.cpf || "");
-      const cpf = onlyDigits(cpfQuery);
+      const cpf = onlyCpfCnpjChars(cpfQuery);
 
       if (!cpf) {
         return res.status(400).json({ error: "CPF/CNPJ não informado." });
@@ -188,7 +194,7 @@ export const resgateCapitalController = {
           NM_CLIENTE,
           NR_CPF_CNPJ
         FROM DBACRESSEM.ASSOCIADO_ANALITICO
-        WHERE REGEXP_REPLACE(NR_CPF_CNPJ, '[^0-9]', '') = :cpf
+        WHERE REGEXP_REPLACE(UPPER(NR_CPF_CNPJ), '[^A-Z0-9]', '') = :cpf
           AND ROWNUM = 1
       `;
 
@@ -328,7 +334,7 @@ export const resgateCapitalController = {
       const binds = {
         ID_RESGATE_PARCIAL_CAPITAL: nextIdResgate,
         ID_CLIENTE: ID_CLIENTE || null,
-        NR_CPF_CNPJ: onlyDigits(NR_CPF_CNPJ),
+        NR_CPF_CNPJ: onlyCpfCnpjChars(NR_CPF_CNPJ),
         NM_CLIENTE: String(NM_CLIENTE || "").trim(),
         CD_MATRICULA: CD_MATRICULA || null,
         NM_EMPRESA: NM_EMPRESA || null,

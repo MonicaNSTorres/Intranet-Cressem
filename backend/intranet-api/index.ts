@@ -2,6 +2,7 @@ import "dotenv/config";
 import "./src/cron/ferias.cron";
 import "./src/cron/contratos.cron";
 import "./src/cron/reserva-sala-lembrete.cron";
+import { iniciarCronLeiloes } from "./src/cron/leiloes.cron";
 import express from "express";
 import { routes } from "./src/routes/routes";
 import bodyParser from "body-parser";
@@ -44,6 +45,8 @@ app.use(cookieParser());
 
 app.use("/bucket", express.static(path.join(__dirname, "src/bucket")));
 
+export let ioGlobal: Server | null = null;
+
 const fileUploadMiddleware = fileUpload({
   limits: { fileSize: MAX_PDF_UPLOAD_MB * 1024 * 1024 },
   abortOnLimit: false,
@@ -82,6 +85,7 @@ const port = process.env.PORT || 3001;
 
 async function bootstrap() {
   await initOraclePool();
+  iniciarCronLeiloes();
 
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
@@ -92,6 +96,8 @@ async function bootstrap() {
       credentials: true,
     },
   });
+
+  ioGlobal = io;
 
   httpServer.listen(port, () => {
     console.log(`API + Socket running at port ${port}`);
@@ -112,6 +118,14 @@ async function bootstrap() {
   io.on("connection", (socket: IOSocket) => {
     socket.on("auth", (userId: string | number) => {
       (socket as any).userId = userId;
+    });
+
+    socket.on("leilao:entrar", (idLeilao: string | number) => {
+      socket.join(`leilao:${idLeilao}`);
+    });
+
+    socket.on("leilao:sair", (idLeilao: string | number) => {
+      socket.leave(`leilao:${idLeilao}`);
     });
   });
 
