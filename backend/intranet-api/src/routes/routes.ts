@@ -85,6 +85,7 @@ import { solicitacaoSubsidioFuneralController } from "../controllers/solicitacao
 import { solicitacaoSubsidioFuneralPaginadoController } from "../controllers/solicitacao_subsidio_funeral_paginado.controller";
 import { solicitacaoSubsidioAuditivoController } from "../controllers/solicitacao-subsidio-auditivo.controller";
 import { solicitacaoSubsidioAuditivoPaginadoController } from "../controllers/solicitacao_subsidio_auditivo_paginado.controller";
+import { cnab240CoController } from "../controllers/cnab240-cco.controller";
 
 const routes = Router();
 
@@ -1355,37 +1356,37 @@ routes.delete("/v1/cnab240/favorecidos/:id", authMiddleware, cnab240FavorecidosC
 routes.get(
   "/v1/cnab240/cco",
   authMiddleware,
-  cnab240CcoController.listar
+  cnab240CoController.listar
 );
 
 routes.get(
   "/v1/cnab240/cco/:id",
   authMiddleware,
-  cnab240CcoController.buscarPorId
+  cnab240CoController.buscarPorId
 );
 
 routes.post(
   "/v1/cnab240/cco",
   authMiddleware,
-  cnab240CcoController.criar
+  cnab240CoController.criar
 );
 
 routes.put(
   "/v1/cnab240/cco/:id",
   authMiddleware,
-  cnab240CcoController.atualizar
+  cnab240CoController.atualizar
 );
 
 routes.delete(
   "/v1/cnab240/cco/:id",
   authMiddleware,
-  cnab240CcoController.excluir
+  cnab240CoController.excluir
 );
 
 routes.post(
   "/v1/cnab240/cco/importar-massa",
   authMiddleware,
-  cnab240CcoController.importarEmMassa
+  cnab240CoController.importarEmMassa
 );
 
 //cnab agencias

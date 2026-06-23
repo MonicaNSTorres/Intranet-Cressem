@@ -43,6 +43,7 @@ export const AD_GROUPS = {
     DOCUSIGN: "GG_USERS_DOCUSIGN",
     ESTOQUE: "GG_USERS_ALMO",
     GERENCIA_DIRETORIA: "GG_USERS_GERENCIA_DIRETORIA",
+    CCONV: "GG_USERS_CCONV",
     TODO_MUNDO: "GG_INTRANET_FULL",
     CHEQUE_ESPCIAL: "GG_INTRANET_CHEQUE_ESPECIAL",
     CONSULTA_ANALISE_LIMITE: "GG_INTRANET_CONSULTA_ANALISE",
@@ -532,6 +533,24 @@ const Sidebar = () => {
             ],
         },
         {
+            key: "formularios-financeiro",
+            label: "Formulários Financeiro",
+            icon: FaFileInvoiceDollar,
+            section: "Formulários",
+            children: [
+                {
+                    label: "Gerenciamento de Reembolso",
+                    href: "/auth/gerenciamento_reembolso_despesa",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Solicitação de Reembolso",
+                    href: "/auth/cadastro_reembolso_despesa",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+            ],
+        },
+        {
             key: "formularios-rh",
             label: "Formulários RH",
             icon: FaUsersCog,
@@ -560,48 +579,30 @@ const Sidebar = () => {
             ],
         },
         {
-            key: "formularios-financeiro",
-            label: "Formulários Financeiro",
-            icon: FaFileInvoiceDollar,
-            section: "Formulários",
-            children: [
-                {
-                    label: "Gerenciamento de Reembolso",
-                    href: "/auth/gerenciamento_reembolso_despesa",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
-                },
-                {
-                    label: "Solicitação de Reembolso",
-                    href: "/auth/cadastro_reembolso_despesa",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
-                },
-            ],
-        },
-        {
             key: "formularios-subsidio",
             label: "Formulários Subsídio",
             icon: FaHandshake,
             section: "Formulários",
             children: [
                 {
-                    label: "Cadastro de Subsídio Funeral",
-                    href: "/auth/cadastro_subsidio_funeral",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
-                },
-                {
-                    label: "Gerenciamento de Subsídio Funeral",
-                    href: "/auth/gerenciamento_subsidio_funeral",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
-                },
-                {
                     label: "Cadastro de Subsídio Auditivo",
                     href: "/auth/cadastro_subsidio_auditivo",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+                },
+                {
+                    label: "Cadastro de Subsídio Funeral",
+                    href: "/auth/cadastro_subsidio_funeral",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
                 },
                 {
                     label: "Gerenciamento de Subsídio Auditivo",
                     href: "/auth/gerenciamento_subsidio_auditivo",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+                },
+                {
+                    label: "Gerenciamento de Subsídio Funeral",
+                    href: "/auth/gerenciamento_subsidio_funeral",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
                 },
             ],
         },
