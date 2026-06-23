@@ -112,43 +112,47 @@ function moneyInput(value: string) {
 }
 
 function validaCpfCnpj(valor: string) {
-    const v = onlyDigits(valor);
+    const v = onlyCpfCnpjChars(valor);
 
-    if (v.length === 11) {
+    if (/^\d+$/.test(v) && v.length === 11) {
         if (/^(\d)\1+$/.test(v)) return false;
 
         let soma = 0;
         for (let i = 0; i < 9; i++) soma += Number(v[i]) * (10 - i);
+
         let resto = (soma * 10) % 11;
         if (resto === 10) resto = 0;
         if (resto !== Number(v[9])) return false;
 
         soma = 0;
         for (let i = 0; i < 10; i++) soma += Number(v[i]) * (11 - i);
+
         resto = (soma * 10) % 11;
         if (resto === 10) resto = 0;
+
         return resto === Number(v[10]);
     }
 
-    if (v.length === 14) {
+    if (/^\d+$/.test(v) && v.length === 14) {
         if (/^(\d)\1+$/.test(v)) return false;
 
         const calc = (base: string, factors: number[]) => {
             const total = base
                 .split("")
                 .reduce((acc, digit, i) => acc + Number(digit) * factors[i], 0);
+
             const rest = total % 11;
             return rest < 2 ? 0 : 11 - rest;
         };
 
         const base12 = v.slice(0, 12);
-        const d1 = calc(base12, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
-        const d2 = calc(base12 + d1, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+        const d1 = calc(base12, [5,4,3,2,9,8,7,6,5,4,3,2]);
+        const d2 = calc(base12 + d1, [6,5,4,3,2,9,8,7,6,5,4,3,2]);
 
         return v === `${base12}${d1}${d2}`;
     }
 
-    return false;
+    return v.length === 14;
 }
 
 const inputBase =

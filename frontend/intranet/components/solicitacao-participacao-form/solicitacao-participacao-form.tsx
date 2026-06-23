@@ -58,22 +58,10 @@ function converterReaisParaNumero(valorFormatado: string) {
 }
 
 function formatCpfOuCnpj(value: string) {
-    const digits = onlyDigits(value);
-
-    if (digits.length <= 11) {
-        return digits
-            .replace(/^(\d{3})(\d)/, "$1.$2")
-            .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-            .replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2")
-            .slice(0, 14);
-    }
-
-    return digits
-        .replace(/^(\d{2})(\d)/, "$1.$2")
-        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-        .replace(/\.(\d{3})(\d)/, ".$1/$2")
-        .replace(/(\d{4})(\d)/, "$1-$2")
-        .slice(0, 18);
+    return String(value || "")
+        .replace(/[^A-Za-z0-9]/g, "")
+        .toUpperCase()
+        .slice(0, 14);
 }
 
 const ORACLE_BYTE_BUFFER = 2;
@@ -399,9 +387,10 @@ export function SolicitacaoParticipacaoForm() {
             return false;
         }
 
-        const tamanhoCpfCnpj = cpfCnpj.length;
-        if (tamanhoCpfCnpj !== 14 && tamanhoCpfCnpj !== 18) {
-            mostrarErro("Preencha com o número correto de caracteres do CPF ou CNPJ.");
+        const documentoCpfCnpj = cpfCnpj.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+
+        if (![11, 14].includes(documentoCpfCnpj.length)) {
+            mostrarErro("Preencha CPF com 11 caracteres ou CNPJ com 14 caracteres.");
             return false;
         }
 
@@ -625,7 +614,10 @@ export function SolicitacaoParticipacaoForm() {
             );
 
             formData.append("NM_SOLICITANTE", nmSolicitanteOracle);
-            formData.append("NR_CPF_CNPJ", onlyDigits(cpfCnpj));
+            formData.append(
+                "NR_CPF_CNPJ",
+                cpfCnpj.replace(/[^A-Za-z0-9]/g, "").toUpperCase()
+            );
             formData.append("NM_FUNCIONARIO", nmFuncionarioOracle);
             formData.append("NM_CIDADE", nmCidadeOracle);
             formData.append("DT_SOLICITACAO", diaSolicitacao);

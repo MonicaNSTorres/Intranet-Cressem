@@ -39,28 +39,27 @@ function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
 }
 
-
 function onlyCpfCnpjChars(value: string) {
   return String(value || "")
-    .replace(/[^a-zA-Z0-9]/g, "")
+    .replace(/[^A-Za-z0-9]/g, "")
     .toUpperCase();
 }
 
 function formatCpfCnpj(value: string) {
-  const digits = onlyDigits(value).slice(0, 14);
+  const chars = onlyCpfCnpjChars(value).slice(0, 14);
 
-  if (digits.length <= 11) {
-    return digits
-      .replace(/^(\d{3})(\d)/, "$1.$2")
-      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/\.(\d{3})(\d)/, ".$1-$2");
+  if (chars.length <= 11) {
+    return chars
+      .replace(/^(.{3})(.)/, "$1.$2")
+      .replace(/^(.{3})\.(.{3})(.)/, "$1.$2.$3")
+      .replace(/\.(.{3})(.)/, ".$1-$2");
   }
 
-  return digits
-    .replace(/^(\d{2})(\d)/, "$1.$2")
-    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-    .replace(/\.(\d{3})(\d)/, ".$1/$2")
-    .replace(/(\d{4})(\d)/, "$1-$2");
+  return chars
+    .replace(/^(.{2})(.)/, "$1.$2")
+    .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+    .replace(/\.(.{3})(.)/, ".$1/$2")
+    .replace(/(.{4})(.)$/, "$1-$2");
 }
 
 function phoneMask(value: string) {
@@ -742,7 +741,9 @@ export function CadastroContratoForm({
             <Field label="CPF/CNPJ">
               <input
                 value={formatCpfCnpj(cnpj)}
-                onChange={(e) => setCnpj(e.target.value)}
+                onChange={(e) =>
+                  setCnpj(onlyCpfCnpjChars(e.target.value).slice(0, 14))
+                }
                 className={inputBase}
                 maxLength={18}
                 placeholder="Informe o CPF ou CNPJ"
@@ -1096,8 +1097,8 @@ export function CadastroContratoForm({
                   type="button"
                   onClick={() => setAtivo((old) => !old)}
                   className={`inline-flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition cursor-pointer ${ativo
-                      ? "bg-third text-white hover:bg-secondary"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    ? "bg-third text-white hover:bg-secondary"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                 >
                   {ativo ? "Ativo" : "Inativo"}

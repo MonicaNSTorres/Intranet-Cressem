@@ -197,6 +197,22 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["termos mensais", "cadastrar", "termos", "caixa", "formulario"],
   },
   {
+    title: "Leilões",
+    desc: "Cadastre os produtos para que os usuários possam ver disponíveis.",
+    href: "/auth/leiloes",
+    group: "Financeiro",
+    allowedGroups: [AD_GROUPS.SUPORTE],
+    keywords: ["produtos", "cadastrar", "leilao", "mercadoria", "equipamentos"],
+  },
+  {
+    title: "Leilões ao Vivo",
+    desc: "Leilão em tempo real com lances ao vivo, participe.",
+    href: "/auth/leiloes_ao_vivo",
+    group: "Financeiro",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TERMOS_MENSAIS_CAIXA],
+    keywords: ["ao vivo", "cadastrar", "leilao", "oferta", "lances"],
+  },
+  {
     title: "Gerenciar Favorecidos",
     desc: "Adicione ou edite favorecidos vinculados a geração do cnab240.",
     href: "/auth/cnab240_favorecidos",

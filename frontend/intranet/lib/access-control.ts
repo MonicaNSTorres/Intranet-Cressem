@@ -386,7 +386,18 @@ export const PAGE_ACCESS = {
 
     cnab240: {
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
-    }
+    },
 
+    leiloes: {
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+
+    leiloesAoVivo: {
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+
+    leiloesDashboard: {
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
 
 } satisfies Record<string, AccessRule>;

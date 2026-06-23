@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useState } from "react";
 import { FaFileAlt, FaTrash } from "react-icons/fa";
-import { formatCpfView, onlyDigits } from "@/utils/br";
+import { formatCpfCnpjView, onlyCpfCnpjChars, onlyDigits } from "@/utils/br";
 import {
   buscarMigracaoContratoAssociadoPorCpf,
   type BuscarMigracaoContratoAssociadoResponse,
@@ -87,7 +87,12 @@ export function MigracaoContratoForm() {
   const [info, setInfo] = useState("");
 
   const cpfsAdicionados = useMemo(
-    () => linhas.map((linha) => onlyDigits(linha.cpf)),
+    () =>
+      linhas.map((linha) =>
+        String(linha.cpf || "")
+          .replace(/[^A-Za-z0-9]/g, "")
+          .toUpperCase()
+      ),
     [linhas]
   );
 
@@ -95,19 +100,21 @@ export function MigracaoContratoForm() {
     setErro("");
     setInfo("");
 
-    const cpfLimpo = onlyDigits(cpfBusca);
+    const cpfLimpo = onlyCpfCnpjChars(cpfBusca);
+    const documento = cpfLimpo.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    console.log("documento enviado:", documento);
 
-    if (!cpfLimpo) {
+    if (!documento) {
       setErro("Informe o CPF do associado(a).");
       return;
     }
 
-    if (cpfLimpo.length !== 11) {
-      setErro("Informe um CPF válido com 11 dígitos.");
+    if (![11, 14].includes(documento.length)) {
+      setErro("Informe um CPF/CNPJ válido com 11 ou 14 caracteres.");
       return;
     }
 
-    if (cpfsAdicionados.includes(cpfLimpo)) {
+    if (cpfsAdicionados.includes(documento)) {
       setErro("Esse CPF já foi adicionado na lista.");
       return;
     }
@@ -115,7 +122,7 @@ export function MigracaoContratoForm() {
     try {
       setLoadingBusca(true);
 
-      const result = await buscarMigracaoContratoAssociadoPorCpf(cpfLimpo);
+      const result = await buscarMigracaoContratoAssociadoPorCpf(documento);
 
       if (!result.found) {
         setErro("Nenhum associado encontrado para esse CPF.");
@@ -152,7 +159,7 @@ export function MigracaoContratoForm() {
             ...linha,
             [field]:
               field === "cpf"
-                ? formatCpfView(value)
+                ? formatCpfCnpjView(value)
                 : field === "salario"
                   ? formatCurrencyInput(value)
                   : value,
@@ -189,9 +196,9 @@ export function MigracaoContratoForm() {
         }
       }
 
-      const cpf = onlyDigits(linha.cpf);
-      if (cpf.length !== 11) {
-        setErro(`CPF inválido na linha ${numeroLinha}.`);
+      const cpf = onlyCpfCnpjChars(linha.cpf);
+      if (![11, 14].includes(cpf.length)) {
+        setErro(`CPF/CNPJ inválido na linha ${numeroLinha}.`);
         return false;
       }
 
@@ -209,7 +216,7 @@ export function MigracaoContratoForm() {
     if (!linhas.length) return false;
 
     return linhas.every((linha) => {
-      const cpfValido = onlyDigits(linha.cpf).length === 11;
+      const cpfValido = [11, 14].includes(onlyCpfCnpjChars(linha.cpf).length);
       const salarioValido = parseCurrencyToNumber(linha.salario) !== null;
 
       return (
@@ -239,7 +246,7 @@ export function MigracaoContratoForm() {
         NM_CARGO: linha.cargo,
         VL_RENDA_BRUTA: parseCurrencyToNumber(linha.salario),
         DT_ADMISSAO: linha.admissao,
-        NR_CPF_CNPJ: onlyDigits(linha.cpf),
+        NR_CPF_CNPJ: onlyCpfCnpjChars(linha.cpf),
         DESC_SITUACAO: linha.situacao,
         NR_MATRICULA: linha.matricula,
       }));
@@ -265,12 +272,10 @@ export function MigracaoContratoForm() {
           </label>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
             <SearchInput
-              value={formatCpfView(cpfBusca)}
-              onChange={(e) => setCpfBusca(e.target.value)}
-              placeholder="CPF (somente números)"
-              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              inputMode="numeric"
-              maxLength={14}
+              value={formatCpfCnpjView(cpfBusca)}
+              onChange={(e) => setCpfBusca(onlyCpfCnpjChars(e.target.value).slice(0, 14))}
+              placeholder="CPF/CNPJ"
+              maxLength={18}
             />
             <SearchButton loading={loadingBusca} label="Pesquisar" />
           </div>
@@ -373,7 +378,7 @@ export function MigracaoContratoForm() {
                   </td>
                   <td className="px-3 py-3 border-b">
                     <input
-                      value={formatCpfView(linha.cpf)}
+                      value={formatCpfCnpjView(linha.cpf)}
                       onChange={(e) =>
                         updateLinha(linha.id, "cpf", e.target.value)
                       }

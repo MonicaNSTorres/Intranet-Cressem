@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { cpf as cpfValidator, cnpj as cnpjValidator } from "cpf-cnpj-validator";
 import { buscarFuncionarioPorCpf } from "@/services/associado.service";
-import { onlyDigits } from "@/utils/br";
+import { onlyCpfCnpjChars, onlyDigits } from "@/utils/br";
 
 export type AssociadoData = {
   nome: string;
@@ -30,7 +30,6 @@ export type AssociadoData = {
   limite_chque?: string;
   limite_cartao?: string;
   saldo_capital?: string;
-
 };
 
 type BuscarResult =
@@ -46,13 +45,15 @@ export function useAssociadoPorCpf() {
     setErro(null);
     setInfo(null);
 
-    const clean = onlyDigits(cpf);
+    const clean = onlyCpfCnpjChars(cpf);
+    const digits = onlyDigits(cpf);
 
-    const isCpf = clean.length === 11 && cpfValidator.isValid(clean);
-    const isCnpj = clean.length === 14 && cnpjValidator.isValid(clean);
+    const isCpf = digits.length === 11 && cpfValidator.isValid(digits);
+    const isCnpjNumerico = digits.length === 14 && cnpjValidator.isValid(digits);
+    const isCnpjAlfanumerico = clean.length === 14 && /[A-Z]/.test(clean);
 
-    if (!isCpf && !isCnpj) {
-      setErro("CPF/CNPJ inválido. Digite 11 números (CPF) ou 14 números (CNPJ).");
+    if (!isCpf && !isCnpjNumerico && !isCnpjAlfanumerico) {
+      setErro("CPF/CNPJ inválido. Digite 11 caracteres (CPF) ou 14 caracteres (CNPJ).");
       return { found: false, data: null };
     }
 
@@ -78,7 +79,6 @@ export function useAssociadoPorCpf() {
         nascimento: data.nascimento || "",
         cpf: data.cpf || clean,
         rg: data.rg || "",
-
         rua: data.rua || "",
         numero: data.numero || "",
         complemento: data.complemento || "",
@@ -96,7 +96,7 @@ export function useAssociadoPorCpf() {
         cartao: data.cartao || "",
         limite_chque: data.limite_chque || "",
         limite_cartao: data.limite_cartao || "",
-        saldo_capital: data.saldo_capital || ""
+        saldo_capital: data.saldo_capital || "",
       };
 
       return { found: true, data: mapped };

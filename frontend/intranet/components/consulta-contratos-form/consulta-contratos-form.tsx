@@ -28,21 +28,27 @@ function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
 }
 
-function formatCpfCnpj(value: string) {
-  const digits = onlyDigits(value).slice(0, 14);
+function onlyCpfCnpjChars(value: string) {
+  return String(value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
 
-  if (digits.length <= 11) {
-    return digits
+function formatCpfCnpj(value: string) {
+  const chars = onlyCpfCnpjChars(value).slice(0, 14);
+
+  if (chars.length <= 11 && !/[A-Z]/.test(chars)) {
+    return chars
       .replace(/^(\d{3})(\d)/, "$1.$2")
       .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
       .replace(/\.(\d{3})(\d)/, ".$1-$2");
   }
 
-  return digits
-    .replace(/^(\d{2})(\d)/, "$1.$2")
-    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-    .replace(/\.(\d{3})(\d)/, ".$1/$2")
-    .replace(/(\d{4})(\d)/, "$1-$2");
+  return chars
+    .replace(/^(.{2})(.)/, "$1.$2")
+    .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+    .replace(/\.(.{3})(.)/, ".$1/$2")
+    .replace(/(.{4})(.)$/, "$1-$2");
 }
 
 function formatDateBR(value?: string | null) {
@@ -335,7 +341,7 @@ export function ConsultaContratosForm() {
   function montarParamsBase(): ConsultaContratosParams {
     return {
       NM_EMPRESA: empresa.trim() || undefined,
-      NR_CNPJ: onlyDigits(cnpj) || undefined,
+      NR_CNPJ: onlyCpfCnpjChars(cnpj) || undefined,
       NM_CIDADE: cidade.trim() || undefined,
       NM_TIPO_CONTRATO: tipoContrato.trim() || undefined,
       NM_SISTEMA_CONSIG: sistema.trim() || undefined,
@@ -641,7 +647,7 @@ export function ConsultaContratosForm() {
               <Field label="CPF/CNPJ">
                 <input
                   value={formatCpfCnpj(cnpj)}
-                  onChange={(e) => setCnpj(e.target.value)}
+                  onChange={(e) => setCnpj(onlyCpfCnpjChars(e.target.value).slice(0, 14))}
                   className={inputBase}
                   maxLength={18}
                 />

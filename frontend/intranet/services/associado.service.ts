@@ -1,37 +1,37 @@
-import { onlyDigits } from "@/utils/br";
+import { onlyCpfCnpjChars } from "@/utils/br";
 import { registrarErroTela } from "@/services/error_log.service";
 
 export type BuscarPorCpfResponse =
   | { found: false }
   | {
-      found: true;
-      nome: string;
-      matricula: string;
-      nascimento?: string;
-      cpf?: string;
-      rg?: string;
-      rua?: string;
-      numero?: string;
-      complemento?: string;
-      bairro?: string;
-      cidade?: string;
-      uf?: string;
-      cep?: string;
-      empresa?: string;
-      endereco?: string;
-      telefone?: string;
-      email?: string;
-      documento?: string;
-      orgao?: string;
-      iap?: string;
-      portabilidade?: string;
-      cartao?: string;
-      limite_chque?: string;
-      limite_cartao?: string;
-      saldo_capital?: string;
-      conta_corrente?: string;
-      nr_conta_corrente?: string;
-    };
+    found: true;
+    nome: string;
+    matricula: string;
+    nascimento?: string;
+    cpf?: string;
+    rg?: string;
+    rua?: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+    cep?: string;
+    empresa?: string;
+    endereco?: string;
+    telefone?: string;
+    email?: string;
+    documento?: string;
+    orgao?: string;
+    iap?: string;
+    portabilidade?: string;
+    cartao?: string;
+    limite_chque?: string;
+    limite_cartao?: string;
+    saldo_capital?: string;
+    conta_corrente?: string;
+    nr_conta_corrente?: string;
+  };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -43,7 +43,7 @@ export async function buscarFuncionarioPorCpf(
       throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
     }
 
-    const clean = onlyDigits(cpf);
+    const clean = onlyCpfCnpjChars(cpf);
 
     const res = await fetch(
       `${API_URL}/v1/associados/buscar-por-cpf?cpf=${clean}`,

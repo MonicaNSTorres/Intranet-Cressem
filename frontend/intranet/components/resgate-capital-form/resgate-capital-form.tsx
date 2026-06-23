@@ -11,6 +11,8 @@ import {
   monetizarDigitacao,
   onlyDigits,
   parseBRL,
+  formatCpfCnpjView,
+  onlyCpfCnpjChars,
 } from "@/utils/br";
 import {
   buscarAutorizacoesResgate,
@@ -93,7 +95,7 @@ function buildEmprestimo(): EmprestimoItem {
 }
 
 function isCnpj(value: string) {
-  return onlyDigits(value).length === 14;
+  return onlyCpfCnpjChars(value).length === 14;
 }
 
 function capitalizeWords(value?: string | null) {
@@ -621,8 +623,8 @@ export function ResgateCapitalForm() {
       return false;
     }
 
-    if (onlyDigits(cpf).length > LIMITS.NR_CPF_CNPJ) {
-      setErro(`CPF/CNPJ deve ter no máximo ${LIMITS.NR_CPF_CNPJ} dígitos.`);
+    if (onlyCpfCnpjChars(cpf).length > LIMITS.NR_CPF_CNPJ) {
+      setErro(`CPF/CNPJ deve ter no máximo ${LIMITS.NR_CPF_CNPJ} caracteres.`);
       return false;
     }
 
@@ -859,7 +861,7 @@ export function ResgateCapitalForm() {
 
       await gerarPdfResgateCapital(
         {
-          cpfCnpj: formatCpfView(cpf),
+          cpfCnpj: formatCpfCnpjView(cpf),
           nome,
           matricula,
           empresa,
@@ -899,7 +901,7 @@ export function ResgateCapitalForm() {
         },
         {
           acao: "download",
-          nomeArquivo: `resgate_capital_${onlyDigits(cpf) || "associado"}.pdf`,
+          nomeArquivo: `resgate_capital_${onlyCpfCnpjChars(cpf) || "associado"}.pdf`,
         }
       );
 
@@ -923,11 +925,10 @@ export function ResgateCapitalForm() {
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
               <SearchInput
-                value={formatCpfView(cpf)}
-                onChange={(e) => setCpf(e.target.value)}
+                value={formatCpfCnpjView(cpf)}
+                onChange={(e) => setCpf(onlyCpfCnpjChars(e.target.value).slice(0, 14))}
                 placeholder="Digite o CPF/CNPJ"
                 className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                inputMode="numeric"
                 maxLength={18}
               />
 

@@ -20,6 +20,8 @@ import {
     FaAddressBook,
     FaChevronLeft,
     FaChevronRight,
+    FaDatabase,
+    FaBuilding,
 } from "react-icons/fa";
 
 import {
@@ -165,10 +167,10 @@ export function Cnab240Form() {
     }
 
     function onlyCpfCnpjChars(value: string) {
-  return String(value || "")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .toUpperCase();
-}
+        return String(value || "")
+            .replace(/[^a-zA-Z0-9]/g, "")
+            .toUpperCase();
+    }
 
     function parseValor(value: string) {
         const cleaned = value
@@ -642,7 +644,7 @@ export function Cnab240Form() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_380px]">
+                    <div className="space-y-6">
                         <div className="space-y-6">
                             <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-5">
                                 <div className="mb-4 flex items-center gap-2">
@@ -827,6 +829,102 @@ export function Cnab240Form() {
                                 </div>
                             </div>
 
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                <div className="rounded-2xl border border-[#79B729]/20 bg-[#79B729]/10 p-5">
+                                    <div className="flex items-start gap-3">
+                                        <FaInfoCircle className="mt-0.5 shrink-0 text-secondary" />
+
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-800">
+                                                Fluxo da tela
+                                            </p>
+
+                                            <p className="mt-1 text-xs leading-6 text-gray-600">
+                                                O usuário informa CPF, valor, tipo e descrição. O sistema
+                                                busca os dados bancários do favorecido, monta a lista de
+                                                pagamentos e gera o TXT CNAB240.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl border border-[#00AE9D]/20 bg-[#00AE9D]/5 p-5 shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <FaAddressBook className="mt-0.5 shrink-0 text-[#00AE9D]" />
+
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-gray-800">
+                                                Cadastro de favorecidos
+                                            </p>
+
+                                            <p className="mt-1 text-xs leading-6 text-gray-600">
+                                                Cadastre e mantenha os favorecidos atualizados. Ao informar
+                                                apenas o CPF na geração do CNAB240, os dados bancários serão
+                                                preenchidos automaticamente.
+                                            </p>
+
+                                            <Link
+                                                href="/auth/cnab240_favorecidos"
+                                                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#00AE9D]/20 transition hover:bg-secondary"
+                                            >
+                                                <FaAddressBook />
+                                                Gerenciar favorecidos
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <FaDatabase className="mt-0.5 shrink-0 text-fourth" />
+
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-gray-800">
+                                                Contas CCO
+                                            </p>
+
+                                            <p className="mt-1 text-xs leading-6 text-gray-600">
+                                                Cadastre e mantenha as contas CCO utilizadas na geração do
+                                                CNAB240. A chave CPF + Ativa é gerada automaticamente.
+                                            </p>
+
+                                            <Link
+                                                href="/auth/cnab240_cco"
+                                                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-fourth px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
+                                            >
+                                                <FaDatabase />
+                                                Gerenciar CCO
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5 shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <FaBuilding className="mt-0.5 shrink-0 text-orange-600" />
+
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-gray-800">
+                                                Agências CNAB240
+                                            </p>
+
+                                            <p className="mt-1 text-xs leading-6 text-gray-600">
+                                                Cadastre e mantenha as agências utilizadas na geração dos
+                                                arquivos CNAB240.
+                                            </p>
+
+                                            <Link
+                                                href="/auth/cnab240_agencias"
+                                                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700"
+                                            >
+                                                <FaBuilding />
+                                                Gerenciar agências
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/*<div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-5">
                                 <div className="mb-4 flex items-center gap-2">
                                     <FaSyncAlt className="text-blue-600" />
@@ -872,7 +970,7 @@ export function Cnab240Form() {
                             </div>*/}
                         </div>
 
-                        <div className="space-y-6">
+                        {/*<div className="space-y-6">
                             <div className="rounded-2xl border border-[#79B729]/20 bg-[#79B729]/10 p-5">
                                 <div className="flex items-start gap-3">
                                     <FaInfoCircle className="mt-0.5 shrink-0 text-secondary" />
@@ -890,7 +988,6 @@ export function Cnab240Form() {
                                 </div>
                             </div>
 
-                            {/* NOVO CARD */}
                             <div className="rounded-2xl border border-[#00AE9D]/20 bg-[#00AE9D]/5 p-5 shadow-sm">
                                 <div className="flex items-start gap-3">
                                     <FaAddressBook className="mt-0.5 shrink-0 text-[#00AE9D]" />
@@ -917,7 +1014,32 @@ export function Cnab240Form() {
                                 </div>
                             </div>
 
-                            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+                                <div className="flex items-start gap-3">
+                                    <FaDatabase className="mt-0.5 shrink-0 text-fourth" />
+
+                                    <div className="flex-1">
+                                        <p className="text-sm font-semibold text-gray-800">
+                                            Contas CCO
+                                        </p>
+
+                                        <p className="mt-1 text-xs leading-6 text-gray-600">
+                                            Cadastre e mantenha as contas CCO utilizadas na geração do
+                                            CNAB240. A chave CPF + Ativa é gerada automaticamente.
+                                        </p>
+
+                                        <Link
+                                            href="/auth/cnab240_cco"
+                                            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-fourth px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
+                                        >
+                                            <FaDatabase />
+                                            Gerenciar CCO
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/*<div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                                 <h4 className="text-sm font-semibold text-gray-900">
                                     Resumo da próxima remessa
                                 </h4>
@@ -938,9 +1060,9 @@ export function Cnab240Form() {
                                         value="0"
                                     />
                                 </div>
-                            </div>
+                            </div>*/}
 
-                            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                        {/*<div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                                 <h4 className="text-sm font-semibold text-gray-900">
                                     Ações futuras
                                 </h4>
@@ -965,7 +1087,7 @@ export function Cnab240Form() {
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </div>*/}
                     </div>
                 </div>
             </div>

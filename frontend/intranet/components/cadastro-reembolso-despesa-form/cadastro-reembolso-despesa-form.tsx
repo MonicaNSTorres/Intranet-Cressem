@@ -487,7 +487,6 @@ export function CadastroReembolsoDespesaForm() {
         TP_DESPESA: item.tipo,
         DESC_DESPESA: item.descricao,
         VALOR: parseBRL(item.valor),
-        // Em edição, mantém o path existente quando o usuário não troca o arquivo.
         COMPROVANTE: comprovanteDataUrl || item.comprovantePath || null,
         COMPROVANTE_NOME: item.comprovanteNome || null,
       });

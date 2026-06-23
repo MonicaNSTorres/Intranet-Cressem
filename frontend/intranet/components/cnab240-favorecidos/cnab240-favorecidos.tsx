@@ -789,6 +789,8 @@ function CardResumo({
   icon: React.ReactNode;
   cor: string;
 }) {
+  const valorFormatado = Number(valor || 0).toLocaleString("pt-BR");
+
   return (
     <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
       <div className="flex items-center justify-between">
@@ -797,7 +799,7 @@ function CardResumo({
             {titulo}
           </p>
 
-          <h3 className="mt-2 text-3xl font-bold text-slate-800">{valor}</h3>
+          <h3 className="mt-2 text-3xl font-bold text-slate-800">{valorFormatado}</h3>
         </div>
 
         <div

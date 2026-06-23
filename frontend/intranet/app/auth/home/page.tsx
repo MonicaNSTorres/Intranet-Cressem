@@ -527,7 +527,7 @@ export default function HomePage() {
                         <div className="overflow-hidden rounded-[28px] border border-[#49479D]/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
                             <div className="border-b border-[#EAECF0] px-6 py-5">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#49479D] text-white">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fourth text-white">
                                         <FaStar className="h-5 w-5" />
                                     </div>
                                     <div>
@@ -1045,7 +1045,7 @@ function QuickAccessCard({
             className="group rounded-3xl border border-[#EAECF0] bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[#49479D]/20 hover:bg-[#FAFAFF] hover:shadow-[0_10px_24px_rgba(73,71,157,0.08)]"
         >
             <div className="flex items-start justify-between gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#49479D]/10 text-[#49479D]">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#49479D]/10 text-fourth">
                     {icon}
                 </div>
 
@@ -1064,7 +1064,7 @@ function QuickAccessCard({
                 {desc}
             </p>
 
-            <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#49479D]">
+            <div className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-fourth">
                 Acessar
                 <FaArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
             </div>

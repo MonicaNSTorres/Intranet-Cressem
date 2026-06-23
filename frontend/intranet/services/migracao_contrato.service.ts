@@ -1,4 +1,4 @@
-import { onlyDigits } from "@/utils/br";
+import { onlyCpfCnpjChars, onlyDigits } from "@/utils/br";
 import { registrarErroTela } from "./error_log.service";
 
 export type BuscarMigracaoContratoResponse =
@@ -68,14 +68,17 @@ export async function buscarMigracaoContratoPorCpf(
       throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
     }
 
-    const clean = onlyDigits(cpf);
+    const clean = onlyCpfCnpjChars(cpf);
 
-    const res = await fetch(`${API_URL}/v1/migracao-contrato/cpf/${clean}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${API_URL}/v1/migracao-contrato/buscar-cpf/${clean}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        cache: "no-store",
+      }
+    );
 
     const json = await res.json().catch(() => ({}));
 
@@ -152,10 +155,12 @@ export async function buscarMigracaoContratoAssociadoPorCpf(
       throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
     }
 
-    const clean = onlyDigits(cpf);
+    const clean = String(cpf || "")
+      .replace(/[^A-Za-z0-9/-]/g, "")
+      .toUpperCase();
 
     const res = await fetch(
-      `${API_URL}/v1/migracao-contrato/buscar-cpf/${clean}`,
+      `${API_URL}/v1/migracao-contrato/buscar-cpf/${encodeURIComponent(clean)}`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
