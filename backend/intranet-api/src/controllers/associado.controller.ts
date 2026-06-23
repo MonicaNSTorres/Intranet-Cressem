@@ -31,6 +31,7 @@ export const associadoController = {
           a.DT_NASCIMENTO AS NASCIMENTO,
           a.NM_EMPRESA AS EMPRESA,
           a.NR_CPF_CNPJ AS CPF,
+          a.NM_CARGO AS CARGO,
           a.NM_BAIRRO AS BAIRRO,
           a.NM_CIDADE AS CIDADE,
           a.DS_ENDERECO AS RUA,
@@ -47,11 +48,24 @@ export const associadoController = {
           a.NR_LIMITE_CARTAO AS NR_LIMITE_CARTAO,
           a.SL_CONTA_CAPITAL AS SL_CONTA_CAPITAL,
           (
-            SELECT TRIM(f.NR_CONTA_CORRENTE)
-            FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
-            WHERE REGEXP_REPLACE(f.NR_CPF, '[^0-9]', '') = :documento
+            SELECT cc.NR_CONTA_CORRENTE
+            FROM (
+              SELECT
+                TRIM(c.NR_CONTA_CORRENTE) AS NR_CONTA_CORRENTE,
+                TO_DATE(TRIM(c.DT_MOVIMENTO), 'DD/MM/YYYY') AS DT_MOVIMENTO
+              FROM DBACRESSEM.CONTA_CORRENTE_DIARIO_NOVO c
+              WHERE REGEXP_REPLACE(TO_CHAR(c.NR_CPF_CNPJ_CLIENTE), '[^0-9]', '') = :documento
+                AND TRIM(c.NR_CONTA_CORRENTE) IS NOT NULL
+            ) cc
+            ORDER BY cc.DT_MOVIMENTO DESC NULLS LAST
             FETCH FIRST 1 ROWS ONLY
-          ) AS NR_CONTA_CORRENTE
+          ) AS NR_CONTA_CORRENTE,
+          (
+            SELECT TO_CHAR(MIN(TRUNC(c.DT_MATRICULA)), 'YYYY-MM-DD')
+            FROM DBACRESSEM.CONTA_CAPITAL_DIARIO_NOVO c
+            WHERE REGEXP_REPLACE(TO_CHAR(c.NR_CPF_CNPJ_CLIENTE), '[^0-9]', '') = :documento
+              AND c.DT_MATRICULA IS NOT NULL
+          ) AS DT_MATRICULA_COOPERATIVA
         FROM DBACRESSEM.ASSOCIADO_ANALITICO a
         WHERE REGEXP_REPLACE(UPPER(a.NR_CPF_CNPJ), '[^A-Z0-9]', '') = :documento
           AND ROWNUM = 1
@@ -75,6 +89,8 @@ export const associadoController = {
                 matricula: row.MATRICULA || "",
                 nascimento: row.NASCIMENTO || "",
                 empresa: row.EMPRESA || "",
+                cargo: row.CARGO || "",
+                data_matricula_cooperativa: row.DT_MATRICULA_COOPERATIVA || "",
                 cpf: row.CPF || documento,
                 bairro: row.BAIRRO || "",
                 cidade: row.CIDADE || "",

@@ -79,9 +79,12 @@ import { reservaSalaReuniaoController } from "../controllers/reserva-sala-reunia
 import { monitorMetaAlertasController } from "../controllers/monitor-meta-alertas.controller";
 import { cnab240Controller } from "../controllers/cnab240.controller";
 import { cnab240FavorecidosController } from "../controllers/cnab-favorecidos.controller";
-import { cnab240CcoController } from "../controllers/cnab240-cco.controller";
 import { cnab240AgenciasController } from "../controllers/cnab240-agencias.controller";
 import { leiloesController } from "../controllers/leiloes.controller";
+import { solicitacaoSubsidioFuneralController } from "../controllers/solicitacao-subsidio-funeral.controller";
+import { solicitacaoSubsidioFuneralPaginadoController } from "../controllers/solicitacao_subsidio_funeral_paginado.controller";
+import { solicitacaoSubsidioAuditivoController } from "../controllers/solicitacao-subsidio-auditivo.controller";
+import { solicitacaoSubsidioAuditivoPaginadoController } from "../controllers/solicitacao_subsidio_auditivo_paginado.controller";
 
 const routes = Router();
 
@@ -105,6 +108,13 @@ routes.get(
   authMiddleware,
   authorizeGroups(["GG_USERS_SUPORTE"]),
   monitorMetaAlertasController.listar
+);
+
+routes.get(
+  "/v1/monitor-meta-alertas/detalhes",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE"]),
+  monitorMetaAlertasController.detalhar
 );
 
 routes.patch(
@@ -985,6 +995,84 @@ routes.get(
 routes.get(
   "/v1/solicitacao_reembolso_despesa_paginado",
   solicitacaoReembolsoDespesaPaginadoController.listar
+);
+
+routes.post(
+  "/v1/solicitacao_subsidio_funeral",
+  authMiddleware,
+  solicitacaoSubsidioFuneralController.cadastrar
+);
+
+routes.put(
+  "/v1/solicitacao_subsidio_funeral",
+  authMiddleware,
+  solicitacaoSubsidioFuneralController.editar
+);
+
+routes.get(
+  "/v1/solicitacao_subsidio_funeral/:id",
+  authMiddleware,
+  solicitacaoSubsidioFuneralController.buscarPorId
+);
+
+routes.put(
+  "/v1/solicitacao_subsidio_funeral/:id/status",
+  authMiddleware,
+  solicitacaoSubsidioFuneralController.atualizarStatus
+);
+
+routes.post(
+  "/v1/solicitacao_subsidio_funeral/download",
+  authMiddleware,
+  solicitacaoSubsidioFuneralController.downloadAnexo
+);
+
+routes.get(
+  "/v1/solicitacao_subsidio_funeral_paginado",
+  authMiddleware,
+  solicitacaoSubsidioFuneralPaginadoController.listar
+);
+
+routes.post(
+  "/v1/solicitacao_subsidio_auditivo",
+  authMiddleware,
+  solicitacaoSubsidioAuditivoController.cadastrar
+);
+
+routes.put(
+  "/v1/solicitacao_subsidio_auditivo",
+  authMiddleware,
+  solicitacaoSubsidioAuditivoController.editar
+);
+
+routes.get(
+  "/v1/solicitacao_subsidio_auditivo/:id",
+  authMiddleware,
+  solicitacaoSubsidioAuditivoController.buscarPorId
+);
+
+routes.put(
+  "/v1/solicitacao_subsidio_auditivo/:id/anexo-fluxo",
+  authMiddleware,
+  solicitacaoSubsidioAuditivoController.salvarAnexoFluxo
+);
+
+routes.put(
+  "/v1/solicitacao_subsidio_auditivo/:id/status",
+  authMiddleware,
+  solicitacaoSubsidioAuditivoController.atualizarStatus
+);
+
+routes.post(
+  "/v1/solicitacao_subsidio_auditivo/download",
+  authMiddleware,
+  solicitacaoSubsidioAuditivoController.downloadAnexo
+);
+
+routes.get(
+  "/v1/solicitacao_subsidio_auditivo_paginado",
+  authMiddleware,
+  solicitacaoSubsidioAuditivoPaginadoController.listar
 );
 
 routes.get("/v1/glpi/health", glpiHealth);

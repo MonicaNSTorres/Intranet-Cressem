@@ -578,6 +578,34 @@ const Sidebar = () => {
             ],
         },
         {
+            key: "formularios-subsidio",
+            label: "Formulários Subsídio",
+            icon: FaHandshake,
+            section: "Formulários",
+            children: [
+                {
+                    label: "Cadastro de Subsídio Funeral",
+                    href: "/auth/cadastro_subsidio_funeral",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Gerenciamento de Subsídio Funeral",
+                    href: "/auth/gerenciamento_subsidio_funeral",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Cadastro de Subsídio Auditivo",
+                    href: "/auth/cadastro_subsidio_auditivo",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Gerenciamento de Subsídio Auditivo",
+                    href: "/auth/gerenciamento_subsidio_auditivo",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+            ],
+        },
+        {
             key: "financeiro",
             label: "Financeiro",
             icon: FaMoneyCheck,
