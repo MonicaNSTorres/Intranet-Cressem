@@ -267,7 +267,7 @@ export const SCREENS: ScreenItem[] = [
     desc: "Cadastrar solicitação de subsídio funeral.",
     href: "/auth/cadastro_subsidio_funeral",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
     keywords: ["subsidio", "subsídio", "funeral", "cadastro", "solicitacao", "solicitação"],
   },
   {
@@ -275,7 +275,7 @@ export const SCREENS: ScreenItem[] = [
     desc: "Acompanhar solicitações de subsídio funeral.",
     href: "/auth/gerenciamento_subsidio_funeral",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
     keywords: ["subsidio", "subsídio", "funeral", "gerenciamento", "consulta", "financeiro"],
   },
   {
@@ -283,7 +283,7 @@ export const SCREENS: ScreenItem[] = [
     desc: "Tela reservada para cadastro de subsídio auditivo.",
     href: "/auth/cadastro_subsidio_auditivo",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
     keywords: ["subsidio", "subsídio", "auditivo", "cadastro"],
   },
   {
@@ -291,7 +291,7 @@ export const SCREENS: ScreenItem[] = [
     desc: "Tela reservada para gerenciamento de subsídio auditivo.",
     href: "/auth/gerenciamento_subsidio_auditivo",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
     keywords: ["subsidio", "subsídio", "auditivo", "gerenciamento"],
   },
   {

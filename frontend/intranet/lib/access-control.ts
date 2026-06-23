@@ -317,11 +317,11 @@ export const PAGE_ACCESS = {
     },
 
     cadastroSubsidioFuneral: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
     },
 
     cadastroSubsidioAuditivo: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
     },
 
     consultaContrato: {
@@ -357,11 +357,11 @@ export const PAGE_ACCESS = {
     },
 
     gerenciamentoSubsidioFuneral: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
     },
 
     gerenciamentoSubsidioAuditivo: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
     },
 
     gerenciamentoParticipacao: {

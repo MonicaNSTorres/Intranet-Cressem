@@ -587,22 +587,22 @@ const Sidebar = () => {
                 {
                     label: "Cadastro de Subsídio Auditivo",
                     href: "/auth/cadastro_subsidio_auditivo",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
                 },
                 {
                     label: "Cadastro de Subsídio Funeral",
                     href: "/auth/cadastro_subsidio_funeral",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
                 },
                 {
                     label: "Gerenciamento de Subsídio Auditivo",
                     href: "/auth/gerenciamento_subsidio_auditivo",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
                 },
                 {
                     label: "Gerenciamento de Subsídio Funeral",
                     href: "/auth/gerenciamento_subsidio_funeral",
-                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV],
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
                 },
             ],
         },
