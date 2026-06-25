@@ -428,6 +428,30 @@ function sqlConsorcio() {
 
         LEFT JOIN FUNCIONARIO_PA FP
           ON FP.NM_FUNCIONARIO = MA.NM_FUNCIONARIO
+
+        UNION
+
+        SELECT
+          NVL(FP.NR_PA, 0) AS NR_PA,
+          AY.NM_FUNCIONARIO,
+          AY.ANO
+
+        FROM CONS_ANO AY
+
+        LEFT JOIN FUNCIONARIO_PA FP
+          ON FP.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+
+        WHERE AY.NM_FUNCIONARIO IN (
+          'MONICA COSTA DE MORAES',
+          'KEZIA YORRANA PEREIRA DA SILVA GUALBERTO',
+          'GILMAR APARECIDO CAVALCANTE DO PRADO'
+        )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM META_ANO MA
+            WHERE MA.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+              AND MA.ANO = AY.ANO
+          )
       )
 
     SELECT
@@ -819,6 +843,18 @@ function sqlSeguroGeraisNovo() {
           ANO,
           MES
       ),
+      FUNC_EXCECAO AS (
+        SELECT
+          REGEXP_REPLACE(TRIM(F.NR_CPF), '[^0-9]', '') AS CPF_FUNCIONARIO,
+          UPPER(TRIM(F.NM_FUNCIONARIO)) AS NM_FUNCIONARIO
+        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM F
+        WHERE UPPER(TRIM(F.NM_FUNCIONARIO)) IN (
+          'MONICA COSTA DE MORAES',
+          'KEZIA YORRANA PEREIRA DA SILVA GUALBERTO',
+          'GILMAR APARECIDO CAVALCANTE DO PRADO'
+        )
+          AND F.NR_CPF IS NOT NULL
+      ),
       BASE_FUNCIONARIOS AS (
         SELECT
           NVL(FP.NR_PA, 0) AS NR_PA,
@@ -827,9 +863,27 @@ function sqlSeguroGeraisNovo() {
         FROM META_ANO MA
         LEFT JOIN FUNCIONARIO_PA FP
           ON FP.NM_FUNCIONARIO = MA.NM_FUNCIONARIO
+
+        UNION
+
+        SELECT
+          NVL(FP.NR_PA, 0) AS NR_PA,
+          AY.NM_FUNCIONARIO,
+          AY.ANO
+        FROM SGPD_ANO AY
+        JOIN FUNC_EXCECAO FE
+          ON FE.CPF_FUNCIONARIO = REGEXP_REPLACE(AY.NM_FUNCIONARIO, '[^0-9]', '')
+        LEFT JOIN FUNCIONARIO_PA FP
+          ON FP.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM META_ANO MA
+            WHERE MA.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+              AND MA.ANO = AY.ANO
+          )
       )
     SELECT
-      MA.NM_FUNCIONARIO_NOME AS NM_FUNCIONARIO,
+      NVL(MA.NM_FUNCIONARIO_NOME, FE.NM_FUNCIONARIO) AS NM_FUNCIONARIO,
       BF.NM_FUNCIONARIO AS CPF_FUNCIONARIO,
       BF.ANO,
       NVL(SW.PRODUCAO_SEMANAL, 0) AS PRODUCAO_SEMANAL,
@@ -961,6 +1015,9 @@ function sqlSeguroGeraisNovo() {
     LEFT JOIN META_ANO MA
       ON MA.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
     AND MA.ANO = BF.ANO
+
+    LEFT JOIN FUNC_EXCECAO FE
+      ON FE.CPF_FUNCIONARIO = REGEXP_REPLACE(BF.NM_FUNCIONARIO, '[^0-9]', '')
 
     LEFT JOIN META_MES MM
       ON MM.NM_FUNCIONARIO = BF.NM_FUNCIONARIO
@@ -1219,6 +1276,27 @@ function sqlEntradaCooperados() {
         FROM META_ANO MA
         LEFT JOIN FUNCIONARIO_PA FP
           ON FP.NM_FUNCIONARIO = MA.NM_FUNCIONARIO
+
+        UNION
+
+        SELECT
+          NVL(FP.NR_PA, 0) AS NR_PA,
+          AY.NM_FUNCIONARIO,
+          AY.ANO
+        FROM AA_ANO AY
+        LEFT JOIN FUNCIONARIO_PA FP
+          ON FP.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+        WHERE AY.NM_FUNCIONARIO IN (
+          'MONICA COSTA DE MORAES',
+          'KEZIA YORRANA PEREIRA DA SILVA GUALBERTO',
+          'GILMAR APARECIDO CAVALCANTE DO PRADO'
+        )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM META_ANO MA
+            WHERE MA.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+              AND MA.ANO = AY.ANO
+          )
       )
 
     SELECT
@@ -1718,6 +1796,27 @@ function sqlContaCorrenteAbertas() {
         LEFT JOIN RESPONSAVEL_FUZZY RF
           ON RF.NOME = MA.NOME
         AND RF.ANO = MA.ANO
+
+        UNION
+
+        SELECT
+          RC.CPF,
+          RC.NOME_RESP AS NOME,
+          PA.ANO
+        FROM PROD_ANO PA
+        JOIN RESPONSAVEL_CPF RC
+          ON RC.CPF = PA.CPF
+        WHERE RC.NOME_RESP IN (
+          'MONICA COSTA DE MORAES',
+          'KEZIA YORRANA PEREIRA DA SILVA GUALBERTO',
+          'GILMAR APARECIDO CAVALCANTE DO PRADO'
+        )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM META_ANO MA
+            WHERE MA.NOME = RC.NOME_RESP
+              AND MA.ANO = PA.ANO
+          )
       )
 
     SELECT
@@ -2054,6 +2153,24 @@ function sqlSeguroVendaNova() {
         MA.NM_FUNCIONARIO,
         MA.ANO
       FROM META_ANO MA
+
+      UNION
+
+      SELECT
+        AY.NM_FUNCIONARIO,
+        AY.ANO
+      FROM SVNA_ANO AY
+      WHERE AY.NM_FUNCIONARIO IN (
+        'MONICA COSTA DE MORAES',
+        'KEZIA YORRANA PEREIRA DA SILVA GUALBERTO',
+        'GILMAR APARECIDO CAVALCANTE DO PRADO'
+      )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM META_ANO MA
+          WHERE MA.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+            AND MA.ANO = AY.ANO
+        )
     )
     SELECT
       BF.NM_FUNCIONARIO,
@@ -2330,6 +2447,27 @@ function sqlSeguroRural() {
         FROM META_ANO MA
         LEFT JOIN FUNCIONARIO_PA FP
           ON FP.NM_FUNCIONARIO = MA.NM_FUNCIONARIO
+
+        UNION
+
+        SELECT
+          NVL(FP.NR_PA, 0) AS NR_PA,
+          AY.NM_FUNCIONARIO,
+          AY.ANO
+        FROM SRC_ANO AY
+        LEFT JOIN FUNCIONARIO_PA FP
+          ON FP.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+        WHERE AY.NM_FUNCIONARIO IN (
+          'MONICA COSTA DE MORAES',
+          'KEZIA YORRANA PEREIRA DA SILVA GUALBERTO',
+          'GILMAR APARECIDO CAVALCANTE DO PRADO'
+        )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM META_ANO MA
+            WHERE MA.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+              AND MA.ANO = AY.ANO
+          )
       )
     SELECT
       BF.NM_FUNCIONARIO,
@@ -2692,6 +2830,27 @@ function sqlSaldoPrevidenciaMi() {
         FROM META_ANO MA
         LEFT JOIN FUNCIONARIO_PA FP
           ON FP.NM_FUNCIONARIO = MA.NM_FUNCIONARIO
+
+        UNION
+
+        SELECT
+          NVL(FP.NR_PA, 0) AS NR_PA,
+          AY.NM_FUNCIONARIO,
+          AY.ANO
+        FROM PMDN_ANO AY
+        LEFT JOIN FUNCIONARIO_PA FP
+          ON FP.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+        WHERE AY.NM_FUNCIONARIO IN (
+          'MONICA COSTA DE MORAES',
+          'KEZIA YORRANA PEREIRA DA SILVA GUALBERTO',
+          'GILMAR APARECIDO CAVALCANTE DO PRADO'
+        )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM META_ANO MA
+            WHERE MA.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+              AND MA.ANO = AY.ANO
+          )
       )
     SELECT
       BF.NM_FUNCIONARIO,
@@ -3079,6 +3238,28 @@ function sqlSaldoPrevidenciaVgbl() {
         FROM META_ANO MA
         LEFT JOIN FUNCIONARIO_PA FP
           ON FP.NM_FUNCIONARIO = MA.NM_FUNCIONARIO
+
+        UNION
+
+        SELECT
+          NVL(FP.NR_PA, 0) AS NR_PA,
+          AY.NM_FUNCIONARIO,
+          AY.ANO,
+          0 AS META_ANO
+        FROM PVPD_ANO AY
+        LEFT JOIN FUNCIONARIO_PA FP
+          ON FP.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+        WHERE AY.NM_FUNCIONARIO IN (
+          'MONICA COSTA DE MORAES',
+          'KEZIA YORRANA PEREIRA DA SILVA GUALBERTO',
+          'GILMAR APARECIDO CAVALCANTE DO PRADO'
+        )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM META_ANO MA
+            WHERE MA.NM_FUNCIONARIO = AY.NM_FUNCIONARIO
+              AND MA.ANO = AY.ANO
+          )
       )
     SELECT
       BF.NM_FUNCIONARIO,

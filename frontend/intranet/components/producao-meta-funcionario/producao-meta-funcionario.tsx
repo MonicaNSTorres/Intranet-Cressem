@@ -537,6 +537,9 @@ export function ProducaoMetaFuncionarioForm() {
         "";
 
       if (normalizarTextoComparacao(nome) === alvo) return false;
+      if ((item as Record<string, unknown>)?.sem_retorno_meta === true) {
+        return true;
+      }
 
       return temMetaAcimaDeUm(item);
     });

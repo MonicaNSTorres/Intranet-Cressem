@@ -108,10 +108,69 @@ function rowNomeFuncionario(row: any) {
     );
 }
 
-function montarAvisosMetaNaoRetornada(params: {
+function criarLinhaFuncionarioSemMeta(nome: string, ano: number) {
+    return {
+        nm_funcionario: nome,
+        ano,
+        producao_semanal: 0,
+        meta_semanal: 0,
+        meta_semanal_52: 0,
+        meta_semanal_mes: 0,
+        porcentagem_semanal: 0,
+        porcentagem_semana: 0,
+        gap_semanal: 0,
+        producao_mensal: 0,
+        meta_mensal: 0,
+        perc_meta_realizada_mensal: 0,
+        falta_para_meta_mensal: 0,
+        producao_ano: 0,
+        meta_2026: 0,
+        meta_ano: 0,
+        perc_meta_realizada: 0,
+        falta_para_meta: 0,
+        gap_ano: 0,
+        meta_vigente: 0,
+        gap_vigente: 0,
+        sem_retorno_meta: true,
+    };
+}
+
+function ehExcecaoMetaNaoRetornada(nome: any) {
+    const nomeNormalizado = normalizeNomePessoa(nome);
+    return NOMES_AVISO_META_NAO_RETORNADA.some(
+        (nomeExcecao) => normalizeNomePessoa(nomeExcecao) === nomeNormalizado
+    );
+}
+
+function marcarExcecoesMetaNaoRetornada(rows: any[]) {
+    return (rows || []).map((row) => {
+        if (!ehExcecaoMetaNaoRetornada(rowNomeFuncionario(row))) return row;
+
+        return {
+            ...row,
+            sem_retorno_meta: true,
+        };
+    });
+}
+
+const collatorNomeFuncionario = new Intl.Collator("pt-BR", {
+    sensitivity: "base",
+});
+
+function ordenarPorNomeFuncionario(rows: any[]) {
+    return [...(rows || [])].sort((a, b) =>
+        collatorNomeFuncionario.compare(
+            String(rowNomeFuncionario(a) || ""),
+            String(rowNomeFuncionario(b) || "")
+        )
+    );
+}
+
+function completarExcecoesMetaNaoRetornada(params: {
     rowsFiltradas: any[];
     verTudo: boolean;
     nomesPermitidos: Set<string>;
+    ano: number;
 }) {
     const nomesVisiveis = new Set(
         (params.rowsFiltradas || [])
@@ -119,7 +178,7 @@ function montarAvisosMetaNaoRetornada(params: {
             .filter((nome) => Boolean(nome))
     );
 
-    return NOMES_AVISO_META_NAO_RETORNADA
+    const linhasExcecao = NOMES_AVISO_META_NAO_RETORNADA
         .filter((nome) => {
             const nomeNormalizado = normalizeNomePessoa(nome);
             const podeVerNome =
@@ -127,10 +186,9 @@ function montarAvisosMetaNaoRetornada(params: {
 
             return podeVerNome && !nomesVisiveis.has(nomeNormalizado);
         })
-        .map((nome) => ({
-            nome,
-            mensagem: "não aparece porque não tivemos retorno da meta dele(a).",
-        }));
+        .map((nome) => criarLinhaFuncionarioSemMeta(nome, params.ano));
+
+    return ordenarPorNomeFuncionario([...params.rowsFiltradas, ...linhasExcecao]);
 }
 
 async function buscarNomesPermitidosSomenteGestor(nomeGestor: string) {
@@ -260,7 +318,9 @@ export const producaoMetaFuncionarioController = {
             console.log("Quantidade de linhas:", result.rows?.length || 0);
             console.log("Primeira linha:", result.rows?.[0]);
 
-            const rows = (result.rows || []).map((row: any) => normalizeKeys(row));
+            const rows = marcarExcecoesMetaNaoRetornada(
+                (result.rows || []).map((row: any) => normalizeKeys(row))
+            );
 
             let rowsFiltradas = rows;
             let verTudoAcesso = false;
@@ -300,13 +360,19 @@ export const producaoMetaFuncionarioController = {
                 console.error("Erro ao registrar monitor meta funcionario:", monitorErr);
             }
 
+            const anoPeriodo =
+                Number(String(periodo.dt_inicio || "").slice(0, 4)) ||
+                new Date().getFullYear();
+            const rowsComExcecoesMeta = completarExcecoesMetaNaoRetornada({
+                rowsFiltradas,
+                verTudo: verTudoAcesso,
+                nomesPermitidos: nomesPermitidosAcesso,
+                ano: anoPeriodo,
+            });
+
             return res.json({
-                rows: rowsFiltradas,
-                avisos_meta_nao_retornada: montarAvisosMetaNaoRetornada({
-                    rowsFiltradas,
-                    verTudo: verTudoAcesso,
-                    nomesPermitidos: nomesPermitidosAcesso,
-                }),
+                rows: rowsComExcecoesMeta,
+                avisos_meta_nao_retornada: [],
             });
         } catch (err: any) {
             console.error("producaoMetaFuncionarioController.listar erro:", err);
