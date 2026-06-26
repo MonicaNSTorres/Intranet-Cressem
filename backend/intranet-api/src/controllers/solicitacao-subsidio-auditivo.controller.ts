@@ -1047,7 +1047,10 @@ export const solicitacaoSubsidioAuditivoController = {
         (item) => normalizarTipoAnexo(item.TP_ANEXO) === TIPO_ANEXO_TERMO_ASSINADO
       );
 
-      if (termoAssinadoAtual && termoAssinadoTravado(atual.ST_SOLICITACAO)) {
+      const retornandoAoAtendimento =
+        String(atual.ST_SOLICITACAO || "").trim() === "DEVOLVIDO_AO_ATENDIMENTO";
+
+      if (termoAssinadoAtual && (termoAssinadoTravado(atual.ST_SOLICITACAO) || retornandoAoAtendimento)) {
         anexos = anexos.filter(
           (item) => normalizarTipoAnexo(item.TP_ANEXO) !== TIPO_ANEXO_TERMO_ASSINADO
         );
@@ -1061,9 +1064,7 @@ export const solicitacaoSubsidioAuditivoController = {
         });
       }
 
-      const retornandoAoFinanceiro = String(atual.ST_SOLICITACAO || "").trim() === "DEVOLVIDO_AO_ATENDIMENTO";
-
-      if (retornandoAoFinanceiro) {
+      if (retornandoAoAtendimento) {
         if (!possuiAnexoLista(anexos, TIPO_ANEXO_DOCUMENTOS)) {
           return res.status(400).json({
             error: "Na devolução, mantenha ou reenvie os documentos pessoais / obrigatórios antes de salvar.",
@@ -1078,10 +1079,18 @@ export const solicitacaoSubsidioAuditivoController = {
 
         if (!possuiAnexoLista(anexos, TIPO_ANEXO_TERMO_ASSINADO)) {
           return res.status(400).json({
-            error: "Na devolução, mantenha ou reenvie o termo assinado pelo solicitante antes de salvar.",
+            error: "O termo assinado pelo solicitante já precisa estar anexado para reenviar a solicitação.",
           });
         }
       }
+
+      const dadosPersistidos = retornandoAoAtendimento
+        ? {
+            ...atual,
+            DT_ASSOCIACAO: atual.DT_ASSOCIACAO_FMT,
+            DT_LIMITE_NOTA_FISCAL: atual.DT_LIMITE_NOTA_FISCAL_FMT,
+          }
+        : req.body;
 
       await connection.execute(
         `
@@ -1111,38 +1120,39 @@ export const solicitacaoSubsidioAuditivoController = {
                  TP_CONTA = :TP_CONTA,
                  DS_MOTIVO_DEVOLUCAO = :DS_MOTIVO_DEVOLUCAO,
                  ST_SOLICITACAO = :ST_SOLICITACAO,
-                 DT_ENVIO_FINANCEIRO = :DT_ENVIO_FINANCEIRO,
+                 DT_ENVIO_DIRETORIA = CASE WHEN :RETORNANDO_AO_ATENDIMENTO = 1 THEN SYSDATE ELSE DT_ENVIO_DIRETORIA END,
+                 DT_ENVIO_FINANCEIRO = CASE WHEN :RETORNANDO_AO_ATENDIMENTO = 1 THEN NULL ELSE DT_ENVIO_FINANCEIRO END,
                  DT_ATUALIZACAO = SYSDATE
            WHERE ID_SUBSIDIO_AUDITIVO = :ID_SUBSIDIO_AUDITIVO
         `,
         {
           ID_SUBSIDIO_AUDITIVO: idSolicitacao,
-          ID_ASSOCIADO: req.body.ID_ASSOCIADO ? Number(req.body.ID_ASSOCIADO) : null,
-          NR_CPF_ASSOCIADO: onlyDigits(req.body.NR_CPF_ASSOCIADO),
-          NM_ASSOCIADO: String(req.body.NM_ASSOCIADO || "").trim(),
-          NR_MATRICULA_ASSOCIADO: String(req.body.NR_MATRICULA_ASSOCIADO || "").trim() || null,
-          NM_ORGAO_ASSOCIADO: String(req.body.NM_ORGAO_ASSOCIADO || "").trim() || null,
-          DS_FUNCAO_ASSOCIADO: String(req.body.DS_FUNCAO_ASSOCIADO || "").trim() || null,
-          DT_ASSOCIACAO: String(req.body.DT_ASSOCIACAO || "").trim() || null,
-          NR_CELULAR: String(req.body.NR_CELULAR || "").trim() || null,
-          NR_TELEFONE_RESIDENCIAL: String(req.body.NR_TELEFONE_RESIDENCIAL || "").trim() || null,
-          VL_NIVEL_INTEGRALIZACAO: toNumber(req.body.VL_NIVEL_INTEGRALIZACAO),
-          VL_CAPITAL: toNumber(req.body.VL_CAPITAL),
-          DS_ORCAMENTOS: String(req.body.DS_ORCAMENTOS || "").trim() || null,
-          VL_CUSTO_APARELHO: toNumber(req.body.VL_CUSTO_APARELHO),
-          VL_SUBSIDIO_APROVADO: toNumber(req.body.VL_SUBSIDIO_APROVADO),
-          NM_PRESTADOR_SERVICO: String(req.body.NM_PRESTADOR_SERVICO || "").trim() || null,
-          NR_CPF_CNPJ_PRESTADOR: onlyDigits(req.body.NR_CPF_CNPJ_PRESTADOR || ""),
-          DS_INFORMACOES_ADICIONAIS: String(req.body.DS_INFORMACOES_ADICIONAIS || "").trim() || null,
-          DT_LIMITE_NOTA_FISCAL: String(req.body.DT_LIMITE_NOTA_FISCAL || "").trim() || null,
-          CD_BANCO: String(req.body.CD_BANCO || "").trim() || null,
-          NM_BANCO: String(req.body.NM_BANCO || "").trim() || null,
-          CD_AGENCIA: String(req.body.CD_AGENCIA || "").trim() || null,
-          NR_CONTA: String(req.body.NR_CONTA || "").trim() || null,
-          TP_CONTA: String(req.body.TP_CONTA || "").trim() || null,
-          DS_MOTIVO_DEVOLUCAO: retornandoAoFinanceiro ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
-          ST_SOLICITACAO: retornandoAoFinanceiro ? "AGUARDANDO_FINANCEIRO" : String(atual.ST_SOLICITACAO || "").trim(),
-          DT_ENVIO_FINANCEIRO: retornandoAoFinanceiro ? new Date() : null,
+          ID_ASSOCIADO: dadosPersistidos.ID_ASSOCIADO ? Number(dadosPersistidos.ID_ASSOCIADO) : null,
+          NR_CPF_ASSOCIADO: onlyDigits(dadosPersistidos.NR_CPF_ASSOCIADO),
+          NM_ASSOCIADO: String(dadosPersistidos.NM_ASSOCIADO || "").trim(),
+          NR_MATRICULA_ASSOCIADO: String(dadosPersistidos.NR_MATRICULA_ASSOCIADO || "").trim() || null,
+          NM_ORGAO_ASSOCIADO: String(dadosPersistidos.NM_ORGAO_ASSOCIADO || "").trim() || null,
+          DS_FUNCAO_ASSOCIADO: String(dadosPersistidos.DS_FUNCAO_ASSOCIADO || "").trim() || null,
+          DT_ASSOCIACAO: String(dadosPersistidos.DT_ASSOCIACAO || "").trim() || null,
+          NR_CELULAR: String(dadosPersistidos.NR_CELULAR || "").trim() || null,
+          NR_TELEFONE_RESIDENCIAL: String(dadosPersistidos.NR_TELEFONE_RESIDENCIAL || "").trim() || null,
+          VL_NIVEL_INTEGRALIZACAO: toNumber(dadosPersistidos.VL_NIVEL_INTEGRALIZACAO),
+          VL_CAPITAL: toNumber(dadosPersistidos.VL_CAPITAL),
+          DS_ORCAMENTOS: String(dadosPersistidos.DS_ORCAMENTOS || "").trim() || null,
+          VL_CUSTO_APARELHO: toNumber(dadosPersistidos.VL_CUSTO_APARELHO),
+          VL_SUBSIDIO_APROVADO: toNumber(dadosPersistidos.VL_SUBSIDIO_APROVADO),
+          NM_PRESTADOR_SERVICO: String(dadosPersistidos.NM_PRESTADOR_SERVICO || "").trim() || null,
+          NR_CPF_CNPJ_PRESTADOR: onlyDigits(dadosPersistidos.NR_CPF_CNPJ_PRESTADOR || ""),
+          DS_INFORMACOES_ADICIONAIS: String(dadosPersistidos.DS_INFORMACOES_ADICIONAIS || "").trim() || null,
+          DT_LIMITE_NOTA_FISCAL: String(dadosPersistidos.DT_LIMITE_NOTA_FISCAL || "").trim() || null,
+          CD_BANCO: String(dadosPersistidos.CD_BANCO || "").trim() || null,
+          NM_BANCO: String(dadosPersistidos.NM_BANCO || "").trim() || null,
+          CD_AGENCIA: String(dadosPersistidos.CD_AGENCIA || "").trim() || null,
+          NR_CONTA: String(dadosPersistidos.NR_CONTA || "").trim() || null,
+          TP_CONTA: String(dadosPersistidos.TP_CONTA || "").trim() || null,
+          DS_MOTIVO_DEVOLUCAO: retornandoAoAtendimento ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
+          ST_SOLICITACAO: retornandoAoAtendimento ? "AGUARDANDO_DIRETORIA" : String(atual.ST_SOLICITACAO || "").trim(),
+          RETORNANDO_AO_ATENDIMENTO: retornandoAoAtendimento ? 1 : 0,
         },
         { autoCommit: false }
       );
@@ -1215,14 +1225,14 @@ export const solicitacaoSubsidioAuditivoController = {
         );
       }
 
-      const novoStatus = retornandoAoFinanceiro ? "AGUARDANDO_FINANCEIRO" : String(atual.ST_SOLICITACAO || "").trim();
+      const novoStatus = retornandoAoAtendimento ? "AGUARDANDO_DIRETORIA" : String(atual.ST_SOLICITACAO || "").trim();
 
       await inserirHistorico(connection, {
         idSolicitacao,
         statusAnterior: atual.ST_SOLICITACAO,
         statusNovo: novoStatus,
-        acao: retornandoAoFinanceiro ? "REENVIO_ATENDIMENTO" : "EDICAO",
-        observacao: retornandoAoFinanceiro ? "Solicitação corrigida e reenviada ao financeiro." : "Solicitação atualizada.",
+        acao: retornandoAoAtendimento ? "REENVIO_ATENDIMENTO" : "EDICAO",
+        observacao: retornandoAoAtendimento ? "Solicitação corrigida e reenviada à diretoria." : "Solicitação atualizada.",
         nomeUsuario: req.body.NM_USUARIO_ABERTURA,
         loginUsuario: req.body.LOGIN_USUARIO_ABERTURA,
       });
@@ -1230,7 +1240,7 @@ export const solicitacaoSubsidioAuditivoController = {
       await connection.commit();
 
       let notificacao: any = { enviado: false, destinatarios: [] };
-      if (retornandoAoFinanceiro) {
+      if (retornandoAoAtendimento) {
         try {
           notificacao = await enviarEmailFluxoSubsidio(connection, {
             idSolicitacao,
@@ -1238,10 +1248,10 @@ export const solicitacaoSubsidioAuditivoController = {
               ...atual,
               ST_SOLICITACAO: novoStatus,
             },
-            tipo: "FINANCEIRO",
-            titulo: "Documentação corrigida e reenviada ao financeiro",
+            tipo: "DIRETORIA",
+            titulo: "Documentação corrigida aguardando aprovação da diretoria",
             introducao:
-              "O atendimento atualizou os anexos da solicitação devolvida e o processo voltou para conferência do financeiro.",
+              "O atendimento atualizou os anexos da solicitação devolvida e o processo voltou para análise da diretoria.",
           });
         } catch (emailErr: any) {
           console.error("[subsidio_auditivo] Erro ao enviar e-mail no reenvio da edição:", emailErr);
@@ -1257,10 +1267,10 @@ export const solicitacaoSubsidioAuditivoController = {
         ok: true,
         id: idSolicitacao,
         status: novoStatus,
-        motivoDevolucao: retornandoAoFinanceiro ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
+        motivoDevolucao: retornandoAoAtendimento ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
         notificacao,
-        message: retornandoAoFinanceiro
-          ? "Solicitação atualizada e reenviada ao financeiro com sucesso."
+        message: retornandoAoAtendimento
+          ? "Solicitação atualizada e reenviada à diretoria com sucesso."
           : "Solicitação de subsídio auditivo atualizada com sucesso.",
       });
     } catch (err: any) {
@@ -1546,76 +1556,42 @@ export const solicitacaoSubsidioAuditivoController = {
       const podeAtuarComoDiretoria =
         perfil.isDiretoria && statusAtual === "AGUARDANDO_DIRETORIA";
 
-      if (acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
+      if (acao === "ENVIAR_DIRETORIA" || acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
         if (!podeAtuarComoSolicitante) {
           return res.status(403).json({
-            error: "Somente quem abriu a solicitação pode reenviar ao financeiro.",
+            error: "Somente quem abriu a solicitação pode enviar para a diretoria.",
           });
         }
 
         if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_DOCUMENTOS)) {
           return res.status(400).json({
-            error: "Anexe os documentos pessoais / obrigatórios antes de enviar ao financeiro.",
+            error: "Anexe os documentos pessoais / obrigatórios antes de enviar à diretoria.",
           });
         }
 
         if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_ORCAMENTOS_NOTA)) {
           return res.status(400).json({
-            error: "Anexe o arquivo de orçamentos / nota fiscal antes de enviar ao financeiro.",
+            error: "Anexe o arquivo de orçamentos / nota fiscal antes de enviar à diretoria.",
           });
         }
 
         if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_TERMO_ASSINADO)) {
           return res.status(400).json({
-            error: "Anexe o termo assinado pelo solicitante antes de enviar ao financeiro.",
+            error: "Anexe o termo assinado pelo solicitante antes de enviar à diretoria.",
           });
         }
 
-        novoStatus = "AGUARDANDO_FINANCEIRO";
+        novoStatus = "AGUARDANDO_DIRETORIA";
         extraSql =
-          ", DT_ENVIO_FINANCEIRO = SYSDATE, DS_MOTIVO_DEVOLUCAO = NULL";
+          ", DT_ENVIO_DIRETORIA = SYSDATE, DT_ENVIO_FINANCEIRO = NULL, DS_MOTIVO_DEVOLUCAO = NULL";
       } else if (acao === "APROVAR_FINANCEIRO") {
-        if (!podeAtuarComoFinanceiro) {
-          return res.status(403).json({
-            error: "Somente o financeiro pode enviar esta solicitação para a diretoria.",
-          });
-        }
-
-        if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_DOCUMENTOS)) {
-          return res.status(400).json({
-            error: "Os documentos pessoais / obrigatórios precisam estar anexados para aprovar.",
-          });
-        }
-
-        if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_ORCAMENTOS_NOTA)) {
-          return res.status(400).json({
-            error: "O arquivo de orçamentos / nota fiscal precisa estar anexado para aprovar.",
-          });
-        }
-
-        novoStatus = "AGUARDANDO_DIRETORIA";
-        extraSql =
-          ", DT_ENVIO_DIRETORIA = SYSDATE, NM_RESP_FINANCEIRO = :NM_RESP_FINANCEIRO, DS_MOTIVO_DEVOLUCAO = NULL";
-        bindsExtra.NM_RESP_FINANCEIRO = nomeResponsavel;
-      } else if (acao === "ENVIAR_DIRETORIA") {
-        if (!podeAtuarComoFinanceiro) {
-          return res.status(403).json({
-            error: "Somente o financeiro pode enviar esta solicitação para a diretoria.",
-          });
-        }
-
-        novoStatus = "AGUARDANDO_DIRETORIA";
-        extraSql = ", DT_ENVIO_DIRETORIA = SYSDATE, DS_MOTIVO_DEVOLUCAO = NULL";
+        return res.status(400).json({
+          error: "No fluxo atual do subsídio auditivo, a diretoria analisa antes do financeiro.",
+        });
       } else if (acao === "APROVAR_DIRETORIA") {
         if (!podeAtuarComoDiretoria) {
           return res.status(403).json({
             error: "Somente a diretoria pode aprovar esta solicitação nesta etapa.",
-          });
-        }
-
-        if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_TERMO_DIRETORIA)) {
-          return res.status(400).json({
-            error: "Anexe o termo assinado pela diretoria antes de devolver ao financeiro.",
           });
         }
 
@@ -1703,24 +1679,14 @@ export const solicitacaoSubsidioAuditivoController = {
           ST_SOLICITACAO: novoStatus,
         };
 
-        if (acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
-          notificacao = await enviarEmailFluxoSubsidio(connection, {
-            idSolicitacao: id,
-            solicitacao: solicitacaoEmail,
-            tipo: "FINANCEIRO",
-            titulo: "Aguardando conferência do financeiro",
-            introducao:
-              "O termo assinado foi anexado e a solicitação está aguardando conferência da documentação pelo financeiro.",
-            observacao,
-          });
-        } else if (acao === "APROVAR_FINANCEIRO") {
+        if (acao === "ENVIAR_DIRETORIA" || acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
           notificacao = await enviarEmailFluxoSubsidio(connection, {
             idSolicitacao: id,
             solicitacao: solicitacaoEmail,
             tipo: "DIRETORIA",
-            titulo: "Aguardando assinatura da diretoria",
+            titulo: "Aguardando aprovação da diretoria",
             introducao:
-              "A documentação foi conferida pelo financeiro e a solicitação está aguardando assinatura/anexo da diretoria.",
+              "O termo assinado pelo solicitante foi anexado e a solicitação está aguardando análise da diretoria.",
             observacao,
           });
         } else if (acao === "DEVOLVER_ATENDIMENTO") {
@@ -1730,17 +1696,17 @@ export const solicitacaoSubsidioAuditivoController = {
             tipo: "SOLICITANTE",
             titulo: "Documentação devolvida para ajuste",
             introducao:
-              "O financeiro devolveu a solicitação para correção da documentação. Ajuste os anexos e reenvie pelo gerenciamento.",
+              "O financeiro devolveu a solicitação para correção da documentação. Ajuste apenas os anexos necessários e reenvie pelo cadastro.",
             observacao,
           });
         } else if (acao === "APROVAR_DIRETORIA") {
           notificacao = await enviarEmailFluxoSubsidio(connection, {
             idSolicitacao: id,
             solicitacao: solicitacaoEmail,
-            tipo: "FINANCEIRO_SOLICITANTE",
-            titulo: "Diretoria assinou a solicitação",
+            tipo: "FINANCEIRO",
+            titulo: "Diretoria aprovou a solicitação",
             introducao:
-              "A diretoria anexou o termo assinado. A solicitação voltou para o financeiro realizar o depósito.",
+              "A diretoria aprovou a solicitação. Confira a documentação e finalize o processo após o depósito.",
             observacao,
           });
         } else if (acao === "REPROVAR_DIRETORIA") {

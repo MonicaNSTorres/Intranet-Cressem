@@ -65,7 +65,7 @@ function statusLabel(item: { ST_SOLICITACAO?: string; DT_APROVACAO_DIRETORIA?: s
 
   const labels: Record<string, string> = {
     AGUARDANDO_ASSINATURA_SOLICITANTE: "Aguardando assinatura",
-    AGUARDANDO_DIRETORIA: "Aguardando diretoria",
+    AGUARDANDO_DIRETORIA: "Aguardando aprovação diretoria",
     AGUARDANDO_FINANCEIRO: "Aguardando financeiro",
     DEVOLVIDO_AO_ATENDIMENTO: "Devolvido ao atendimento",
     FINALIZADO: "Finalizado",
@@ -132,6 +132,33 @@ function fileToDataURL(file: File | null) {
 
 function normalizeLogin(value: string | undefined | null) {
   return String(value || "").trim().toUpperCase();
+}
+
+function usuarioEhSolicitanteAtual(
+  usuario: MeResponse | null | undefined,
+  solicitacao?: {
+    LOGIN_USUARIO_ABERTURA?: string | null;
+    NM_USUARIO_ABERTURA?: string | null;
+  } | null
+) {
+  const loginUsuario = normalizeLogin(usuario?.username);
+  const emailUsuario = normalizeLogin(usuario?.email);
+  const nomeUsuario = normalizeLogin(usuario?.nome_completo);
+  const loginAbertura = normalizeLogin(solicitacao?.LOGIN_USUARIO_ABERTURA);
+  const nomeAbertura = normalizeLogin(solicitacao?.NM_USUARIO_ABERTURA);
+
+  const identificadoresUsuario = [loginUsuario, emailUsuario].filter(Boolean);
+  const identificadoresAbertura = [loginAbertura, nomeAbertura].filter(Boolean);
+
+  if (
+    identificadoresUsuario.length &&
+    identificadoresAbertura.length &&
+    identificadoresUsuario.some((valor) => identificadoresAbertura.includes(valor))
+  ) {
+    return true;
+  }
+
+  return Boolean(nomeUsuario) && Boolean(nomeAbertura) && nomeUsuario === nomeAbertura;
 }
 
 function formatarDataBR(value?: string | null) {
@@ -233,7 +260,6 @@ export function GerenciamentoSubsidioFuneralForm() {
   const [detalhe, setDetalhe] = useState<any>(null);
   const [observacaoAcao, setObservacaoAcao] = useState("");
   const [termoSolicitanteFile, setTermoSolicitanteFile] = useState<File | null>(null);
-  const [termoDiretoriaFile, setTermoDiretoriaFile] = useState<File | null>(null);
 
   const gruposUsuario = useMemo(() => (Array.isArray(usuario?.grupos) ? usuario?.grupos : []), [usuario]);
   const usuarioEmTeste = useMemo(
@@ -259,7 +285,7 @@ export function GerenciamentoSubsidioFuneralForm() {
   );
   const isSolicitanteAtual = useMemo(() => {
     if (usuarioEmTeste) return false;
-    return normalizeLogin(usuario?.username) === normalizeLogin(detalhe?.LOGIN_USUARIO_ABERTURA);
+    return usuarioEhSolicitanteAtual(usuario, detalhe);
   }, [usuario, detalhe, usuarioEmTeste]);
 
   const podeAtuarComoSolicitante = useMemo(() => {
@@ -328,7 +354,6 @@ export function GerenciamentoSubsidioFuneralForm() {
       setDetalhe(data);
       setObservacaoAcao("");
       setTermoSolicitanteFile(null);
-      setTermoDiretoriaFile(null);
       setModalOpen(true);
     } catch (e: any) {
       setErro(e?.response?.data?.error || e?.message || "Falha ao abrir detalhes.");
@@ -352,24 +377,16 @@ export function GerenciamentoSubsidioFuneralForm() {
   }
 
   function podeExecutarAcao(acao: string) {
-    if (acao === "ENVIAR_FINANCEIRO" && !podeAtuarComoSolicitante) return false;
-    if ((acao === "APROVAR_FINANCEIRO" || acao === "DEVOLVER_ATENDIMENTO" || acao === "FINALIZAR") && !podeAtuarComoFinanceiro) return false;
+    if ((acao === "ENVIAR_DIRETORIA" || acao === "ENVIAR_FINANCEIRO") && !podeAtuarComoSolicitante) return false;
+    if ((acao === "DEVOLVER_ATENDIMENTO" || acao === "FINALIZAR") && !podeAtuarComoFinanceiro) return false;
     if ((acao === "APROVAR_DIRETORIA" || acao === "REPROVAR_DIRETORIA") && !podeAtuarComoDiretoria) return false;
 
-    if (acao === "ENVIAR_FINANCEIRO") {
+    if (acao === "ENVIAR_DIRETORIA" || acao === "ENVIAR_FINANCEIRO") {
       return Boolean(termoSolicitanteFile || temAnexo(TIPO_ANEXO_TERMO_SOLICITANTE));
-    }
-
-    if (acao === "APROVAR_FINANCEIRO") {
-      return temAnexo(TIPO_ANEXO_DOCUMENTOS);
     }
 
     if (acao === "DEVOLVER_ATENDIMENTO" || acao === "REPROVAR_DIRETORIA") {
       return observacaoAcao.trim().length > 0;
-    }
-
-    if (acao === "APROVAR_DIRETORIA") {
-      return Boolean(termoDiretoriaFile || temAnexo(TIPO_ANEXO_TERMO_DIRETORIA));
     }
 
     return true;
@@ -449,20 +466,12 @@ export function GerenciamentoSubsidioFuneralForm() {
         return;
       }
 
-      if (acao === "ENVIAR_FINANCEIRO") {
+      if (acao === "ENVIAR_DIRETORIA" || acao === "ENVIAR_FINANCEIRO") {
         if (!termoSolicitanteFile && !temAnexo(TIPO_ANEXO_TERMO_SOLICITANTE)) {
-          setErro("Anexe o termo assinado pelo solicitante antes de enviar ao financeiro.");
+          setErro("Anexe o termo assinado pelo solicitante antes de enviar à diretoria.");
           return;
         }
         await salvarAnexoNoGerenciamento(TIPO_ANEXO_TERMO_SOLICITANTE, termoSolicitanteFile);
-      }
-
-      if (acao === "APROVAR_DIRETORIA") {
-        if (!termoDiretoriaFile && !temAnexo(TIPO_ANEXO_TERMO_DIRETORIA)) {
-          setErro("Anexe o termo assinado pela diretoria antes de enviar ao financeiro.");
-          return;
-        }
-        await salvarAnexoNoGerenciamento(TIPO_ANEXO_TERMO_DIRETORIA, termoDiretoriaFile);
       }
 
       if ((acao === "DEVOLVER_ATENDIMENTO" || acao === "REPROVAR_DIRETORIA") && !observacaoAcao.trim()) {
@@ -489,7 +498,6 @@ export function GerenciamentoSubsidioFuneralForm() {
       const atualizado = await buscarSubsidioFuneralPorId(detalhe.ID_SUBSIDIO_FUNERAL);
       setDetalhe(atualizado);
       setTermoSolicitanteFile(null);
-      setTermoDiretoriaFile(null);
       await carregarLista();
     } catch (e: any) {
       setErro(e?.response?.data?.error || e?.message || "Falha ao atualizar status.");
@@ -503,26 +511,20 @@ export function GerenciamentoSubsidioFuneralForm() {
 
     if (st === "AGUARDANDO_ASSINATURA_SOLICITANTE" && podeAtuarComoSolicitante) {
       return [
-        { acao: "ENVIAR_FINANCEIRO", label: "Anexar termo e enviar ao financeiro", style: "secondary", icon: FaCheck },
-      ];
-    }
-
-    if (st === "AGUARDANDO_FINANCEIRO" && detalhe?.DT_APROVACAO_DIRETORIA && podeAtuarComoFinanceiro) {
-      return [
-        { acao: "FINALIZAR", label: "Depósito realizado, concluir", style: "secondary", icon: FaCheck },
+        { acao: "ENVIAR_DIRETORIA", label: "Anexar termo e enviar à diretoria", style: "secondary", icon: FaCheck },
       ];
     }
 
     if (st === "AGUARDANDO_FINANCEIRO" && podeAtuarComoFinanceiro) {
       return [
-        { acao: "APROVAR_FINANCEIRO", label: "Documentação ok, enviar à diretoria", style: "secondary", icon: FaCheck },
+        { acao: "FINALIZAR", label: "Depósito realizado, concluir", style: "secondary", icon: FaCheck },
         { acao: "DEVOLVER_ATENDIMENTO", label: "Recusar documentação", style: "danger", icon: FaUndo },
       ];
     }
 
     if (st === "AGUARDANDO_DIRETORIA" && podeAtuarComoDiretoria) {
       return [
-        { acao: "APROVAR_DIRETORIA", label: "Anexar assinatura da diretoria e enviar ao financeiro", style: "secondary", icon: FaCheck },
+        { acao: "APROVAR_DIRETORIA", label: "Aprovar e enviar ao financeiro", style: "secondary", icon: FaCheck },
         { acao: "REPROVAR_DIRETORIA", label: "Reprovar solicitação", style: "danger", icon: FaTimes },
       ];
     }
@@ -534,10 +536,7 @@ export function GerenciamentoSubsidioFuneralForm() {
     const statusAtual = String(item.ST_SOLICITACAO || "");
     if (usuarioEmTeste) return false;
     if (statusAtual !== "DEVOLVIDO_AO_ATENDIMENTO") return false;
-    return (
-      normalizeLogin(usuario?.username) === normalizeLogin(item.LOGIN_USUARIO_ABERTURA) &&
-      statusAtual === "DEVOLVIDO_AO_ATENDIMENTO"
-    );
+    return usuarioEhSolicitanteAtual(usuario, item);
   }
 
   return (
@@ -575,8 +574,8 @@ export function GerenciamentoSubsidioFuneralForm() {
             }}>
               <option value="">Todos</option>
               <option value="AGUARDANDO_ASSINATURA_SOLICITANTE">Aguardando termo assinado</option>
-              <option value="AGUARDANDO_FINANCEIRO">Aguardando financeiro / depósito</option>
-              <option value="AGUARDANDO_DIRETORIA">Aguardando assinatura diretoria</option>
+              <option value="AGUARDANDO_FINANCEIRO">Aguardando financeiro</option>
+              <option value="AGUARDANDO_DIRETORIA">Aguardando aprovação diretoria</option>
               <option value="DEVOLVIDO_AO_ATENDIMENTO">Devolvido</option>
               <option value="FINALIZADO">Finalizado</option>
               <option value="CANCELADO">Reprovado pela diretoria</option>
@@ -806,7 +805,7 @@ export function GerenciamentoSubsidioFuneralForm() {
                       <div>
                         <div className="font-semibold text-amber-900">Solicitação devolvida ao atendimento</div>
                         <div className="mt-1">
-                          Revise o motivo da devolução e clique em <span className="font-semibold">Editar cadastro</span> para corrigir os anexos antes de reenviar ao financeiro.
+                          Revise o motivo da devolução e clique em <span className="font-semibold">Editar cadastro</span> para corrigir os anexos antes de reenviar à diretoria.
                         </div>
                       </div>
                       <button
@@ -833,7 +832,7 @@ export function GerenciamentoSubsidioFuneralForm() {
                           onChange={(e) => setTermoSolicitanteFile(e.target.files?.[0] || null)}
                         />
                         <p className="mt-2 text-xs text-emerald-700">
-                          Anexe aqui a solicitação impressa e assinada. Ao confirmar, o sistema envia para conferência do financeiro.
+                          Anexe aqui a solicitação impressa e assinada. Ao confirmar, o sistema envia para aprovação da diretoria.
                         </p>
                       </div>
                     ) : null}
@@ -841,16 +840,9 @@ export function GerenciamentoSubsidioFuneralForm() {
                     {String(detalhe.ST_SOLICITACAO || "") === "AGUARDANDO_DIRETORIA" && podeAtuarComoDiretoria ? (
                       <>
                         <div className="mt-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4">
-                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-sky-700">
-                            Termo assinado pela diretoria
-                          </label>
-                          <input
-                            type="file"
-                            className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium`}
-                            onChange={(e) => setTermoDiretoriaFile(e.target.files?.[0] || null)}
-                          />
-                          <p className="mt-2 text-xs text-sky-700">
-                            Depois de anexar a assinatura da diretoria, a solicitação volta para o financeiro realizar o depósito.
+                          <div className="text-sm font-semibold text-sky-800">Análise da diretoria</div>
+                          <p className="mt-1 text-xs text-sky-700">
+                            Ao aprovar, a solicitação segue para o financeiro conferir a documentação e realizar o depósito.
                           </p>
                         </div>
                         <div className="mt-3">

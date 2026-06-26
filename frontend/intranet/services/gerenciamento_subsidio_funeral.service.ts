@@ -2,6 +2,7 @@
 import axios from "axios";
 import { registrarErroTela } from "./error_log.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
+import { getHeadersPerfilTesteSubsidioFuneral } from "@/lib/subsidio-funeral-perfil-teste";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
@@ -82,6 +83,7 @@ export async function buscarSolicitacoesSubsidioFuneralPaginado(params: {
 }) {
   const { data } = await api.get("/v1/solicitacao_subsidio_funeral_paginado", {
     params,
+    headers: getHeadersPerfilTesteSubsidioFuneral(),
   });
   return data as {
     rows: SubsidioFuneralListaItem[];
@@ -108,7 +110,10 @@ export async function atualizarStatusSubsidioFuneral(params: {
       loginResponsavel: params.loginResponsavel,
     },
     {
-      headers: getAuditoriaHeaders(),
+      headers: {
+        ...getAuditoriaHeaders(),
+        ...getHeadersPerfilTesteSubsidioFuneral(),
+      },
     }
   );
 

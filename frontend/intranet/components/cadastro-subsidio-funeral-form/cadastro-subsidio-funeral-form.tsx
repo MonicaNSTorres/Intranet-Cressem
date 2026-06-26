@@ -49,7 +49,7 @@ type AnexoItem = {
 const TIPO_ANEXO_DOCUMENTOS = "DOCUMENTOS_GERAIS";
 const TIPO_ANEXO_TERMO = "AUTORIZACAO_ASSINADA_SOLICITANTE";
 const TIPO_ANEXO_TERMO_DIRETORIA = "AUTORIZACAO_ASSINADA_DIRETORIA";
-const TIPOS_ANEXO_CORRECAO_ATENDIMENTO = [TIPO_ANEXO_DOCUMENTOS, TIPO_ANEXO_TERMO];
+const TIPOS_ANEXO_CORRECAO_ATENDIMENTO = [TIPO_ANEXO_DOCUMENTOS];
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100";
@@ -393,6 +393,7 @@ export function CadastroSubsidioFuneralForm() {
     return [
       "AGUARDANDO_FINANCEIRO",
       "AGUARDANDO_DIRETORIA",
+      "DEVOLVIDO_AO_ATENDIMENTO",
       "FINALIZADO",
       "CANCELADO",
     ].includes(status);
@@ -405,7 +406,7 @@ export function CadastroSubsidioFuneralForm() {
       return false;
     }
 
-    if (status !== "DEVOLVIDO_AO_ATENDIMENTO" && tipoNormalizado === TIPO_ANEXO_TERMO) {
+    if (tipoNormalizado === TIPO_ANEXO_TERMO) {
       return false;
     }
 
@@ -626,7 +627,7 @@ export function CadastroSubsidioFuneralForm() {
       }
 
       if (status === "DEVOLVIDO_AO_ATENDIMENTO" && !hasAnexoTipo(anexos, TIPO_ANEXO_TERMO)) {
-        mostrarErroTopo("Na devolução, é necessário manter ou reenviar o termo assinado pelo solicitante.");
+        mostrarErroTopo("Na devolução, o termo assinado pelo solicitante precisa continuar anexado ao processo.");
         return;
       }
 
@@ -968,10 +969,9 @@ export function CadastroSubsidioFuneralForm() {
                   onChange={(e) => setTipoAnexoCorrecao(e.target.value)}
                 >
                   <option value={TIPO_ANEXO_DOCUMENTOS}>Documentação obrigatória</option>
-                  <option value={TIPO_ANEXO_TERMO}>Termo assinado pelo solicitante</option>
                 </select>
                 <p className="mt-2 text-xs text-slate-500">
-                  No retorno ao atendimento, você pode corrigir somente esses dois tipos de anexo.
+                  No retorno ao atendimento, corrija somente a documentação obrigatória. O termo assinado permanece bloqueado.
                 </p>
               </div>
               <div>
@@ -982,7 +982,7 @@ export function CadastroSubsidioFuneralForm() {
                   onChange={(e) => definirAnexoPorTipo(tipoAnexoCorrecao, e.target.files?.[0] || null)}
                 />
                 <p className="mt-2 text-xs text-slate-500">
-                  Mantemos no máximo 2 anexos do atendimento: documentação obrigatória e termo assinado.
+                  O fluxo mantém o termo assinado já enviado e substitui apenas a documentação geral.
                 </p>
                 {obterAnexo(tipoAnexoCorrecao) ? (
                   <p className="mt-1 text-xs font-medium text-emerald-700">

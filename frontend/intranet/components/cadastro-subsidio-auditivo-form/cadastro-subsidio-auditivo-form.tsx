@@ -53,7 +53,6 @@ const TIPO_ANEXO_TERMO_DIRETORIA = "AUTORIZACAO_ASSINADA_DIRETORIA";
 const TIPOS_ANEXO_CORRECAO_ATENDIMENTO = [
   TIPO_ANEXO_DOCUMENTOS,
   TIPO_ANEXO_ORCAMENTOS_NOTA,
-  TIPO_ANEXO_TERMO,
 ];
 
 const inputClass =
@@ -427,7 +426,7 @@ export function CadastroSubsidioAuditivoForm() {
   }
 
   async function pesquisarAssociado() {
-    if (!podeEditarSolicitacao) return;
+    if (idSolicitacao || !podeEditarSolicitacao) return;
     try {
       setErro("");
       setMensagem("");
@@ -505,6 +504,7 @@ export function CadastroSubsidioAuditivoForm() {
     if (!termo?.path) return false;
 
     return [
+      "DEVOLVIDO_AO_ATENDIMENTO",
       "AGUARDANDO_FINANCEIRO",
       "AGUARDANDO_DIRETORIA",
       "FINALIZADO",
@@ -519,7 +519,7 @@ export function CadastroSubsidioAuditivoForm() {
       return false;
     }
 
-    if (status !== "DEVOLVIDO_AO_ATENDIMENTO" && tipoNormalizado === TIPO_ANEXO_TERMO) {
+    if (tipoNormalizado === TIPO_ANEXO_TERMO) {
       return false;
     }
 
@@ -851,6 +851,7 @@ export function CadastroSubsidioAuditivoForm() {
             Esses dados são do próprio associado solicitante. Parte deles pode vir da busca por CPF.
           </p>
 
+        <fieldset disabled={Boolean(idSolicitacao)} className={idSolicitacao ? "opacity-80" : ""}>
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div>
             <label className={labelClass}>CPF do associado</label>
@@ -907,10 +908,11 @@ export function CadastroSubsidioAuditivoForm() {
               />
             </div>
           </div>
+        </fieldset>
         </div>
       </div>
 
-      <fieldset disabled={!podeEditarSolicitacao} className={!podeEditarSolicitacao ? "space-y-5 opacity-80" : "space-y-5"}>
+      <fieldset disabled={Boolean(idSolicitacao)} className={idSolicitacao ? "space-y-5 opacity-80" : "space-y-5"}>
       <div className={cardClass}>
         <h2 className="text-lg font-semibold text-slate-900">Valores e prestador de serviço</h2>
         <p className="mt-1 text-sm text-slate-500">
@@ -1016,6 +1018,7 @@ export function CadastroSubsidioAuditivoForm() {
           </div>
         </div>
       </div>
+      </fieldset>
 
       <div className={cardClass}>
         <h2 className="text-lg font-semibold text-slate-900">Anexos</h2>
@@ -1027,7 +1030,7 @@ export function CadastroSubsidioAuditivoForm() {
           <div className="font-semibold">Tipos de anexo do atendimento</div>
           <div className="mt-2">
             {status === "DEVOLVIDO_AO_ATENDIMENTO"
-              ? "Na correção, selecione qual arquivo deseja substituir: documentos pessoais/obrigatórios, orçamentos + nota fiscal ou termo assinado pelo solicitante."
+              ? "Na correção, selecione qual documentação deseja substituir: documentos pessoais/obrigatórios ou orçamentos + nota fiscal. O termo assinado pelo solicitante permanece bloqueado."
               : "Use um tipo para documentos pessoais/obrigatórios e outro tipo para orçamentos junto com nota fiscal."}
           </div>
         </div>
@@ -1044,10 +1047,9 @@ export function CadastroSubsidioAuditivoForm() {
                 >
                   <option value={TIPO_ANEXO_DOCUMENTOS}>Documentos pessoais / obrigatórios</option>
                   <option value={TIPO_ANEXO_ORCAMENTOS_NOTA}>Orçamentos + nota fiscal</option>
-                  <option value={TIPO_ANEXO_TERMO}>Termo assinado pelo solicitante</option>
                 </select>
                 <p className="mt-2 text-xs text-slate-500">
-                  No retorno ao atendimento, você pode corrigir os anexos do atendimento e, se precisar, substituir também o termo do solicitante.
+                  No retorno ao atendimento, você corrige somente os anexos de documentação. O termo assinado não pode ser substituído nesta etapa.
                 </p>
               </div>
               <div>
@@ -1061,7 +1063,7 @@ export function CadastroSubsidioAuditivoForm() {
                   }}
                 />
                 <p className="mt-2 text-xs text-slate-500">
-                  Mantemos um arquivo ativo por categoria, totalizando até 3 arquivos nesta correção.
+                  Mantemos um arquivo ativo por categoria, totalizando até 2 arquivos de documentação nesta correção.
                 </p>
                 {obterAnexo(tipoAnexoCorrecao) ? (
                   <p className="mt-1 text-xs font-medium text-emerald-700">
@@ -1174,7 +1176,6 @@ export function CadastroSubsidioAuditivoForm() {
           </div>
         ) : null}
       </div>
-        </fieldset>
       
 
       <div className="flex flex-col gap-3 sm:flex-row">

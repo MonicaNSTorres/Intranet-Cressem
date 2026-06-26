@@ -27,6 +27,10 @@ const AD_GROUP_SUPORTE = "GG_USERS_SUPORTE";
 const AD_GROUP_FINANCEIRO = "GG_USERS_FIN";
 const AD_GROUP_FINANCEIRO_CADASTRO = "GG_INTRANET_CADASTRO_FIN";
 const AD_GROUP_GERENCIA_DIRETORIA = "GG_USERS_GERENCIA_DIRETORIA";
+const USUARIOS_PERFIL_TESTE = [
+  "MARCELO.BUENO",
+  "MARCELO.BUENO@SICOOB.COM.BR",
+];
 
 function toUpperTrim(value: any) {
   return String(value || "").trim().toUpperCase();
@@ -35,6 +39,50 @@ function toUpperTrim(value: any) {
 function hasGroup(grupos: string[], target: string) {
   const alvo = toUpperTrim(target);
   return grupos.some((grupo) => toUpperTrim(grupo) === alvo);
+}
+
+function getPerfilTeste(req: AuthenticatedRequest) {
+  const perfil = toUpperTrim(req.headers["x-subsidio-funeral-perfil-teste"]);
+  if (!["FINANCEIRO", "DIRETORIA"].includes(perfil)) {
+    return null;
+  }
+
+  const identificadores = [
+    toUpperTrim(req.user?.sub),
+    toUpperTrim(req.user?.email),
+  ].filter(Boolean);
+
+  return identificadores.some((valor) => USUARIOS_PERFIL_TESTE.includes(valor))
+    ? perfil
+    : null;
+}
+
+function usuarioEhSolicitante(
+  usuario: {
+    login?: string | null;
+    email?: string | null;
+    nome?: string | null;
+  },
+  solicitacao?: any
+) {
+  const loginUsuario = toUpperTrim(usuario.login);
+  const emailUsuario = toUpperTrim(usuario.email);
+  const nomeUsuario = toUpperTrim(usuario.nome);
+  const loginAbertura = toUpperTrim(solicitacao?.LOGIN_USUARIO_ABERTURA);
+  const nomeAbertura = toUpperTrim(solicitacao?.NM_USUARIO_ABERTURA);
+
+  const identificadoresUsuario = [loginUsuario, emailUsuario].filter(Boolean);
+  const identificadoresAbertura = [loginAbertura, nomeAbertura].filter(Boolean);
+
+  if (
+    identificadoresUsuario.length &&
+    identificadoresAbertura.length &&
+    identificadoresUsuario.some((valor) => identificadoresAbertura.includes(valor))
+  ) {
+    return true;
+  }
+
+  return Boolean(nomeUsuario) && Boolean(nomeAbertura) && nomeUsuario === nomeAbertura;
 }
 
 function normalizarTipoAnexo(tipo: any) {
@@ -80,6 +128,7 @@ function termoAssinadoTravado(status: any) {
   return [
     "AGUARDANDO_FINANCEIRO",
     "AGUARDANDO_DIRETORIA",
+    "DEVOLVIDO_AO_ATENDIMENTO",
     "FINALIZADO",
     "CANCELADO",
   ].includes(String(status || "").trim());
@@ -709,22 +758,34 @@ function possuiAnexo(anexos: any[], tipo: string) {
 
 function getPerfilPermissaoSubsidio(req: AuthenticatedRequest, solicitacao?: any) {
   const loginUsuario = String(req.user?.sub || "").trim();
+  const emailUsuario = String(req.user?.email || "").trim();
+  const nomeUsuario = String(req.user?.nome_completo || "").trim();
   const grupos = Array.isArray(req.user?.grupos) ? req.user!.grupos! : [];
+  const perfilTeste = getPerfilTeste(req);
 
   const isSuporte = hasGroup(grupos, AD_GROUP_SUPORTE);
   const isFinanceiro =
+    perfilTeste === "FINANCEIRO" ||
     hasGroup(grupos, AD_GROUP_FINANCEIRO) ||
     hasGroup(grupos, AD_GROUP_FINANCEIRO_CADASTRO);
-  const isDiretoria = hasGroup(grupos, AD_GROUP_GERENCIA_DIRETORIA);
-  const isSolicitanteAtual =
-    Boolean(toUpperTrim(loginUsuario)) &&
-    toUpperTrim(loginUsuario) === toUpperTrim(solicitacao?.LOGIN_USUARIO_ABERTURA);
+  const isDiretoria =
+    perfilTeste === "DIRETORIA" ||
+    hasGroup(grupos, AD_GROUP_GERENCIA_DIRETORIA);
+  const isSolicitanteAtual = usuarioEhSolicitante(
+    {
+      login: loginUsuario,
+      email: emailUsuario,
+      nome: nomeUsuario,
+    },
+    solicitacao
+  ) && !perfilTeste;
 
   return {
     isSuporte,
     isFinanceiro,
     isDiretoria,
     isSolicitanteAtual,
+    perfilTeste,
     podeVisualizar: isSuporte || isFinanceiro || isDiretoria || isSolicitanteAtual,
   };
 }
@@ -1014,9 +1075,9 @@ export const solicitacaoSubsidioFuneralController = {
         });
       }
 
-      const retornandoAoFinanceiro = String(atual.ST_SOLICITACAO || "").trim() === "DEVOLVIDO_AO_ATENDIMENTO";
+      const retornandoAoAtendimento = String(atual.ST_SOLICITACAO || "").trim() === "DEVOLVIDO_AO_ATENDIMENTO";
 
-      if (retornandoAoFinanceiro) {
+      if (retornandoAoAtendimento) {
         if (!possuiAnexoLista(anexos, TIPO_ANEXO_DOCUMENTOS)) {
           return res.status(400).json({
             error: "Na devolução, mantenha ou reenvie a documentação obrigatória antes de salvar.",
@@ -1061,7 +1122,8 @@ export const solicitacaoSubsidioFuneralController = {
                  DS_OBSERVACAO = :DS_OBSERVACAO,
                  DS_MOTIVO_DEVOLUCAO = :DS_MOTIVO_DEVOLUCAO,
                  ST_SOLICITACAO = :ST_SOLICITACAO,
-                 DT_ENVIO_FINANCEIRO = :DT_ENVIO_FINANCEIRO,
+                 DT_ENVIO_DIRETORIA = CASE WHEN :RETORNANDO_AO_ATENDIMENTO = 1 THEN SYSDATE ELSE DT_ENVIO_DIRETORIA END,
+                 DT_ENVIO_FINANCEIRO = CASE WHEN :RETORNANDO_AO_ATENDIMENTO = 1 THEN NULL ELSE DT_ENVIO_FINANCEIRO END,
                  DT_ATUALIZACAO = SYSDATE
            WHERE ID_SUBSIDIO_FUNERAL = :ID_SUBSIDIO_FUNERAL
         `,
@@ -1093,9 +1155,9 @@ export const solicitacaoSubsidioFuneralController = {
           TP_CONTA: String(req.body.TP_CONTA || "").trim() || null,
           CHAVE_PIX: String(req.body.CHAVE_PIX || "").trim() || null,
           DS_OBSERVACAO: String(req.body.DS_OBSERVACAO || "").trim() || null,
-          DS_MOTIVO_DEVOLUCAO: retornandoAoFinanceiro ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
-          ST_SOLICITACAO: retornandoAoFinanceiro ? "AGUARDANDO_FINANCEIRO" : String(atual.ST_SOLICITACAO || "").trim(),
-          DT_ENVIO_FINANCEIRO: retornandoAoFinanceiro ? new Date() : null,
+          DS_MOTIVO_DEVOLUCAO: retornandoAoAtendimento ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
+          ST_SOLICITACAO: retornandoAoAtendimento ? "AGUARDANDO_DIRETORIA" : String(atual.ST_SOLICITACAO || "").trim(),
+          RETORNANDO_AO_ATENDIMENTO: retornandoAoAtendimento ? 1 : 0,
         },
         { autoCommit: false }
       );
@@ -1168,14 +1230,14 @@ export const solicitacaoSubsidioFuneralController = {
         );
       }
 
-      const novoStatus = retornandoAoFinanceiro ? "AGUARDANDO_FINANCEIRO" : String(atual.ST_SOLICITACAO || "").trim();
+      const novoStatus = retornandoAoAtendimento ? "AGUARDANDO_DIRETORIA" : String(atual.ST_SOLICITACAO || "").trim();
 
       await inserirHistorico(connection, {
         idSolicitacao,
         statusAnterior: atual.ST_SOLICITACAO,
         statusNovo: novoStatus,
-        acao: retornandoAoFinanceiro ? "REENVIO_ATENDIMENTO" : "EDICAO",
-        observacao: retornandoAoFinanceiro ? "Solicitação corrigida e reenviada ao financeiro." : "Solicitação atualizada.",
+        acao: retornandoAoAtendimento ? "REENVIO_ATENDIMENTO" : "EDICAO",
+        observacao: retornandoAoAtendimento ? "Solicitação corrigida e reenviada à diretoria." : "Solicitação atualizada.",
         nomeUsuario: req.body.NM_USUARIO_ABERTURA,
         loginUsuario: req.body.LOGIN_USUARIO_ABERTURA,
       });
@@ -1183,7 +1245,7 @@ export const solicitacaoSubsidioFuneralController = {
       await connection.commit();
 
       let notificacao: any = { enviado: false, destinatarios: [] };
-      if (retornandoAoFinanceiro) {
+      if (retornandoAoAtendimento) {
         try {
           notificacao = await enviarEmailFluxoSubsidio(connection, {
             idSolicitacao,
@@ -1191,10 +1253,10 @@ export const solicitacaoSubsidioFuneralController = {
               ...atual,
               ST_SOLICITACAO: novoStatus,
             },
-            tipo: "FINANCEIRO",
-            titulo: "Documentação corrigida e reenviada ao financeiro",
+            tipo: "DIRETORIA",
+            titulo: "Documentação corrigida aguardando aprovação da diretoria",
             introducao:
-              "O atendimento atualizou os anexos da solicitação devolvida e o processo voltou para conferência do financeiro.",
+              "O atendimento atualizou os anexos da solicitação devolvida e o processo voltou para análise da diretoria.",
           });
         } catch (emailErr: any) {
           console.error("[SUBSIDIO_FUNERAL] Erro ao enviar e-mail no reenvio da edição:", emailErr);
@@ -1210,10 +1272,10 @@ export const solicitacaoSubsidioFuneralController = {
         ok: true,
         id: idSolicitacao,
         status: novoStatus,
-        motivoDevolucao: retornandoAoFinanceiro ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
+        motivoDevolucao: retornandoAoAtendimento ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
         notificacao,
-        message: retornandoAoFinanceiro
-          ? "Solicitação atualizada e reenviada ao financeiro com sucesso."
+        message: retornandoAoAtendimento
+          ? "Solicitação atualizada e reenviada à diretoria com sucesso."
           : "Solicitação de subsídio funeral atualizada com sucesso.",
       });
     } catch (err: any) {
@@ -1321,64 +1383,36 @@ export const solicitacaoSubsidioFuneralController = {
       const podeAtuarComoDiretoria =
         perfil.isDiretoria && statusAtual === "AGUARDANDO_DIRETORIA";
 
-      if (acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
+      if (acao === "ENVIAR_DIRETORIA" || acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
         if (!podeAtuarComoSolicitante) {
           return res.status(403).json({
-            error: "Somente quem abriu a solicitação pode reenviar ao financeiro.",
+            error: "Somente quem abriu a solicitação pode enviar à diretoria.",
           });
         }
 
         if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_DOCUMENTOS)) {
           return res.status(400).json({
-            error: "Anexe a documentação obrigatória antes de enviar ao financeiro.",
+            error: "Anexe a documentação obrigatória antes de enviar à diretoria.",
           });
         }
 
         if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_TERMO_ASSINADO)) {
           return res.status(400).json({
-            error: "Anexe o termo assinado pelo solicitante antes de enviar ao financeiro.",
+            error: "Anexe o termo assinado pelo solicitante antes de enviar à diretoria.",
           });
         }
 
-        novoStatus = "AGUARDANDO_FINANCEIRO";
+        novoStatus = "AGUARDANDO_DIRETORIA";
         extraSql =
-          ", DT_ENVIO_FINANCEIRO = SYSDATE, DS_MOTIVO_DEVOLUCAO = NULL";
+          ", DT_ENVIO_DIRETORIA = SYSDATE, DT_ENVIO_FINANCEIRO = NULL, DS_MOTIVO_DEVOLUCAO = NULL";
       } else if (acao === "APROVAR_FINANCEIRO") {
-        if (!podeAtuarComoFinanceiro) {
-          return res.status(403).json({
-            error: "Somente o financeiro pode enviar esta solicitação para a diretoria.",
-          });
-        }
-
-        if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_DOCUMENTOS)) {
-          return res.status(400).json({
-            error: "A documentação obrigatória precisa estar anexada para aprovar.",
-          });
-        }
-
-        novoStatus = "AGUARDANDO_DIRETORIA";
-        extraSql =
-          ", DT_ENVIO_DIRETORIA = SYSDATE, NM_RESP_FINANCEIRO = :NM_RESP_FINANCEIRO, DS_MOTIVO_DEVOLUCAO = NULL";
-        bindsExtra.NM_RESP_FINANCEIRO = nomeResponsavel;
-      } else if (acao === "ENVIAR_DIRETORIA") {
-        if (!podeAtuarComoFinanceiro) {
-          return res.status(403).json({
-            error: "Somente o financeiro pode enviar esta solicitação para a diretoria.",
-          });
-        }
-
-        novoStatus = "AGUARDANDO_DIRETORIA";
-        extraSql = ", DT_ENVIO_DIRETORIA = SYSDATE, DS_MOTIVO_DEVOLUCAO = NULL";
+        return res.status(400).json({
+          error: "No fluxo atual, a diretoria analisa antes do financeiro.",
+        });
       } else if (acao === "APROVAR_DIRETORIA") {
         if (!podeAtuarComoDiretoria) {
           return res.status(403).json({
             error: "Somente a diretoria pode aprovar esta solicitação nesta etapa.",
-          });
-        }
-
-        if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_TERMO_DIRETORIA)) {
-          return res.status(400).json({
-            error: "Anexe o termo assinado pela diretoria antes de devolver ao financeiro.",
           });
         }
 
@@ -1466,24 +1500,14 @@ export const solicitacaoSubsidioFuneralController = {
           ST_SOLICITACAO: novoStatus,
         };
 
-        if (acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
-          notificacao = await enviarEmailFluxoSubsidio(connection, {
-            idSolicitacao: id,
-            solicitacao: solicitacaoEmail,
-            tipo: "FINANCEIRO",
-            titulo: "Aguardando conferência do financeiro",
-            introducao:
-              "O termo assinado foi anexado e a solicitação está aguardando conferência da documentação pelo financeiro.",
-            observacao,
-          });
-        } else if (acao === "APROVAR_FINANCEIRO") {
+        if (acao === "ENVIAR_DIRETORIA" || acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
           notificacao = await enviarEmailFluxoSubsidio(connection, {
             idSolicitacao: id,
             solicitacao: solicitacaoEmail,
             tipo: "DIRETORIA",
-            titulo: "Aguardando assinatura da diretoria",
+            titulo: "Aguardando aprovação da diretoria",
             introducao:
-              "A documentação foi conferida pelo financeiro e a solicitação está aguardando assinatura/anexo da diretoria.",
+              "O termo assinado pelo solicitante foi anexado e a solicitação está aguardando análise da diretoria.",
             observacao,
           });
         } else if (acao === "DEVOLVER_ATENDIMENTO") {
@@ -1493,17 +1517,17 @@ export const solicitacaoSubsidioFuneralController = {
             tipo: "SOLICITANTE",
             titulo: "Documentação devolvida para ajuste",
             introducao:
-              "O financeiro devolveu a solicitação para correção da documentação. Ajuste os anexos e reenvie pelo gerenciamento.",
+              "O financeiro devolveu a solicitação para correção da documentação. Ajuste os anexos e reenvie pelo cadastro.",
             observacao,
           });
         } else if (acao === "APROVAR_DIRETORIA") {
           notificacao = await enviarEmailFluxoSubsidio(connection, {
             idSolicitacao: id,
             solicitacao: solicitacaoEmail,
-            tipo: "FINANCEIRO_SOLICITANTE",
-            titulo: "Diretoria assinou a solicitação",
+            tipo: "FINANCEIRO",
+            titulo: "Diretoria aprovou a solicitação",
             introducao:
-              "A diretoria anexou o termo assinado. A solicitação voltou para o financeiro realizar o depósito.",
+              "A diretoria aprovou a solicitação. Confira a documentação e finalize após o depósito.",
             observacao,
           });
         } else if (acao === "REPROVAR_DIRETORIA") {

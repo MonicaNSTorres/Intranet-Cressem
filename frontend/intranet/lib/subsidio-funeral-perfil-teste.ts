@@ -10,8 +10,20 @@ function normalize(value: string | undefined | null) {
 }
 
 export function usuarioEstaNoModoTesteSubsidio(username?: string | null, email?: string | null) {
+  if (!PERFIL_TESTE_SUBSIDIO_FUNERAL) return false;
+
   const usernameNormalizado = normalize(username);
   const emailNormalizado = normalize(email);
 
   return USUARIOS_TESTE.includes(usernameNormalizado) || USUARIOS_TESTE.includes(emailNormalizado);
+}
+
+export function getHeadersPerfilTesteSubsidioFuneral() {
+  if (!PERFIL_TESTE_SUBSIDIO_FUNERAL) {
+    return {};
+  }
+
+  return {
+    "x-subsidio-funeral-perfil-teste": PERFIL_TESTE_SUBSIDIO_FUNERAL,
+  };
 }

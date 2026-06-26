@@ -44,11 +44,13 @@ export function formatCpfCnpjView(v: string) {
   const s = onlyCpfCnpjChars(v).slice(0, 14);
 
   if (s.length > 11 || /[A-Z]/.test(s)) {
-    return s
-      .replace(/^(.{2})(.)/, "$1.$2")
-      .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
-      .replace(/\.(.{3})(.)/, ".$1/$2")
-      .replace(/(.{4})(.)$/, "$1-$2");
+    if (s.length <= 2) return s;
+    if (s.length <= 5) return `${s.slice(0, 2)}.${s.slice(2)}`;
+    if (s.length <= 8) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5)}`;
+    if (s.length <= 12) {
+      return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8)}`;
+    }
+    return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}`;
   }
 
   return formatCpfView(s);

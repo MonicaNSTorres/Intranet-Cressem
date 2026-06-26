@@ -7,6 +7,7 @@ import {
     FaCalendarAlt,
     FaChartLine,
     FaDatabase,
+    FaDownload,
     FaFilter,
     FaInfoCircle,
     FaLayerGroup,
@@ -77,6 +78,38 @@ function formatarMoedaBR(valor: number) {
     });
 
     return valor < 0 ? `-${absoluto}` : absoluto;
+}
+
+function formatarCelulaCsv(valor: unknown) {
+    const texto = String(valor ?? "")
+        .replace(/\r?\n|\r/g, " ")
+        .trim();
+
+    return `"${texto.replace(/"/g, '""')}"`;
+}
+
+function limparNomeArquivoCsv(valor: string) {
+    return valor
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .toLowerCase();
+}
+
+function baixarArquivoCsv(nomeArquivo: string, linhas: unknown[][]) {
+    const conteudo = `\uFEFF${linhas
+        .map((linha) => linha.map(formatarCelulaCsv).join(";"))
+        .join("\r\n")}`;
+    const blob = new Blob([conteudo], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = nomeArquivo;
+    link.click();
+
+    window.URL.revokeObjectURL(url);
 }
 
 const TEMAS_OCULTAR_SETOR_PJ = new Set<ChaveRelatorioPA>([
@@ -893,6 +926,35 @@ export function ProducaoMetaCooperativaPAForm() {
         }
     }
 
+    function handleBaixarCsv() {
+        if (!tema || !configAtual || !dados.length) return;
+
+        const linhas = dados.map((item) =>
+            configAtual.campos.map((campo) => {
+                const valorOriginal = item?.[campo] ?? "-";
+                const percentualAjustado = calcularPercentualComMetaArredondada(
+                    item,
+                    campo,
+                    tema
+                );
+                const valor =
+                    percentualAjustado === null ? valorOriginal : percentualAjustado;
+
+                return formatarValorExibicaoRelatorio(campo, valor, tema);
+            })
+        );
+
+        const nomeTema = limparNomeArquivoCsv(temaLabel || tema);
+        const periodoArquivo = limparNomeArquivoCsv(
+            periodoSelecionado.replace("|", "_a_") || formatarISO(new Date())
+        );
+
+        baixarArquivoCsv(`producao_meta_pa_${nomeTema}_${periodoArquivo}.csv`, [
+            configAtual.colunas,
+            ...linhas,
+        ]);
+    }
+
     useEffect(() => {
         carregarUltimaAtualizacao();
     }, []);
@@ -1221,9 +1283,25 @@ export function ProducaoMetaCooperativaPAForm() {
                         </p>
                     </div>
 
-                    {temaLabel && (
-                        <div className="inline-flex w-fit items-center rounded-full border border-[#00AE9D]/20 bg-[#00AE9D]/10 px-3 py-1 text-xs font-semibold text-[#00796B]">
-                            {temaLabel}
+                    {(temaLabel || dados.length > 0) && (
+                        <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                            {temaLabel && (
+                                <div className="inline-flex w-fit items-center rounded-full border border-[#00AE9D]/20 bg-[#00AE9D]/10 px-3 py-1 text-xs font-semibold text-[#00796B]">
+                                    {temaLabel}
+                                </div>
+                            )}
+
+                            {dados.length > 0 && configAtual && (
+                                <button
+                                    type="button"
+                                    onClick={handleBaixarCsv}
+                                    disabled={loading}
+                                    className="inline-flex items-center gap-2 rounded-full border border-[#00AE9D]/30 bg-white px-3 py-2 text-xs font-semibold text-[#00796B] shadow-sm transition hover:bg-[#00AE9D]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <FaDownload className="text-[12px]" />
+                                    Baixar CSV
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
