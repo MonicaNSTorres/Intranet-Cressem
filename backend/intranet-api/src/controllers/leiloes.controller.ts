@@ -118,13 +118,21 @@ export const leiloesController = {
     async darLance(req: Request, res: Response) {
         try {
             const id = Number(req.params.id);
+            const authReq = req as any;
+            const user = authReq.user || {};
 
             const result = await leiloesService.darLance({
                 ID_LEILAO: id,
                 VL_LANCE: req.body.VL_LANCE,
-                NM_USUARIO: req.body.NM_USUARIO,
-                DS_LOGIN: req.body.DS_LOGIN,
-                DS_EMAIL: req.body.DS_EMAIL,
+                NM_USUARIO:
+                    user.nome_completo ||
+                    req.body.NM_USUARIO,
+                DS_LOGIN:
+                    user.sub ||
+                    req.body.DS_LOGIN,
+                DS_EMAIL:
+                    user.email ||
+                    req.body.DS_EMAIL,
                 NR_IP: getClientIp(req),
             });
 

@@ -559,43 +559,43 @@ export const patrocinioController = {
             const auditorio = parseAuditorio(body.AUDITORIO);
 
             if (!toNullableString(body.NM_SOLICITANTE)) {
-                return res.status(400).json({ error: "NM_SOLICITANTE Ã© obrigatÃ³rio." });
+                return res.status(400).json({ error: "NM_SOLICITANTE é obrigatório." });
             }
 
             if (!toNullableString(body.NR_CPF_CNPJ)) {
-                return res.status(400).json({ error: "NR_CPF_CNPJ Ã© obrigatÃ³rio." });
+                return res.status(400).json({ error: "NR_CPF_CNPJ é obrigatório." });
             }
 
             if (!toNullableString(body.NM_FUNCIONARIO)) {
-                return res.status(400).json({ error: "NM_FUNCIONARIO Ã© obrigatÃ³rio." });
+                return res.status(400).json({ error: "NM_FUNCIONARIO é obrigatório." });
             }
 
             if (!toNullableString(body.NM_CIDADE)) {
-                return res.status(400).json({ error: "NM_CIDADE Ã© obrigatÃ³rio." });
+                return res.status(400).json({ error: "NM_CIDADE é obrigatório." });
             }
 
             if (!toNullableString(body.DT_SOLICITACAO)) {
-                return res.status(400).json({ error: "DT_SOLICITACAO Ã© obrigatÃ³rio." });
+                return res.status(400).json({ error: "DT_SOLICITACAO é obrigatório." });
             }
 
             if (!toNullableString(body.DESC_SOLICITACAO)) {
                 return res.status(400).json({
-                    error: "DESC_SOLICITACAO Ã© obrigatÃ³rio.",
+                    error: "DESC_SOLICITACAO é obrigatório.",
                 });
             }
 
             if (!toNullableString(body.DESC_RESUMO_EVENTO)) {
                 return res.status(400).json({
-                    error: "DESC_RESUMO_EVENTO Ã© obrigatÃ³rio.",
+                    error: "DESC_RESUMO_EVENTO é obrigatório.",
                 });
             }
 
             if (!dias.length) {
-                return res.status(400).json({ error: "DIAS Ã© obrigatÃ³rio." });
+                return res.status(400).json({ error: "DIAS é obrigatório." });
             }
 
             if (!oficioFile) {
-                return res.status(400).json({ error: "DIR_OFICIO Ã© obrigatÃ³rio." });
+                return res.status(400).json({ error: "DIR_OFICIO é obrigatório." });
             }
 
             dedupeKey = buildParticipacaoDedupeKey({

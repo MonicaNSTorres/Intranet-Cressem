@@ -5,6 +5,7 @@ import { sendEmail } from "./email.service";
 export type LeilaoInput = {
     NM_PRODUTO: string;
     DS_PRODUTO?: string | null;
+    NR_SERIE_EQUIPAMENTO?: string | null;
     VL_INICIAL: number | string;
     VL_INCREMENTO_MINIMO?: number | string | null;
     DT_INICIO: string;
@@ -13,6 +14,7 @@ export type LeilaoInput = {
     DS_REGRAS?: string | null;
     IMAGEM_BASE64?: string | null;
     NM_USUARIO_CRIACAO?: string | null;
+    SN_EXIBIR_HISTORICO?: string | null;
 };
 
 export type LanceInput = {
@@ -95,6 +97,7 @@ const SQL_LISTAR = `
         L.ID_LEILAO,
         L.NM_PRODUTO,
         L.DS_PRODUTO,
+        L.NR_SERIE_EQUIPAMENTO,
         L.VL_INICIAL,
         L.VL_INCREMENTO_MINIMO,
         TO_CHAR(L.DT_INICIO, 'DD/MM/YYYY HH24:MI:SS') AS DT_INICIO,
@@ -124,7 +127,8 @@ const SQL_LISTAR = `
     WHERE
         (:busca IS NULL OR
             UPPER(L.NM_PRODUTO) LIKE '%' || :busca || '%' OR
-            UPPER(L.DS_PRODUTO) LIKE '%' || :busca || '%'
+            UPPER(L.DS_PRODUTO) LIKE '%' || :busca || '%' OR 
+            UPPER(L.NR_SERIE_EQUIPAMENTO) LIKE '%' || :busca || '%'
         )
         AND (:status IS NULL OR L.ST_STATUS = :status)
     ORDER BY L.DT_CRIACAO DESC
@@ -135,11 +139,12 @@ const SQL_TOTAL = `
     SELECT COUNT(*) AS TOTAL
     FROM DBACRESSEM.LEILAO L
     WHERE
-        (:busca IS NULL OR
-            UPPER(L.NM_PRODUTO) LIKE '%' || :busca || '%' OR
-            UPPER(L.DS_PRODUTO) LIKE '%' || :busca || '%'
-        )
-        AND (:status IS NULL OR L.ST_STATUS = :status)
+    (:busca IS NULL OR
+        UPPER(L.NM_PRODUTO) LIKE '%' || :busca || '%' OR
+        UPPER(L.DS_PRODUTO) LIKE '%' || :busca || '%' OR
+        UPPER(L.NR_SERIE_EQUIPAMENTO) LIKE '%' || :busca || '%'
+    )
+    AND (:status IS NULL OR L.ST_STATUS = :status)
 `;
 
 const SQL_RESUMO = `
@@ -156,12 +161,14 @@ const SQL_BUSCAR_POR_ID = `
         L.ID_LEILAO,
         L.NM_PRODUTO,
         L.DS_PRODUTO,
+        L.NR_SERIE_EQUIPAMENTO,
         L.VL_INICIAL,
         L.VL_INCREMENTO_MINIMO,
         TO_CHAR(L.DT_INICIO, 'YYYY-MM-DD HH24:MI:SS') AS DT_INICIO,
         TO_CHAR(L.DT_FIM, 'YYYY-MM-DD HH24:MI:SS') AS DT_FIM,
         L.ST_STATUS,
         L.DS_REGRAS,
+        L.SN_EXIBIR_HISTORICO,
         NULL AS IMAGEM_BASE64,
         L.NM_USUARIO_CRIACAO,
         TO_CHAR(L.DT_CRIACAO, 'DD/MM/YYYY HH24:MI:SS') AS DT_CRIACAO,
@@ -195,7 +202,7 @@ const SQL_LISTAR_IMAGENS_CHUNKS = `
     JOIN (
         SELECT LEVEL AS LVL
         FROM DUAL
-        CONNECT BY LEVEL <= 1000
+        CONNECT BY LEVEL <= 10000
     ) N
         ON N.LVL <= CEIL(DBMS_LOB.GETLENGTH(I.IMAGEM_BASE64) / 4000)
     WHERE I.ID_LEILAO = :id
@@ -206,6 +213,7 @@ const SQL_INSERIR = `
     INSERT INTO DBACRESSEM.LEILAO (
         NM_PRODUTO,
         DS_PRODUTO,
+        NR_SERIE_EQUIPAMENTO,
         VL_INICIAL,
         VL_INCREMENTO_MINIMO,
         DT_INICIO,
@@ -214,10 +222,12 @@ const SQL_INSERIR = `
         DS_REGRAS,
         IMAGEM_BASE64,
         NM_USUARIO_CRIACAO,
+        SN_EXIBIR_HISTORICO,
         DT_CRIACAO
     ) VALUES (
         :nm_produto,
         :ds_produto,
+        :nr_serie_equipamento,
         :vl_inicial,
         :vl_incremento_minimo,
         TO_DATE(:dt_inicio, 'YYYY-MM-DD HH24:MI:SS'),
@@ -226,6 +236,7 @@ const SQL_INSERIR = `
         :ds_regras,
         NULL,
         :nm_usuario_criacao,
+        :sn_exibir_historico,
         SYSDATE
     )
     RETURNING ID_LEILAO INTO :id_leilao
@@ -236,14 +247,16 @@ const SQL_ATUALIZAR = `
     SET
         NM_PRODUTO = :nm_produto,
         DS_PRODUTO = :ds_produto,
+        NR_SERIE_EQUIPAMENTO = :nr_serie_equipamento,
         VL_INICIAL = :vl_inicial,
         VL_INCREMENTO_MINIMO = :vl_incremento_minimo,
         DT_INICIO = TO_DATE(:dt_inicio, 'YYYY-MM-DD HH24:MI:SS'),
         DT_FIM = TO_DATE(:dt_fim, 'YYYY-MM-DD HH24:MI:SS'),
         ST_STATUS = :st_status,
         DS_REGRAS = :ds_regras,
-        NM_USUARIO_CRIACAO = :nm_usuario_criacao,
-        DT_ATUALIZACAO = SYSDATE
+SN_EXIBIR_HISTORICO = :sn_exibir_historico,
+NM_USUARIO_CRIACAO = :nm_usuario_criacao,
+DT_ATUALIZACAO = SYSDATE
     WHERE ID_LEILAO = :id
 `;
 
@@ -360,6 +373,50 @@ const SQL_INSERIR_LANCE = `
     )
 `;
 
+const SQL_USUARIO_JA_VENCEU_LEILAO = `
+    SELECT *
+    FROM (
+        SELECT
+            W.ID_LEILAO,
+            W.NM_PRODUTO,
+            W.VL_LANCE,
+            W.NM_USUARIO,
+            W.DS_LOGIN,
+            W.DS_EMAIL
+        FROM (
+            SELECT
+                L.ID_LEILAO,
+                L.NM_PRODUTO,
+                LL.VL_LANCE,
+                LL.NM_USUARIO,
+                LL.DS_LOGIN,
+                LL.DS_EMAIL
+            FROM DBACRESSEM.LEILAO L
+            JOIN DBACRESSEM.LEILAO_LANCE LL
+                ON LL.ID_LEILAO = L.ID_LEILAO
+               AND LL.ID_LANCE = (
+                    SELECT ID_LANCE
+                    FROM DBACRESSEM.LEILAO_LANCE
+                    WHERE ID_LEILAO = L.ID_LEILAO
+                    ORDER BY VL_LANCE DESC, DT_LANCE ASC
+                    FETCH FIRST 1 ROWS ONLY
+               )
+            WHERE L.ST_STATUS = 'FINALIZADO'
+        ) W
+        WHERE
+            (
+                :ds_login IS NOT NULL
+                AND UPPER(TRIM(W.DS_LOGIN)) = UPPER(TRIM(:ds_login))
+            )
+            OR
+            (
+                :ds_email IS NOT NULL
+                AND UPPER(TRIM(W.DS_EMAIL)) = UPPER(TRIM(:ds_email))
+            )
+    )
+    FETCH FIRST 1 ROWS ONLY
+`;
+
 const SQL_BUSCAR_VENCEDOR = `
     SELECT
         L.ID_LEILAO,
@@ -392,6 +449,7 @@ const SQL_LISTAR_FINALIZADOS = `
         L.ID_LEILAO,
         L.NM_PRODUTO,
         L.DS_PRODUTO,
+        L.NR_SERIE_EQUIPAMENTO,
         L.VL_INICIAL,
         L.VL_INCREMENTO_MINIMO,
         TO_CHAR(L.DT_INICIO, 'DD/MM/YYYY HH24:MI:SS') AS DT_INICIO,
@@ -423,11 +481,13 @@ const SQL_LISTAR_FINALIZADOS = `
             FETCH FIRST 1 ROWS ONLY
        )
     WHERE L.ST_STATUS = 'FINALIZADO'
-      AND (
-        :busca IS NULL OR
-        UPPER(L.NM_PRODUTO) LIKE '%' || :busca || '%' OR
-        UPPER(L.DS_PRODUTO) LIKE '%' || :busca || '%'
-      )
+AND NVL(L.SN_EXIBIR_HISTORICO, 'S') = 'S'
+  AND (
+    :busca IS NULL OR
+    UPPER(L.NM_PRODUTO) LIKE '%' || :busca || '%' OR
+    UPPER(L.DS_PRODUTO) LIKE '%' || :busca || '%' OR 
+    UPPER(L.NR_SERIE_EQUIPAMENTO) LIKE '%' || :busca || '%'
+  )
     ORDER BY L.DT_FIM DESC
     OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
 `;
@@ -436,11 +496,13 @@ const SQL_TOTAL_FINALIZADOS = `
     SELECT COUNT(*) AS TOTAL
     FROM DBACRESSEM.LEILAO L
     WHERE L.ST_STATUS = 'FINALIZADO'
-      AND (
-        :busca IS NULL OR
-        UPPER(L.NM_PRODUTO) LIKE '%' || :busca || '%' OR
-        UPPER(L.DS_PRODUTO) LIKE '%' || :busca || '%'
-      )
+  AND NVL(L.SN_EXIBIR_HISTORICO, 'S') = 'S'
+  AND (
+    :busca IS NULL OR
+    UPPER(L.NM_PRODUTO) LIKE '%' || :busca || '%' OR
+    UPPER(L.DS_PRODUTO) LIKE '%' || :busca || '%' OR
+    UPPER(L.NR_SERIE_EQUIPAMENTO) LIKE '%' || :busca || '%'
+)
 `;
 
 const SQL_DASHBOARD_RESUMO = `
@@ -567,10 +629,56 @@ const SQL_DASHBOARD_VALOR_POR_MES = `
     ORDER BY TRUNC(L.DT_FIM, 'MM')
 `;
 
+const SQL_USUARIO_LIDERANDO_LEILAO_ANDAMENTO = `
+    SELECT *
+    FROM (
+        SELECT
+            W.ID_LEILAO,
+            W.NM_PRODUTO,
+            W.VL_LANCE,
+            W.NM_USUARIO,
+            W.DS_LOGIN,
+            W.DS_EMAIL
+        FROM (
+            SELECT
+                L.ID_LEILAO,
+                L.NM_PRODUTO,
+                LL.VL_LANCE,
+                LL.NM_USUARIO,
+                LL.DS_LOGIN,
+                LL.DS_EMAIL
+            FROM DBACRESSEM.LEILAO L
+            JOIN DBACRESSEM.LEILAO_LANCE LL
+                ON LL.ID_LEILAO = L.ID_LEILAO
+               AND LL.ID_LANCE = (
+                    SELECT ID_LANCE
+                    FROM DBACRESSEM.LEILAO_LANCE
+                    WHERE ID_LEILAO = L.ID_LEILAO
+                    ORDER BY VL_LANCE DESC, DT_LANCE ASC
+                    FETCH FIRST 1 ROWS ONLY
+               )
+            WHERE L.ST_STATUS = 'EM_ANDAMENTO'
+        ) W
+        WHERE
+            (
+                :ds_login IS NOT NULL
+                AND UPPER(TRIM(W.DS_LOGIN)) = UPPER(TRIM(:ds_login))
+            )
+            OR
+            (
+                :ds_email IS NOT NULL
+                AND UPPER(TRIM(W.DS_EMAIL)) = UPPER(TRIM(:ds_email))
+            )
+    )
+    FETCH FIRST 1 ROWS ONLY
+`;
+
 function normalizarPayload(data: LeilaoInput) {
     return {
         nm_produto: normalizarTexto(data.NM_PRODUTO).toUpperCase(),
         ds_produto: normalizarTexto(data.DS_PRODUTO) || null,
+        nr_serie_equipamento:
+            normalizarTexto(data.NR_SERIE_EQUIPAMENTO).toUpperCase() || null,
         vl_inicial: toNumber(data.VL_INICIAL),
         vl_incremento_minimo: toNumber(data.VL_INCREMENTO_MINIMO || 1),
         dt_inicio: normalizarTexto(data.DT_INICIO),
@@ -578,6 +686,7 @@ function normalizarPayload(data: LeilaoInput) {
         st_status: normalizarStatus(data.ST_STATUS),
         ds_regras: normalizarTexto(data.DS_REGRAS) || null,
         nm_usuario_criacao: normalizarTexto(data.NM_USUARIO_CRIACAO) || null,
+        sn_exibir_historico: data.SN_EXIBIR_HISTORICO === "N" ? "N" : "S",
     };
 }
 
@@ -595,7 +704,10 @@ async function salvarImagens(idLeilao: number, imagens: string[]) {
     for (let i = 0; i < imagens.length; i++) {
         await oracleExecuteCommit(SQL_INSERIR_IMAGEM, {
             id_leilao: idLeilao,
-            imagem_base64: imagens[i],
+            imagem_base64: {
+                val: imagens[i],
+                type: oracledb.CLOB,
+            },
             ordem: i + 1,
         });
     }
@@ -624,7 +736,7 @@ function montarHtmlPerdeuLideranca(params: {
                 style="max-width:700px;margin:auto;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 8px 24px rgba(15,23,42,.08);">
                 
                 <tr>
-                    <td style="background:linear-gradient(135deg,#f97316,#ef4444);padding:28px;color:white;text-align:center;">
+                    <td style="background:linear-gradient(135deg,#f97316,#ef4444);padding:28px;color:#79B729;text-align:center;">
                         <div style="font-size:42px;margin-bottom:8px;">⚠️</div>
                         <h1 style="margin:0;font-size:26px;">Seu lance foi ultrapassado</h1>
                         <p style="margin:8px 0 0;font-size:14px;opacity:.95;">
@@ -1019,6 +1131,32 @@ export const leiloesService = {
 
         if (!payload.nm_usuario) {
             throw new Error("Usuário do lance não informado.");
+        }
+
+        const liderandoResult = await oracleExecute(SQL_USUARIO_LIDERANDO_LEILAO_ANDAMENTO, {
+            ds_login: payload.ds_login,
+            ds_email: payload.ds_email,
+        });
+
+        const liderando = firstRow(liderandoResult);
+
+        if (liderando) {
+            throw new Error(
+                `Você já está liderando o leilão "${liderando.NM_PRODUTO}". Aguarde alguém ultrapassar seu lance para poder dar outro lance.`
+            );
+        }
+
+        const vencedorAnteriorResult = await oracleExecute(SQL_USUARIO_JA_VENCEU_LEILAO, {
+            ds_login: payload.ds_login,
+            ds_email: payload.ds_email,
+        });
+
+        const vencedorAnterior = firstRow(vencedorAnteriorResult);
+
+        if (vencedorAnterior) {
+            throw new Error(
+                `Você já venceu o leilão "${vencedorAnterior.NM_PRODUTO}" e não pode adquirir outro equipamento.`
+            );
         }
 
         await oracleExecuteCommit(SQL_INSERIR_LANCE, payload);

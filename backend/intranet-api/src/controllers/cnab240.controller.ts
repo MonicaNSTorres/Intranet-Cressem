@@ -44,9 +44,12 @@ export const cnab240Controller = {
         });
       }
 
+      const tipoLayout = req.body?.tipoLayout || "SANTANDER";
+
       const result = await cnab240Service.gerarCnab240({
         buffer: req.file.buffer,
         originalName: req.file.originalname,
+        tipoLayout,
       });
 
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -86,28 +89,55 @@ export const cnab240Controller = {
     }
   },
 
-  async gerarCnab240PorTransferencias(req: Request, res: Response) {
-    try {
-      const transferencias = req.body?.transferencias;
+async gerarCnab240PorTransferencias(req: Request, res: Response) {
+  try {
+    const registros =
+      req.body?.registros ??
+      req.body?.transferencias;
 
-      const result = await cnab240Service.gerarCnab240PorTransferencias(
-        transferencias
-      );
+    const tipoLayout = req.body?.tipoLayout;
 
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${result.nomeArquivo}"`
-      );
-
-      return res.status(200).send(result.conteudo);
-    } catch (error: any) {
-      return res.status(500).json({
-        error: "Falha ao gerar CNAB240 por transferências.",
-        details: error?.message || "Erro desconhecido",
+    if (
+      !Array.isArray(registros) ||
+      registros.length === 0
+    ) {
+      return res.status(400).json({
+        error: "Nenhum registro foi enviado.",
       });
     }
-  },
+
+    if (!tipoLayout) {
+      return res.status(400).json({
+        error: "Tipo de layout CNAB240 não informado.",
+      });
+    }
+
+    const result =
+      await cnab240Service.gerarCnab240PorRegistros(
+        registros,
+        tipoLayout
+      );
+
+    res.setHeader(
+      "Content-Type",
+      "text/plain; charset=utf-8"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${result.nomeArquivo}"`
+    );
+
+    return res.status(200).send(result.conteudo);
+  } catch (error: any) {
+    return res.status(500).json({
+      error: "Falha ao gerar CNAB240.",
+      details:
+        error?.message ||
+        "Erro desconhecido",
+    });
+  }
+},
 
   async listarDetalhesRemessa(req: Request, res: Response) {
     try {

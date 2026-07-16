@@ -80,6 +80,7 @@ import { monitorMetaAlertasController } from "../controllers/monitor-meta-alerta
 import { cnab240Controller } from "../controllers/cnab240.controller";
 import { cnab240FavorecidosController } from "../controllers/cnab-favorecidos.controller";
 import { cnab240AgenciasController } from "../controllers/cnab240-agencias.controller";
+import { cnab240CcoController } from "../controllers/cnab240-cco.controller";
 import { leiloesController } from "../controllers/leiloes.controller";
 import { solicitacaoSubsidioFuneralController } from "../controllers/solicitacao-subsidio-funeral.controller";
 import { solicitacaoSubsidioFuneralPaginadoController } from "../controllers/solicitacao_subsidio_funeral_paginado.controller";
@@ -1197,27 +1198,27 @@ routes.get(
 
 //automacao de ferias
 routes.get(
-  "/ferias-notificacao/executar-todas",
+  "/v1/ferias-notificacao/executar-todas",
   feriasNotificacaoController.executarTodas
 );
 
 routes.get(
-  "/ferias-notificacao/rh-diretoria",
+  "/v1/ferias-notificacao/rh-diretoria",
   feriasNotificacaoController.executarRhDiretoria
 );
 
 routes.get(
-  "/ferias-notificacao/gerencias",
+  "/v1/ferias-notificacao/gerencias",
   feriasNotificacaoController.executarGerencias
 );
 
 routes.get(
-  "/ferias-notificacao/ti",
+  "/v1/ferias-notificacao/ti",
   feriasNotificacaoController.executarTi
 );
 
 routes.get(
-  "/ferias-notificacao/previa-dia17",
+  "/v1/ferias-notificacao/previa-dia17",
   feriasNotificacaoController.executarPreviaDia17
 );
 
@@ -1284,6 +1285,11 @@ routes.get(
   termosMensaisCaixaController.downloadAssinado
 );
 
+routes.delete(
+  "/v1/termos-mensais-caixa/:id",
+  termosMensaisCaixaController.excluir
+);
+
 //reserva sala de reuniao
 routes.post(
   "/v1/reserva_sala_reuniao",
@@ -1347,6 +1353,12 @@ routes.get("/v1/cnab240/favorecidos/cpf/:cpf", authMiddleware, cnab240Favorecido
 routes.get("/v1/cnab240/favorecidos/:id", authMiddleware, cnab240FavorecidosController.buscarPorId);
 
 routes.post("/v1/cnab240/favorecidos", authMiddleware, cnab240FavorecidosController.criar);
+
+routes.post(
+  "/v1/cnab240/favorecidos/importar-massa",
+  authMiddleware,
+  cnab240FavorecidosController.importarEmMassa
+);
 
 routes.put("/v1/cnab240/favorecidos/:id", authMiddleware, cnab240FavorecidosController.atualizar);
 

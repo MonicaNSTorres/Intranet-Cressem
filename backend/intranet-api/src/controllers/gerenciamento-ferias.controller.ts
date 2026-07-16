@@ -32,46 +32,119 @@ function normalizarTexto(value: string) {
     .toUpperCase();
 }
 
-function parseExcelDateToIso(value: any): string {
-  if (value === null || value === undefined || value === "") return "";
+function limparNomeFuncionario(value: any): string {
+  return String(value || "")
+    .replace(/\u00A0/g, " ") // espaço não separável
+    .replace(/[\u200B-\u200D\uFEFF]/g, "") // caracteres invisíveis
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    const y = value.getFullYear();
-    const m = String(value.getMonth() + 1).padStart(2, "0");
-    const d = String(value.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
+function validarDataIso(
+  ano: string,
+  mes: string,
+  dia: string
+): string {
+  const anoNumero = Number(ano);
+  const mesNumero = Number(mes);
+  const diaNumero = Number(dia);
+
+  const data = new Date(
+    Date.UTC(anoNumero, mesNumero - 1, diaNumero, 12, 0, 0)
+  );
+
+  const dataValida =
+    data.getUTCFullYear() === anoNumero &&
+    data.getUTCMonth() + 1 === mesNumero &&
+    data.getUTCDate() === diaNumero;
+
+  if (!dataValida) {
+    return "";
   }
 
+  return `${ano}-${mes}-${dia}`;
+}
+
+function parseExcelDateToIso(value: any): string {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  // Quando a biblioteca retorna um objeto Date
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const ano = value.getFullYear();
+    const mes = String(value.getMonth() + 1).padStart(2, "0");
+    const dia = String(value.getDate()).padStart(2, "0");
+
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  // Quando o Excel retorna o número serial da data
   if (typeof value === "number" && Number.isFinite(value)) {
     const parsed = XLSX.SSF.parse_date_code(value);
+
     if (parsed?.y && parsed?.m && parsed?.d) {
-      const y = String(parsed.y).padStart(4, "0");
-      const m = String(parsed.m).padStart(2, "0");
-      const d = String(parsed.d).padStart(2, "0");
-      return `${y}-${m}-${d}`;
+      const ano = String(parsed.y).padStart(4, "0");
+      const mes = String(parsed.m).padStart(2, "0");
+      const dia = String(parsed.d).padStart(2, "0");
+
+      return `${ano}-${mes}-${dia}`;
     }
   }
 
   const str = String(value).trim();
-  if (!str) return "";
 
-  const iso = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-
-  const br = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (br) {
-    const d = br[1].padStart(2, "0");
-    const m = br[2].padStart(2, "0");
-    const y = br[3];
-    return `${y}-${m}-${d}`;
+  if (!str) {
+    return "";
   }
 
-  const parsed = new Date(str);
-  if (!Number.isNaN(parsed.getTime())) {
-    const y = parsed.getFullYear();
-    const m = String(parsed.getMonth() + 1).padStart(2, "0");
-    const d = String(parsed.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
+  // YYYY-MM-DD ou YYYY-MM-DD HH:mm:ss
+  const iso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/);
+
+  if (iso) {
+    const ano = iso[1];
+    const mes = iso[2].padStart(2, "0");
+    const dia = iso[3].padStart(2, "0");
+
+    return validarDataIso(ano, mes, dia);
+  }
+
+  // DD/MM/YYYY
+  const br4 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s.*)?$/);
+
+  if (br4) {
+    const dia = br4[1].padStart(2, "0");
+    const mes = br4[2].padStart(2, "0");
+    const ano = br4[3];
+
+    return validarDataIso(ano, mes, dia);
+  }
+
+  // DD/MM/YY
+  const br2 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})(?:\s.*)?$/);
+
+  if (br2) {
+    const dia = br2[1].padStart(2, "0");
+    const mes = br2[2].padStart(2, "0");
+
+    const anoCurto = Number(br2[3]);
+
+    // Ajuste conforme sua regra de negócio
+    const ano = String(anoCurto <= 79 ? 2000 + anoCurto : 1900 + anoCurto);
+
+    return validarDataIso(ano, mes, dia);
+  }
+
+  // DD-MM-YYYY
+  const brHifen = str.match(/^(\d{1,2})-(\d{1,2})-(\d{4})(?:\s.*)?$/);
+
+  if (brHifen) {
+    const dia = brHifen[1].padStart(2, "0");
+    const mes = brHifen[2].padStart(2, "0");
+    const ano = brHifen[3];
+
+    return validarDataIso(ano, mes, dia);
   }
 
   return "";
@@ -107,10 +180,53 @@ export const gerenciamentoFeriasController = {
         });
       }
 
-      const workbook = XLSX.read(file.buffer, {
-        type: "buffer",
-        cellDates: true,
-      });
+      const extensao = String(file.originalname || "")
+        .toLowerCase()
+        .split(".")
+        .pop();
+
+      if (!["xlsx", "xls"].includes(extensao || "")) {
+        return res.status(400).json({
+          error: "Formato de arquivo inválido.",
+          details: "Envie uma planilha nos formatos .xlsx ou .xls.",
+        });
+      }
+
+      let workbook: XLSX.WorkBook;
+
+      try {
+        workbook = XLSX.read(file.buffer, {
+          type: "buffer",
+          cellDates: true,
+        });
+      } catch (excelError: any) {
+        const mensagem = String(excelError?.message || excelError);
+
+        console.error("Erro ao abrir planilha de férias:", {
+          nome: file.originalname,
+          mimetype: file.mimetype,
+          tamanho: file.size,
+          mensagem,
+        });
+
+        if (
+          mensagem.includes("Encrypted") ||
+          mensagem.includes("EncryptionInfo") ||
+          mensagem.includes("password")
+        ) {
+          return res.status(400).json({
+            error: "Não foi possível abrir a planilha.",
+            details:
+              "O arquivo parece estar protegido, criptografado ou salvo em um formato inválido. Abra-o no Excel, remova qualquer senha e salve novamente como Pasta de Trabalho do Excel (.xlsx).",
+          });
+        }
+
+        return res.status(400).json({
+          error: "Planilha inválida ou corrompida.",
+          details:
+            "Abra o arquivo no Excel e salve novamente no formato .xlsx antes de importar.",
+        });
+      }
 
       const nomeAba = workbook.SheetNames[0];
       const aba = workbook.Sheets[nomeAba];
@@ -123,7 +239,7 @@ export const gerenciamentoFeriasController = {
 
       const rows = XLSX.utils.sheet_to_json<Record<string, any>>(aba, {
         defval: "",
-        raw: false,
+        raw: true,
       });
 
       if (!rows.length) {
@@ -149,6 +265,8 @@ export const gerenciamentoFeriasController = {
           "funcionario",
         ]);
         const inicioBruto = extrairValorLinha(row, [
+          "inicio progr",
+          "início progr",
           "inicio programa",
           "inicio programada",
           "início programada",
@@ -162,7 +280,9 @@ export const gerenciamentoFeriasController = {
           "dt_inicio",
           "data inicio",
         ]);
+
         const fimBruto = extrairValorLinha(row, [
+          "fim progr",
           "fim programa",
           "fim programada",
           "fim programado",
@@ -259,7 +379,7 @@ export const gerenciamentoFeriasController = {
         const item = lista[i] || {};
         const linha = i + 1;
 
-        const nome = String(item.NM_FUNCIONARIO || "").trim();
+        const nome = limparNomeFuncionario(item.NM_FUNCIONARIO);
         const dtInicio = toDateOnly(item.DT_DIA_INICIO);
         const dtFim = toDateOnly(item.DT_DIA_FIM);
 
@@ -290,23 +410,58 @@ export const gerenciamentoFeriasController = {
 
         const resultFuncionario = await connection.execute(
           `
-            SELECT
-              f.ID_FUNCIONARIO,
-              f.NM_FUNCIONARIO
-            FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
-            WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) LIKE UPPER(:nomeLike)
-            ORDER BY
-              CASE
-                WHEN UPPER(TRIM(f.NM_FUNCIONARIO)) = UPPER(TRIM(:nomeExato)) THEN 0
-                ELSE 1
-              END,
-              f.ID_FUNCIONARIO DESC
-          `,
+    SELECT
+      f.ID_FUNCIONARIO,
+      f.NM_FUNCIONARIO
+    FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+    WHERE UPPER(
+      REGEXP_REPLACE(
+        TRIM(
+          REPLACE(
+            REPLACE(
+              REPLACE(f.NM_FUNCIONARIO, CHR(160), ' '),
+              CHR(9),
+              ' '
+            ),
+            CHR(10),
+            ' '
+          )
+        ),
+        ' +',
+        ' '
+      )
+    ) LIKE UPPER(:nomeLike)
+    ORDER BY
+      CASE
+        WHEN UPPER(
+          REGEXP_REPLACE(
+            TRIM(
+              REPLACE(
+                REPLACE(
+                  REPLACE(f.NM_FUNCIONARIO, CHR(160), ' '),
+                  CHR(9),
+                  ' '
+                ),
+                CHR(10),
+                ' '
+              )
+            ),
+            ' +',
+            ' '
+          )
+        ) = UPPER(:nomeExato)
+        THEN 0
+        ELSE 1
+      END,
+      f.ID_FUNCIONARIO DESC
+  `,
           {
             nomeLike: `%${nome}%`,
             nomeExato: nome,
           },
-          { outFormat: oracledb.OUT_FORMAT_OBJECT }
+          {
+            outFormat: oracledb.OUT_FORMAT_OBJECT,
+          }
         );
 
         const candidatos = (resultFuncionario.rows || []) as Array<{
@@ -332,8 +487,8 @@ export const gerenciamentoFeriasController = {
           exatos.length === 1
             ? exatos[0]
             : candidatos.length === 1
-            ? candidatos[0]
-            : null;
+              ? candidatos[0]
+              : null;
 
         if (!escolhido) {
           erros.push({
@@ -399,7 +554,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.rollback();
-        } catch {}
+        } catch { }
       }
 
       console.error("cadastrarLote ferias erro:", err);
@@ -411,7 +566,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.close();
-        } catch {}
+        } catch { }
       }
     }
   },
@@ -470,7 +625,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.close();
-        } catch {}
+        } catch { }
       }
     }
   },
@@ -545,7 +700,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.close();
-        } catch {}
+        } catch { }
       }
     }
   },
@@ -654,9 +809,9 @@ export const gerenciamentoFeriasController = {
           NR_CPF: funcionario.NR_CPF,
           SETOR: funcionario.ID_SETOR
             ? {
-                ID_SETOR: funcionario.ID_SETOR,
-                NM_SETOR: funcionario.NM_SETOR,
-              }
+              ID_SETOR: funcionario.ID_SETOR,
+              NM_SETOR: funcionario.NM_SETOR,
+            }
             : null,
           FERIAS: resultFerias.rows || [],
         });
@@ -678,7 +833,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.close();
-        } catch {}
+        } catch { }
       }
     }
   },
@@ -759,7 +914,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.rollback();
-        } catch {}
+        } catch { }
       }
 
       console.error("cadastrar ferias erro:", err);
@@ -771,7 +926,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.close();
-        } catch {}
+        } catch { }
       }
     }
   },
@@ -911,7 +1066,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.rollback();
-        } catch {}
+        } catch { }
       }
 
       console.error("editar ferias erro:", err);
@@ -923,7 +1078,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.close();
-        } catch {}
+        } catch { }
       }
     }
   },
@@ -994,7 +1149,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.rollback();
-        } catch {}
+        } catch { }
       }
 
       console.error("excluirPeriodo ferias erro:", err);
@@ -1006,7 +1161,7 @@ export const gerenciamentoFeriasController = {
       if (connection) {
         try {
           await connection.close();
-        } catch {}
+        } catch { }
       }
     }
   },

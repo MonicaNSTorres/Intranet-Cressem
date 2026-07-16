@@ -80,64 +80,72 @@ async function processarLeiloesEncerrados() {
             `
             <div style="background:#79B729;padding:40px;font-family:Segoe UI,Arial,sans-serif">
               <table width="100%" cellpadding="0" cellspacing="0"
-                style="max-width:700px;background:white;margin:auto;border-radius:16px;overflow:hidden">
+                style="max-width:700px;background:white;margin:auto;border-radius:0;overflow:hidden">
 
                 <tr>
-                  <td style="background:#00AE9D;padding:30px;color:white;text-align:center">
-                    <h1 style="margin:0">🏆 Parabéns!</h1>
-                    <p>Você foi o vencedor do leilão.</p>
+                  <td style="background:#00AE9D;padding:34px 30px;color:white;text-align:center">
+                    <h1 style="margin:0;font-size:28px;font-weight:700">
+                      🏆 Parabéns!
+                    </h1>
+                    <p style="margin:18px 0 0;font-size:14px;font-weight:600">
+                      Você foi o vencedor do leilão.
+                    </p>
                   </td>
                 </tr>
 
                 <tr>
-                  <td style="padding:30px">
+                  <td style="padding:38px 28px 28px;color:#222;font-size:14px;line-height:1.35">
 
-                    <p>
-                      Olá <strong>${vencedor.NM_USUARIO}</strong>,
+                    <p style="margin:0 0 18px">
+                      Olá, <strong>${vencedor.NM_USUARIO}</strong>,
                     </p>
 
-                    <p>
+                    <p style="margin:0 0 18px">
                       Seu lance foi o maior até o encerramento do leilão.
                     </p>
 
-                    <div style="
-                      background:#f9fafb;
-                      border:1px solid #e5e7eb;
-                      border-radius:12px;
-                      padding:20px">
+                    <table cellpadding="0" cellspacing="0" width="100%" style="font-size:14px">
+                      <tr>
+                        <td style="padding:3px 0;width:200px;color:#444">
+                          Produto
+                        </td>
+                        <td style="padding:3px 0;font-weight:700;color:#333;text-transform:uppercase">
+                          ${leilao.NM_PRODUTO}
+                        </td>
+                      </tr>
 
-                      <table width="100%">
-                        <tr>
-                          <td>Produto</td>
-                          <td><strong>${leilao.NM_PRODUTO}</strong></td>
-                        </tr>
+                      <tr>
+                        <td style="padding:3px 0;color:#444">
+                          Lance vencedor
+                        </td>
+                        <td style="padding:3px 0;color:#16a34a;font-size:18px;font-weight:800">
+                          ${formatCurrency(vencedor.VL_LANCE)}
+                        </td>
+                      </tr>
 
-                        <tr>
-                          <td>Lance vencedor</td>
-                          <td style="color:#16a34a;font-size:22px;font-weight:bold">
-                            ${formatCurrency(vencedor.VL_LANCE)}
-                          </td>
-                        </tr>
+                      <tr>
+                        <td style="padding:3px 0;color:#444">
+                          Número de Série
+                        </td>
+                        <td style="padding:3px 0;color:#333">
+                          ${leilao.NR_SERIE_EQUIPAMENTO || "-"}
+                        </td>
+                      </tr>
+                    </table>
 
-                        <tr>
-                          <td>Encerramento</td>
-                          <td>${leilao.DT_FIM}</td>
-                        </tr>
-                      </table>
+                    <p style="margin:4px 0 0">
+                      Você precisa realizar o pagamento em até 3 dias úteis após o recebimento deste e-mail.
+                    </p>
 
-                    </div>
+                    <p style="margin:0">
+                      <strong>Chave PIX:</strong> 54190525/0001-66 em nome de SICOOB CRESSEM.
+                    </p>
 
-                    <br>
-
-                    <div style="
-                      background:#dcfce7;
-                      color:#166534;
-                      padding:16px;
-                      border-radius:10px">
-
-                      A equipe responsável entrará em contato para dar sequência à entrega do item.
-
-                    </div>
+                    <p style="margin:0">
+                      Gentileza responder este e-mail com o comprovante de pagamento para posterior liberação
+                      <br>
+                      do equipamento.
+                    </p>
 
                   </td>
                 </tr>
@@ -147,10 +155,10 @@ async function processarLeiloesEncerrados() {
                     background:#f9fafb;
                     text-align:center;
                     color:#6b7280;
-                    padding:20px;
-                    font-size:12px">
+                    padding:22px;
+                    font-size:11px">
 
-                    Este email foi enviado automaticamente pela Intranet Sicoob Cressem.
+                    Este e-mail foi enviado automaticamente pela Intranet Sicoob Cressem.
 
                   </td>
                 </tr>
@@ -181,7 +189,7 @@ async function processarLeiloesEncerrados() {
     if (conn) {
       try {
         await conn.close();
-      } catch {}
+      } catch { }
     }
   }
 }

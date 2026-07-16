@@ -18,6 +18,10 @@ export type CnabFavorecidoInput = {
     UF?: string | null;
 };
 
+export type CnabFavorecidoLoteInput = CnabFavorecidoInput & {
+    LINHA?: number;
+};
+
 export type ListarFavorecidosParams = {
     busca?: string;
     page?: number;
@@ -166,6 +170,34 @@ const SQL_EXCLUIR = `
     WHERE ID_FAVORECIDO = :id
 `;
 
+const SQL_ATUALIZAR_POR_CPF = `
+    UPDATE DBACRESSEM.CNAB_FAVORECIDOS
+    SET
+        IDCLIENTE = :idcliente,
+        BANCO = :banco,
+        AGENCIA = :agencia,
+        CONTA = :conta,
+        DV_CONTA = :dv_conta,
+        NOME = :nome,
+        ENDERECO = :endereco,
+        NUMERO = :numero,
+        COMPLEMENTO = :complemento,
+        BAIRRO = :bairro,
+        CEP = :cep,
+        CEP_COMPLEMENTO = :cep_complemento,
+        CIDADE = :cidade,
+        UF = :uf,
+        UPDATED_AT = SYSDATE
+    WHERE REGEXP_REPLACE(UPPER(CPF), '[^A-Z0-9]', '') = :cpf
+`;
+
+const SQL_VERIFICAR_CPF = `
+    SELECT ID_FAVORECIDO
+    FROM DBACRESSEM.CNAB_FAVORECIDOS
+    WHERE REGEXP_REPLACE(UPPER(CPF), '[^A-Z0-9]', '') = :cpf
+    FETCH FIRST 1 ROWS ONLY
+`;
+
 function normalizarPayload(data: CnabFavorecidoInput) {
     return {
         cpf: onlyCpfCnpjChars(data.CPF),
@@ -286,6 +318,94 @@ export const cnab240FavorecidosService = {
         return {
             success: true,
             message: "Favorecido atualizado com sucesso.",
+        };
+    },
+
+    async importarEmMassa(favorecidos: CnabFavorecidoLoteInput[]) {
+        if (!Array.isArray(favorecidos)) {
+            throw new Error("A lista de favorecidos deve ser um array.");
+        }
+
+        if (favorecidos.length === 0) {
+            throw new Error("Nenhum favorecido foi informado.");
+        }
+
+        if (favorecidos.length > 1000) {
+            throw new Error(
+                "O limite máximo é de 1.000 favorecidos por importação."
+            );
+        }
+
+        let inseridos = 0;
+        let atualizados = 0;
+        let rejeitados = 0;
+
+        const erros: Array<{
+            linha: number;
+            cpf?: string;
+            nome?: string;
+            erro: string;
+        }> = [];
+
+        for (let index = 0; index < favorecidos.length; index++) {
+            const item = favorecidos[index];
+            const linha = Number(item?.LINHA || index + 1);
+
+            try {
+                const payload = normalizarPayload(item);
+
+                validarPayload(payload);
+
+                const existenteResult = await oracleExecute(
+                    SQL_VERIFICAR_CPF,
+                    {
+                        cpf: payload.cpf,
+                    },
+                    {}
+                );
+
+                const existente = firstRow(existenteResult);
+
+                if (existente) {
+                    await oracleExecuteCommit(
+                        SQL_ATUALIZAR_POR_CPF,
+                        payload,
+                        {}
+                    );
+
+                    atualizados++;
+                } else {
+                    await oracleExecuteCommit(
+                        SQL_INSERIR,
+                        payload,
+                        {}
+                    );
+
+                    inseridos++;
+                }
+            } catch (error: any) {
+                rejeitados++;
+
+                erros.push({
+                    linha,
+                    cpf: String(item?.CPF || "").trim() || undefined,
+                    nome: String(item?.NOME || "").trim() || undefined,
+                    erro: error?.message || "Erro desconhecido ao processar linha.",
+                });
+            }
+        }
+
+        return {
+            success: rejeitados === 0,
+            message:
+                rejeitados === 0
+                    ? "Favorecidos importados com sucesso."
+                    : "Importação concluída com algumas linhas rejeitadas.",
+            totalRecebidos: favorecidos.length,
+            inseridos,
+            atualizados,
+            rejeitados,
+            erros,
         };
     },
 

@@ -14,7 +14,10 @@ const EMAIL_DIRETORIA = [
   "luiz.gerhard@sicoob.com.br",
 ];
 
-const EMAIL_TI = "informatica.cressem@sicoob.com.br";
+const EMAIL_TI = [
+  "informatica.cressem@sicoob.com.br",
+  "monica.torres@sicoob.com.br",
+];
 const ROTINA = "FERIAS_NOTIFICACAO";
 
 type TipoNotificacaoMensal = "RH_DIRETORIA" | "GERENCIAS" | "PREVIA_DIA17";
@@ -321,7 +324,7 @@ function montarHtmlEmailFerias(params: {
 }) {
   const conteudo = `
     <tr>
-      <td style="background:#006b3f;padding:22px 26px;color:#ffffff;">
+      <td style="background:#00AE9D;padding:22px 26px;color:#ffffff;">
         <div style="font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;opacity:.9;">
           Gestão de férias
         </div>
@@ -375,8 +378,8 @@ function buildListaHtml(rows: any[]) {
       </thead>
       <tbody>
         ${rows
-          .map(
-            (row) => `
+      .map(
+        (row) => `
               <tr>
                 <td style="padding:12px 14px;border-bottom:1px solid #edf1ef;color:#374151;font-weight:600;">
                   ${escapeHtml(row.NOME || row.NM_FUNCIONARIO || "-")}
@@ -389,8 +392,8 @@ function buildListaHtml(rows: any[]) {
                 </td>
               </tr>
             `
-          )
-          .join("")}
+      )
+      .join("")}
       </tbody>
     </table>
   `;
@@ -469,7 +472,7 @@ async function buscarFeriasPorMesAno(mes: number, ano: number) {
   //depois do teste, remova o return acima e volte para o SQL original
 }*/}
 
-async function buscarInicioNoDia(data: Date) {
+async function buscarInicioNoDia(diasAPartirDeHoje: number) {
   const sql = `
     SELECT
       F.ID_FERIAS_FUNCIONARIOS,
@@ -481,20 +484,20 @@ async function buscarInicioNoDia(data: Date) {
     FROM DBACRESSEM.FERIAS_FUNCIONARIOS F
     JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM P
       ON P.ID_FUNCIONARIO = F.ID_FUNCIONARIO
-    WHERE TRUNC(F.DT_DIA_INICIO) = TRUNC(:data)
+    WHERE TRUNC(F.DT_DIA_INICIO) = TRUNC(SYSDATE) + :dias
     ORDER BY P.NM_FUNCIONARIO
   `;
 
   const result = await oracleExecute(
     sql,
-    { data },
+    { dias: diasAPartirDeHoje },
     { outFormat: oracledb.OUT_FORMAT_OBJECT }
   );
 
   return (result.rows || []) as any[];
 }
 
-async function buscarUltimoDia(data: Date) {
+async function buscarUltimoDia() {
   const sql = `
     SELECT
       F.ID_FERIAS_FUNCIONARIOS,
@@ -506,20 +509,20 @@ async function buscarUltimoDia(data: Date) {
     FROM DBACRESSEM.FERIAS_FUNCIONARIOS F
     JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM P
       ON P.ID_FUNCIONARIO = F.ID_FUNCIONARIO
-    WHERE TRUNC(F.DT_DIA_FIM) = TRUNC(:data)
+    WHERE TRUNC(F.DT_DIA_FIM) = TRUNC(SYSDATE)
     ORDER BY P.NM_FUNCIONARIO
   `;
 
   const result = await oracleExecute(
     sql,
-    { data },
+    {},
     { outFormat: oracledb.OUT_FORMAT_OBJECT }
   );
 
   return (result.rows || []) as any[];
 }
 
-async function buscarRetornoEm(dataRetorno: Date) {
+async function buscarRetornoEm(diasAPartirDeHoje: number) {
   const sql = `
     SELECT
       F.ID_FERIAS_FUNCIONARIOS,
@@ -531,13 +534,13 @@ async function buscarRetornoEm(dataRetorno: Date) {
     FROM DBACRESSEM.FERIAS_FUNCIONARIOS F
     JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM P
       ON P.ID_FUNCIONARIO = F.ID_FUNCIONARIO
-    WHERE TRUNC(F.DT_DIA_FIM + 1) = TRUNC(:dataRetorno)
+    WHERE TRUNC(F.DT_DIA_FIM) + 1 = TRUNC(SYSDATE) + :dias
     ORDER BY P.NM_FUNCIONARIO
   `;
 
   const result = await oracleExecute(
     sql,
-    { dataRetorno },
+    { dias: diasAPartirDeHoje },
     { outFormat: oracledb.OUT_FORMAT_OBJECT }
   );
 
@@ -697,10 +700,31 @@ export async function enviarEmailTiFerias() {
   const em3Dias = addDias(3);
   const amanha = addDias(1);
 
-  const preInicio = await buscarInicioNoDia(em3Dias);
-  const inicioHoje = await buscarInicioNoDia(hoje);
-  const preVolta = await buscarRetornoEm(em3Dias);
-  const ultimoDia = await buscarUltimoDia(hoje);
+  const preInicio = await buscarInicioNoDia(3);
+  const inicioHoje = await buscarInicioNoDia(0);
+  const preVolta = await buscarRetornoEm(3);
+  const ultimoDia = await buscarUltimoDia();
+
+  console.log("[FÉRIAS][TI] Resultado das consultas:", {
+    hoje: dataBR(hoje),
+    preInicio: preInicio.length,
+    inicioHoje: inicioHoje.length,
+    preVolta: preVolta.length,
+    ultimoDia: ultimoDia.length,
+  });
+
+  if (ultimoDia.length) {
+    console.log(
+      "[FÉRIAS][TI] Funcionários no último dia:",
+      ultimoDia.map((item) => ({
+        idFerias: item.ID_FERIAS_FUNCIONARIOS,
+        idFuncionario: item.ID_FUNCIONARIO,
+        nome: item.NOME,
+        inicio: item.DT_DIA_INICIO,
+        fim: item.DT_DIA_FIM,
+      }))
+    );
+  }
 
   let enviados = 0;
 
@@ -756,7 +780,15 @@ export async function enviarEmailTiFerias() {
     enviados++;
   }
 
-  return { enviados };
+  return {
+    enviados,
+    encontrados: {
+      preInicio: preInicio.length,
+      inicioHoje: inicioHoje.length,
+      preVolta: preVolta.length,
+      ultimoDia: ultimoDia.length,
+    },
+  };
 }
 
 export async function executarNotificacoesMensaisFerias(options?: {

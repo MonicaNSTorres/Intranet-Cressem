@@ -78,6 +78,30 @@ export const cnab240FavorecidosController = {
         }
     },
 
+    async importarEmMassa(req: Request, res: Response) {
+        try {
+            const favorecidos = req.body?.favorecidos;
+
+            if (!Array.isArray(favorecidos)) {
+                return res.status(400).json({
+                    error: "Formato inválido.",
+                    details:
+                        "Envie uma propriedade 'favorecidos' contendo uma lista.",
+                });
+            }
+
+            const result =
+                await cnab240FavorecidosService.importarEmMassa(favorecidos);
+
+            return res.status(200).json(result);
+        } catch (error: any) {
+            return res.status(500).json({
+                error: "Falha ao importar favorecidos CNAB240.",
+                details: error?.message || "Erro desconhecido",
+            });
+        }
+    },
+
     async atualizar(req: Request, res: Response) {
         try {
             const id = Number(req.params.id);

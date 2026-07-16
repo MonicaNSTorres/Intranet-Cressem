@@ -38,9 +38,9 @@ cron.schedule(
     try {
       console.log("[CRON FÉRIAS] Executando TI...");
 
-      await enviarEmailTiFerias();
+      const resultadoTi = await enviarEmailTiFerias();
 
-      console.log("[CRON FÉRIAS] TI finalizado.");
+      console.log("[CRON FÉRIAS] TI finalizado:", resultadoTi);
     } catch (err) {
       console.error("[CRON FÉRIAS] Erro TI:", err);
     }
@@ -50,7 +50,7 @@ cron.schedule(
   }
 );
 
-setTimeout(async () => {
+{/*setTimeout(async () => {
   try {
     console.log("[CRON FÉRIAS] Startup catch-up mensal...");
 
@@ -61,5 +61,32 @@ setTimeout(async () => {
     console.log("[CRON FÉRIAS] Startup catch-up resultado:", result);
   } catch (err) {
     console.error("[CRON FÉRIAS] Erro no startup catch-up mensal:", err);
+  }
+}, 20_000);*/}
+
+setTimeout(async () => {
+  try {
+    console.log("[CRON FÉRIAS] Startup catch-up mensal...");
+
+    const result = await executarNotificacoesMensaisFerias({
+      origem: "startup",
+    });
+
+    console.log("[CRON FÉRIAS] Startup catch-up mensal resultado:", result);
+  } catch (err) {
+    console.error("[CRON FÉRIAS] Erro no startup catch-up mensal:", err);
+  }
+
+  try {
+    console.log("[CRON FÉRIAS] Startup catch-up TI...");
+
+    const resultadoTi = await enviarEmailTiFerias();
+
+    console.log(
+      "[CRON FÉRIAS] Startup catch-up TI resultado:",
+      resultadoTi
+    );
+  } catch (err) {
+    console.error("[CRON FÉRIAS] Erro no startup catch-up TI:", err);
   }
 }, 20_000);

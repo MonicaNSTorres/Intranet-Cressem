@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import oracledb from "oracledb";
 import {
   oracleExecute,
-  oracleExecuteCommit,
   oracleExecuteCommitWithAudit,
 } from "../services/oracle.service";
 
@@ -28,6 +27,7 @@ export async function criarPopupAviso(req: Request, res: Response) {
       dtFim,
       obrigatorio,
       imagemBase64,
+      link,
     } = req.body;
 
     const usuario = (req as any).user || {};
@@ -50,6 +50,7 @@ export async function criarPopupAviso(req: Request, res: Response) {
         DT_FIM,
         OBRIGATORIO,
         IMAGEM_BASE64,
+        DS_LINK,
         CRIADO_POR,
         DT_CRIACAO
       ) VALUES (
@@ -63,6 +64,7 @@ export async function criarPopupAviso(req: Request, res: Response) {
         CASE WHEN :dtFim IS NOT NULL THEN TO_DATE(:dtFim, 'YYYY-MM-DD') ELSE NULL END,
         :obrigatorio,
         :imagemBase64,
+        :link,
         :criadoPor,
         SYSDATE
       )
@@ -78,6 +80,7 @@ export async function criarPopupAviso(req: Request, res: Response) {
       dtInicio: normalizeDate(dtInicio),
       dtFim: normalizeDate(dtFim),
       obrigatorio: onlySN(obrigatorio, "S"),
+      link: link || null,
       imagemBase64: imagemBase64 || null,
       criadoPor: usuario.sub || "sistema",
     });
@@ -106,6 +109,7 @@ export async function listarPopupsAviso(req: Request, res: Response) {
         TO_CHAR(DT_INICIO, 'YYYY-MM-DD') AS DT_INICIO,
         TO_CHAR(DT_FIM, 'YYYY-MM-DD') AS DT_FIM,
         OBRIGATORIO,
+        DS_LINK,
         IMAGEM_BASE64,
         CRIADO_POR,
         TO_CHAR(DT_CRIACAO, 'DD/MM/YYYY HH24:MI:SS') AS DT_CRIACAO,
@@ -151,6 +155,7 @@ export async function buscarPopupAvisoPorId(req: Request, res: Response) {
         TO_CHAR(DT_INICIO, 'YYYY-MM-DD') AS DT_INICIO,
         TO_CHAR(DT_FIM, 'YYYY-MM-DD') AS DT_FIM,
         OBRIGATORIO,
+        DS_LINK,
         IMAGEM_BASE64,
         CRIADO_POR
       FROM DBACRESSEM.INTRANET_POPUP_AVISOS
@@ -198,6 +203,7 @@ export async function editarPopupAviso(req: Request, res: Response) {
       dtFim,
       obrigatorio,
       imagemBase64,
+      link,
     } = req.body;
 
     const sql = `
@@ -211,6 +217,7 @@ export async function editarPopupAviso(req: Request, res: Response) {
              DT_INICIO = CASE WHEN :dtInicio IS NOT NULL THEN TO_DATE(:dtInicio, 'YYYY-MM-DD') ELSE NULL END,
              DT_FIM = CASE WHEN :dtFim IS NOT NULL THEN TO_DATE(:dtFim, 'YYYY-MM-DD') ELSE NULL END,
              OBRIGATORIO = :obrigatorio,
+             DS_LINK = :link,
              IMAGEM_BASE64 = :imagemBase64,
              DT_ATUALIZACAO = SYSDATE
        WHERE ID_POPUP = :id
@@ -227,6 +234,7 @@ export async function editarPopupAviso(req: Request, res: Response) {
       dtInicio: normalizeDate(dtInicio),
       dtFim: normalizeDate(dtFim),
       obrigatorio: onlySN(obrigatorio, "S"),
+      link: link || null,
       imagemBase64: imagemBase64 || null,
     });
 
@@ -288,7 +296,8 @@ export async function obterPopupPendenteDoUsuario(req: Request, res: Response) {
           P.BOTAO_ACEITAR,
           P.BOTAO_RECUSAR,
           P.OBRIGATORIO,
-          P.IMAGEM_BASE64
+P.IMAGEM_BASE64,
+P.DS_LINK
         FROM DBACRESSEM.INTRANET_POPUP_AVISOS P
         WHERE P.ST_ATIVO = 'S'
           AND P.EXIBIR_APOS_LOGIN = 'S'

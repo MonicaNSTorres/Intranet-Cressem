@@ -558,6 +558,40 @@ export const termosMensaisCaixaController = {
         }
     },
 
+    async excluir(req: Request, res: Response) {
+        try {
+            const id = Number(req.params.id);
+
+            if (!id) {
+                return res.status(400).json({
+                    error: "ID inválido.",
+                });
+            }
+
+            await oracleExecuteCommitWithAudit(
+                req,
+                `
+                DELETE FROM DBACRESSEM.TERMOS_MENSAIS_CAIXA
+                WHERE ID_TERMOS_MENSAIS_CAIXA = :id
+            `,
+                { id },
+                {} as any
+            );
+
+            return res.json({
+                success: true,
+                message: "Termo mensal caixa excluído com sucesso.",
+            });
+        } catch (err: any) {
+            console.error("excluir termo mensal caixa erro:", err);
+
+            return res.status(500).json({
+                error: "Falha ao excluir termo mensal caixa.",
+                details: String(err?.message || err),
+            });
+        }
+    },
+
     async listarPAs(req: Request, res: Response) {
         try {
             const result = await oracleExecute(
