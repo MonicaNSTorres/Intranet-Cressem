@@ -51,15 +51,23 @@ export function LeilaoAoVivoDetalhe({ idLeilao }: { idLeilao: number }) {
         try {
             setLoading(true);
 
-            const [leilaoResult, lancesResult, userResult] = await Promise.all([
-                buscarLeilaoPorId(idLeilao),
-                listarLances(idLeilao),
-                getMeAdUser().catch(() => null),
-            ]);
-
+            const leilaoResult = await buscarLeilaoPorId(idLeilao);
             setLeilao(leilaoResult);
-            setLances(lancesResult);
-            setUsuario(userResult);
+
+            try {
+                const lancesResult = await listarLances(idLeilao);
+                setLances(Array.isArray(lancesResult) ? lancesResult : []);
+            } catch (error) {
+                console.error("Erro ao listar lances:", error);
+                setLances([]);
+            }
+
+            try {
+                const userResult = await getMeAdUser();
+                setUsuario(userResult);
+            } catch {
+                setUsuario(null);
+            }
 
             try {
                 const fimLeilao = parseDataBR(leilaoResult?.DT_FIM);
@@ -76,6 +84,8 @@ export function LeilaoAoVivoDetalhe({ idLeilao }: { idLeilao: number }) {
             }
         } catch (error: any) {
             console.error(error);
+            setLeilao(null);
+
             mostrarMensagem(
                 error?.response?.data?.details ||
                 error?.response?.data?.error ||
@@ -94,7 +104,7 @@ export function LeilaoAoVivoDetalhe({ idLeilao }: { idLeilao: number }) {
             if (idLeilao) {
                 carregar().catch(console.error);
             }
-        }, 30000);
+        }, 1200000);
 
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -567,7 +577,7 @@ export function LeilaoAoVivoDetalhe({ idLeilao }: { idLeilao: number }) {
                     )}
 
                     <div className="sticky top-6 rounded-4xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
-                        <div
+                        {/*<div
                             className={`rounded-[28px] p-6 text-center ring-1 ${leilaoEncerrado()
                                 ? "bg-amber-50 ring-amber-100"
                                 : "bg-emerald-50 ring-emerald-100"
@@ -591,7 +601,7 @@ export function LeilaoAoVivoDetalhe({ idLeilao }: { idLeilao: number }) {
                                 <FaUser />
                                 {leilaoEncerrado() ? "Vencedor" : "Ganhando"}: {nomeGanhando()}
                             </p>
-                        </div>
+                        </div>*/}
 
                         <div className="mt-5 rounded-[28px] border border-slate-200 bg-slate-50 p-4">
                             <div
@@ -637,6 +647,13 @@ export function LeilaoAoVivoDetalhe({ idLeilao }: { idLeilao: number }) {
                             <label className="mb-2 block text-sm font-black text-slate-700">
                                 Seu lance
                             </label>
+
+                            {!leilaoEncerrado() && (
+                                <p className="mb-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-semibold leading-5 text-fourth">
+                                    Você só poderá dar lance se não estiver liderando nenhum leilão no momento.
+                                    Caso alguém ultrapasse seu lance, você poderá participar novamente.
+                                </p>
+                            )}
 
                             <input
                                 value={valorLance}

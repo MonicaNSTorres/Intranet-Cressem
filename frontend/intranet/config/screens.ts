@@ -29,6 +29,7 @@ const AD_GROUPS = {
   MIGRACAO_CONTRATO: "GG_INTRANET_MIGRACAO_CONTRATO",
   SOLICITACAO_CREDITO: "GG_INTRANET_SOLICITACAO_CRED",
   TERMOS_MENSAIS_CAIXA: "GG_INTRANET_TERMOS_MENSAIS_CX",
+  CNAB240: "GG_INTRANET_CNAB240",
 } as const;
 
 export const SCREENS: ScreenItem[] = [
@@ -194,7 +195,7 @@ export const SCREENS: ScreenItem[] = [
     desc: "Processo de geração de cnab240.",
     href: "/auth/cnab240",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TERMOS_MENSAIS_CAIXA],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
     keywords: ["termos mensais", "cadastrar", "termos", "caixa", "formulario"],
   },
   {
@@ -210,15 +211,23 @@ export const SCREENS: ScreenItem[] = [
     desc: "Leilão em tempo real com lances ao vivo, participe.",
     href: "/auth/leiloes_ao_vivo",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TERMOS_MENSAIS_CAIXA],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     keywords: ["ao vivo", "cadastrar", "leilao", "oferta", "lances"],
+  },
+  {
+    title: "Leilões Dashboard",
+    desc: "Acompanhe as métricas referente aos produtos.",
+    href: "/auth/leiloes_dashboard",
+    group: "Financeiro",
+    allowedGroups: [AD_GROUPS.SUPORTE],
+    keywords: ["produtos", "metricas", "leilao", "grafico", "equipamentos"],
   },
   {
     title: "Gerenciar Favorecidos",
     desc: "Adicione ou edite favorecidos vinculados a geração do cnab240.",
     href: "/auth/cnab240_favorecidos",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TERMOS_MENSAIS_CAIXA],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
     keywords: ["termos mensais", "cadastrar", "termos", "caixa", "formulario"],
   },
   {

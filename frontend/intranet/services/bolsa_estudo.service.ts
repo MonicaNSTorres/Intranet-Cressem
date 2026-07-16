@@ -1,43 +1,4 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-  timeout: 15000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.message ||
-          "Erro no service de bolsa de estudo",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          method: error?.config?.method,
-          responseData: error?.response?.data,
-        },
-
-        SOURCE: "BOLSA_ESTUDO_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
+import { api } from "./api.service";
 
 export type FuncionarioBolsa = {
   NM_FUNCIONARIO: string;
@@ -61,8 +22,14 @@ export type CidadeOption = {
 export async function buscarFuncionarioPorNome(
   nome: string
 ): Promise<FuncionarioBolsa> {
-  const response = await api.get(
-    `/v1/funcionarios_sicoob_cressem/nome/${encodeURIComponent(nome)}`
+  const nomeLimpo = String(nome || "").trim();
+
+  if (!nomeLimpo) {
+    throw new Error("Nome do funcionário não informado.");
+  }
+
+  const response = await api.get<FuncionarioBolsa>(
+    `/v1/funcionarios_sicoob_cressem/nome/${encodeURIComponent(nomeLimpo)}`
   );
 
   return response.data;
@@ -71,54 +38,49 @@ export async function buscarFuncionarioPorNome(
 export async function buscarGerenciaPorCodigo(
   codigo: string | number
 ): Promise<GerenciaBolsa> {
-  const response = await api.get(
-    `/v1/funcionarios_sicoob_cressem_unico/${codigo}`
+  if (
+    codigo === undefined ||
+    codigo === null ||
+    String(codigo).trim() === ""
+  ) {
+    throw new Error("Código da gerência não informado.");
+  }
+
+  const response = await api.get<GerenciaBolsa>(
+    `/v1/funcionarios_sicoob_cressem_unico/${encodeURIComponent(
+      String(codigo)
+    )}`
   );
 
   return response.data;
 }
 
 export async function listarCidades(): Promise<string[]> {
-  try {
-    const response = await api.get(`/v1/cidades`);
-    const data = response.data;
+  const response = await api.get<Array<CidadeOption | string>>(
+    "/v1/cidades"
+  );
 
-    if (Array.isArray(data)) {
-      return data
-        .map((item: CidadeOption) => {
-          if (typeof item === "string") return item;
+  const data = response.data;
 
-          return (
-            item.nome ||
-            item.NM_CIDADE ||
-            item.DSC_CIDADE ||
-            item.label ||
-            item.value ||
-            ""
-          );
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.localeCompare(b, "pt-BR"));
-    }
-
-    return [];
-  } catch (error: any) {
-    await registrarErroTela({
-      PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-
-      ERROR_MESSAGE:
-        error?.message || "Erro ao listar cidades da bolsa de estudo",
-
-      ERROR_STACK: error?.stack || null,
-
-      ERROR_DETAIL: {
-        endpoint: "/v1/cidades",
-        method: "GET",
-      },
-
-      SOURCE: "BOLSA_ESTUDO_LISTAR_CIDADES",
-    });
-
+  if (!Array.isArray(data)) {
     return [];
   }
+
+  return data
+    .map((item) => {
+      if (typeof item === "string") {
+        return item.trim();
+      }
+
+      return String(
+        item.nome ||
+          item.NM_CIDADE ||
+          item.DSC_CIDADE ||
+          item.label ||
+          item.value ||
+          ""
+      ).trim();
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
 }

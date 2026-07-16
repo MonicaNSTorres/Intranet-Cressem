@@ -20,7 +20,7 @@ export default function Cnab240CcoPage() {
       try {
         const user = (await getMeAdUser()) as AuthUserLike;
 
-        setAllowed(canAccess(user, PAGE_ACCESS.cnab240));
+        setAllowed(canAccess(user, PAGE_ACCESS.cnab240Cco));
       } catch (error) {
         console.error(error);
         setAllowed(false);

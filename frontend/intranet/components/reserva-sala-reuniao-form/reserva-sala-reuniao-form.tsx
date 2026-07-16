@@ -35,7 +35,7 @@ const buttonDanger =
     "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 cursor-pointer";
 
 const espacosPorTipo: Record<TipoEspacoReserva, string[]> = {
-    SALA_REUNIAO: ["Sala de Reunião 1", "Sala de Reunião 2"],
+    SALA_REUNIAO: ["Sala de Reunião", "Sala da Diretória"],
     AUDITORIO: ["Auditório"],
 };
 
@@ -130,6 +130,34 @@ export function ReservaSalaReuniaoForm() {
     const [erro, setErro] = useState("");
     const [info, setInfo] = useState("");
 
+    const [checklistAuditorio, setChecklistAuditorio] = useState({
+        nomeEvento: "",
+        dataEvento: "",
+        horarioInicio: "",
+        horarioTermino: "",
+        responsavelEvento: "",
+        quantidadeParticipantes: "",
+
+        usoMicrofones: false,
+        quantidadeMicrofones: "",
+        usoProjecao: false,
+        notebookProprio: false,
+        precisaNotebook: false,
+        usoAudioExterno: "",
+        temOperadorSom: "",
+
+        transmissaoAoVivo: "",
+        plataformaTransmissao: "",
+
+        internetDedicada: "",
+
+        observacoesAdicionais: "",
+
+        tecnicoEscalado: "",
+        instrucoesEquipeApoio: false,
+        responsavelInformadoLimitacoes: false,
+    });
+
     const opcoesEspaco = useMemo(() => {
         return espacosPorTipo[tipoEspaco] || [];
     }, [tipoEspaco]);
@@ -191,17 +219,95 @@ export function ReservaSalaReuniaoForm() {
 
     function validarCampos() {
         if (!tipoEspaco) return "Selecione o tipo de espaço.";
-        if (!nomeEspaco.trim()) return "Selecione a sala ou auditório.";
-        if (!titulo.trim()) return "Preencha o título da reunião.";
-        if (!dataReserva) return "Selecione a data da reserva.";
-        if (!horaInicio) return "Selecione o horário inicial.";
-        if (!horaFim) return "Selecione o horário final.";
+
+        if (!nomeEspaco.trim()) {
+            return "Selecione a sala ou auditório.";
+        }
+
+        if (!titulo.trim()) {
+            return "Preencha o título da reunião.";
+        }
+
+        if (!dataReserva) {
+            return "Selecione a data da reserva.";
+        }
+
+        if (!horaInicio) {
+            return "Selecione o horário inicial.";
+        }
+
+        if (!horaFim) {
+            return "Selecione o horário final.";
+        }
 
         const inicio = new Date(montarDateTime(dataReserva, horaInicio));
         const fim = new Date(montarDateTime(dataReserva, horaFim));
 
         if (fim <= inicio) {
             return "O horário final deve ser maior que o horário inicial.";
+        }
+
+        if (tipoEspaco === "AUDITORIO") {
+            if (!checklistAuditorio.nomeEvento.trim()) {
+                return "Informe o nome do evento.";
+            }
+
+            if (!checklistAuditorio.dataEvento) {
+                return "Informe a data do evento.";
+            }
+
+            if (!checklistAuditorio.horarioInicio) {
+                return "Informe o horário de início do evento.";
+            }
+
+            if (!checklistAuditorio.horarioTermino) {
+                return "Informe o horário de término do evento.";
+            }
+
+            if (!checklistAuditorio.responsavelEvento.trim()) {
+                return "Informe o responsável pelo evento.";
+            }
+
+            if (!checklistAuditorio.quantidadeParticipantes.trim()) {
+                return "Informe a quantidade estimada de participantes.";
+            }
+
+            if (Number(checklistAuditorio.quantidadeParticipantes) > 136) {
+                return "O auditório possui capacidade máxima de 136 participantes.";
+            }
+
+            if (
+                checklistAuditorio.usoMicrofones &&
+                !checklistAuditorio.quantidadeMicrofones.trim()
+            ) {
+                return "Informe a quantidade de microfones.";
+            }
+
+            if (!checklistAuditorio.usoAudioExterno) {
+                return "Informe se haverá uso de áudio externo.";
+            }
+
+            if (!checklistAuditorio.temOperadorSom) {
+                return "Informe se haverá operador do som e apresentação.";
+            }
+
+            if (!checklistAuditorio.transmissaoAoVivo) {
+                return "Informe se haverá transmissão ao vivo.";
+            }
+
+            if (
+                checklistAuditorio.transmissaoAoVivo === "SIM" &&
+                !checklistAuditorio.plataformaTransmissao
+            ) {
+                return "Informe a plataforma da transmissão.";
+            }
+
+            if (
+                checklistAuditorio.transmissaoAoVivo === "SIM" &&
+                !checklistAuditorio.internetDedicada
+            ) {
+                return "Informe se necessita internet dedicada.";
+            }
         }
 
         return "";
@@ -241,6 +347,7 @@ export function ReservaSalaReuniaoForm() {
                 DT_INICIO: montarDateTime(dataReserva, horaInicio),
                 DT_FIM: montarDateTime(dataReserva, horaFim),
                 USUARIO: usuario,
+                CHECKLIST_AUDITORIO: tipoEspaco === "AUDITORIO" ? checklistAuditorio : null,
             });
 
             setInfo("Reserva cadastrada com sucesso.");
@@ -283,6 +390,38 @@ export function ReservaSalaReuniaoForm() {
         (item) => item.NM_ESPACO === nomeEspaco
     );
 
+    const checklistAuditorioPreenchido = useMemo(() => {
+        if (tipoEspaco !== "AUDITORIO") return true;
+
+        return (
+            checklistAuditorio.nomeEvento.trim() !== "" &&
+            checklistAuditorio.dataEvento !== "" &&
+            checklistAuditorio.horarioInicio !== "" &&
+            checklistAuditorio.horarioTermino !== "" &&
+            checklistAuditorio.responsavelEvento.trim() !== "" &&
+            checklistAuditorio.quantidadeParticipantes.trim() !== "" &&
+
+            (
+                !checklistAuditorio.usoMicrofones ||
+                checklistAuditorio.quantidadeMicrofones.trim() !== ""
+            ) &&
+
+            checklistAuditorio.usoAudioExterno !== "" &&
+            checklistAuditorio.temOperadorSom !== "" &&
+            checklistAuditorio.transmissaoAoVivo !== "" &&
+
+            (
+                checklistAuditorio.transmissaoAoVivo !== "SIM" ||
+                checklistAuditorio.plataformaTransmissao !== ""
+            ) &&
+
+            (
+                checklistAuditorio.transmissaoAoVivo !== "SIM" ||
+                checklistAuditorio.internetDedicada !== ""
+            )
+        );
+    }, [tipoEspaco, checklistAuditorio]);
+
     if (loadingInicial) {
         return (
             <div className="mx-auto w-full max-w-400 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -319,7 +458,7 @@ export function ReservaSalaReuniaoForm() {
                                 {erro}
                             </div>
                         ) : (
-                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-primary">
                                 {info}
                             </div>
                         )}
@@ -367,15 +506,19 @@ export function ReservaSalaReuniaoForm() {
                         <Field label="Tipo de espaço">
                             <select
                                 value={tipoEspaco}
-                                onChange={(e) =>
-                                    setTipoEspaco(e.target.value as TipoEspacoReserva)
-                                }
+                                onChange={(e) => setTipoEspaco(e.target.value as TipoEspacoReserva)}
                                 className={inputBase}
                             >
                                 <option value="SALA_REUNIAO">Sala de reunião</option>
                                 <option value="AUDITORIO">Auditório</option>
                             </select>
                         </Field>
+
+                        {tipoEspaco === "AUDITORIO" && (
+                            <div className="mt-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900 px-4 py-3 text-sm">
+                                O auditório deve ser reservado duas semanas antes do evento.
+                            </div>
+                        )}
                     </div>
 
                     <div className="md:col-span-4">
@@ -408,6 +551,26 @@ export function ReservaSalaReuniaoForm() {
                             />
                         </Field>
                     </div>
+
+                    {dataReserva && reservasDoEspacoSelecionado.length > 0 && (
+                        <div className="md:col-span-12 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                            <p className="font-bold">
+                                Atenção: este espaço já possui reserva nesta data.
+                            </p>
+
+                            <div className="mt-2 space-y-1">
+                                {reservasDoEspacoSelecionado.map((item) => (
+                                    <p key={item.ID_RESERVA_SALA}>
+                                        Reservado de{" "}
+                                        <strong>{formatDateTimeBR(item.DT_INICIO)}</strong>
+                                        {" até "}
+                                        <strong>{formatDateTimeBR(item.DT_FIM)}</strong>
+                                        {item.DS_TITULO ? ` - ${item.DS_TITULO}` : ""}
+                                    </p>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="md:col-span-8">
                         <Field label="Título da reunião">
@@ -456,6 +619,285 @@ export function ReservaSalaReuniaoForm() {
                         </Field>
                     </div>
 
+                    {tipoEspaco === "AUDITORIO" && (
+                        <div className="md:col-span-12 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                            <h3 className="mb-4 text-sm font-bold text-primary">
+                                Checklist obrigatório do Auditório
+                            </h3>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                <Field label="Nome do Evento">
+                                    <input
+                                        value={checklistAuditorio.nomeEvento}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                nomeEvento: e.target.value,
+                                            }))
+                                        }
+                                        className={inputBase}
+                                    />
+                                </Field>
+
+                                <Field label="Data do Evento">
+                                    <input
+                                        type="date"
+                                        value={checklistAuditorio.dataEvento}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                dataEvento: e.target.value,
+                                            }))
+                                        }
+                                        className={inputBase}
+                                    />
+                                </Field>
+
+                                <Field label="Quantidade de participantes">
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={136}
+                                        value={checklistAuditorio.quantidadeParticipantes}
+                                        onChange={(e) => {
+                                            const valor = e.target.value;
+
+                                            if (valor === "" || Number(valor) <= 136) {
+                                                setChecklistAuditorio((prev) => ({
+                                                    ...prev,
+                                                    quantidadeParticipantes: valor,
+                                                }));
+                                            }
+                                        }}
+                                        className={inputBase}
+                                    />
+
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Capacidade máxima do auditório: <strong>136 pessoas</strong>.
+                                    </p>
+                                </Field>
+
+
+                                <Field label="Horário de Início">
+                                    <input
+                                        type="time"
+                                        value={checklistAuditorio.horarioInicio}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                horarioInicio: e.target.value,
+                                            }))
+                                        }
+                                        className={inputBase}
+                                    />
+                                </Field>
+
+                                <Field label="Horário de Término">
+                                    <input
+                                        type="time"
+                                        value={checklistAuditorio.horarioTermino}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                horarioTermino: e.target.value,
+                                            }))
+                                        }
+                                        className={inputBase}
+                                    />
+                                </Field>
+
+                                <Field label="Responsável pelo Evento">
+                                    <input
+                                        value={checklistAuditorio.responsavelEvento}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                responsavelEvento: e.target.value,
+                                            }))
+                                        }
+                                        className={inputBase}
+                                        placeholder="Nome e contato"
+                                    />
+                                </Field>
+                            </div>
+
+                            <h4 className="mt-6 mb-3 text-sm font-bold text-slate-700">
+                                Recursos Necessários
+                            </h4>
+
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                                {[
+                                    ["usoMicrofones", "Uso de microfones"],
+                                    ["usoProjecao", "Uso de projeção Datashow/Tela"],
+                                    ["notebookProprio", "Notebook próprio"],
+                                    ["precisaNotebook", "Precisa de notebook"],
+                                    ["instrucoesEquipeApoio", "Instruções passadas para equipe de apoio"],
+                                    ["responsavelInformadoLimitacoes", "Responsável informado sobre limitações técnicas"],
+                                ].map(([key, label]) => (
+                                    <label key={key} className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={(checklistAuditorio as any)[key]}
+                                            onChange={(e) =>
+                                                setChecklistAuditorio((prev) => ({
+                                                    ...prev,
+                                                    [key]: e.target.checked,
+                                                }))
+                                            }
+                                        />
+                                        {label}
+                                    </label>
+                                ))}
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+                                <Field label="Quantidade de microfones">
+                                    <input
+                                        value={checklistAuditorio.quantidadeMicrofones}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                quantidadeMicrofones: e.target.value,
+                                            }))
+                                        }
+                                        className={inputBase}
+                                    />
+                                </Field>
+
+                                <Field label="Uso de áudio externo">
+                                    <select
+                                        value={checklistAuditorio.usoAudioExterno}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                usoAudioExterno: e.target.value,
+                                            }))
+                                        }
+                                        className={inputBase}
+                                    >
+                                        <option value="">Selecione</option>
+                                        <option value="SIM">Sim</option>
+                                        <option value="NAO">Não</option>
+                                    </select>
+                                </Field>
+
+                                <Field label="Tem operador do som?">
+                                    <select
+                                        value={checklistAuditorio.temOperadorSom}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                temOperadorSom: e.target.value,
+                                            }))
+                                        }
+                                        className={inputBase}
+                                    >
+                                        <option value="">Selecione</option>
+                                        <option value="SIM">Sim</option>
+                                        <option value="NAO">Não, precisamos da TI</option>
+                                    </select>
+                                </Field>
+                            </div>
+
+                            <h4 className="mt-6 mb-3 text-sm font-bold text-slate-700">
+                                Transmissão Online
+                            </h4>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                <Field label="Haverá transmissão ao vivo?">
+                                    <select
+                                        value={checklistAuditorio.transmissaoAoVivo}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                transmissaoAoVivo: e.target.value,
+                                                plataformaTransmissao: e.target.value === "SIM" ? prev.plataformaTransmissao : "",
+                                                internetDedicada: e.target.value === "SIM" ? prev.internetDedicada : "",
+                                            }))
+                                        }
+                                        className={inputBase}
+                                    >
+                                        <option value="">Selecione</option>
+                                        <option value="SIM">Sim</option>
+                                        <option value="NAO">Não</option>
+                                    </select>
+                                </Field>
+
+                                {checklistAuditorio.transmissaoAoVivo === "SIM" && (
+                                    <>
+                                        <Field label="Plataforma">
+                                            <select
+                                                value={checklistAuditorio.plataformaTransmissao}
+                                                onChange={(e) =>
+                                                    setChecklistAuditorio((prev) => ({
+                                                        ...prev,
+                                                        plataformaTransmissao: e.target.value,
+                                                    }))
+                                                }
+                                                className={inputBase}
+                                            >
+                                                <option value="">Selecione</option>
+                                                <option value="YOUTUBE">YouTube</option>
+                                                <option value="ZOOM">Zoom</option>
+                                                <option value="TEAMS">Teams</option>
+                                            </select>
+                                        </Field>
+
+                                        <Field label="Necessita internet dedicada?">
+                                            <select
+                                                value={checklistAuditorio.internetDedicada}
+                                                onChange={(e) =>
+                                                    setChecklistAuditorio((prev) => ({
+                                                        ...prev,
+                                                        internetDedicada: e.target.value,
+                                                    }))
+                                                }
+                                                className={inputBase}
+                                            >
+                                                <option value="">Selecione</option>
+                                                <option value="SIM">Sim</option>
+                                                <option value="NAO">Não</option>
+                                            </select>
+                                        </Field>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <Field label="Técnico escalado">
+                                    <input
+                                        value={checklistAuditorio.tecnicoEscalado}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                tecnicoEscalado: e.target.value,
+                                            }))
+                                        }
+                                        className={inputBase}
+                                        placeholder="Nome do técnico"
+                                    />
+                                </Field>
+                            </div>
+
+                            <div className="mt-4">
+                                <Field label="Observações adicionais">
+                                    <textarea
+                                        value={checklistAuditorio.observacoesAdicionais}
+                                        onChange={(e) =>
+                                            setChecklistAuditorio((prev) => ({
+                                                ...prev,
+                                                observacoesAdicionais: e.target.value,
+                                            }))
+                                        }
+                                        className={textareaBase}
+                                        rows={3}
+                                        placeholder="Algum detalhe específico do evento, restrição ou solicitação especial?"
+                                    />
+                                </Field>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="md:col-span-12">
                         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                             <button
@@ -470,11 +912,15 @@ export function ReservaSalaReuniaoForm() {
                             <button
                                 type="button"
                                 onClick={salvarReserva}
-                                disabled={loadingSalvar}
+                                disabled={loadingSalvar || !checklistAuditorioPreenchido}
                                 className={buttonPrimary}
                             >
                                 <FaSave />
-                                {loadingSalvar ? "Salvando..." : "Cadastrar Reserva"}
+                                {loadingSalvar
+                                    ? "Salvando..."
+                                    : tipoEspaco === "AUDITORIO" && !checklistAuditorioPreenchido
+                                        ? "Preencha o checklist"
+                                        : "Cadastrar Reserva"}
                             </button>
                         </div>
                     </div>
@@ -488,7 +934,7 @@ export function ReservaSalaReuniaoForm() {
                 <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-primary">
                                 <FaCalendarCheck />
                             </div>
 

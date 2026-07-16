@@ -40,8 +40,8 @@ export function LeiloesAoVivoLista() {
       console.error(error);
       setMensagem(
         error?.response?.data?.details ||
-          error?.response?.data?.error ||
-          "Não foi possível carregar os leilões disponíveis."
+        error?.response?.data?.error ||
+        "Não foi possível carregar os leilões disponíveis."
       );
     } finally {
       setLoading(false);
@@ -79,7 +79,7 @@ export function LeiloesAoVivoLista() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {/*<div className="grid gap-4 md:grid-cols-3">
         <ResumoCard
           label="Ao vivo agora"
           value={String(leiloes.length)}
@@ -100,6 +100,35 @@ export function LeiloesAoVivoLista() {
           detail="Funcionários podem dar lances"
           icon={<FaUsers />}
         />
+      </div>*/}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-[28px] border border-emerald-100 bg-emerald-50/70 p-5 shadow-sm md:col-span-3">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-primary">
+                Regras para participação
+              </p>
+
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
+                Cada colaborador só poderá adquirir um equipamento.<br/>
+                O pagamento é a vista e será exclusivamente via PIX na conta informada pela coperativa.<br/>
+                Após o encerramento do leilão, o colaborador terá até 3 dias úteis para realizar o pagamento.
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-emerald-100 lg:max-w-md">
+              <p className="text-xs font-black uppercase tracking-wider text-slate-500">
+                Quem pode participar
+              </p>
+
+              <ul className="mt-2 space-y-2 text-sm font-semibold text-slate-700">
+                <li>• Colaboradores com no mínimo 12 meses de vínculo com a cooperativa.</li>
+                <li>• Colaboradores sem pendências na cooperativa.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-4xl bg-white shadow-sm ring-1 ring-slate-100">

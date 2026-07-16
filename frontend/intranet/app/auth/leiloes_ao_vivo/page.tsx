@@ -75,19 +75,7 @@ export default function LeiloesAoVivoPage() {
           <button
             type="button"
             onClick={() => router.push("/auth/leiloes_finalizados")}
-            className="
-            inline-flex items-center justify-center gap-2
-            rounded-2xl
-            border border-yellow-200
-            bg-linear-to-r from-yellow-50 to-amber-50
-            px-5 py-3
-            text-sm font-bold text-yellow-700
-            shadow-sm
-            transition-all
-            hover:-translate-y-0.5
-            hover:bg-yellow-100
-            cursor-pointer
-            "
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-yellow-200 bg-yellow-50 shadow-lg shadow-yellow/20 px-5 py-3 text-sm font-bold text-yellow-700 transition hover:bg-yellow-100 cursor-pointer"
           >
             <FaTrophy />
             Leilões encerrados

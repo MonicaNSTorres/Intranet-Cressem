@@ -16,6 +16,7 @@ import {
 
 type PopupAvisoComImagem = PopupAviso & {
   IMAGEM_BASE64?: string | null;
+  DS_LINK?: string | null;
 };
 
 export function PopupAvisoGate() {
@@ -208,6 +209,17 @@ export function PopupAvisoGate() {
                   <FaTimes />
                   {popup.BOTAO_RECUSAR || "Recusar"}
                 </button>*/}
+
+                {popup.DS_LINK && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(popup.DS_LINK || "", "_blank", "noopener,noreferrer")}
+                    disabled={submitting}
+                    className="inline-flex min-w-42.5 items-center justify-center gap-2 rounded-2xl border border-[#00AE9D] bg-white px-5 py-3 text-sm font-semibold text-[#00AE9D] shadow-sm transition hover:bg-[#00AE9D]/10 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                  >
+                    Clique aqui
+                  </button>
+                )}
 
                 <button
                   type="button"

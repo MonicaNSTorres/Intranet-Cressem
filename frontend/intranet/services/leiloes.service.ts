@@ -35,6 +35,7 @@ export type Leilao = {
   ID_LEILAO: number;
   NM_PRODUTO: string;
   DS_PRODUTO?: string | null;
+  NR_SERIE_EQUIPAMENTO?: string | null;
   VL_INICIAL: number;
   VL_INCREMENTO_MINIMO: number;
   DT_INICIO: string;
@@ -47,11 +48,13 @@ export type Leilao = {
   DT_ATUALIZACAO?: string | null;
   VL_LANCE_ATUAL?: number | null;
   NM_USUARIO_GANHANDO?: string | null;
+  SN_EXIBIR_HISTORICO?: string | null;
 };
 
 export type LeilaoPayload = {
   NM_PRODUTO: string;
   DS_PRODUTO?: string | null;
+  NR_SERIE_EQUIPAMENTO?: string | null;
   VL_INICIAL: number | string;
   VL_INCREMENTO_MINIMO: number | string;
   DT_INICIO: string;
@@ -60,6 +63,7 @@ export type LeilaoPayload = {
   DS_REGRAS?: string | null;
   IMAGEM_BASE64?: string | null;
   NM_USUARIO_CRIACAO?: string | null;
+  SN_EXIBIR_HISTORICO?: string;
 };
 
 export type Lance = {
@@ -115,6 +119,7 @@ export type LeilaoFinalizado = {
   ID_LEILAO: number;
   NM_PRODUTO: string;
   DS_PRODUTO?: string | null;
+  NR_SERIE_EQUIPAMENTO?: string | null;
   VL_INICIAL: number;
   VL_INCREMENTO_MINIMO: number;
   DT_INICIO: string;

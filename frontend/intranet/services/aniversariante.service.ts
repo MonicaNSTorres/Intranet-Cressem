@@ -1,6 +1,4 @@
-import { registrarErroTela } from "./error_log.service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { api } from "./api.service";
 
 export type AniversarianteResponseItem = {
   nome: string;
@@ -16,47 +14,18 @@ export type BuscarAniversariantesResponse = {
 export async function buscarAniversariantesPorMes(
   mes: number
 ): Promise<BuscarAniversariantesResponse> {
-  try {
-    if (!API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
-    }
+  if (!Number.isInteger(mes) || mes < 1 || mes > 12) {
+    throw new Error("Mês inválido. Informe um valor entre 1 e 12.");
+  }
 
-    const res = await fetch(
-      `${API_URL}/v1/aniversariantes?mes=${mes}`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        cache: "no-store",
-      }
-    );
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(json?.error || "Falha na consulta.");
-    }
-
-    return json as BuscarAniversariantesResponse;
-  } catch (error: any) {
-    await registrarErroTela({
-      PAGE_URL:
-        typeof window !== "undefined" ? window.location.href : null,
-
-      ERROR_MESSAGE:
-        error?.message || "Erro ao buscar aniversariantes",
-
-      ERROR_STACK: error?.stack || null,
-
-      ERROR_DETAIL: {
-        endpoint: "/v1/aniversariantes",
-        method: "GET",
+  const response = await api.get<BuscarAniversariantesResponse>(
+    "/v1/aniversariantes",
+    {
+      params: {
         mes,
       },
+    }
+  );
 
-      SOURCE: "BUSCAR_ANIVERSARIANTES",
-    });
-
-    throw error;
-  }
+  return response.data;
 }

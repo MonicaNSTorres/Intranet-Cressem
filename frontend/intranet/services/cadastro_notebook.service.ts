@@ -1,6 +1,4 @@
-import { registrarErroTela } from "./error_log.service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { api } from "./api.service";
 
 export type CadastrarNotebookPayload = {
   NM_NOTEBOOK: string;
@@ -34,100 +32,33 @@ export type BuscarFuncionariosResponse = {
 export async function cadastrarNotebook(
   payload: CadastrarNotebookPayload
 ): Promise<CadastrarNotebookResponse> {
-  try {
-    if (!API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
-    }
+  const response = await api.post<CadastrarNotebookResponse>(
+    "/v1/cadastro-notebook",
+    payload
+  );
 
-    const res = await fetch(`${API_URL}/v1/cadastro-notebook`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      cache: "no-store",
-      body: JSON.stringify(payload),
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(json?.error || "Falha ao cadastrar notebook.");
-    }
-
-    return json as CadastrarNotebookResponse;
-  } catch (error: any) {
-    await registrarErroTela({
-      PAGE_URL:
-        typeof window !== "undefined"
-          ? window.location.href
-          : null,
-
-      ERROR_MESSAGE:
-        error?.message || "Erro ao cadastrar notebook",
-
-      ERROR_STACK: error?.stack || null,
-
-      ERROR_DETAIL: {
-        endpoint: "/v1/cadastro-notebook",
-        method: "POST",
-        payload,
-      },
-
-      SOURCE: "CADASTRO_NOTEBOOK",
-    });
-
-    throw error;
-  }
+  return response.data;
 }
 
 export async function buscarFuncionariosNotebook(
   q?: string
 ): Promise<BuscarFuncionariosResponse> {
-  try {
-    if (!API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
+  const busca = String(q || "").trim();
+
+  const response = await api.get<BuscarFuncionariosResponse>(
+    "/v1/funcionarios-notebook",
+    {
+      params: busca
+        ? {
+            q: busca,
+          }
+        : undefined,
     }
+  );
 
-    const url = new URL(`${API_URL}/v1/funcionarios-notebook`);
-
-    if (q?.trim()) {
-      url.searchParams.set("q", q.trim());
-    }
-
-    const res = await fetch(url.toString(), {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      cache: "no-store",
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(json?.error || "Falha ao buscar funcionários.");
-    }
-
-    return json as BuscarFuncionariosResponse;
-  } catch (error: any) {
-    await registrarErroTela({
-      PAGE_URL:
-        typeof window !== "undefined"
-          ? window.location.href
-          : null,
-
-      ERROR_MESSAGE:
-        error?.message || "Erro ao buscar funcionários notebook",
-
-      ERROR_STACK: error?.stack || null,
-
-      ERROR_DETAIL: {
-        endpoint: "/v1/funcionarios-notebook",
-        method: "GET",
-        query: q,
-      },
-
-      SOURCE: "BUSCAR_FUNCIONARIOS_NOTEBOOK",
-    });
-
-    throw error;
-  }
+  return {
+    data: Array.isArray(response.data?.data)
+      ? response.data.data
+      : [],
+  };
 }

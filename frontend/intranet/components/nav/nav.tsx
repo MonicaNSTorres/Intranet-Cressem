@@ -539,6 +539,16 @@ const Sidebar = () => {
             section: "Formulários",
             children: [
                 {
+                    label: "Cadastro de Termos Mensais",
+                    href: "/auth/termos_mensais_caixa/novo",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Consulta de Termos Mensais",
+                    href: "/auth/termos_mensais_caixa",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
                     label: "Gerenciamento de Reembolso",
                     href: "/auth/gerenciamento_reembolso_despesa",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],

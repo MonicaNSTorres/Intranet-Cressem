@@ -22,6 +22,7 @@ import {
   type ReservaSalaItem,
   type TipoEspacoReserva,
 } from "@/services/reserva_sala_reuniao.service";
+import { getMeAdUser, type MeResponse } from "@/services/auth.service";
 
 const inputBase =
   "h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
@@ -38,13 +39,13 @@ const buttonDanger =
 const espacos = [
   {
     tipo: "SALA_REUNIAO" as TipoEspacoReserva,
-    nome: "Sala de Reunião 1",
-    label: "Sala de Reunião 1",
+    nome: "Sala de Reunião",
+    label: "Sala de Reunião",
   },
   {
     tipo: "SALA_REUNIAO" as TipoEspacoReserva,
-    nome: "Sala de Reunião 2",
-    label: "Sala de Reunião 2",
+    nome: "Sala da Diretória",
+    label: "Sala da Diretória",
   },
   {
     tipo: "AUDITORIO" as TipoEspacoReserva,
@@ -59,13 +60,6 @@ function hojeISO() {
   const mm = String(hoje.getMonth() + 1).padStart(2, "0");
   const dd = String(hoje.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
-}
-
-function agoraHHMM() {
-  const agora = new Date();
-  const hh = String(agora.getHours()).padStart(2, "0");
-  const mm = String(agora.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
 }
 
 function formatDateBR(value?: string | null) {
@@ -109,6 +103,8 @@ export function ConsultaSalaReuniao() {
   const router = useRouter();
 
   const [dataConsulta, setDataConsulta] = useState(hojeISO());
+  const [modoConsulta, setModoConsulta] = useState<"DIA" | "MES">("DIA");
+  const [mesConsulta, setMesConsulta] = useState(hojeISO().slice(0, 7));
   const [tipoFiltro, setTipoFiltro] = useState<"TODOS" | TipoEspacoReserva>(
     "TODOS"
   );
@@ -118,14 +114,34 @@ export function ConsultaSalaReuniao() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
+  const [usuarioLogado, setUsuarioLogado] = useState<MeResponse | null>(null);
+
+  function getPeriodoConsulta(dataBase = dataConsulta, mesBase = mesConsulta) {
+    if (modoConsulta === "MES") {
+      const [ano, mes] = mesBase.split("-").map(Number);
+
+      const primeiroDia = `${mesBase}-01`;
+      const ultimoDiaDate = new Date(ano, mes, 0);
+      const ultimoDia = String(ultimoDiaDate.getDate()).padStart(2, "0");
+
+      return {
+        inicio: `${primeiroDia}T00:00:00`,
+        fim: `${mesBase}-${ultimoDia}T23:59:59`,
+      };
+    }
+
+    return {
+      inicio: `${dataBase}T00:00:00`,
+      fim: `${dataBase}T23:59:59`,
+    };
+  }
 
   async function carregarReservas(dataBase = dataConsulta) {
     try {
       setLoading(true);
       setErro("");
 
-      const inicio = `${dataBase}T00:00:00`;
-      const fim = `${dataBase}T23:59:59`;
+      const { inicio, fim } = getPeriodoConsulta(dataBase);
 
       const response = await listarReservasSala({
         inicio,
@@ -139,7 +155,7 @@ export function ConsultaSalaReuniao() {
       console.error(error);
       setErro(
         error?.response?.data?.error ||
-          "Não foi possível carregar as reservas."
+        "Não foi possível carregar as reservas."
       );
       setReservas([]);
     } finally {
@@ -148,7 +164,19 @@ export function ConsultaSalaReuniao() {
   }
 
   useEffect(() => {
-    carregarReservas();
+    async function iniciarTela() {
+      try {
+        const me = await getMeAdUser();
+        setUsuarioLogado(me);
+      } catch (error) {
+        console.error("Erro ao buscar usuário logado:", error);
+      } finally {
+        await carregarReservas();
+      }
+    }
+
+    iniciarTela();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -252,13 +280,30 @@ export function ConsultaSalaReuniao() {
   }
 
   function limparFiltros() {
+    const hoje = hojeISO();
+
+    setModoConsulta("DIA");
     setTipoFiltro("TODOS");
     setNomeFiltro("TODOS");
-    setDataConsulta(hojeISO());
+    setDataConsulta(hoje);
+    setMesConsulta(hoje.slice(0, 7));
 
     setTimeout(() => {
-      carregarReservas(hojeISO());
+      carregarReservas(hoje);
     }, 0);
+  }
+
+  function normalizarLogin(value?: string | null) {
+    return String(value || "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function usuarioPodeCancelarReserva(item: ReservaSalaItem) {
+    const loginReserva = normalizarLogin(item.DS_LOGIN);
+    const loginAtual = normalizarLogin(usuarioLogado?.username);
+
+    return loginReserva && loginAtual && loginReserva === loginAtual;
   }
 
   return (
@@ -266,10 +311,10 @@ export function ConsultaSalaReuniao() {
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-xl font-bold text-emerald-900">
+            <h2 className="text-xl font-bold text-primary">
               Disponibilidade das salas
             </h2>
-            <p className="mt-1 text-base text-emerald-800">
+            <p className="mt-1 text-base text-primary">
               Escolha uma data e veja rapidamente se a sala ou auditório está livre.
             </p>
           </div>
@@ -292,7 +337,7 @@ export function ConsultaSalaReuniao() {
               {erro}
             </div>
           ) : (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-base font-medium text-emerald-800">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-base font-medium text-primary">
               {info}
             </div>
           )}
@@ -310,18 +355,42 @@ export function ConsultaSalaReuniao() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-          <div className="md:col-span-3">
-            <Field label="Data">
-              <input
-                type="date"
-                value={dataConsulta}
-                onChange={(e) => setDataConsulta(e.target.value)}
+          <div className="md:col-span-2">
+            <Field label="Consulta">
+              <select
+                value={modoConsulta}
+                onChange={(e) =>
+                  setModoConsulta(e.target.value as "DIA" | "MES")
+                }
                 className={inputBase}
-              />
+              >
+                <option value="DIA">Por dia</option>
+                <option value="MES">Por mês</option>
+              </select>
             </Field>
           </div>
 
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
+            <Field label={modoConsulta === "MES" ? "Mês" : "Data"}>
+              {modoConsulta === "MES" ? (
+                <input
+                  type="month"
+                  value={mesConsulta}
+                  onChange={(e) => setMesConsulta(e.target.value)}
+                  className={inputBase}
+                />
+              ) : (
+                <input
+                  type="date"
+                  value={dataConsulta}
+                  onChange={(e) => setDataConsulta(e.target.value)}
+                  className={inputBase}
+                />
+              )}
+            </Field>
+          </div>
+
+          <div className="md:col-span-2">
             <Field label="Tipo de espaço">
               <select
                 value={tipoFiltro}
@@ -392,20 +461,18 @@ export function ConsultaSalaReuniao() {
           return (
             <div
               key={espaco.nome}
-              className={`rounded-3xl border p-5 shadow-sm ${
-                ocupado
-                  ? "border-red-200 bg-red-50"
-                  : "border-emerald-200 bg-emerald-50"
-              }`}
+              className={`rounded-3xl border p-5 shadow-sm ${ocupado
+                ? "border-red-200 bg-red-50"
+                : "border-emerald-200 bg-emerald-50"
+                }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
-                      ocupado
-                        ? "bg-red-100 text-red-700"
-                        : "bg-emerald-100 text-emerald-700"
-                    }`}
+                    className={`flex h-14 w-14 items-center justify-center rounded-2xl ${ocupado
+                      ? "bg-red-100 text-red-700"
+                      : "bg-emerald-100 text-primary"
+                      }`}
                   >
                     {ocupado ? (
                       <FaTimesCircle size={24} />
@@ -419,9 +486,8 @@ export function ConsultaSalaReuniao() {
                       {espaco.label}
                     </h3>
                     <p
-                      className={`mt-1 text-base font-bold ${
-                        ocupado ? "text-red-700" : "text-emerald-700"
-                      }`}
+                      className={`mt-1 text-base font-bold ${ocupado ? "text-red-700" : "text-primary"
+                        }`}
                     >
                       {status.titulo}
                     </p>
@@ -461,7 +527,10 @@ export function ConsultaSalaReuniao() {
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
           <h3 className="text-lg font-bold text-slate-800">
-            Reservas do dia {formatDateBR(dataConsulta)}
+            {modoConsulta === "MES"
+              ? `Reservas do mês ${mesConsulta.split("-").reverse().join("/")}`
+              : `Reservas do dia ${formatDateBR(dataConsulta)}`
+            }
           </h3>
           <p className="mt-1 text-sm text-slate-500">
             Lista detalhada com horários, responsável e departamento.
@@ -506,7 +575,7 @@ export function ConsultaSalaReuniao() {
                     colSpan={7}
                     className="border-b border-slate-100 px-4 py-10 text-center text-slate-400"
                   >
-                    Nenhuma reserva encontrada para esta data.
+                    Nenhuma reserva encontrada para este período.
                   </td>
                 </tr>
               ) : (
@@ -559,16 +628,20 @@ export function ConsultaSalaReuniao() {
                       </td>
 
                       <td className="border-b border-slate-100 px-4 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            cancelarReserva(Number(item.ID_RESERVA_SALA))
-                          }
-                          className={buttonDanger}
-                        >
-                          <FaTrash size={13} />
-                          Cancelar
-                        </button>
+                        {usuarioPodeCancelarReserva(item) ? (
+                          <button
+                            type="button"
+                            onClick={() => cancelarReserva(Number(item.ID_RESERVA_SALA))}
+                            className={buttonDanger}
+                          >
+                            <FaTrash size={13} />
+                            Cancelar
+                          </button>
+                        ) : (
+                          <span className="text-xs font-semibold text-slate-400">
+                            Apenas o responsável
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

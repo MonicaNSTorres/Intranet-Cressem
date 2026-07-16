@@ -2,12 +2,18 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useMemo, useState } from "react";
-import { FaDownload, FaInfoCircle, FaPlus, FaSearch } from "react-icons/fa";
+import { useEffect, useMemo, useState } from "react";
+import { FaDownload, FaEdit, FaInfoCircle, FaPlus, FaSave, FaSearch } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import {
   buscarConvenioPorCpfTitular,
+  criarHistoricoConvenioOdonto,
   downloadCsvPessoasOdontologicasTitular,
+  editarPessoaOdonto,
+  listarFatorAjuste,
+  listarParentesco,
+  type FatorAjuste,
+  type Parentesco,
   type PessoaOdonto,
 } from "@/services/convenio_odonto.service";
 
@@ -56,6 +62,14 @@ function fmtBRL(value: number) {
     currency: "BRL",
     minimumFractionDigits: 2,
   });
+}
+
+function todayISO() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 const inputBase =
@@ -150,6 +164,310 @@ function InfoModal({
   );
 }
 
+function EditModal({
+  open,
+  onClose,
+  item,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  item: PessoaOdonto | null;
+  onSaved: () => Promise<void>;
+}) {
+  const [fatores, setFatores] = useState<FatorAjuste[]>([]);
+  const [parentescos, setParentescos] = useState<Parentesco[]>([]);
+  const [loadingSalvar, setLoadingSalvar] = useState(false);
+  const [erro, setErro] = useState("");
+
+  const [nome, setNome] = useState("");
+  const [cpfUsuario, setCpfUsuario] = useState("");
+  const [parentesco, setParentesco] = useState("");
+  const [planoId, setPlanoId] = useState("");
+  const [codCartao, setCodCartao] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
+  const [nomeMae, setNomeMae] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [ativo, setAtivo] = useState(true);
+
+  useEffect(() => {
+    async function carregarListas() {
+      try {
+        const [fatoresResp, parentescosResp] = await Promise.all([
+          listarFatorAjuste(),
+          listarParentesco(),
+        ]);
+
+        setFatores(fatoresResp);
+        setParentescos(parentescosResp);
+      } catch (error) {
+        console.error(error);
+        setErro("Não foi possível carregar os dados da modal.");
+      }
+    }
+
+    if (open) carregarListas();
+  }, [open]);
+
+  useEffect(() => {
+    if (!item) return;
+
+    setErro("");
+    setNome(item.NM_USUARIO || "");
+    setCpfUsuario(formatCpf(item.NR_CPF_USUARIO || ""));
+    setParentesco(item.DESC_PARENTESCO || "");
+    setPlanoId(String(item.ID_CONVENIO_FATOR_AJUSTE || ""));
+    setCodCartao(item.CD_CARTAO || "");
+    setDataNascimento(item.DT_NASCIMENTO ? String(item.DT_NASCIMENTO).slice(0, 10) : "");
+    setNomeMae(item.NM_MAE || "");
+    setCidade(item.NM_CIDADE || "");
+    setAtivo(Number(item.SN_ATIVO || 0) === 1);
+  }, [item]);
+
+  const planosDisponiveis = useMemo(() => {
+    if (!item?.ID_OPERADORA) return [];
+    return fatores.filter(
+      (fator) => String(fator.ID_OPERADORA) === String(item.ID_OPERADORA)
+    );
+  }, [fatores, item]);
+
+  async function salvarEdicao() {
+    try {
+      setErro("");
+
+      if (!item?.ID_CONVENIO_PESSOAS) {
+        setErro("Registro sem ID para alteração.");
+        return;
+      }
+
+      if (!nome.trim()) {
+        setErro("Nome é obrigatório.");
+        return;
+      }
+
+      if (!isValidCpf(cpfUsuario)) {
+        setErro("CPF inválido.");
+        return;
+      }
+
+      if (!parentesco) {
+        setErro("Parentesco é obrigatório.");
+        return;
+      }
+
+      if (!planoId) {
+        setErro("Plano é obrigatório.");
+        return;
+      }
+
+      if (!dataNascimento) {
+        setErro("Data de nascimento é obrigatória.");
+        return;
+      }
+
+      if (!nomeMae.trim()) {
+        setErro("Nome da mãe é obrigatório.");
+        return;
+      }
+
+      if (!cidade.trim()) {
+        setErro("Cidade é obrigatória.");
+        return;
+      }
+
+      setLoadingSalvar(true);
+
+      await criarHistoricoConvenioOdonto({
+        CD_PLANO: item.CD_PLANO || null,
+        NR_CPF_TITULAR: item.NR_CPF_TITULAR || null,
+        CD_MATRICULA: item.CD_MATRICULA || null,
+        NM_EMPRESA: item.NM_EMPRESA || null,
+        NR_CNPJ_EMPRESA: item.NR_CNPJ_EMPRESA || null,
+        NM_USUARIO: item.NM_USUARIO || null,
+        NR_CPF_USUARIO: item.NR_CPF_USUARIO || null,
+        DT_INCLUSAO: item.DT_INCLUSAO ? String(item.DT_INCLUSAO).slice(0, 10) : null,
+        DT_EXCLUSAO: item.DT_EXCLUSAO ? String(item.DT_EXCLUSAO).slice(0, 10) : null,
+        NM_PARENTESCO: item.DESC_PARENTESCO || null,
+        SN_ATIVO: Number(item.SN_ATIVO || 0),
+        NM_ATENDENTE_CADASTRO: item.NM_ATENDENTE_CADASTRO || null,
+        NM_ATENDENTE_EDICAO: "INTRANET",
+        DT_NASCIMENTO: item.DT_NASCIMENTO ? String(item.DT_NASCIMENTO).slice(0, 10) : null,
+        NM_MAE: item.NM_MAE || null,
+        NM_CIDADE: item.NM_CIDADE || null,
+        VL_FATOR_AJUSTE: Number(item.VL_AJUSTE || 0),
+        NM_PLANO_FATOR_AJUSTE: item.NM_FATOR_AJUSTE || null,
+        NM_OPERADORA: item.DESC_CONVENIO || null,
+      });
+
+      await editarPessoaOdonto(Number(item.ID_CONVENIO_PESSOAS), {
+        ...item,
+        NM_USUARIO: nome.trim().toUpperCase(),
+        NR_CPF_USUARIO: onlyDigits(cpfUsuario),
+        DESC_PARENTESCO: parentesco.trim().toUpperCase(),
+        ID_CONVENIO_FATOR_AJUSTE: Number(planoId),
+        CD_CARTAO: codCartao || null,
+        DT_NASCIMENTO: dataNascimento,
+        NM_MAE: nomeMae.trim().toUpperCase(),
+        NM_CIDADE: cidade.trim().toUpperCase(),
+        SN_ATIVO: ativo ? 1 : 0,
+        DT_EXCLUSAO: ativo ? null : item.DT_EXCLUSAO || todayISO(),
+        NM_ATENDENTE_EDICAO: "INTRANET",
+      });
+
+      await onSaved();
+    } catch (error: any) {
+      console.error(error);
+      setErro(
+        error?.response?.data?.error ||
+        error?.message ||
+        "Não foi possível salvar a alteração."
+      );
+    } finally {
+      setLoadingSalvar(false);
+    }
+  }
+
+  if (!open || !item) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <h3 className="text-lg font-semibold text-slate-800">
+            Editar Conveniado
+          </h3>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-3 py-1 text-sm font-medium text-slate-500 hover:bg-slate-100"
+          >
+            Fechar
+          </button>
+        </div>
+
+        <div className="space-y-4 p-5">
+          {erro && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {erro}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+            <div className="md:col-span-6">
+              <Field label="Nome">
+                <input value={nome} onChange={(e) => setNome(e.target.value)} className={inputBase} />
+              </Field>
+            </div>
+
+            <div className="md:col-span-3">
+              <Field label="CPF">
+                <input value={cpfUsuario} onChange={(e) => setCpfUsuario(e.target.value)} maxLength={14} className={inputBase} />
+              </Field>
+            </div>
+
+            <div className="md:col-span-3">
+              <Field label="Status">
+                <button
+                  type="button"
+                  onClick={() => setAtivo((old) => !old)}
+                  className={`inline-flex h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition ${ativo
+                    ? "bg-emerald-600 text-white"
+                    : "border border-slate-300 bg-white text-slate-700"
+                    }`}
+                >
+                  {ativo ? "Ativo" : "Inativo"}
+                </button>
+              </Field>
+            </div>
+
+            <div className="md:col-span-4">
+              <Field label="Parentesco">
+                <select value={parentesco} onChange={(e) => setParentesco(e.target.value)} className={inputBase}>
+                  <option value=""></option>
+                  {parentescos.map((p, idx) => (
+                    <option key={`${p.NM_PARENTESCO}-${idx}`} value={p.NM_PARENTESCO}>
+                      {p.NM_PARENTESCO}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            <div className="md:col-span-4">
+              <Field label="Plano">
+                <select value={planoId} onChange={(e) => setPlanoId(e.target.value)} className={inputBase}>
+                  <option value=""></option>
+                  {planosDisponiveis.map((plano) => (
+                    <option key={plano.ID_CONVENIO_FATOR_AJUSTE} value={String(plano.ID_CONVENIO_FATOR_AJUSTE)}>
+                      {plano.NM_FATOR_AJUSTE}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            <div className="md:col-span-4">
+              <Field label="Cod. Cartão">
+                <input value={codCartao} onChange={(e) => setCodCartao(e.target.value)} className={inputBase} />
+              </Field>
+            </div>
+
+            <div className="md:col-span-4">
+              <Field label="Data de Nascimento">
+                <input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} className={inputBase} />
+              </Field>
+            </div>
+
+            <div className="md:col-span-4">
+              <Field label="Cidade">
+                <select value={cidade} onChange={(e) => setCidade(e.target.value)} className={inputBase}>
+                  <option value=""></option>
+                  <option value="CAMPOS DO JORDAO">Campos do Jordão</option>
+                  <option value="JACAREI">Jacareí</option>
+                  <option value="SAO JOSE DOS CAMPOS">São José dos Campos</option>
+                </select>
+              </Field>
+            </div>
+
+            <div className="md:col-span-4">
+              <Field label="Valor atual">
+                <input readOnly value={fmtBRL(Number(item.VL_AJUSTE || 0))} className={`${inputBase} bg-slate-50`} />
+              </Field>
+            </div>
+
+            <div className="md:col-span-12">
+              <Field label="Nome da Mãe">
+                <input value={nomeMae} onChange={(e) => setNomeMae(e.target.value)} className={inputBase} />
+              </Field>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={salvarEdicao}
+              disabled={loadingSalvar}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <FaSave />
+              {loadingSalvar ? "Salvando..." : "Salvar Alterações"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ConvenioOdontoConsultaForm() {
   const router = useRouter();
 
@@ -165,6 +483,10 @@ export function ConvenioOdontoConsultaForm() {
   const [openModal, setOpenModal] = useState(false);
 
   const cpfBusca = onlyDigits(cpf);
+
+
+  const [itemEditModal, setItemEditModal] = useState<PessoaOdonto | null>(null);
+  const [openEditModal, setOpenEditModal] = useState(false);
 
   const itemsFiltrados = useMemo(() => {
     if (mostrarApenasAtivos === "1") {
@@ -193,6 +515,16 @@ export function ConvenioOdontoConsultaForm() {
   function fecharModal() {
     setOpenModal(false);
     setItemModal(null);
+  }
+
+  function abrirModalEdicao(item: PessoaOdonto) {
+    setItemEditModal(item);
+    setOpenEditModal(true);
+  }
+
+  function fecharModalEdicao() {
+    setOpenEditModal(false);
+    setItemEditModal(null);
   }
 
   async function onBuscar() {
@@ -381,7 +713,7 @@ export function ConvenioOdontoConsultaForm() {
                       <th className="border-b border-slate-200 px-4 py-3">Inclusão</th>
                       <th className="border-b border-slate-200 px-4 py-3">Exclusão</th>
                       <th className="border-b border-slate-200 px-4 py-3">Valor</th>
-                      <th className="border-b border-slate-200 px-4 py-3 text-center">Info</th>
+                      <th className="border-b border-slate-200 px-4 py-3 text-center">Ações</th>
                     </tr>
                   </thead>
 
@@ -401,7 +733,13 @@ export function ConvenioOdontoConsultaForm() {
                           {item.CD_CARTAO || ""}
                         </td>
                         <td className="border-b border-slate-100 px-4 py-3">
-                          {item.DESC_PARENTESCO || ""}
+                          {String(item.DESC_PARENTESCO || "").trim().toUpperCase() === "TITULAR" ? (
+                            <span className="inline-flex rounded-full border-yellow-200 bg-yellow-50  text-yellow-700 hover:bg-yellow-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+                              {item.DESC_PARENTESCO}
+                            </span>
+                          ) : (
+                            item.DESC_PARENTESCO || ""
+                          )}
                         </td>
                         <td className="border-b border-slate-100 px-4 py-3">
                           {item.NM_FATOR_AJUSTE || ""}
@@ -416,14 +754,25 @@ export function ConvenioOdontoConsultaForm() {
                           {fmtBRL(Number(item.VL_AJUSTE || 0))}
                         </td>
                         <td className="border-b border-slate-100 px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => abrirModal(item)}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white shadow-sm transition hover:bg-sky-700"
-                            title="Ver mais informações"
-                          >
-                            <FaInfoCircle size={14} />
-                          </button>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => abrirModal(item)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white shadow-sm transition hover:bg-sky-700"
+                              title="Ver mais informações"
+                            >
+                              <FaInfoCircle size={14} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => abrirModalEdicao(item)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm transition hover:bg-amber-600"
+                              title="Editar conveniado"
+                            >
+                              <FaEdit size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -460,6 +809,17 @@ export function ConvenioOdontoConsultaForm() {
       </div>
 
       <InfoModal open={openModal} onClose={fecharModal} item={itemModal} />
+
+      <EditModal
+        open={openEditModal}
+        onClose={fecharModalEdicao}
+        item={itemEditModal}
+        onSaved={async () => {
+          fecharModalEdicao();
+          await onBuscar();
+          setInfo("Registro alterado com sucesso.");
+        }}
+      />
     </>
   );
 }

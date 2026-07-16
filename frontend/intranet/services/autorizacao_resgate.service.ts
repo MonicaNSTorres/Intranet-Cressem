@@ -1,64 +1,37 @@
-import { registrarErroTela } from "./error_log.service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { api } from "./api.service";
 
 export type AutorizacaoOption = {
-    value: string;
-    label: string;
+  value: string;
+  label: string;
 };
 
-export async function listarAutorizacaoResgate(): Promise<AutorizacaoOption[]> {
-    try {
-        if (!API_URL) {
-            throw new Error("NEXT_PUBLIC_API_URL nao definido.");
-        }
+type AutorizacaoResgateItem = {
+  NM_AUTORIZADO?: string;
+};
 
-        const res = await fetch(`${API_URL}/v1/autorizacao-resgate`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            cache: "no-store",
-        });
+type ListarAutorizacaoResgateResponse = {
+  data?: AutorizacaoResgateItem[];
+};
 
-        const json = await res.json().catch(() => ({}));
+export async function listarAutorizacaoResgate(): Promise<
+  AutorizacaoOption[]
+> {
+  const response = await api.get<ListarAutorizacaoResgateResponse>(
+    "/v1/autorizacao-resgate"
+  );
 
-        if (!res.ok) {
-            throw new Error(
-                json?.error || "Falha ao carregar Autorizações."
-            );
-        }
+  const rows = Array.isArray(response.data?.data)
+    ? response.data.data
+    : [];
 
-        const rows = Array.isArray(json?.data) ? json.data : [];
+  return rows
+    .map((item) => {
+      const texto = String(item.NM_AUTORIZADO || "").trim();
 
-        return rows.map((r: { NM_AUTORIZADO?: string }) => {
-            const texto = r.NM_AUTORIZADO || "";
-
-            return {
-                value: texto,
-                label: texto,
-            };
-        });
-    } catch (error: any) {
-        await registrarErroTela({
-            PAGE_URL:
-                typeof window !== "undefined"
-                    ? window.location.href
-                    : null,
-
-            ERROR_MESSAGE:
-                error?.message ||
-                "Erro ao listar autorizações de resgate",
-
-            ERROR_STACK: error?.stack || null,
-
-            ERROR_DETAIL: {
-                endpoint: "/v1/autorizacao-resgate",
-                method: "GET",
-            },
-
-            SOURCE: "AUTORIZACAO_RESGATE",
-        });
-
-        throw error;
-    }
+      return {
+        value: texto,
+        label: texto,
+      };
+    })
+    .filter((item) => item.value !== "");
 }

@@ -401,7 +401,19 @@ export const PAGE_ACCESS = {
     },
 
     cnab240: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
+    },
+
+    cnab240Agencias: {
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
+    },
+
+    cnab240Cco: {
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
+    },
+
+    cnab240Favorecidos: {
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
     },
 
     leiloes: {
@@ -409,11 +421,15 @@ export const PAGE_ACCESS = {
     },
 
     leiloesAoVivo: {
-        allowedGroups: [AD_GROUPS.SUPORTE],
+        allowedGroups: [AD_GROUPS.TODO_MUNDO, AD_GROUPS.SUPORTE],
     },
 
     leiloesDashboard: {
         allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+
+    leiloesFinalizados: {
+        allowedGroups: [AD_GROUPS.TODO_MUNDO, AD_GROUPS.SUPORTE],
     },
 
 } satisfies Record<string, AccessRule>;

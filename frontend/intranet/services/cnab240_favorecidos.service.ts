@@ -57,6 +57,25 @@ export type CnabFavorecidoPayload = Omit<
   "ID_FAVORECIDO" | "CREATED_AT" | "UPDATED_AT"
 >;
 
+export type CnabFavorecidoLotePayload = CnabFavorecidoPayload & {
+  LINHA?: number;
+};
+
+export type ImportarFavorecidosEmMassaResponse = {
+  success: boolean;
+  message: string;
+  totalRecebidos: number;
+  inseridos: number;
+  atualizados: number;
+  rejeitados: number;
+  erros: Array<{
+    linha: number;
+    cpf?: string;
+    nome?: string;
+    erro: string;
+  }>;
+};
+
 export type ListarFavorecidosParams = {
   busca?: string;
   page?: number;
@@ -116,6 +135,26 @@ export async function atualizarFavorecido(
   const response = await api.put(`/v1/cnab240/favorecidos/${id}`, payload);
 
   return response.data;
+}
+
+export async function importarFavorecidosEmMassa(
+  favorecidos: CnabFavorecidoLotePayload[]
+): Promise<ImportarFavorecidosEmMassaResponse> {
+  const response = await api.post(
+    "/v1/cnab240/favorecidos/importar-massa",
+    { favorecidos }
+  );
+
+  return {
+    success: Boolean(response.data?.success),
+    message:
+      response.data?.message || "Importação de favorecidos concluída.",
+    totalRecebidos: Number(response.data?.totalRecebidos || 0),
+    inseridos: Number(response.data?.inseridos || 0),
+    atualizados: Number(response.data?.atualizados || 0),
+    rejeitados: Number(response.data?.rejeitados || 0),
+    erros: Array.isArray(response.data?.erros) ? response.data.erros : [],
+  };
 }
 
 export async function excluirFavorecido(id: number): Promise<any> {

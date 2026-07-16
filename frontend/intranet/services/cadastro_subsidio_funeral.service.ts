@@ -1,55 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:3001";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      const url = error?.config?.url || "";
-      const deveIgnorar = String(url).includes("/v1/me");
-
-      if (!deveIgnorar) {
-        await registrarErroTela({
-          PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-          ERROR_MESSAGE:
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            error?.response?.data?.details ||
-            error?.message ||
-            "Erro no service de cadastro de subsídio funeral",
-          ERROR_STACK: error?.stack || null,
-          ERROR_DETAIL: {
-            status: error?.response?.status,
-            url,
-            baseURL: error?.config?.baseURL,
-            method: error?.config?.method,
-            responseType: error?.config?.responseType,
-            responseData:
-              error?.config?.responseType === "blob"
-                ? "Resposta em blob não registrada"
-                : error?.response?.data,
-          },
-          SOURCE: "CADASTRO_SUBSIDIO_FUNERAL_AXIOS",
-        });
-      }
-    } catch {
-      // evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type SubsidioFuneralAnexoPayload = {
   TP_ANEXO: string;
@@ -96,6 +46,8 @@ export type SubsidioFuneralPayload = {
   ANEXOS: SubsidioFuneralAnexoPayload[];
 };
 
+export type SubsidioFuneralHistoricoItem = Record<string, unknown>;
+
 export type SubsidioFuneralDetalhe = SubsidioFuneralPayload & {
   ID_SUBSIDIO_FUNERAL: number;
   DT_CRIACAO?: string;
@@ -106,35 +58,89 @@ export type SubsidioFuneralDetalhe = SubsidioFuneralPayload & {
   DT_FINALIZACAO?: string;
   NM_RESP_DIRETORIA?: string;
   NM_RESP_FINANCEIRO?: string;
-  HISTORICO?: any[];
+  HISTORICO?: SubsidioFuneralHistoricoItem[];
 };
 
-export async function cadastrarSubsidioFuneral(payload: SubsidioFuneralPayload) {
-  const { data } = await api.post("/v1/solicitacao_subsidio_funeral", payload, {
-    headers: getAuditoriaHeaders(),
-  });
-  return data;
+function validarIdSubsidioFuneral(id: number | string) {
+  if (
+    id === undefined ||
+    id === null ||
+    String(id).trim() === ""
+  ) {
+    throw new Error("ID do subsídio funeral não informado.");
+  }
 }
 
-export async function editarSubsidioFuneral(payload: SubsidioFuneralPayload) {
-  const { data } = await api.put("/v1/solicitacao_subsidio_funeral", payload, {
-    headers: getAuditoriaHeaders(),
-  });
-  return data;
-}
-
-export async function buscarSubsidioFuneralPorId(id: number | string) {
-  const { data } = await api.get<SubsidioFuneralDetalhe>(
-    `/v1/solicitacao_subsidio_funeral/${id}`
+export async function cadastrarSubsidioFuneral(
+  payload: SubsidioFuneralPayload
+): Promise<SubsidioFuneralDetalhe> {
+  const response = await api.post<SubsidioFuneralDetalhe>(
+    "/v1/solicitacao_subsidio_funeral",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
-  return data;
+
+  return response.data;
 }
 
-export async function baixarAnexoSubsidioFuneral(caminho: string) {
-  const { data } = await api.post(
+export async function editarSubsidioFuneral(
+  payload: SubsidioFuneralPayload
+): Promise<SubsidioFuneralDetalhe> {
+  if (
+    payload.ID_SUBSIDIO_FUNERAL === undefined ||
+    payload.ID_SUBSIDIO_FUNERAL === null ||
+    String(payload.ID_SUBSIDIO_FUNERAL).trim() === ""
+  ) {
+    throw new Error(
+      "ID do subsídio funeral não informado para edição."
+    );
+  }
+
+  const response = await api.put<SubsidioFuneralDetalhe>(
+    "/v1/solicitacao_subsidio_funeral",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
+  return response.data;
+}
+
+export async function buscarSubsidioFuneralPorId(
+  id: number | string
+): Promise<SubsidioFuneralDetalhe> {
+  validarIdSubsidioFuneral(id);
+
+  const response = await api.get<SubsidioFuneralDetalhe>(
+    `/v1/solicitacao_subsidio_funeral/${encodeURIComponent(
+      String(id)
+    )}`
+  );
+
+  return response.data;
+}
+
+export async function baixarAnexoSubsidioFuneral(
+  caminho: string
+): Promise<Blob> {
+  const caminhoLimpo = String(caminho || "").trim();
+
+  if (!caminhoLimpo) {
+    throw new Error("Caminho do anexo não informado.");
+  }
+
+  const response = await api.post<Blob>(
     "/v1/solicitacao_subsidio_funeral/download",
-    { caminho },
-    { responseType: "blob" }
+    {
+      caminho: caminhoLimpo,
+    },
+    {
+      responseType: "blob",
+    }
   );
-  return data;
+
+  return response.data;
 }

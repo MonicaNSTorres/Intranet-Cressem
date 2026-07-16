@@ -227,3 +227,22 @@ export async function uploadTermoMensalCaixaAssinado(data: {
 export function getDownloadTermoMensalCaixaAssinadoUrl(id: number) {
   return `${API_URL}/v1/termos-mensais-caixa/${id}/assinado/download`;
 }
+
+export async function excluirTermoMensalCaixa(id: number) {
+  const res = await fetch(`${API_URL}/v1/termos-mensais-caixa/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      ...getAuditoriaHeaders(),
+      "Content-Type": "application/json",
+    },
+  });
+
+  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(json?.error || "Erro ao excluir termo mensal caixa.");
+  }
+
+  return json;
+}

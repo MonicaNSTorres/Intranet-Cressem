@@ -1,61 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:3001";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      const url = error?.config?.url || "";
-
-      const deveIgnorar = String(url).includes("/v1/me");
-
-      if (!deveIgnorar) {
-        await registrarErroTela({
-          PAGE_URL:
-            typeof window !== "undefined" ? window.location.href : null,
-
-          ERROR_MESSAGE:
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            error?.response?.data?.details ||
-            error?.message ||
-            "Erro no service de cadastro de reembolso de despesa",
-
-          ERROR_STACK: error?.stack || null,
-
-          ERROR_DETAIL: {
-            status: error?.response?.status,
-            url,
-            baseURL: error?.config?.baseURL,
-            method: error?.config?.method,
-            responseType: error?.config?.responseType,
-            responseData:
-              error?.config?.responseType === "blob"
-                ? "Resposta em blob não registrada"
-                : error?.response?.data,
-          },
-
-          SOURCE: "CADASTRO_REEMBOLSO_DESPESA_AXIOS",
-        });
-      }
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type DespesaPayload = {
   TP_DESPESA: string;
@@ -127,7 +71,9 @@ export type AuthMeResponse = {
 };
 
 export type BuscarFuncionarioReembolsoPorCpfResponse =
-  | { found: false }
+  | {
+      found: false;
+    }
   | {
       found: true;
       id_funcionario?: string | number;
@@ -138,35 +84,81 @@ export type BuscarFuncionarioReembolsoPorCpfResponse =
       nr_conta_corrente?: string;
     };
 
-export async function carregarCidadesReembolso() {
-  const { data } = await api.get<CidadeItem[] | string[]>("/v1/cidades");
+function onlyDigits(value: string) {
+  return String(value || "").replace(/\D/g, "");
+}
 
-  return (data || [])
-    .map((item: any) =>
-      typeof item === "string" ? item : String(item?.NM_CIDADE || item?.nome || "").trim()
+export async function carregarCidadesReembolso(): Promise<string[]> {
+  const response = await api.get<Array<CidadeItem | string>>(
+    "/v1/cidades"
+  );
+
+  const cidades = Array.isArray(response.data)
+    ? response.data
+    : [];
+
+  return cidades
+    .map((item) => {
+      if (typeof item === "string") {
+        return item.trim();
+      }
+
+      return String(
+        item.NM_CIDADE ||
+          item.nome ||
+          ""
+      ).trim();
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+export async function carregarTiposDespesaReembolso(): Promise<
+  string[]
+> {
+  const response = await api.get<TipoDespesaItem[]>(
+    "/v1/tipo_despesa"
+  );
+
+  const tiposDespesa = Array.isArray(response.data)
+    ? response.data
+    : [];
+
+  return tiposDespesa
+    .map((item) =>
+      String(
+        item.NM_TIPO_DESPESA ||
+          item.nome ||
+          ""
+      ).trim()
     )
     .filter(Boolean);
 }
 
-export async function carregarTiposDespesaReembolso() {
-  const { data } = await api.get<TipoDespesaItem[]>("/v1/tipo_despesa");
+export async function buscarSolicitacaoReembolsoPorId(
+  id: number | string
+): Promise<SolicitacaoReembolsoResponse> {
+  if (
+    id === undefined ||
+    id === null ||
+    String(id).trim() === ""
+  ) {
+    throw new Error("ID da solicitação de reembolso não informado.");
+  }
 
-  return (data || [])
-    .map((item) => String(item.NM_TIPO_DESPESA || item.nome || "").trim())
-    .filter(Boolean);
-}
-
-export async function buscarSolicitacaoReembolsoPorId(id: number | string) {
-  const { data } = await api.get<SolicitacaoReembolsoResponse>(
-    `/v1/solicitacao_reembolso_despesa/${id}`
+  const response = await api.get<SolicitacaoReembolsoResponse>(
+    `/v1/solicitacao_reembolso_despesa/${encodeURIComponent(
+      String(id)
+    )}`
   );
-  return data;
+
+  return response.data;
 }
 
 export async function cadastrarSolicitacaoReembolso(
   payload: SolicitacaoReembolsoPayload
-) {
-  const { data } = await api.post(
+): Promise<SolicitacaoReembolsoResponse> {
+  const response = await api.post<SolicitacaoReembolsoResponse>(
     "/v1/solicitacao_reembolso_despesa",
     payload,
     {
@@ -174,13 +166,25 @@ export async function cadastrarSolicitacaoReembolso(
     }
   );
 
-  return data;
+  return response.data;
 }
 
 export async function editarSolicitacaoReembolso(
   payload: SolicitacaoReembolsoPayload
-) {
-  const { data } = await api.put(
+): Promise<SolicitacaoReembolsoResponse> {
+  if (
+    payload.ID_SOLICITACAO_REEMBOLSO_DESPESA === undefined ||
+    payload.ID_SOLICITACAO_REEMBOLSO_DESPESA === null ||
+    String(
+      payload.ID_SOLICITACAO_REEMBOLSO_DESPESA
+    ).trim() === ""
+  ) {
+    throw new Error(
+      "ID da solicitação de reembolso não informado."
+    );
+  }
+
+  const response = await api.put<SolicitacaoReembolsoResponse>(
     "/v1/solicitacao_reembolso_despesa",
     payload,
     {
@@ -188,50 +192,99 @@ export async function editarSolicitacaoReembolso(
     }
   );
 
-  return data;
+  return response.data;
 }
 
 export async function buscarFuncionarioReembolsoPorCpf(
   cpf: string
 ): Promise<BuscarFuncionarioReembolsoPorCpfResponse> {
-  const clean = String(cpf || "").replace(/\D/g, "");
-  const { data } = await api.get<BuscarFuncionarioReembolsoPorCpfResponse>(
-    `/v1/solicitacao_reembolso_despesa/funcionario/cpf/${encodeURIComponent(clean)}`
+  const cpfLimpo = onlyDigits(cpf);
+
+  if (cpfLimpo.length !== 11) {
+    return {
+      found: false,
+    };
+  }
+
+  const response =
+    await api.get<BuscarFuncionarioReembolsoPorCpfResponse>(
+      `/v1/solicitacao_reembolso_despesa/funcionario/cpf/${cpfLimpo}`
+    );
+
+  return response.data;
+}
+
+export async function buscarFuncionarioPorNome(
+  nome: string
+): Promise<FuncionarioReembolso> {
+  const nomeLimpo = String(nome || "").trim();
+
+  if (!nomeLimpo) {
+    throw new Error("Nome do funcionário não informado.");
+  }
+
+  const response = await api.get<FuncionarioReembolso>(
+    `/v1/funcionarios_sicoob_cressem/nome/${encodeURIComponent(
+      nomeLimpo
+    )}`
   );
-  return data;
+
+  return response.data;
 }
 
-export async function buscarFuncionarioPorNome(nome: string) {
-  const { data } = await api.get<FuncionarioReembolso>(
-    `/v1/funcionarios_sicoob_cressem/nome/${encodeURIComponent(nome)}`
-  );
-  return data;
+export async function buscarUsuarioLogadoReembolso(): Promise<AuthMeResponse> {
+  const response = await api.get<AuthMeResponse>("/v1/me");
+
+  return response.data;
 }
 
-export async function buscarUsuarioLogadoReembolso() {
-  const { data } = await api.get<AuthMeResponse>("/v1/me");
-  return data;
-}
+export async function baixarComprovanteReembolso(
+  oficio: string
+): Promise<Blob> {
+  const caminho = String(oficio || "").trim();
 
-export async function baixarComprovanteReembolso(oficio: string) {
-  const { data } = await api.post(
+  if (!caminho) {
+    throw new Error("Caminho do comprovante não informado.");
+  }
+
+  const response = await api.post<Blob>(
     "/v1/solicitacao_reembolso_despesa/download",
-    { oficio },
-    { responseType: "blob" }
+    {
+      oficio: caminho,
+    },
+    {
+      responseType: "blob",
+    }
   );
 
-  return data;
+  return response.data;
 }
 
 export async function enviarEmailInformativoFinanceiroReembolso(
   funcionario: string,
   idSolicitacao: string | number
-) {
-  const { data } = await api.get(
+): Promise<unknown> {
+  const funcionarioLimpo = String(funcionario || "").trim();
+
+  if (!funcionarioLimpo) {
+    throw new Error("Funcionário não informado.");
+  }
+
+  if (
+    idSolicitacao === undefined ||
+    idSolicitacao === null ||
+    String(idSolicitacao).trim() === ""
+  ) {
+    throw new Error("ID da solicitação não informado.");
+  }
+
+  const response = await api.get(
     `/v1/email_informativo_financeiro/funcionario/${encodeURIComponent(
-      funcionario
-    )}/solicitacao/${idSolicitacao}`
+      funcionarioLimpo
+    )}/solicitacao/${encodeURIComponent(
+      String(idSolicitacao)
+    )}`
   );
 
-  return data;
+  return response.data;
 }

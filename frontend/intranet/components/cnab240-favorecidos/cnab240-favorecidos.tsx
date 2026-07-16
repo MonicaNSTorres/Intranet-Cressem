@@ -10,7 +10,10 @@ import {
   FaMapMarkerAlt,
   FaPen,
   FaPlus,
+  FaPaste,
   FaSave,
+  FaCheckCircle,
+  FaExclamationTriangle,
   FaSearch,
   FaTimes,
   FaTrash,
@@ -22,8 +25,10 @@ import {
   atualizarFavorecido,
   criarFavorecido,
   excluirFavorecido,
+  importarFavorecidosEmMassa,
   listarFavorecidos,
   type CnabFavorecido,
+  type CnabFavorecidoLotePayload,
   type CnabFavorecidoPayload,
 } from "@/services/cnab240_favorecidos.service";
 
@@ -44,6 +49,29 @@ const initialForm: CnabFavorecidoPayload = {
   CIDADE: "",
   UF: "",
 };
+
+type LinhaLote = {
+  linha: number;
+  dados: CnabFavorecidoLotePayload;
+  erros: string[];
+};
+
+const COLUNAS_LOTE = [
+  "CPF/CNPJ",
+  "ID Cliente",
+  "Nome",
+  "Banco",
+  "Agência",
+  "Conta",
+  "DV",
+  "UF",
+  "CEP",
+  "Cidade",
+  "Bairro",
+  "Número",
+  "Endereço",
+  "Complemento",
+];
 
 export function Cnab240FavorecidosForm() {
   const [loading, setLoading] = useState(false);
@@ -75,6 +103,12 @@ export function Cnab240FavorecidosForm() {
     useState<CnabFavorecido | null>(null);
 
   const [form, setForm] = useState<CnabFavorecidoPayload>(initialForm);
+
+  const [modalLoteAberta, setModalLoteAberta] = useState(false);
+  const [textoLote, setTextoLote] = useState("");
+  const [linhasLote, setLinhasLote] = useState<LinhaLote[]>([]);
+  const [processandoLote, setProcessandoLote] = useState(false);
+  const [importandoLote, setImportandoLote] = useState(false);
 
   async function carregar(pagina = page) {
     try {
@@ -318,6 +352,227 @@ export function Cnab240FavorecidosForm() {
     }
   }
 
+
+  function abrirModalLote() {
+    setTextoLote("");
+    setLinhasLote([]);
+    setMensagem("");
+    setModalLoteAberta(true);
+  }
+
+  function fecharModalLote() {
+    if (importandoLote) return;
+
+    setModalLoteAberta(false);
+    setTextoLote("");
+    setLinhasLote([]);
+  }
+
+  function separarColunas(linha: string) {
+    if (linha.includes("\t")) {
+      return linha.split("\t");
+    }
+
+    return linha.split(";");
+  }
+
+  function linhaEhCabecalho(colunas: string[]) {
+    const primeira = String(colunas[0] || "")
+      .trim()
+      .toLowerCase();
+
+    const terceira = String(colunas[2] || "")
+      .trim()
+      .toLowerCase();
+
+    return (
+      (primeira.includes("cpf") || primeira.includes("cnpj")) &&
+      terceira.includes("nome")
+    );
+  }
+
+  function processarTextoLote() {
+    try {
+      setProcessandoLote(true);
+
+      const linhasTexto = textoLote
+        .split(/\r?\n/)
+        .map((linha) => linha.trimEnd())
+        .filter((linha) => linha.trim() !== "");
+
+      if (linhasTexto.length === 0) {
+        setLinhasLote([]);
+        mostrarMensagem("Cole os dados copiados da planilha.", "error");
+        return;
+      }
+
+      const linhasProcessadas: LinhaLote[] = [];
+
+      linhasTexto.forEach((linhaTexto, index) => {
+        const colunas = separarColunas(linhaTexto).map((coluna) =>
+          String(coluna || "").trim()
+        );
+
+        if (index === 0 && linhaEhCabecalho(colunas)) {
+          return;
+        }
+
+        const numeroLinha = index + 1;
+        const erros: string[] = [];
+
+        if (colunas.length > COLUNAS_LOTE.length) {
+          erros.push(
+            `Foram encontradas ${colunas.length} colunas; o esperado é ${COLUNAS_LOTE.length}.`
+          );
+        }
+
+        while (colunas.length < COLUNAS_LOTE.length) {
+          colunas.push("");
+        }
+
+        const [
+          cpfRaw,
+          idClienteRaw,
+          nomeRaw,
+          bancoRaw,
+          agenciaRaw,
+          contaRaw,
+          dvRaw,
+          ufRaw,
+          cepRaw,
+          cidadeRaw,
+          bairroRaw,
+          numeroRaw,
+          enderecoRaw,
+          complementoRaw,
+        ] = colunas;
+
+        const cpf = onlyCpfCnpjChars(cpfRaw);
+        const nome = String(nomeRaw || "").trim().toUpperCase();
+        const cep = onlyDigits(cepRaw);
+
+        if (!cpf) {
+          erros.push("CPF/CNPJ não informado.");
+        } else if (cpf.length !== 11 && cpf.length !== 14) {
+          erros.push("CPF/CNPJ deve possuir 11 ou 14 caracteres.");
+        }
+
+        if (!nome) {
+          erros.push("Nome não informado.");
+        }
+
+        if (ufRaw && String(ufRaw).trim().length !== 2) {
+          erros.push("UF deve possuir 2 caracteres.");
+        }
+
+        if (cepRaw && cep.length !== 8) {
+          erros.push("CEP deve possuir 8 números.");
+        }
+
+        const dados: CnabFavorecidoLotePayload = {
+          LINHA: numeroLinha,
+          CPF: cpf,
+          IDCLIENTE: idClienteRaw || "",
+          NOME: nome,
+          BANCO: onlyDigits(bancoRaw).slice(0, 3),
+          AGENCIA: onlyDigits(agenciaRaw).slice(0, 5),
+          CONTA: onlyDigits(contaRaw).slice(0, 12),
+          DV_CONTA: String(dvRaw || "").trim().slice(0, 1),
+          UF: String(ufRaw || "").trim().toUpperCase().slice(0, 2),
+          CEP: cep.slice(0, 5),
+          CEP_COMPLEMENTO: cep.slice(5, 8) || "000",
+          CIDADE: String(cidadeRaw || "").trim().toUpperCase(),
+          BAIRRO: String(bairroRaw || "").trim().toUpperCase(),
+          NUMERO: String(numeroRaw || "").trim(),
+          ENDERECO: String(enderecoRaw || "").trim().toUpperCase(),
+          COMPLEMENTO: String(complementoRaw || "").trim().toUpperCase(),
+        };
+
+        linhasProcessadas.push({
+          linha: numeroLinha,
+          dados,
+          erros,
+        });
+      });
+
+      setLinhasLote(linhasProcessadas);
+
+      if (linhasProcessadas.length === 0) {
+        mostrarMensagem(
+          "Nenhum registro foi encontrado abaixo do cabeçalho.",
+          "error"
+        );
+      }
+    } finally {
+      setProcessandoLote(false);
+    }
+  }
+
+  async function importarLote() {
+    const linhasValidas = linhasLote.filter((item) => item.erros.length === 0);
+    const linhasInvalidas = linhasLote.length - linhasValidas.length;
+
+    if (linhasValidas.length === 0) {
+      mostrarMensagem(
+        "Não existem linhas válidas para importar. Corrija os dados e processe novamente.",
+        "error"
+      );
+      return;
+    }
+
+    const confirmar = window.confirm(
+      linhasInvalidas > 0
+        ? `${linhasValidas.length} linha(s) válida(s) serão importadas e ${linhasInvalidas} linha(s) inválida(s) serão ignoradas. Deseja continuar?`
+        : `${linhasValidas.length} favorecido(s) serão importados. Deseja continuar?`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setImportandoLote(true);
+
+      const result = await importarFavorecidosEmMassa(
+        linhasValidas.map((item) => item.dados)
+      );
+
+      const partes = [
+        `${result.inseridos} inserido(s)`,
+        `${result.atualizados} atualizado(s)`,
+      ];
+
+      if (result.rejeitados > 0) {
+        partes.push(`${result.rejeitados} rejeitado(s) pelo servidor`);
+      }
+
+      if (linhasInvalidas > 0) {
+        partes.push(`${linhasInvalidas} inválido(s) ignorado(s)`);
+      }
+
+      setModalLoteAberta(false);
+      setTextoLote("");
+      setLinhasLote([]);
+      setPage(1);
+      setBusca("");
+      setBuscaAplicada("");
+      await carregar(1);
+
+      mostrarMensagem(
+        `Importação concluída: ${partes.join(", ")}.`,
+        result.rejeitados > 0 || linhasInvalidas > 0 ? "error" : "success"
+      );
+    } catch (error: any) {
+      console.error(error);
+      mostrarMensagem(
+        error?.response?.data?.details ||
+          error?.response?.data?.error ||
+          "Erro ao importar favorecidos em lote.",
+        "error"
+      );
+    } finally {
+      setImportandoLote(false);
+    }
+  }
+
   const primeiroRegistro = total === 0 ? 0 : (page - 1) * limit + 1;
   const ultimoRegistro = Math.min(page * limit, total);
 
@@ -398,6 +653,15 @@ export function Cnab240FavorecidosForm() {
                 className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 cursor-pointer"
               >
                 {loading ? "Buscando..." : "Buscar"}
+              </button>
+
+              <button
+                type="button"
+                onClick={abrirModalLote}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#00AE9D]/30 bg-[#00AE9D]/10 px-5 py-3 text-sm font-semibold text-[#007f73] transition hover:bg-[#00AE9D]/20 cursor-pointer"
+              >
+                <FaPaste />
+                Colar em lote
               </button>
 
               <button
@@ -547,6 +811,271 @@ export function Cnab240FavorecidosForm() {
           </div>
         </div>
       </div>
+
+      {modalLoteAberta && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[94vh] w-full max-w-7xl flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+            <div className="bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                    Favorecidos CNAB240
+                  </p>
+
+                  <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                    Colar favorecidos em lote
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Copie as linhas da planilha e cole abaixo mantendo a ordem
+                    das colunas.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fecharModalLote}
+                  disabled={importandoLote}
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:opacity-60"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-5 overflow-y-auto p-6">
+              <section className="rounded-3xl border border-blue-200 bg-blue-50/60 p-5">
+                <h3 className="text-sm font-bold text-slate-800">
+                  Ordem das colunas
+                </h3>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {COLUNAS_LOTE.map((coluna, index) => (
+                    <span
+                      key={coluna}
+                      className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                    >
+                      {index + 1}. {coluna}
+                    </span>
+                  ))}
+                </div>
+
+                <p className="mt-3 text-xs text-slate-500">
+                  CPF/CNPJ e Nome são obrigatórios. As demais colunas podem
+                  ficar vazias, mas devem manter sua posição na planilha.
+                </p>
+              </section>
+
+              <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800">
+                      Dados copiados da planilha
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      O sistema aceita colunas separadas por tabulação ou ponto
+                      e vírgula.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={processarTextoLote}
+                    disabled={processandoLote || importandoLote}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-secondary disabled:opacity-60 cursor-pointer"
+                  >
+                    <FaPaste />
+                    {processandoLote ? "Processando..." : "Processar dados"}
+                  </button>
+                </div>
+
+                <textarea
+                  value={textoLote}
+                  onChange={(e) => {
+                    setTextoLote(e.target.value);
+                    setLinhasLote([]);
+                  }}
+                  disabled={importandoLote}
+                  rows={8}
+                  placeholder={`CPF/CNPJ\tID Cliente\tNome\tBanco\tAgência\tConta\tDV\tUF\tCEP\tCidade\tBairro\tNúmero\tEndereço\tComplemento`}
+                  className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10 disabled:opacity-60"
+                />
+              </section>
+
+              {linhasLote.length > 0 && (
+                <section className="overflow-hidden rounded-3xl border border-slate-200">
+                  <div className="flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">
+                        Pré-visualização
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {linhasLote.length} linha(s) processada(s)
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                      <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-emerald-700">
+                        <FaCheckCircle />
+                        {
+                          linhasLote.filter((item) => item.erros.length === 0)
+                            .length
+                        }{" "}
+                        válida(s)
+                      </span>
+
+                      <span className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-red-700">
+                        <FaExclamationTriangle />
+                        {
+                          linhasLote.filter((item) => item.erros.length > 0)
+                            .length
+                        }{" "}
+                        inválida(s)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="max-h-90 overflow-auto">
+                    <table className="min-w-375 w-full text-left">
+                      <thead className="sticky top-0 z-10 bg-slate-100">
+                        <tr>
+                          <th className="px-4 py-3 text-xs font-bold uppercase text-slate-500">
+                            Linha
+                          </th>
+                          <th className="px-4 py-3 text-xs font-bold uppercase text-slate-500">
+                            Situação
+                          </th>
+                          {COLUNAS_LOTE.map((coluna) => (
+                            <th
+                              key={coluna}
+                              className="px-4 py-3 text-xs font-bold uppercase text-slate-500"
+                            >
+                              {coluna}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {linhasLote.map((item) => (
+                          <tr
+                            key={`${item.linha}-${item.dados.CPF}`}
+                            className={
+                              item.erros.length > 0
+                                ? "bg-red-50/50"
+                                : "bg-white"
+                            }
+                          >
+                            <td className="px-4 py-3 text-sm font-semibold text-slate-700">
+                              {item.linha}
+                            </td>
+
+                            <td className="px-4 py-3 text-sm">
+                              {item.erros.length === 0 ? (
+                                <span className="inline-flex items-center gap-2 text-emerald-700">
+                                  <FaCheckCircle />
+                                  Válida
+                                </span>
+                              ) : (
+                                <div className="max-w-xs text-red-700">
+                                  <div className="flex items-center gap-2 font-semibold">
+                                    <FaExclamationTriangle />
+                                    Inválida
+                                  </div>
+                                  <p className="mt-1 text-xs">
+                                    {item.erros.join(" ")}
+                                  </p>
+                                </div>
+                              )}
+                            </td>
+
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {formatCpfCnpj(item.dados.CPF || "") || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.IDCLIENTE || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-semibold text-slate-800">
+                              {item.dados.NOME || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.BANCO || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.AGENCIA || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.CONTA || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.DV_CONTA || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.UF || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.CEP
+                                ? formatCep(
+                                    `${item.dados.CEP}${item.dados.CEP_COMPLEMENTO || ""}`
+                                  )
+                                : "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.CIDADE || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.BAIRRO || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.NUMERO || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.ENDERECO || "-"}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-700">
+                              {item.dados.COMPLEMENTO || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-white px-6 py-5 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={fecharModalLote}
+                disabled={importandoLote}
+                className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 cursor-pointer"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={importarLote}
+                disabled={
+                  importandoLote ||
+                  linhasLote.filter((item) => item.erros.length === 0)
+                    .length === 0
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#00AE9D]/20 transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+              >
+                <FaSave />
+                {importandoLote
+                  ? "Importando..."
+                  : `Importar ${
+                      linhasLote.filter((item) => item.erros.length === 0)
+                        .length
+                    } favorecido(s)`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalAberta && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">

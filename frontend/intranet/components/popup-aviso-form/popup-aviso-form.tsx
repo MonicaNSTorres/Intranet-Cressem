@@ -34,6 +34,7 @@ type FormState = {
     exibirAposLogin: "S" | "N";
     obrigatorio: "S" | "N";
     imagemBase64: string;
+    link: string;
 };
 
 const initialForm: FormState = {
@@ -47,6 +48,7 @@ const initialForm: FormState = {
     exibirAposLogin: "S",
     obrigatorio: "S",
     imagemBase64: "",
+    link: "",
 };
 
 export function PopupAvisoForm() {
@@ -160,6 +162,7 @@ export function PopupAvisoForm() {
                 stAtivo: form.stAtivo,
                 exibirAposLogin: form.exibirAposLogin,
                 obrigatorio: form.obrigatorio,
+                link: form.link || null,
                 imagemBase64: form.imagemBase64 || null,
             });
 
@@ -203,6 +206,7 @@ export function PopupAvisoForm() {
             exibirAposLogin: item.EXIBIR_APOS_LOGIN || "S",
             obrigatorio: item.OBRIGATORIO || "S",
             imagemBase64: item.IMAGEM_BASE64 || "",
+            link: item.DS_LINK || item.LINK || "",
         });
         setModalEdicaoAberta(true);
     }
@@ -229,6 +233,7 @@ export function PopupAvisoForm() {
                 stAtivo: editForm.stAtivo,
                 exibirAposLogin: editForm.exibirAposLogin,
                 obrigatorio: editForm.obrigatorio,
+                link: editForm.link || null,
                 imagemBase64: editForm.imagemBase64 || null,
             });
 
@@ -304,8 +309,8 @@ export function PopupAvisoForm() {
                     {mensagem && (
                         <div
                             className={`mb-6 rounded-2xl px-4 py-3 text-sm font-medium ${tipoMensagem === "success"
-                                    ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                                    : "border border-red-200 bg-red-50 text-red-700"
+                                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                                : "border border-red-200 bg-red-50 text-red-700"
                                 }`}
                         >
                             {mensagem}
@@ -341,6 +346,20 @@ export function PopupAvisoForm() {
                                             placeholder="Digite a mensagem que será exibida ao usuário"
                                             rows={7}
                                             className="w-full resize-none rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                            Link (opcional)
+                                        </label>
+
+                                        <input
+                                            type="url"
+                                            value={form.link}
+                                            onChange={(e) => handleChange("link", e.target.value)}
+                                            placeholder="https://..."
+                                            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-primary"
                                         />
                                     </div>
                                 </div>
@@ -858,6 +877,14 @@ export function PopupAvisoForm() {
                                                     className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
                                                 />
                                             </div>
+
+                                            <input
+                                                type="url"
+                                                value={editForm.link}
+                                                onChange={(e) => handleEditChange("link", e.target.value)}
+                                                placeholder="https://..."
+                                                className="w-full rounded-xl border border-slate-300 px-4 py-3"
+                                            />
                                         </div>
                                     </div>
 

@@ -89,9 +89,9 @@ function associadoAtivo(associado: any) {
 
     const statusTexto = String(
         associado?.ST_INTEGRALIZACAO ||
-            associado?.DESC_SITUACAO ||
-            associado?.SITUACAO ||
-            ""
+        associado?.DESC_SITUACAO ||
+        associado?.SITUACAO ||
+        ""
     )
         .trim()
         .toUpperCase();
@@ -532,8 +532,8 @@ export function CadastroConvenioOdontoForm() {
     function validaCampos() {
         const possuiEmpresaSelecionada = Boolean(
             String(matriculaSelecionada || "").trim() ||
-                String(empresaSelecionada || "").trim() ||
-                String(cnpjSelecionado || "").trim()
+            String(empresaSelecionada || "").trim() ||
+            String(cnpjSelecionado || "").trim()
         );
 
         if (!cpf) return "CPF do titular não preenchido.";
@@ -631,6 +631,26 @@ export function CadastroConvenioOdontoForm() {
         );
 
         if (!modoEdicao || !titularOriginal?.ID_CONVENIO_PESSOAS) {
+            try {
+                const pessoaExistente = await buscarPessoaOdontoPorCpfUsuario(
+                    payload.NR_CPF_USUARIO
+                );
+
+                const ativo =
+                    Number(pessoaExistente?.SN_ATIVO || 0) === 1 &&
+                    !String(pessoaExistente?.DT_EXCLUSAO || "").trim();
+
+                if (ativo) {
+                    throw new Error(
+                        `O CPF ${formatCpf(payload.NR_CPF_USUARIO)} já possui um cadastro ativo no convênio odontológico.`
+                    );
+                }
+            } catch (error: any) {
+                if (error?.response?.status !== 404) {
+                    throw error;
+                }
+            }
+
             await criarPessoaOdonto(payload);
             return;
         }

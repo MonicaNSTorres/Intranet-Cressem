@@ -1,49 +1,7 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-  timeout: 30000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL:
-          typeof window !== "undefined"
-            ? window.location.href
-            : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro no service de cadastro de férias",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          baseURL: error?.config?.baseURL,
-          method: error?.config?.method,
-          responseData: error?.response?.data,
-        },
-
-        SOURCE: "CADASTRO_FERIAS_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
+const FERIAS_TIMEOUT_MS = 30000;
 
 export type FeriasFuncionarioItem = {
   ID_FERIAS_FUNCIONARIOS?: number;
@@ -75,15 +33,17 @@ export type ImportacaoFeriasErro = {
   nome?: string;
 };
 
+export type ImportacaoFeriasRegistro = {
+  NM_FUNCIONARIO: string;
+  DT_DIA_INICIO: string;
+  DT_DIA_FIM: string;
+};
+
 export type ImportacaoFeriasResponse = {
   success: boolean;
   total_linhas: number;
   carregados: number;
-  registros: Array<{
-    NM_FUNCIONARIO: string;
-    DT_DIA_INICIO: string;
-    DT_DIA_FIM: string;
-  }>;
+  registros: ImportacaoFeriasRegistro[];
   erros: ImportacaoFeriasErro[];
   message: string;
 };
@@ -94,28 +54,65 @@ export type CadastroLoteFeriasPayload = Array<{
   DT_DIA_FIM: string;
 }>;
 
-export async function buscarFuncionarioFeriasPorCpf(cpf: string) {
+function onlyDigits(value: string) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+export async function buscarFuncionarioFeriasPorCpf(
+  cpf: string
+): Promise<FuncionarioFeriasResponse> {
+  const cpfLimpo = onlyDigits(cpf);
+
+  if (cpfLimpo.length !== 11) {
+    throw new Error("CPF inválido. Informe os 11 dígitos.");
+  }
+
   const response = await api.get<FuncionarioFeriasResponse>(
-    `/v1/funcionarios_sicoob_cressem_unico/cpf/${cpf}`
+    `/v1/funcionarios_sicoob_cressem_unico/cpf/${cpfLimpo}`,
+    {
+      timeout: FERIAS_TIMEOUT_MS,
+    }
   );
 
   return response.data;
 }
 
-export async function buscarFuncionarioFeriasPorId(id: string | number) {
+export async function buscarFuncionarioFeriasPorId(
+  id: string | number
+): Promise<FuncionarioFeriasResponse> {
+  if (
+    id === undefined ||
+    id === null ||
+    String(id).trim() === ""
+  ) {
+    throw new Error("ID do funcionário não informado.");
+  }
+
   const response = await api.get<FuncionarioFeriasResponse>(
-    `/v1/funcionarios_sicoob_cressem/ferias/${id}`
+    `/v1/funcionarios_sicoob_cressem/ferias/${encodeURIComponent(
+      String(id)
+    )}`,
+    {
+      timeout: FERIAS_TIMEOUT_MS,
+    }
   );
 
   return response.data;
 }
 
-export async function cadastrarFeriasFuncionario(payload: PeriodoFeriasPayload[]) {
+export async function cadastrarFeriasFuncionario(
+  payload: PeriodoFeriasPayload[]
+): Promise<unknown> {
+  if (!Array.isArray(payload) || payload.length === 0) {
+    throw new Error("Nenhum período de férias foi informado.");
+  }
+
   const response = await api.post(
     "/v1/ferias_funcionarios",
     payload,
     {
       headers: getAuditoriaHeaders(),
+      timeout: FERIAS_TIMEOUT_MS,
     }
   );
 
@@ -125,19 +122,34 @@ export async function cadastrarFeriasFuncionario(payload: PeriodoFeriasPayload[]
 export async function editarFeriasFuncionario(
   idFuncionario: number,
   payload: PeriodoFeriasPayload[]
-) {
+): Promise<unknown> {
+  if (!idFuncionario) {
+    throw new Error("ID do funcionário não informado.");
+  }
+
+  if (!Array.isArray(payload) || payload.length === 0) {
+    throw new Error("Nenhum período de férias foi informado.");
+  }
+
   const response = await api.put(
     `/v1/ferias_funcionarios/${idFuncionario}`,
     payload,
     {
       headers: getAuditoriaHeaders(),
+      timeout: FERIAS_TIMEOUT_MS,
     }
   );
 
   return response.data;
 }
 
-export async function importarFeriasExcel(file: File) {
+export async function importarFeriasExcel(
+  file: File
+): Promise<ImportacaoFeriasResponse> {
+  if (!file) {
+    throw new Error("Arquivo de férias não informado.");
+  }
+
   const formData = new FormData();
   formData.append("file", file);
 
@@ -145,16 +157,29 @@ export async function importarFeriasExcel(file: File) {
     "/v1/ferias_funcionarios/importar-excel",
     formData,
     {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+      headers: getAuditoriaHeaders(),
+      timeout: FERIAS_TIMEOUT_MS,
     }
   );
 
   return response.data;
 }
 
-export async function salvarLoteFerias(payload: CadastroLoteFeriasPayload) {
-  const response = await api.post("/v1/ferias_funcionarios/lote", payload);
+export async function salvarLoteFerias(
+  payload: CadastroLoteFeriasPayload
+): Promise<unknown> {
+  if (!Array.isArray(payload) || payload.length === 0) {
+    throw new Error("Nenhum registro de férias foi informado.");
+  }
+
+  const response = await api.post(
+    "/v1/ferias_funcionarios/lote",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+      timeout: FERIAS_TIMEOUT_MS,
+    }
+  );
+
   return response.data;
 }

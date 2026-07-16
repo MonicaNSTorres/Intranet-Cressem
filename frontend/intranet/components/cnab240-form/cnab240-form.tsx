@@ -33,16 +33,22 @@ import {
     type TransferenciaCnabPayload,
     listarDetalhesRemessa,
     type DetalheRemessaCnab,
+    type TipoLayoutCnab,
+    gerarCnab240PorBoletos,
+    type BoletoCnabPayload,
 } from "@/services/cnab240.service";
 
 type LinhaTransferencia = TransferenciaCnabPayload & {
     id: string;
 };
 
+type LinhaBoleto = BoletoCnabPayload & {
+    id: string;
+};
+
 type PagamentoColado = {
     cpf: string;
     valor: number | undefined;
-    tipo: 1 | 2 | undefined;
     descricao: string;
 };
 
@@ -50,6 +56,7 @@ type PagamentoColadoValidado = PagamentoColado & {
     id: string;
     status: "OK" | "ERRO";
     mensagem: string;
+    tipo?: 1 | 2;
     favorecido?: any;
     banco?: string;
     agencia?: string;
@@ -76,7 +83,49 @@ export function Cnab240Form() {
     const [tipo, setTipo] = useState<1 | 2>(2);
     const [descricao, setDescricao] = useState("");
 
+    const [modalBoletosAberta, setModalBoletosAberta] =
+        useState(false);
+
+    const [boletos, setBoletos] =
+        useState<LinhaBoleto[]>([]);
+
+    const [linhaDigitavelBoleto, setLinhaDigitavelBoleto] =
+        useState("");
+
+    const [nomeCedenteBoleto, setNomeCedenteBoleto] =
+        useState("");
+
+    const [dataVencimentoBoleto, setDataVencimentoBoleto] =
+        useState("");
+
+    const [valorTituloBoleto, setValorTituloBoleto] =
+        useState("");
+
+    const [valorDescontoBoleto, setValorDescontoBoleto] =
+        useState("");
+
+    const [valorMoraMultaBoleto, setValorMoraMultaBoleto] =
+        useState("");
+
+    const [dataPagamentoBoleto, setDataPagamentoBoleto] =
+        useState("");
+
+    const [valorPagamentoBoleto, setValorPagamentoBoleto] =
+        useState("");
+
+    const [seuNumeroBoleto, setSeuNumeroBoleto] =
+        useState("");
+
+    const [mensagemBoleto, setMensagemBoleto] =
+        useState("");
+
+    const [tipoMensagemBoleto, setTipoMensagemBoleto] =
+        useState<"success" | "error">("success");
+
     const [modalDetalhesOpen, setModalDetalhesOpen] = useState(false);
+    const [modalLayoutAberta, setModalLayoutAberta] = useState(false);
+    const [tipoLayoutSelecionado, setTipoLayoutSelecionado] =
+        useState<TipoLayoutCnab | null>(null);
     const [detalhesRemessa, setDetalhesRemessa] = useState<DetalheRemessaCnab[]>([]);
     const [loadingDetalhes, setLoadingDetalhes] = useState(false);
 
@@ -94,9 +143,9 @@ export function Cnab240Form() {
 
     const [modalCpfsAberta, setModalCpfsAberta] = useState(false);
     const [cpfsEmMassa, setCpfsEmMassa] = useState("");
-    const [valorEmMassa, setValorEmMassa] = useState("");
-    const [tipoEmMassa, setTipoEmMassa] = useState<1 | 2>(2);
-    const [descricaoEmMassa, setDescricaoEmMassa] = useState("");
+    //const [valorEmMassa, setValorEmMassa] = useState("");
+    //const [tipoEmMassa, setTipoEmMassa] = useState<1 | 2>(2);
+    //const [descricaoEmMassa, setDescricaoEmMassa] = useState("");
     const [processandoMassa, setProcessandoMassa] = useState(false);
 
     const [mensagem, setMensagem] = useState("");
@@ -231,6 +280,83 @@ export function Cnab240Form() {
         setMensagem("");
     }
 
+    function removerBoleto(id: string) {
+        setBoletos((old) =>
+            old
+                .filter((item) => item.id !== id)
+                .map((item, index) => ({
+                    ...item,
+                    sequencia: index + 1,
+                }))
+        );
+    }
+
+    async function onGerarCnab240Boletos() {
+        if (boletos.length === 0) {
+            setMensagemBoleto(
+                "Adicione pelo menos um boleto."
+            );
+            setTipoMensagemBoleto("error");
+            return;
+        }
+
+        try {
+            setGerando(true);
+            setMensagemBoleto("");
+
+            const payload: BoletoCnabPayload[] =
+                boletos.map(({ id, ...rest }) => rest);
+
+            const blob =
+                await gerarCnab240PorBoletos(
+                    payload
+                );
+
+            const url =
+                window.URL.createObjectURL(blob);
+
+            const link =
+                document.createElement("a");
+
+            link.href = url;
+
+            link.download = `CNAB240_SICOOB_BOLETO_${new Date()
+                .toISOString()
+                .slice(0, 19)
+                .replace(/[-:T]/g, "")}.txt`;
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            window.URL.revokeObjectURL(url);
+
+            setBoletos([]);
+            setModalBoletosAberta(false);
+            setTipoLayoutSelecionado(null);
+
+            mostrarMensagem(
+                "Arquivo CNAB240 Sicoob boleto gerado com sucesso.",
+                "success"
+            );
+
+            await carregarRemessas();
+        } catch (error: any) {
+            console.error(error);
+
+            setMensagemBoleto(
+                error?.response?.data?.details ||
+                error?.response?.data?.error ||
+                error?.message ||
+                "Erro ao gerar o CNAB240 de boletos."
+            );
+
+            setTipoMensagemBoleto("error");
+        } finally {
+            setGerando(false);
+        }
+    }
+
     async function adicionarTransferencia() {
         const cpfLimpo = onlyDigits(cpf);
         const valorNumerico = parseValor(valor);
@@ -303,49 +429,66 @@ export function Cnab240Form() {
     }
 
     async function adicionarTransferenciasEmMassa() {
-        const validos = pagamentosValidados.filter((item) => item.status === "OK");
+        const validos = pagamentosValidados.filter(
+            (item) => item.status === "OK"
+        );
 
         if (validos.length === 0) {
             setMensagemModalMassa(
                 "Nenhum pagamento válido para adicionar. Clique em validar antes ou corrija os erros."
             );
+
             setTipoMensagemModalMassa("error");
             return;
         }
 
-        const novasLinhas: LinhaTransferencia[] = validos.map((item, index) => ({
-            id:
-                typeof crypto !== "undefined" && crypto.randomUUID
-                    ? crypto.randomUUID()
-                    : `${Date.now()}-${Math.random()}`,
+        try {
+            setProcessandoMassa(true);
 
-            sequencia: linhas.length + index + 1,
-            cpfCnpj: onlyCpfCnpjChars(item.favorecido?.CPF || item.cpf),
-            banco: String(item.banco || ""),
-            agencia: String(item.agencia || ""),
-            conta: String(item.conta || ""),
-            dvConta: String(item.dvConta || ""),
-            nome: String(item.nome || ""),
-            valor: Number(item.valor || 0),
-            tipo: item.tipo ?? tipoEmMassa,
-            descricao: item.descricao || descricaoEmMassa,
-        }));
+            const novasLinhas: LinhaTransferencia[] =
+                validos.map((item, index) => ({
+                    id:
+                        typeof crypto !== "undefined" &&
+                            crypto.randomUUID
+                            ? crypto.randomUUID()
+                            : `${Date.now()}-${Math.random()}`,
 
-        setLinhas((old) => [...old, ...novasLinhas]);
+                    sequencia: linhas.length + index + 1,
 
-        setMensagemModalMassa(
-            `${novasLinhas.length} pagamento(s) adicionados com sucesso.`
-        );
-        setTipoMensagemModalMassa("success");
+                    cpfCnpj: onlyCpfCnpjChars(
+                        item.favorecido?.CPF || item.cpf
+                    ),
 
-        setTimeout(() => {
-            setModalCpfsAberta(false);
-            setCpfsEmMassa("");
-            setValorEmMassa("");
-            setDescricaoEmMassa("");
-            setMensagemModalMassa("");
-            setPagamentosValidados([]);
-        }, 1200);
+                    banco: String(item.banco || ""),
+                    agencia: String(item.agencia || ""),
+                    conta: String(item.conta || ""),
+                    dvConta: String(item.dvConta || ""),
+                    nome: String(item.nome || ""),
+                    valor: Number(item.valor || 0),
+                    tipo: item.tipo === 1 ? 1 : 2,
+                    descricao: item.descricao,
+                }));
+
+            setLinhas((old) => [
+                ...old,
+                ...novasLinhas,
+            ]);
+
+            setMensagemModalMassa(
+                `${novasLinhas.length} pagamento(s) adicionados com sucesso.`
+            );
+
+            setTipoMensagemModalMassa("success");
+
+            setTimeout(() => {
+                setModalCpfsAberta(false);
+                setCpfsEmMassa("");
+                setMensagemModalMassa("");
+                setPagamentosValidados([]);
+            }, 1200);
+        } finally {
+            setProcessandoMassa(false);
+        }
     }
 
     function extrairPagamentosDoTexto(texto: string): PagamentoColado[] {
@@ -354,53 +497,59 @@ export function Cnab240Form() {
             .map((linha) => linha.trim())
             .filter(Boolean)
             .map((linha): PagamentoColado | null => {
-                if (/^cpf/i.test(linha)) return null;
-
-                const partes = linha.includes("\t")
-                    ? linha.split("\t")
-                    : linha.includes(";")
-                        ? linha.split(";")
-                        : linha.split(/\s+/);
-
-                const cpf = onlyCpfCnpjChars(partes[0] || "");
-                const valor = partes[1] ? parseValor(partes[1]) : undefined;
-
-                const tipoTexto = String(partes[2] || "")
+                const linhaNormalizada = linha
                     .normalize("NFD")
                     .replace(/[\u0300-\u036f]/g, "")
-                    .toUpperCase()
+                    .toUpperCase();
+
+                if (
+                    linhaNormalizada.startsWith("CPF") ||
+                    linhaNormalizada.startsWith("CPF/CNPJ")
+                ) {
+                    return null;
+                }
+
+                let partes: string[];
+
+                if (linha.includes("\t")) {
+                    partes = linha.split("\t");
+                } else if (linha.includes(";")) {
+                    partes = linha.split(";");
+                } else {
+                    partes = linha.split(/\s+/);
+                }
+
+                const cpf = onlyCpfCnpjChars(partes[0] || "");
+                const valor = partes[1]
+                    ? parseValor(partes[1])
+                    : undefined;
+
+                const descricao = partes
+                    .slice(2)
+                    .join(" ")
                     .trim();
-
-                const descricao = partes.slice(3).join(" ").trim();
-
-                let tipoLinha: 1 | 2 | undefined;
-
-                if (tipoTexto === "1" || tipoTexto.includes("CREDITO")) {
-                    tipoLinha = 1;
-                }
-
-                if (tipoTexto === "2" || tipoTexto.includes("TED")) {
-                    tipoLinha = 2;
-                }
 
                 return {
                     cpf,
                     valor,
-                    tipo: tipoLinha,
                     descricao,
                 };
             })
             .filter((item): item is PagamentoColado => {
-                return !!item && (item.cpf.length === 11 || item.cpf.length === 14);
+                return (
+                    !!item &&
+                    (item.cpf.length === 11 || item.cpf.length === 14)
+                );
             });
     }
 
     async function validarPagamentosEmMassa() {
         const pagamentos = extrairPagamentosDoTexto(cpfsEmMassa);
-        const valorPadrao = parseValor(valorEmMassa);
 
         if (pagamentos.length === 0) {
-            setMensagemModalMassa("Cole pelo menos um CPF/CNPJ válido.");
+            setMensagemModalMassa(
+                "Cole pelo menos um pagamento válido no formato CPF, valor e descrição."
+            );
             setTipoMensagemModalMassa("error");
             setPagamentosValidados([]);
             return;
@@ -413,83 +562,152 @@ export function Cnab240Form() {
             const resultado: PagamentoColadoValidado[] = [];
 
             for (const item of pagamentos) {
-                const valorFinal =
-                    item.valor && item.valor > 0 ? item.valor : valorPadrao;
-
-                const tipoFinal = item.tipo ?? tipoEmMassa;
-                const descricaoFinal = item.descricao || descricaoEmMassa;
-
                 const base: PagamentoColadoValidado = {
                     ...item,
+
                     id:
-                        typeof crypto !== "undefined" && crypto.randomUUID
+                        typeof crypto !== "undefined" &&
+                            crypto.randomUUID
                             ? crypto.randomUUID()
                             : `${Date.now()}-${Math.random()}`,
-                    valor: valorFinal,
-                    tipo: tipoFinal,
-                    descricao: descricaoFinal,
+
                     status: "ERRO",
                     mensagem: "",
                 };
 
-                if (!valorFinal || valorFinal <= 0) {
+                if (!item.valor || item.valor <= 0) {
                     resultado.push({
                         ...base,
-                        mensagem: "Valor não informado",
+                        mensagem: "Valor não informado ou inválido",
                     });
+
+                    continue;
+                }
+
+                if (!item.descricao.trim()) {
+                    resultado.push({
+                        ...base,
+                        mensagem: "Descrição não informada",
+                    });
+
                     continue;
                 }
 
                 try {
-                    const favorecido = await buscarFavorecidoPorCpf(item.cpf);
+                    const favorecido =
+                        await buscarFavorecidoPorCpf(item.cpf);
 
-                    const banco = String(favorecido.BANCO || "").trim();
-                    const agencia = String(favorecido.AGENCIA || "").trim();
-                    const conta = String(favorecido.CONTA || "").trim();
-                    const dvConta = String(favorecido.DV_CONTA || "").trim();
+                    const banco = String(
+                        favorecido.BANCO || ""
+                    ).trim();
 
-                    if (!banco || !agencia || !conta || !dvConta) {
+                    const agencia = String(
+                        favorecido.AGENCIA || ""
+                    ).trim();
+
+                    const conta = String(
+                        favorecido.CONTA || ""
+                    ).trim();
+
+                    const dvConta = String(
+                        favorecido.DV_CONTA || ""
+                    ).trim();
+
+                    const nome = String(
+                        favorecido.NOME || ""
+                    ).trim();
+
+                    const tipoTransferencia = Number(
+                        favorecido.TIPO_TRANSFERENCIA
+                    ) as 1 | 2;
+
+                    if (
+                        !banco ||
+                        !agencia ||
+                        !conta ||
+                        !dvConta ||
+                        !nome
+                    ) {
                         resultado.push({
                             ...base,
                             favorecido,
-                            nome: String(favorecido.NOME || ""),
+                            nome,
                             banco,
                             agencia,
                             conta,
                             dvConta,
                             mensagem: "Sem dados bancários",
                         });
+
+                        continue;
+                    }
+
+                    if (
+                        tipoTransferencia !== 1 &&
+                        tipoTransferencia !== 2
+                    ) {
+                        resultado.push({
+                            ...base,
+                            favorecido,
+                            nome,
+                            banco,
+                            agencia,
+                            conta,
+                            dvConta,
+                            mensagem:
+                                "Tipo da transferência não identificado",
+                        });
+
                         continue;
                     }
 
                     resultado.push({
                         ...base,
                         favorecido,
-                        nome: String(favorecido.NOME || ""),
+                        nome,
                         banco,
                         agencia,
                         conta,
                         dvConta,
+                        tipo: tipoTransferencia,
                         status: "OK",
                         mensagem: "Pronto para adicionar",
                     });
-                } catch {
+                } catch (error: any) {
                     resultado.push({
                         ...base,
-                        mensagem: "Favorecido não encontrado",
+                        mensagem:
+                            error?.response?.data?.error ||
+                            error?.response?.data?.details ||
+                            "Favorecido não encontrado",
                     });
                 }
             }
 
             setPagamentosValidados(resultado);
 
-            const ok = resultado.filter((item) => item.status === "OK").length;
-            const erro = resultado.length - ok;
+            const quantidadeOk = resultado.filter(
+                (item) => item.status === "OK"
+            ).length;
+
+            const quantidadeErro =
+                resultado.length - quantidadeOk;
 
             setMensagemModalMassa(
-                `${ok} pagamento(s) pronto(s) para adicionar. ${erro} com erro.`
+                `${quantidadeOk} pagamento(s) pronto(s) para adicionar. ${quantidadeErro} com erro.`
             );
-            setTipoMensagemModalMassa(erro > 0 ? "error" : "success");
+
+            setTipoMensagemModalMassa(
+                quantidadeErro > 0 ? "error" : "success"
+            );
+        } catch (error) {
+            console.error(error);
+
+            setMensagemModalMassa(
+                "Não foi possível validar os pagamentos."
+            );
+
+            setTipoMensagemModalMassa("error");
         } finally {
             setValidandoMassa(false);
         }
@@ -506,9 +724,163 @@ export function Cnab240Form() {
         );
     }
 
-    async function onGerarCnab240() {
+    function converterLinhaDigitavelParaCodigoBarras(
+        value: string
+    ): string {
+        const digits = onlyDigits(value);
+
+        if (digits.length === 44) {
+            return digits;
+        }
+
+        if (digits.length !== 47) {
+            throw new Error(
+                "Informe um código de barras com 44 dígitos ou uma linha digitável bancária com 47 dígitos."
+            );
+        }
+
+        const bancoMoeda = digits.slice(0, 4);
+        const dvGeral = digits.slice(32, 33);
+        const fatorVencimentoValor = digits.slice(33, 47);
+
+        const campoLivre1 = digits.slice(4, 9);
+        const campoLivre2 = digits.slice(10, 20);
+        const campoLivre3 = digits.slice(21, 31);
+
+        return (
+            bancoMoeda +
+            dvGeral +
+            fatorVencimentoValor +
+            campoLivre1 +
+            campoLivre2 +
+            campoLivre3
+        );
+    }
+
+    function adicionarBoleto() {
+        try {
+            setMensagemBoleto("");
+
+            const codigoBarras =
+                converterLinhaDigitavelParaCodigoBarras(
+                    linhaDigitavelBoleto
+                );
+
+            const valorTituloNumerico =
+                parseValor(valorTituloBoleto);
+
+            const valorPagamentoNumerico =
+                parseValor(valorPagamentoBoleto);
+
+            const valorDescontoNumerico =
+                parseValor(valorDescontoBoleto);
+
+            const valorMoraMultaNumerico =
+                parseValor(valorMoraMultaBoleto);
+
+            if (!nomeCedenteBoleto.trim()) {
+                setMensagemBoleto(
+                    "Informe o nome do cedente."
+                );
+                setTipoMensagemBoleto("error");
+                return;
+            }
+
+            if (
+                !valorPagamentoNumerico ||
+                valorPagamentoNumerico <= 0
+            ) {
+                setMensagemBoleto(
+                    "Informe um valor de pagamento válido."
+                );
+                setTipoMensagemBoleto("error");
+                return;
+            }
+
+            if (!dataPagamentoBoleto) {
+                setMensagemBoleto(
+                    "Informe a data do pagamento."
+                );
+                setTipoMensagemBoleto("error");
+                return;
+            }
+
+            const novaLinha: LinhaBoleto = {
+                id:
+                    typeof crypto !== "undefined" &&
+                        crypto.randomUUID
+                        ? crypto.randomUUID()
+                        : `${Date.now()}-${Math.random()}`,
+
+                sequencia: boletos.length + 1,
+                codigoBarras,
+                nomeCedente:
+                    nomeCedenteBoleto.trim(),
+
+                dataVencimento:
+                    dataVencimentoBoleto || null,
+
+                valorTitulo:
+                    valorTituloNumerico,
+
+                valorDescontoAbatimento:
+                    valorDescontoNumerico,
+
+                valorMoraMulta:
+                    valorMoraMultaNumerico,
+
+                dataPagamento:
+                    dataPagamentoBoleto,
+
+                valorPagamento:
+                    valorPagamentoNumerico,
+
+                seuNumero:
+                    seuNumeroBoleto.trim(),
+
+                cedenteNome:
+                    nomeCedenteBoleto.trim(),
+
+                cedenteTipoInscricao: 0,
+                sacadoTipoInscricao: 0,
+                sacadorTipoInscricao: 0,
+            };
+
+            setBoletos((old) => [
+                ...old,
+                novaLinha,
+            ]);
+
+            setLinhaDigitavelBoleto("");
+            setNomeCedenteBoleto("");
+            setDataVencimentoBoleto("");
+            setValorTituloBoleto("");
+            setValorDescontoBoleto("");
+            setValorMoraMultaBoleto("");
+            setValorPagamentoBoleto("");
+            setSeuNumeroBoleto("");
+
+            setMensagemBoleto(
+                "Boleto adicionado com sucesso."
+            );
+            setTipoMensagemBoleto("success");
+        } catch (error: any) {
+            setMensagemBoleto(
+                error?.message ||
+                "Não foi possível adicionar o boleto."
+            );
+            setTipoMensagemBoleto("error");
+        }
+    }
+
+    async function onGerarCnab240(
+        tipoLayout: TipoLayoutCnab
+    ) {
         if (linhas.length === 0) {
-            mostrarMensagem("Adicione pelo menos um pagamento antes de gerar o CNAB240.", "error");
+            mostrarMensagem(
+                "Adicione pelo menos um pagamento antes de gerar o CNAB240.",
+                "error"
+            );
             return;
         }
 
@@ -516,15 +888,25 @@ export function Cnab240Form() {
             setGerando(true);
             setMensagem("");
 
-            const payload = linhas.map(({ id, ...rest }) => rest);
+            const payload = linhas.map(
+                ({ id, ...rest }) => rest
+            );
 
-            const blob = await gerarCnab240PorTransferencias(payload);
+            const blob =
+                await gerarCnab240PorTransferencias(
+                    payload,
+                    tipoLayout
+                );
 
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement("a");
+            const url =
+                window.URL.createObjectURL(blob);
+
+            const link =
+                document.createElement("a");
 
             link.href = url;
-            link.download = `CNAB240_${new Date()
+
+            link.download = `CNAB240_${tipoLayout}_${new Date()
                 .toISOString()
                 .slice(0, 19)
                 .replace(/[-:T]/g, "")}.txt`;
@@ -535,11 +917,20 @@ export function Cnab240Form() {
 
             window.URL.revokeObjectURL(url);
 
-            mostrarMensagem("Arquivo CNAB240 gerado com sucesso.", "success");
+            mostrarMensagem(
+                `Arquivo CNAB240 ${tipoLayout} gerado com sucesso.`,
+                "success"
+            );
+
             setLinhas([]);
+
+            setModalLayoutAberta(false);
+            setTipoLayoutSelecionado(null);
+
             await carregarRemessas();
         } catch (error: any) {
             console.error(error);
+
             mostrarMensagem(
                 error?.response?.data?.details ||
                 error?.response?.data?.error ||
@@ -596,6 +987,93 @@ export function Cnab240Form() {
         () => extrairPagamentosDoTexto(cpfsEmMassa),
         [cpfsEmMassa]
     );
+
+    function exportarDetalhesRemessaCsv() {
+        if (detalhesRemessa.length === 0) {
+            mostrarMensagem(
+                "Não existem pagamentos para exportar nesta remessa.",
+                "error"
+            );
+            return;
+        }
+
+        const escaparCsv = (
+            valor: string | number | null | undefined
+        ): string => {
+            const texto = String(valor ?? "");
+
+            return `"${texto.replace(/"/g, '""')}"`;
+        };
+
+        const cabecalho = [
+            "Sequência",
+            "CPF/CNPJ",
+            "Favorecido",
+            "Banco",
+            "Agência",
+            "Conta",
+            "Tipo",
+            "Descrição",
+            "Valor",
+            "Data de criação",
+        ];
+
+        const linhasCsv = detalhesRemessa.map((item) => {
+            const tipoTransferencia =
+                Number(item.TIPO) === 1 ? "Crédito bancário" : "TED";
+
+            const contaCompleta = `${item.CONTA || ""}${item.DV_CONTA ? `-${item.DV_CONTA}` : ""
+                }`;
+
+            const valorFormatado = Number(item.VALOR || 0).toLocaleString(
+                "pt-BR",
+                {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }
+            );
+
+            return [
+                escaparCsv(item.SEQ),
+                escaparCsv(item.CPF),
+                escaparCsv(item.NOME),
+                escaparCsv(item.BANCO),
+                escaparCsv(item.AGENCIA),
+                escaparCsv(contaCompleta),
+                escaparCsv(tipoTransferencia),
+                escaparCsv(item.DESCRICAO || ""),
+                escaparCsv(valorFormatado),
+                escaparCsv(item.CREATED_AT || ""),
+            ].join(";");
+        });
+
+        const conteudoCsv = [
+            cabecalho.map(escaparCsv).join(";"),
+            ...linhasCsv,
+        ].join("\r\n");
+
+        const blob = new Blob(["\uFEFF" + conteudoCsv], {
+            type: "text/csv;charset=utf-8;",
+        });
+
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        const agora = new Date();
+        const dataArquivo = agora
+            .toISOString()
+            .slice(0, 19)
+            .replace(/[-:T]/g, "");
+
+        link.href = url;
+        link.download = `detalhes_remessa_cnab240_${dataArquivo}.csv`;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        window.URL.revokeObjectURL(url);
+    }
 
     return (
         <div className="space-y-6">
@@ -726,13 +1204,17 @@ export function Cnab240Form() {
                                         className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#00AE9D]/20 bg-[#00AE9D]/10 px-5 text-sm font-semibold text-[#007f73] shadow-sm transition hover:bg-[#00AE9D]/15 cursor-pointer"
                                     >
                                         <FaPlus />
-                                        Colar vários CPF&apos;s
+                                        Colar pagamentos do Excel
                                     </button>
 
                                     <button
                                         type="button"
-                                        onClick={onGerarCnab240}
-                                        disabled={linhas.length === 0 || gerando}
+                                        onClick={() => {
+                                            setMensagem("");
+                                            setTipoLayoutSelecionado(null);
+                                            setModalLayoutAberta(true);
+                                        }}
+                                        disabled={gerando}
                                         className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                                     >
                                         <FaDownload />
@@ -1282,6 +1764,524 @@ export function Cnab240Form() {
                     </div>
                 </div>
             </div>
+            {modalLayoutAberta && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+                        <div className="bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                                        Geração CNAB240
+                                    </p>
+
+                                    <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                                        Selecione o layout de pagamento
+                                    </h2>
+
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Escolha o banco responsável pela geração do arquivo.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setModalLayoutAberta(false);
+                                        setTipoLayoutSelecionado(null);
+                                    }}
+                                    disabled={gerando}
+                                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:opacity-60 cursor-pointer"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-5 p-6">
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setTipoLayoutSelecionado(
+                                            "SANTANDER"
+                                        )
+                                    }
+                                    disabled={gerando}
+                                    className={`w-full rounded-2xl border p-4 text-left transition cursor-pointer ${tipoLayoutSelecionado ===
+                                        "SANTANDER"
+                                        ? "border-[#00AE9D] bg-[#00AE9D]/10 ring-4 ring-[#00AE9D]/10"
+                                        : "border-slate-200 bg-white hover:border-[#00AE9D]/40 hover:bg-slate-50"
+                                        }`}
+                                >
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="font-bold text-slate-800">
+                                                Santander
+                                            </p>
+
+                                            <p className="mt-1 text-sm text-slate-500">
+                                                Layout atualmente utilizado pelo sistema.
+                                            </p>
+                                        </div>
+
+                                        {tipoLayoutSelecionado ===
+                                            "SANTANDER" && (
+                                                <FaCheckCircle className="text-xl text-[#00AE9D]" />
+                                            )}
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setTipoLayoutSelecionado("SICOOB")
+                                    }
+                                    disabled={gerando}
+                                    className={`w-full rounded-2xl border p-4 text-left transition cursor-pointer ${tipoLayoutSelecionado === "SICOOB"
+                                        ? "border-[#00AE9D] bg-[#00AE9D]/10 ring-4 ring-[#00AE9D]/10"
+                                        : "border-slate-200 bg-white hover:border-[#00AE9D]/40 hover:bg-slate-50"
+                                        }`}
+                                >
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="font-bold text-slate-800">
+                                                Sicoob
+                                            </p>
+
+                                            <p className="mt-1 text-sm text-slate-500">
+                                                Transferências entre contas Sicoob e TED.
+                                            </p>
+                                        </div>
+
+                                        {tipoLayoutSelecionado === "SICOOB" && (
+                                            <FaCheckCircle className="text-xl text-[#00AE9D]" />
+                                        )}
+                                    </div>
+                                </button>
+
+                                {/*<button
+                                    type="button"
+                                    onClick={() =>
+                                        setTipoLayoutSelecionado(
+                                            "SICOOB_BOLETO"
+                                        )
+                                    }
+                                    disabled={gerando}
+                                    className={`w-full rounded-2xl border p-4 text-left transition cursor-pointer ${tipoLayoutSelecionado ===
+                                        "SICOOB_BOLETO"
+                                        ? "border-[#00AE9D] bg-[#00AE9D]/10 ring-4 ring-[#00AE9D]/10"
+                                        : "border-slate-200 bg-white hover:border-[#00AE9D]/40 hover:bg-slate-50"
+                                        }`}
+                                >
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p className="font-bold text-slate-800">
+                                                Sicoob boleto
+                                            </p>
+
+                                            <p className="mt-1 text-sm text-slate-500">
+                                                Pagamento de títulos e boletos bancários.
+                                            </p>
+                                        </div>
+
+                                        {tipoLayoutSelecionado ===
+                                            "SICOOB_BOLETO" && (
+                                                <FaCheckCircle className="text-xl text-[#00AE9D]" />
+                                            )}
+                                    </div>
+                                </button>*/}
+                            </div>
+
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                                <p className="text-xs leading-5 text-amber-800">
+                                    Santander e Sicoob utilizam a lista de transferências.
+                                    Para Sicoob boleto será aberto um formulário específico
+                                    para informar os dados do título.
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setModalLayoutAberta(false);
+                                        setTipoLayoutSelecionado(null);
+                                    }}
+                                    disabled={gerando}
+                                    className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 cursor-pointer"
+                                >
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!tipoLayoutSelecionado) {
+                                            return;
+                                        }
+
+                                        if (
+                                            tipoLayoutSelecionado ===
+                                            "SICOOB_BOLETO"
+                                        ) {
+                                            setModalLayoutAberta(false);
+                                            setModalBoletosAberta(true);
+                                            setMensagemBoleto("");
+
+                                            if (!dataPagamentoBoleto) {
+                                                setDataPagamentoBoleto(
+                                                    new Date()
+                                                        .toISOString()
+                                                        .slice(0, 10)
+                                                );
+                                            }
+
+                                            return;
+                                        }
+
+                                        onGerarCnab240(
+                                            tipoLayoutSelecionado
+                                        );
+                                    }}
+                                    disabled={
+                                        !tipoLayoutSelecionado ||
+                                        gerando
+                                    }
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    <FaDownload />
+
+                                    {gerando
+                                        ? "Gerando arquivo..."
+                                        : "Gerar arquivo"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {modalBoletosAberta && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+                    <div className="max-h-[94vh] w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+                        <div className="bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                                        Sicoob boleto
+                                    </p>
+
+                                    <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                                        Pagamento de títulos
+                                    </h2>
+
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Informe o código de barras ou a linha digitável bancária.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setModalBoletosAberta(false)
+                                    }
+                                    disabled={gerando}
+                                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl text-slate-500 transition hover:border-red-200 hover:text-red-500"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="max-h-[78vh] space-y-5 overflow-y-auto p-6">
+                            {mensagemBoleto && (
+                                <div
+                                    className={`rounded-2xl px-4 py-3 text-sm font-medium ${tipoMensagemBoleto ===
+                                        "success"
+                                        ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                                        : "border border-red-200 bg-red-50 text-red-700"
+                                        }`}
+                                >
+                                    {mensagemBoleto}
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 gap-4 rounded-3xl border border-slate-200 bg-slate-50/70 p-5 md:grid-cols-2 lg:grid-cols-4">
+                                <div className="md:col-span-2 lg:col-span-4">
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                        Código de barras ou linha digitável
+                                    </label>
+
+                                    <input
+                                        value={linhaDigitavelBoleto}
+                                        onChange={(e) =>
+                                            setLinhaDigitavelBoleto(
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="44 ou 47 dígitos"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+                                    />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                        Nome do cedente
+                                    </label>
+
+                                    <input
+                                        value={nomeCedenteBoleto}
+                                        onChange={(e) =>
+                                            setNomeCedenteBoleto(
+                                                e.target.value
+                                            )
+                                        }
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                        Data de vencimento
+                                    </label>
+
+                                    <input
+                                        type="date"
+                                        value={dataVencimentoBoleto}
+                                        onChange={(e) =>
+                                            setDataVencimentoBoleto(
+                                                e.target.value
+                                            )
+                                        }
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                        Valor do título
+                                    </label>
+
+                                    <input
+                                        value={valorTituloBoleto}
+                                        onChange={(e) =>
+                                            setValorTituloBoleto(
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="0,00"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                        Desconto/abatimento
+                                    </label>
+
+                                    <input
+                                        value={valorDescontoBoleto}
+                                        onChange={(e) =>
+                                            setValorDescontoBoleto(
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="0,00"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                        Mora/multa
+                                    </label>
+
+                                    <input
+                                        value={valorMoraMultaBoleto}
+                                        onChange={(e) =>
+                                            setValorMoraMultaBoleto(
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="0,00"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                        Data do pagamento
+                                    </label>
+
+                                    <input
+                                        type="date"
+                                        value={dataPagamentoBoleto}
+                                        onChange={(e) =>
+                                            setDataPagamentoBoleto(
+                                                e.target.value
+                                            )
+                                        }
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                        Valor do pagamento
+                                    </label>
+
+                                    <input
+                                        value={valorPagamentoBoleto}
+                                        onChange={(e) =>
+                                            setValorPagamentoBoleto(
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="0,00"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                    />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                        Seu número
+                                    </label>
+
+                                    <input
+                                        value={seuNumeroBoleto}
+                                        onChange={(e) =>
+                                            setSeuNumeroBoleto(
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="Identificação interna opcional"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={adicionarBoleto}
+                                    disabled={gerando}
+                                    className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white"
+                                >
+                                    <FaPlus />
+                                    Adicionar boleto
+                                </button>
+                            </div>
+
+                            <div className="overflow-hidden rounded-3xl border border-slate-200">
+                                <div className="max-h-72 overflow-auto">
+                                    <table className="min-w-full">
+                                        <thead className="bg-slate-100">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-slate-500">
+                                                    Seq.
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-slate-500">
+                                                    Cedente
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-slate-500">
+                                                    Código
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-slate-500">
+                                                    Vencimento
+                                                </th>
+                                                <th className="px-4 py-3 text-right text-xs font-bold text-slate-500">
+                                                    Valor
+                                                </th>
+                                                <th className="px-4 py-3 text-right text-xs font-bold text-slate-500">
+                                                    Ações
+                                                </th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody className="divide-y divide-slate-100">
+                                            {boletos.length === 0 ? (
+                                                <tr>
+                                                    <td
+                                                        colSpan={6}
+                                                        className="px-4 py-10 text-center text-sm text-slate-500"
+                                                    >
+                                                        Nenhum boleto adicionado.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                boletos.map((item) => (
+                                                    <tr key={item.id}>
+                                                        <td className="px-4 py-3 text-sm">
+                                                            {item.sequencia}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm font-semibold">
+                                                            {item.nomeCedente}
+                                                        </td>
+                                                        <td className="max-w-xs px-4 py-3 text-sm">
+                                                            <span className="block truncate">
+                                                                {item.codigoBarras}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm">
+                                                            {item.dataVencimento ||
+                                                                "-"}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right text-sm font-semibold">
+                                                            {formatMoney(
+                                                                item.valorPagamento
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    removerBoleto(
+                                                                        item.id
+                                                                    )
+                                                                }
+                                                                className="rounded-xl border border-red-200 bg-red-50 p-2 text-red-600"
+                                                            >
+                                                                <FaTrash />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setModalBoletosAberta(false)
+                                    }
+                                    disabled={gerando}
+                                    className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700"
+                                >
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={onGerarCnab240Boletos}
+                                    disabled={
+                                        boletos.length === 0 ||
+                                        gerando
+                                    }
+                                    className="inline-flex items-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                                >
+                                    <FaDownload />
+                                    {gerando
+                                        ? "Gerando..."
+                                        : "Gerar CNAB boleto"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {modalDetalhesOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
@@ -1391,6 +2391,11 @@ export function Cnab240Form() {
                                                     <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                                                         Tipo
                                                     </th>
+
+                                                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                                                        Descrição
+                                                    </th>
+
                                                     <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
                                                         Valor
                                                     </th>
@@ -1430,6 +2435,15 @@ export function Cnab240Form() {
                                                             </span>
                                                         </td>
 
+                                                        <td className="max-w-xs px-4 py-4 text-sm text-slate-600">
+                                                            <span
+                                                                className="block truncate"
+                                                                title={item.DESCRICAO || ""}
+                                                            >
+                                                                {item.DESCRICAO || "-"}
+                                                            </span>
+                                                        </td>
+
                                                         <td className="px-4 py-4 text-right text-sm font-bold text-slate-800">
                                                             {formatMoney(item.VALOR)}
                                                         </td>
@@ -1448,6 +2462,16 @@ export function Cnab240Form() {
                                     className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
                                 >
                                     Fechar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={exportarDetalhesRemessaCsv}
+                                    disabled={loadingDetalhes || detalhesRemessa.length === 0}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                >
+                                    <FaDownload />
+                                    Exportar CSV
                                 </button>
                             </div>
                         </div>
@@ -1470,7 +2494,7 @@ export function Cnab240Form() {
                                     </h2>
 
                                     <p className="mt-1 text-sm text-slate-500">
-                                        Cole uma tabela com CPF, valor, tipo e descrição. Valide os dados antes de adicionar na remessa.
+                                        Cole uma tabela com CPF, valor e descrição. Os dados bancários e o tipo da transferência serão preenchidos automaticamente.
                                     </p>
                                 </div>
 
@@ -1499,19 +2523,21 @@ export function Cnab240Form() {
 
                             <div className="rounded-3xl border border-[#00AE9D]/20 bg-[#00AE9D]/5 p-4">
                                 <p className="text-sm font-semibold text-slate-800">
-                                    Formatos aceitos
+                                    Formato aceito
                                 </p>
 
                                 <p className="mt-1 text-xs leading-6 text-slate-600">
-                                    Você pode colar apenas CPF&apos;s, ou uma tabela copiada do Excel seguindo esta ordem:
-                                    <strong> CPF | Valor | Tipo | Descrição</strong>.
+                                    Copie as três colunas do Excel seguindo esta ordem:
+                                    <strong> CPF | Valor | Descrição</strong>.
+                                    O nome, banco, agência, conta e tipo da transferência
+                                    serão preenchidos automaticamente pelo sistema.
                                 </p>
 
                                 <pre className="mt-3 overflow-x-auto rounded-2xl bg-white p-3 text-xs leading-6 text-slate-600 ring-1 ring-slate-200">
-                                    {`CPF            VALOR     TIPO              DESCRIÇÃO
-11111111111    150,00    TED               Reembolso
-22222222222    250,00    Crédito bancário  Pagamento
-33333333333    80,50     2                 Ajuda de custo`}
+                                    {`CPF            VALOR     DESCRIÇÃO
+11111111111    150,00    Reembolso
+22222222222    250,00    Pagamento
+33333333333    80,50     Ajuda de custo`}
                                 </pre>
                             </div>
 
@@ -1547,63 +2573,29 @@ Ou apenas CPF's:
                             </div>
 
                             <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4">
-                                <p className="mb-4 text-sm font-semibold text-slate-800">
-                                    Dados padrão
+                                <p className="mb-2 text-sm font-semibold text-slate-800">
+                                    Preenchimento automático
                                 </p>
 
-                                <div className="grid gap-4 md:grid-cols-3">
-                                    <div>
-                                        <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                            Valor padrão
-                                        </label>
+                                <p className="text-sm leading-6 text-slate-600">
+                                    Ao validar os pagamentos, o sistema buscará automaticamente o cadastro
+                                    do favorecido pelo CPF e preencherá:
+                                </p>
 
-                                        <input
-                                            value={valorEmMassa}
-                                            onChange={(e) => {
-                                                setValorEmMassa(e.target.value);
-                                                setPagamentosValidados([]);
-                                                setMensagemModalMassa("");
-                                            }}
-                                            placeholder="Usado se a linha não tiver valor"
-                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
-                                        />
-                                    </div>
+                                <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                                    <li>• Nome do favorecido</li>
+                                    <li>• Banco</li>
+                                    <li>• Agência</li>
+                                    <li>• Conta e dígito</li>
+                                    <li>• Tipo da transferência (Crédito bancário ou TED)</li>
+                                </ul>
 
-                                    <div>
-                                        <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                            Tipo padrão
-                                        </label>
-
-                                        <select
-                                            value={tipoEmMassa}
-                                            onChange={(e) => {
-                                                setTipoEmMassa(Number(e.target.value) as 1 | 2);
-                                                setPagamentosValidados([]);
-                                                setMensagemModalMassa("");
-                                            }}
-                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
-                                        >
-                                            <option value={1}>Crédito bancário</option>
-                                            <option value={2}>TED</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                            Descrição padrão
-                                        </label>
-
-                                        <input
-                                            value={descricaoEmMassa}
-                                            onChange={(e) => {
-                                                setDescricaoEmMassa(e.target.value);
-                                                setPagamentosValidados([]);
-                                                setMensagemModalMassa("");
-                                            }}
-                                            placeholder="Usada se a linha não tiver descrição"
-                                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
-                                        />
-                                    </div>
+                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                                    <p className="text-xs leading-5 text-amber-800">
+                                        <strong>Importante:</strong> As colunas <strong>Valor</strong> e{" "}
+                                        <strong>Descrição</strong> devem estar preenchidas na planilha.
+                                        Caso contrário, o pagamento será marcado com erro na validação.
+                                    </p>
                                 </div>
                             </div>
 

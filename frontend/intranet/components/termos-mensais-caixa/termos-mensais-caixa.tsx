@@ -10,6 +10,7 @@ import {
   FaSearch,
   FaTimes,
   FaUpload,
+  FaTrash,
 } from "react-icons/fa";
 import {
   getDownloadTermoMensalCaixaAssinadoUrl,
@@ -20,6 +21,7 @@ import {
   StatusTermoMensalCaixa,
   TermoMensalCaixa,
   uploadTermoMensalCaixaAssinado,
+  excluirTermoMensalCaixa,
 } from "@/services/termos_mensais_caixa.service";
 import { gerarPdfTermoMensalCaixa } from "@/lib/pdf/gerarPdfTermoMensalCaixa";
 
@@ -181,6 +183,27 @@ export function TermosMensaisCaixa() {
 
     iniciarTela();
   }, []);
+
+  async function excluirTermo(id: number) {
+    const confirmar = window.confirm(
+      "Tem certeza que deseja excluir este termo mensal de caixa?"
+    );
+
+    if (!confirmar) return;
+
+    try {
+      setLoading(true);
+      setErro("");
+
+      await excluirTermoMensalCaixa(id);
+
+      await buscarTermos();
+    } catch (error: any) {
+      setErro(error?.message || "Erro ao excluir termo mensal caixa.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -397,6 +420,15 @@ export function TermosMensaisCaixa() {
                         >
                           <FaEdit size={11} />
                           Editar
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => excluirTermo(item.ID_TERMOS_MENSAIS_CAIXA)}
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                        >
+                          <FaTrash size={11} />
+                          Excluir
                         </button>
 
                         <button

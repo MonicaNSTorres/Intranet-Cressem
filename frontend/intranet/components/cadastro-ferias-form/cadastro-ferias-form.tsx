@@ -278,10 +278,10 @@ export function CadastroFeriasForm() {
         prev.map((item, index) =>
           index === indiceEditando
             ? {
-                ...item,
-                dataInicio: inputInicio,
-                dataFim: inputVolta,
-              }
+              ...item,
+              dataInicio: inputInicio,
+              dataFim: inputVolta,
+            }
             : item
         )
       );
@@ -373,11 +373,15 @@ export function CadastroFeriasForm() {
       );
       setInfo(response.message || "Planilha carregada.");
       setArquivoImportacao(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setErro("Falha ao importar planilha de férias.");
-    } finally {
-      setLoadingImportacao(false);
+
+      const mensagem =
+        error?.response?.data?.details ||
+        error?.response?.data?.error ||
+        "Falha ao importar planilha de férias.";
+
+      setErro(mensagem);
     }
   }
 
@@ -390,9 +394,9 @@ export function CadastroFeriasForm() {
       prev.map((item, idx) =>
         idx === index
           ? {
-              ...item,
-              [campo]: valor,
-            }
+            ...item,
+            [campo]: valor,
+          }
           : item
       )
     );
@@ -439,7 +443,7 @@ export function CadastroFeriasForm() {
       } else {
         setErro(
           error?.response?.data?.error ||
-            "Falha ao salvar lote de férias. Revise as linhas e tente novamente."
+          "Falha ao salvar lote de férias. Revise as linhas e tente novamente."
         );
       }
     } finally {
@@ -467,22 +471,20 @@ export function CadastroFeriasForm() {
               <button
                 type="button"
                 onClick={() => setModoCadastro("manual")}
-                className={`rounded px-4 py-2 text-sm font-semibold ${
-                  modoCadastro === "manual"
-                    ? "bg-secondary text-white"
-                    : "bg-white text-slate-700 border border-slate-300"
-                }`}
+                className={`rounded px-4 py-2 text-sm font-semibold ${modoCadastro === "manual"
+                  ? "bg-secondary text-white"
+                  : "bg-white text-slate-700 border border-slate-300"
+                  }`}
               >
                 Inserir Manualmente
               </button>
               <button
                 type="button"
                 onClick={() => setModoCadastro("lote")}
-                className={`rounded px-4 py-2 text-sm font-semibold ${
-                  modoCadastro === "lote"
-                    ? "bg-secondary text-white"
-                    : "bg-white text-slate-700 border border-slate-300"
-                }`}
+                className={`rounded px-4 py-2 text-sm font-semibold ${modoCadastro === "lote"
+                  ? "bg-secondary text-white"
+                  : "bg-white text-slate-700 border border-slate-300"
+                  }`}
               >
                 Importar por Planilha
               </button>

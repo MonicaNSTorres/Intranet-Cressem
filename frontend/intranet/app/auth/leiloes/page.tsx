@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FaGavel, FaEye, FaTrophy } from "react-icons/fa";
+import { FaGavel, FaEye, FaTrophy, FaChartArea } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/back-button/back-button";
 import {
@@ -85,10 +85,19 @@ export default function LeiloesPage() {
           <button
             type="button"
             onClick={() => router.push("/auth/leiloes_finalizados")}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-yellow-200 bg-yellow-50 px-5 py-3 text-sm font-bold text-yellow-700 transition hover:bg-yellow-100 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-yellow-200 bg-yellow-50 shadow-lg shadow-yellow/20 px-5 py-3 text-sm font-bold text-yellow-700 transition hover:bg-yellow-100 cursor-pointer"
           >
             <FaTrophy />
             Leilões encerrados
+          </button>
+
+          <button
+            type="button"
+            onClick={() => router.push("/auth/leiloes_dashboard")}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-fourth-200 bg-fourth-50 shadow-lg shadow-fourth/20 px-5 py-3 text-sm font-bold text-fourth-700 transition hover:bg-fourth hover:border-fourth hover:text-white cursor-pointer"
+          >
+            <FaChartArea />
+            Leilões métricas
           </button>
         </div>
       </div>

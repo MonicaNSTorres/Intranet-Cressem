@@ -1,49 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:3001/v1";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro no service de cadastro de contrato",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          baseURL: error?.config?.baseURL,
-          method: error?.config?.method,
-          responseData: error?.response?.data,
-        },
-
-        SOURCE: "CADASTRO_CONTRATO_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
+import { api } from "./api.service";
 
 export type ContratoEmpresaPayload = {
   NR_CNPJ: string;
@@ -98,87 +53,164 @@ export type EmailContratoItem = {
 
 export async function cadastrarContratoEmpresa(
   payload: ContratoEmpresaPayload
-) {
-  const { data } = await api.post("/v1/contratos_empresas", payload);
-  return data;
+): Promise<ContratoEmpresaResponse> {
+  const response = await api.post<ContratoEmpresaResponse>(
+    "/v1/contratos_empresas",
+    payload
+  );
+
+  return response.data;
 }
 
 export async function editarContratoEmpresa(
   id: number,
   payload: ContratoEmpresaPayload
-) {
-  const { data } = await api.put(`/v1/contratos_empresas/${id}`, payload);
-  return data;
+): Promise<ContratoEmpresaResponse> {
+  if (!id) {
+    throw new Error("ID do contrato não informado.");
+  }
+
+  const response = await api.put<ContratoEmpresaResponse>(
+    `/v1/contratos_empresas/${id}`,
+    payload
+  );
+
+  return response.data;
 }
 
-export async function buscarContratoPorId(id: number) {
-  const { data } = await api.get<ContratoEmpresaResponse>(
+export async function buscarContratoPorId(
+  id: number
+): Promise<ContratoEmpresaResponse> {
+  if (!id) {
+    throw new Error("ID do contrato não informado.");
+  }
+
+  const response = await api.get<ContratoEmpresaResponse>(
     `/v1/contratos_empresas/${id}`
   );
-  return data;
+
+  return response.data;
 }
 
-export async function carregarCidadesContrato() {
-  const { data } = await api.get<string[]>("/v1/contratos_empresas_cidades");
-  return data || [];
+export async function carregarCidadesContrato(): Promise<string[]> {
+  const response = await api.get<string[]>(
+    "/v1/contratos_empresas_cidades"
+  );
+
+  return Array.isArray(response.data) ? response.data : [];
 }
 
-export async function carregarTiposContrato() {
-  const { data } = await api.get<string[]>("/v1/contratos_empresas_tipo");
-  return data || [];
+export async function carregarTiposContrato(): Promise<string[]> {
+  const response = await api.get<string[]>(
+    "/v1/contratos_empresas_tipo"
+  );
+
+  return Array.isArray(response.data) ? response.data : [];
 }
 
-export async function carregarSistemasConsignados() {
-  const { data } = await api.get<string[]>("/v1/contratos_empresas_sistema");
-  return data || [];
+export async function carregarSistemasConsignados(): Promise<string[]> {
+  const response = await api.get<string[]>(
+    "/v1/contratos_empresas_sistema"
+  );
+
+  return Array.isArray(response.data) ? response.data : [];
 }
 
-export async function carregarEmailsFuncionarios() {
-  const { data } = await api.get<FuncionarioEmail[]>(
+export async function carregarEmailsFuncionarios(): Promise<string[]> {
+  const response = await api.get<FuncionarioEmail[]>(
     "/v1/funcionarios_simples_email_sicoob_cressem"
   );
 
-  return (data || [])
+  const funcionarios = Array.isArray(response.data)
+    ? response.data
+    : [];
+
+  return funcionarios
     .map((item) => String(item.EMAIL || "").trim())
     .filter(Boolean);
 }
 
-export async function buscarFuncionarioPorEmail(email: string) {
-  const { data } = await api.get<FuncionarioEmail>(
-    `/v1/funcionarios_sicoob_cressem/email/${encodeURIComponent(email)}`
+export async function buscarFuncionarioPorEmail(
+  email: string
+): Promise<FuncionarioEmail> {
+  const emailLimpo = String(email || "").trim();
+
+  if (!emailLimpo) {
+    throw new Error("E-mail do funcionário não informado.");
+  }
+
+  const response = await api.get<FuncionarioEmail>(
+    `/v1/funcionarios_sicoob_cressem/email/${encodeURIComponent(
+      emailLimpo
+    )}`
   );
-  return data;
+
+  return response.data;
 }
 
-export async function criarEmailContrato(payload: EmailContratoPayload) {
-  const { data } = await api.post("/v1/email_contrato", payload);
-  return data;
+export async function criarEmailContrato(
+  payload: EmailContratoPayload
+): Promise<EmailContratoItem> {
+  const response = await api.post<EmailContratoItem>(
+    "/v1/email_contrato",
+    payload
+  );
+
+  return response.data;
 }
 
-export async function listarEmailContratoPorContrato(idContrato: number) {
-  const { data } = await api.get<EmailContratoItem[]>(
+export async function listarEmailContratoPorContrato(
+  idContrato: number
+): Promise<EmailContratoItem[]> {
+  if (!idContrato) {
+    throw new Error("ID do contrato não informado.");
+  }
+
+  const response = await api.get<EmailContratoItem[]>(
     `/v1/email_contrato/contrato/${idContrato}`
   );
-  return data || [];
+
+  return Array.isArray(response.data) ? response.data : [];
 }
 
-export async function listarEmailContratoPorFuncionario(idFuncionario: number) {
-  const { data } = await api.get<EmailContratoItem>(
+export async function listarEmailContratoPorFuncionario(
+  idFuncionario: number
+): Promise<EmailContratoItem> {
+  if (!idFuncionario) {
+    throw new Error("ID do funcionário não informado.");
+  }
+
+  const response = await api.get<EmailContratoItem>(
     `/v1/email_contrato/funcionario/${idFuncionario}`
   );
-  return data;
+
+  return response.data;
 }
 
-export async function removerEmailContrato(idContratoEmail: number) {
-  const { data } = await api.delete(`/v1/email_contrato/${idContratoEmail}`);
-  return data;
+export async function removerEmailContrato(
+  idContratoEmail: number
+): Promise<unknown> {
+  if (!idContratoEmail) {
+    throw new Error("ID do vínculo de e-mail não informado.");
+  }
+
+  const response = await api.delete(
+    `/v1/email_contrato/${idContratoEmail}`
+  );
+
+  return response.data;
 }
 
-export async function buscarEmailsDoContratoSeparados(idContrato: number) {
-  const data = await listarEmailContratoPorContrato(idContrato);
+export async function buscarEmailsDoContratoSeparados(
+  idContrato: number
+): Promise<string> {
+  const emailsContrato =
+    await listarEmailContratoPorContrato(idContrato);
 
-  return (data || [])
-    .map((item) => String(item?.FUNCIONARIO?.EMAIL || "").trim())
+  return emailsContrato
+    .map((item) =>
+      String(item.FUNCIONARIO?.EMAIL || "").trim()
+    )
     .filter(Boolean)
     .join("/");
 }

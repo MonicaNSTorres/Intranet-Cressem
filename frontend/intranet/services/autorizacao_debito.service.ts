@@ -1,44 +1,5 @@
 import { onlyDigits } from "@/utils/br";
-import { registrarErroTela } from "./error_log.service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-async function getJson<T>(path: string): Promise<T> {
-  try {
-    if (!API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
-    }
-
-    const res = await fetch(`${API_URL}${path}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-      credentials: "include",
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(json?.error || json?.detail || "Falha na consulta.");
-    }
-
-    return json as T;
-  } catch (error: any) {
-    await registrarErroTela({
-      PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-      ERROR_MESSAGE:
-        error?.message || "Erro no service de autorização de débito",
-      ERROR_STACK: error?.stack || null,
-      ERROR_DETAIL: {
-        endpoint: path,
-        method: "GET",
-      },
-      SOURCE: "AUTORIZACAO_DEBITO",
-    });
-
-    throw error;
-  }
-}
+import { api } from "./api.service";
 
 export type AssociadoAutorizacaoDebitoResponse = {
   found?: boolean;
@@ -69,11 +30,21 @@ export async function buscarAssociadoAutorizacaoDebito(
   cpf: string
 ): Promise<AssociadoAutorizacaoDebitoResponse | null> {
   const clean = onlyDigits(cpf);
-  if (!clean) return null;
 
-  return await getJson<AssociadoAutorizacaoDebitoResponse>(
-    `/v1/associados/buscar-por-cpf?cpf=${clean}`
+  if (!clean) {
+    return null;
+  }
+
+  const response = await api.get<AssociadoAutorizacaoDebitoResponse>(
+    "/v1/associados/buscar-por-cpf",
+    {
+      params: {
+        cpf: clean,
+      },
+    }
   );
+
+  return response.data;
 }
 
 export async function buscarContaCorrenteAutorizacaoDebito(
@@ -81,13 +52,28 @@ export async function buscarContaCorrenteAutorizacaoDebito(
 ): Promise<ContaCorrenteItem[]> {
   const clean = onlyDigits(cpf);
 
-  if (!clean) return [];
+  if (!clean) {
+    return [];
+  }
 
-  return await getJson<ContaCorrenteItem[]>(
-    `/v1/autorizacao-debito?cpf=${clean}`
+  const response = await api.get<ContaCorrenteItem[]>(
+    "/v1/autorizacao-debito",
+    {
+      params: {
+        cpf: clean,
+      },
+    }
   );
+
+  return response.data || [];
 }
 
-export async function listarCidadesAutorizacaoDebito() {
-  return await getJson<CidadeOption[]>(`/v1/simulador/cidades`);
+export async function listarCidadesAutorizacaoDebito(): Promise<
+  CidadeOption[]
+> {
+  const response = await api.get<CidadeOption[]>(
+    "/v1/simulador/cidades"
+  );
+
+  return response.data || [];
 }

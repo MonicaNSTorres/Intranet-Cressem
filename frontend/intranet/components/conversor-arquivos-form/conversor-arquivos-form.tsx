@@ -134,7 +134,7 @@ export function ConversorArquivosForm() {
             type="button"
             onClick={onSelecionarClick}
             disabled={loading}
-            className="cursor-pointer rounded border border-slate-300 bg-white px-6 py-2 font-semibold text-slate-700 hover:bg-slate-50 hover:shadow-sm disabled:opacity-70"
+            className="cursor-pointer rounded bg-secondary px-6 py-2 font-semibold text-white hover:bg-primary hover:shadow-sm disabled:opacity-70"
           >
             Selecionar
           </button>
@@ -228,7 +228,7 @@ export function ConversorArquivosForm() {
           type="button"
           onClick={onConverter}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
         >
           {formatoPara === "png" ? <FaImage /> : <FaDownload />}
           {loading ? "Convertendo..." : "Converter"}

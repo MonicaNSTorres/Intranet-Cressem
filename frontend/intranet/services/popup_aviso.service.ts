@@ -54,6 +54,7 @@ export type PopupAviso = {
   DT_INICIO?: string | null;
   DT_FIM?: string | null;
   IMAGEM_BASE64?: string | null;
+  DS_LINK?: string | null;
 };
 
 export async function buscarPopupPendenteMe() {

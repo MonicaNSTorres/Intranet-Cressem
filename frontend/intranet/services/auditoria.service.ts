@@ -1,44 +1,4 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-  timeout: 15000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL:
-          typeof window !== "undefined" ? window.location.href : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.message ||
-          "Erro no service de auditoria",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          method: error?.config?.method,
-          responseData: error?.response?.data,
-        },
-
-        SOURCE: "AUDITORIA_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
+import { api } from "./api.service";
 
 export type AssociadoAuditoriaResponse = {
   NM_CLIENTE?: string;
@@ -60,16 +20,38 @@ export type AuditoriaResponse = {
   DSC_NV_RSC_LIMITE?: string;
 };
 
+function onlyDigits(value: string) {
+  return String(value || "").replace(/\D/g, "");
+}
+
 export async function buscarAssociadoAuditoria(
   cpfCnpj: string
 ): Promise<AssociadoAuditoriaResponse> {
-  const response = await api.get(`/v1/auditoria/associado/${cpfCnpj}`);
+  const documento = onlyDigits(cpfCnpj);
+
+  if (!documento) {
+    throw new Error("CPF/CNPJ não informado.");
+  }
+
+  const response = await api.get<AssociadoAuditoriaResponse>(
+    `/v1/auditoria/associado/${documento}`
+  );
+
   return response.data;
 }
 
 export async function buscarDadosAuditoria(
   cpfCnpj: string
 ): Promise<AuditoriaResponse> {
-  const response = await api.get(`/v1/auditoria/${cpfCnpj}`);
+  const documento = onlyDigits(cpfCnpj);
+
+  if (!documento) {
+    throw new Error("CPF/CNPJ não informado.");
+  }
+
+  const response = await api.get<AuditoriaResponse>(
+    `/v1/auditoria/${documento}`
+  );
+
   return response.data;
 }

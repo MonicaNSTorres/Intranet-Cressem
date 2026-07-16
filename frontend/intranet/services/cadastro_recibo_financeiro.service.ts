@@ -1,58 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
-import { buscarFuncionarioPorCpf } from "./associado.service";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:3001";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      const url = error?.config?.url || "";
-
-      const deveIgnorar = String(url).includes("/v1/me");
-
-      if (!deveIgnorar) {
-        await registrarErroTela({
-          PAGE_URL:
-            typeof window !== "undefined" ? window.location.href : null,
-
-          ERROR_MESSAGE:
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            error?.response?.data?.details ||
-            error?.message ||
-            "Erro no service de recibo financeiro",
-
-          ERROR_STACK: error?.stack || null,
-
-          ERROR_DETAIL: {
-            status: error?.response?.status,
-            url,
-            baseURL: error?.config?.baseURL,
-            method: error?.config?.method,
-            responseData: error?.response?.data,
-          },
-
-          SOURCE: "CADASTRO_RECIBO_FINANCEIRO_AXIOS",
-        });
-      }
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type ParcelaItem = {
   NR_CONTRATO: string;
@@ -102,6 +49,10 @@ export type OptionItem = {
   NM_CATEGORIA?: string;
   NM_PAGAMENTO?: string;
   nome?: string;
+  NM_CIDADE?: string;
+  DSC_CIDADE?: string;
+  label?: string;
+  value?: string;
 };
 
 export type AssociadoResponse = {
@@ -123,77 +74,162 @@ export type AuthMeResponse = {
   nome_completo?: string;
 };
 
-export async function carregarCidadesRecibo() {
-  const { data } = await api.get<OptionItem[] | string[]>("/v1/cidades");
+function onlyDigits(value: string) {
+  return String(value || "").replace(/\D/g, "");
+}
 
-  return (data || [])
-    .map((item: any) =>
-      typeof item === "string" ? item : String(item?.nome || "").trim()
+export async function carregarCidadesRecibo(): Promise<string[]> {
+  const response = await api.get<Array<OptionItem | string>>(
+    "/v1/cidades"
+  );
+
+  const cidades = Array.isArray(response.data)
+    ? response.data
+    : [];
+
+  return cidades
+    .map((item) => {
+      if (typeof item === "string") {
+        return item.trim();
+      }
+
+      return String(
+        item.nome ||
+          item.NM_CIDADE ||
+          item.DSC_CIDADE ||
+          item.label ||
+          item.value ||
+          ""
+      ).trim();
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+export async function carregarTipoAtendimentoRecibo(): Promise<
+  string[]
+> {
+  const response = await api.get<OptionItem[]>(
+    "/v1/tipo_atendimento_recibo"
+  );
+
+  const atendimentos = Array.isArray(response.data)
+    ? response.data
+    : [];
+
+  return atendimentos
+    .map((item) =>
+      String(item.NM_ATENDIMENTO || "").trim()
     )
     .filter(Boolean);
 }
 
-export async function carregarTipoAtendimentoRecibo() {
-  const { data } = await api.get<OptionItem[]>("/v1/tipo_atendimento_recibo");
+export async function carregarCategoriaContratoRecibo(): Promise<
+  string[]
+> {
+  const response = await api.get<OptionItem[]>(
+    "/v1/categoria_contrato_recibo"
+  );
 
-  return (data || [])
-    .map((item) => String(item.NM_ATENDIMENTO || "").trim())
+  const categorias = Array.isArray(response.data)
+    ? response.data
+    : [];
+
+  return categorias
+    .map((item) =>
+      String(item.NM_CATEGORIA || "").trim()
+    )
     .filter(Boolean);
 }
 
-export async function carregarCategoriaContratoRecibo() {
-  const { data } = await api.get<OptionItem[]>("/v1/categoria_contrato_recibo");
+export async function carregarFormaPagamentoRecibo(): Promise<
+  string[]
+> {
+  const response = await api.get<OptionItem[]>(
+    "/v1/forma_pagamento_recibo"
+  );
 
-  return (data || [])
-    .map((item) => String(item.NM_CATEGORIA || "").trim())
+  const formasPagamento = Array.isArray(response.data)
+    ? response.data
+    : [];
+
+  return formasPagamento
+    .map((item) =>
+      String(item.NM_PAGAMENTO || "").trim()
+    )
     .filter(Boolean);
 }
 
-export async function carregarFormaPagamentoRecibo() {
-  const { data } = await api.get<OptionItem[]>("/v1/forma_pagamento_recibo");
+export async function buscarReciboFinanceiroPorId(
+  id: number
+): Promise<ReciboFinanceiroResponse> {
+  if (!id) {
+    throw new Error("ID do recibo financeiro não informado.");
+  }
 
-  return (data || [])
-    .map((item) => String(item.NM_PAGAMENTO || "").trim())
-    .filter(Boolean);
-}
+  const response = await api.get<ReciboFinanceiroResponse>(
+    `/v1/recibo_crm/${id}`
+  );
 
-export async function buscarReciboFinanceiroPorId(id: number) {
-  const { data } = await api.get<ReciboFinanceiroResponse>(`/v1/recibo_crm/${id}`);
-  return data;
+  return response.data;
 }
 
 export async function cadastrarReciboFinanceiro(
   payload: ReciboFinanceiroPayload
-) {
-  const { data } = await api.post("/v1/recibo_crm", payload, {
-    headers: getAuditoriaHeaders(),
-  });
+): Promise<ReciboFinanceiroResponse> {
+  const response = await api.post<ReciboFinanceiroResponse>(
+    "/v1/recibo_crm",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
-  return data;
+  return response.data;
 }
 
 export async function editarReciboFinanceiro(
   id: number,
   payload: ReciboFinanceiroPayload
-) {
-  const { data } = await api.put(`/v1/recibo_crm/${id}`, payload, {
-    headers: getAuditoriaHeaders(),
-  });
+): Promise<ReciboFinanceiroResponse> {
+  if (!id) {
+    throw new Error("ID do recibo financeiro não informado.");
+  }
 
-  return data;
-}
-
-export async function buscarAssociadoReciboPorCpfCnpj(documento: string) {
-  const { data } = await api.get<AssociadoResponse>(
-    "/v1/associados/buscar-por-cpf",
+  const response = await api.put<ReciboFinanceiroResponse>(
+    `/v1/recibo_crm/${id}`,
+    payload,
     {
-      params: { cpf: documento },
+      headers: getAuditoriaHeaders(),
     }
   );
-  return data;
+
+  return response.data;
 }
 
-export async function buscarUsuarioLogadoRecibo() {
-  const { data } = await api.get<AuthMeResponse>("/v1/me");
-  return data;
+export async function buscarAssociadoReciboPorCpfCnpj(
+  documento: string
+): Promise<AssociadoResponse> {
+  const documentoLimpo = onlyDigits(documento);
+
+  if (!documentoLimpo) {
+    throw new Error("CPF/CNPJ não informado.");
+  }
+
+  const response = await api.get<AssociadoResponse>(
+    "/v1/associados/buscar-por-cpf",
+    {
+      params: {
+        cpf: documentoLimpo,
+      },
+    }
+  );
+
+  return response.data;
+}
+
+export async function buscarUsuarioLogadoRecibo(): Promise<AuthMeResponse> {
+  const response = await api.get<AuthMeResponse>("/v1/me");
+
+  return response.data;
 }

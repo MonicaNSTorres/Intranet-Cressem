@@ -20,7 +20,7 @@ export default function Cnab240FavorecidosPage() {
       try {
         const user = (await getMeAdUser()) as AuthUserLike;
 
-        setAllowed(canAccess(user, PAGE_ACCESS.cnab240));
+        setAllowed(canAccess(user, PAGE_ACCESS.cnab240Favorecidos));
       } catch (error) {
         console.error(error);
         setAllowed(false);

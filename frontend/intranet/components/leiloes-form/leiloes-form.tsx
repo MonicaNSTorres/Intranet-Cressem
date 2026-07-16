@@ -40,6 +40,8 @@ const initialForm: LeilaoPayload = {
     DS_REGRAS: "",
     IMAGEM_BASE64: "",
     NM_USUARIO_CRIACAO: "",
+    SN_EXIBIR_HISTORICO: "S",
+    NR_SERIE_EQUIPAMENTO: "",
 };
 
 export function LeiloesForm() {
@@ -140,6 +142,13 @@ export function LeiloesForm() {
                 DS_REGRAS: leilaoCompleto.DS_REGRAS || "",
                 IMAGEM_BASE64: leilaoCompleto.IMAGEM_BASE64 || "",
                 NM_USUARIO_CRIACAO: leilaoCompleto.NM_USUARIO_CRIACAO || "",
+                SN_EXIBIR_HISTORICO:
+                    String(leilaoCompleto.SN_EXIBIR_HISTORICO || "S")
+                        .trim()
+                        .toUpperCase() === "N"
+                        ? "N"
+                        : "S",
+                NR_SERIE_EQUIPAMENTO: leilaoCompleto.NR_SERIE_EQUIPAMENTO || "",
             });
 
             setModalAberta(true);
@@ -271,6 +280,8 @@ export function LeiloesForm() {
                 await atualizarLeilao(leilaoSelecionado.ID_LEILAO, payload);
                 mostrarMensagem("Leilão atualizado com sucesso.", "success");
             } else {
+                console.log("Payload:", payload);
+                console.log("Payload JSON:", JSON.stringify(payload));
                 await criarLeilao(payload);
                 mostrarMensagem("Leilão cadastrado com sucesso.", "success");
                 setPage(1);
@@ -643,6 +654,15 @@ export function LeiloesForm() {
                                             placeholder="Descreva o produto de forma simples..."
                                         />
                                     </div>
+
+                                    <div className="md:col-span-2">
+                                        <Input
+                                            label="Número de série do equipamento"
+                                            value={form.NR_SERIE_EQUIPAMENTO || ""}
+                                            onChange={(v) => updateField("NR_SERIE_EQUIPAMENTO", v)}
+                                            placeholder="Ex: SN123456789"
+                                        />
+                                    </div>
                                 </div>
                             </section>
 
@@ -689,6 +709,36 @@ export function LeiloesForm() {
                                         value={form.DT_FIM || ""}
                                         onChange={(v) => updateField("DT_FIM", v)}
                                     />
+                                </div>
+                            </section>
+
+                            <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                                <div className="mb-4">
+                                    <h3 className="text-sm font-bold text-slate-800">
+                                        Histórico do leilão
+                                    </h3>
+
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Defina se este anúncio continuará aparecendo no histórico após ser encerrado.
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.SN_EXIBIR_HISTORICO !== "N"}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "SN_EXIBIR_HISTORICO",
+                                                e.target.checked ? "S" : "N"
+                                            )
+                                        }
+                                        className="h-5 w-5 cursor-pointer accent-primary"
+                                    />
+
+                                    <span className="text-sm font-medium text-slate-700">
+                                        Mostrar no histórico após encerrado
+                                    </span>
                                 </div>
                             </section>
 

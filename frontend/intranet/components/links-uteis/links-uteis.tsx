@@ -29,6 +29,7 @@ import {
     FaCalendarCheck,
     FaBell,
     FaBarcode,
+    FaGavel,
 } from "react-icons/fa";
 import { useMe } from "@/hooks/use-me";
 
@@ -321,6 +322,29 @@ const links: LinkItem[] = [
                 title: "Consultar reserva",
                 href: "/auth/consulta_sala_reuniao",
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+            },
+        ],
+    },
+    {
+        title: "Leilão",
+        description: "Consulte, cadastre e acompanhe as métricas dos produtos no leilão.",
+        icon: FaGavel,
+        category: "Utilidades",
+        children: [
+            {
+                title: "Leilão ao Vivo",
+                href: "/auth/leiloes_ao_vivo",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+            },
+            {
+                title: "Cadastrar Produto/Anúncio",
+                href: "/auth/leiloes",
+                allowedGroups: [AD_GROUPS.SUPORTE],
+            },
+            {
+                title: "Acompanhar Métricas",
+                href: "/auth/leiloes_dashboard",
+                allowedGroups: [AD_GROUPS.SUPORTE],
             },
         ],
     },

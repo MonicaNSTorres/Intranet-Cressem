@@ -1,56 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 import { getHeadersPerfilTesteSubsidioAuditivo } from "@/lib/subsidio-auditivo-perfil-teste";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:3001";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      const url = error?.config?.url || "";
-      const deveIgnorar = String(url).includes("/v1/me");
-
-      if (!deveIgnorar) {
-        await registrarErroTela({
-          PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-          ERROR_MESSAGE:
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            error?.response?.data?.details ||
-            error?.message ||
-            "Erro no service de cadastro de subsídio auditivo",
-          ERROR_STACK: error?.stack || null,
-          ERROR_DETAIL: {
-            status: error?.response?.status,
-            url,
-            baseURL: error?.config?.baseURL,
-            method: error?.config?.method,
-            responseType: error?.config?.responseType,
-            responseData:
-              error?.config?.responseType === "blob"
-                ? "Resposta em blob não registrada"
-                : error?.response?.data,
-          },
-          SOURCE: "CADASTRO_SUBSIDIO_AUDITIVO_AXIOS",
-        });
-      }
-    } catch {
-      // evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type SubsidioAuditivoAnexoPayload = {
   TP_ANEXO: string;
@@ -94,59 +44,126 @@ export type SubsidioAuditivoPayload = {
   ANEXOS: SubsidioAuditivoAnexoPayload[];
 };
 
-export type SubsidioAuditivoDetalhe = SubsidioAuditivoPayload & {
-  ID_SUBSIDIO_AUDITIVO: number;
-  DT_CRIACAO?: string;
-  DT_ATUALIZACAO?: string;
-  DT_ENVIO_DIRETORIA?: string;
-  DT_APROVACAO_DIRETORIA?: string;
-  DT_ENVIO_FINANCEIRO?: string;
-  DT_FINALIZACAO?: string;
-  NM_RESP_DIRETORIA?: string;
-  NM_RESP_FINANCEIRO?: string;
-  HISTORICO?: any[];
-  PERMISSOES?: {
-    isSolicitanteAtual?: boolean;
-    isFinanceiro?: boolean;
-    isDiretoria?: boolean;
-    isSuporte?: boolean;
-    podeEditarCadastro?: boolean;
-  };
+export type SubsidioAuditivoHistoricoItem = Record<
+  string,
+  unknown
+>;
+
+export type SubsidioAuditivoPermissoes = {
+  isSolicitanteAtual?: boolean;
+  isFinanceiro?: boolean;
+  isDiretoria?: boolean;
+  isSuporte?: boolean;
+  podeEditarCadastro?: boolean;
 };
 
-export async function cadastrarSubsidioAuditivo(payload: SubsidioAuditivoPayload) {
-  const { data } = await api.post("/v1/solicitacao_subsidio_auditivo", payload, {
-    headers: getAuditoriaHeaders(),
-  });
-  return data;
-}
+export type SubsidioAuditivoDetalhe =
+  SubsidioAuditivoPayload & {
+    ID_SUBSIDIO_AUDITIVO: number;
+    DT_CRIACAO?: string;
+    DT_ATUALIZACAO?: string;
+    DT_ENVIO_DIRETORIA?: string;
+    DT_APROVACAO_DIRETORIA?: string;
+    DT_ENVIO_FINANCEIRO?: string;
+    DT_FINALIZACAO?: string;
+    NM_RESP_DIRETORIA?: string;
+    NM_RESP_FINANCEIRO?: string;
+    HISTORICO?: SubsidioAuditivoHistoricoItem[];
+    PERMISSOES?: SubsidioAuditivoPermissoes;
+  };
 
-export async function editarSubsidioAuditivo(payload: SubsidioAuditivoPayload) {
-  const { data } = await api.put("/v1/solicitacao_subsidio_auditivo", payload, {
-    headers: {
-      ...getAuditoriaHeaders(),
-      ...getHeadersPerfilTesteSubsidioAuditivo(),
-    },
-  });
-  return data;
-}
-
-export async function salvarAnexoFluxoSubsidioAuditivo(params: {
+export type SalvarAnexoFluxoSubsidioAuditivoParams = {
   id: number | string;
   tipo: string;
   nomeArquivo: string;
   tamanhoBytes?: number;
   mimeType?: string | null;
   arquivo: string;
-}) {
-  const { data } = await api.put(
-    `/v1/solicitacao_subsidio_auditivo/${params.id}/anexo-fluxo`,
+};
+
+function validarIdSubsidio(id: number | string) {
+  if (
+    id === undefined ||
+    id === null ||
+    String(id).trim() === ""
+  ) {
+    throw new Error("ID do subsídio auditivo não informado.");
+  }
+}
+
+export async function cadastrarSubsidioAuditivo(
+  payload: SubsidioAuditivoPayload
+): Promise<SubsidioAuditivoDetalhe> {
+  const response = await api.post<SubsidioAuditivoDetalhe>(
+    "/v1/solicitacao_subsidio_auditivo",
+    payload,
     {
-      TP_ANEXO: params.tipo,
-      NM_ARQUIVO_ORIGINAL: params.nomeArquivo,
+      headers: {
+        ...getAuditoriaHeaders(),
+        ...getHeadersPerfilTesteSubsidioAuditivo(),
+      },
+    }
+  );
+
+  return response.data;
+}
+
+export async function editarSubsidioAuditivo(
+  payload: SubsidioAuditivoPayload
+): Promise<SubsidioAuditivoDetalhe> {
+  if (!payload.ID_SUBSIDIO_AUDITIVO) {
+    throw new Error(
+      "ID do subsídio auditivo não informado para edição."
+    );
+  }
+
+  const response = await api.put<SubsidioAuditivoDetalhe>(
+    "/v1/solicitacao_subsidio_auditivo",
+    payload,
+    {
+      headers: {
+        ...getAuditoriaHeaders(),
+        ...getHeadersPerfilTesteSubsidioAuditivo(),
+      },
+    }
+  );
+
+  return response.data;
+}
+
+export async function salvarAnexoFluxoSubsidioAuditivo(
+  params: SalvarAnexoFluxoSubsidioAuditivoParams
+): Promise<SubsidioAuditivoDetalhe> {
+  validarIdSubsidio(params.id);
+
+  const tipo = String(params.tipo || "").trim();
+  const nomeArquivo = String(
+    params.nomeArquivo || ""
+  ).trim();
+  const arquivo = String(params.arquivo || "").trim();
+
+  if (!tipo) {
+    throw new Error("Tipo do anexo não informado.");
+  }
+
+  if (!nomeArquivo) {
+    throw new Error("Nome do arquivo não informado.");
+  }
+
+  if (!arquivo) {
+    throw new Error("Conteúdo do arquivo não informado.");
+  }
+
+  const response = await api.put<SubsidioAuditivoDetalhe>(
+    `/v1/solicitacao_subsidio_auditivo/${encodeURIComponent(
+      String(params.id)
+    )}/anexo-fluxo`,
+    {
+      TP_ANEXO: tipo,
+      NM_ARQUIVO_ORIGINAL: nomeArquivo,
       NR_TAMANHO_BYTES: params.tamanhoBytes,
       DS_MIME_TYPE: params.mimeType,
-      ARQUIVO: params.arquivo,
+      ARQUIVO: arquivo,
     },
     {
       headers: {
@@ -155,24 +172,46 @@ export async function salvarAnexoFluxoSubsidioAuditivo(params: {
       },
     }
   );
-  return data;
+
+  return response.data;
 }
 
-export async function buscarSubsidioAuditivoPorId(id: number | string) {
-  const { data } = await api.get<SubsidioAuditivoDetalhe>(
-    `/v1/solicitacao_subsidio_auditivo/${id}`,
+export async function buscarSubsidioAuditivoPorId(
+  id: number | string
+): Promise<SubsidioAuditivoDetalhe> {
+  validarIdSubsidio(id);
+
+  const response = await api.get<SubsidioAuditivoDetalhe>(
+    `/v1/solicitacao_subsidio_auditivo/${encodeURIComponent(
+      String(id)
+    )}`,
     {
       headers: getHeadersPerfilTesteSubsidioAuditivo(),
     }
   );
-  return data;
+
+  return response.data;
 }
 
-export async function baixarAnexoSubsidioAuditivo(caminho: string) {
-  const { data } = await api.post(
+export async function baixarAnexoSubsidioAuditivo(
+  caminho: string
+): Promise<Blob> {
+  const caminhoLimpo = String(caminho || "").trim();
+
+  if (!caminhoLimpo) {
+    throw new Error("Caminho do anexo não informado.");
+  }
+
+  const response = await api.post<Blob>(
     "/v1/solicitacao_subsidio_auditivo/download",
-    { caminho },
-    { responseType: "blob" }
+    {
+      caminho: caminhoLimpo,
+    },
+    {
+      responseType: "blob",
+      headers: getHeadersPerfilTesteSubsidioAuditivo(),
+    }
   );
-  return data;
+
+  return response.data;
 }

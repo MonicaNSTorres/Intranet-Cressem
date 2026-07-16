@@ -54,6 +54,7 @@ export type ReservaSalaPayload = {
   DT_INICIO: string;
   DT_FIM: string;
   USUARIO: MeResponse;
+  CHECKLIST_AUDITORIO?: any;
 };
 
 export type ReservaSalaItem = {

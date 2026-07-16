@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const api = axios.create({
+const errorLogApi = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL,
     withCredentials: true,
     timeout: 15000,
@@ -19,7 +19,7 @@ async function buscarUsuarioLogado() {
     if (usuarioCache) return usuarioCache;
 
     try {
-        const response = await api.get("/v1/me");
+        const response = await errorLogApi.get("/v1/me");
         usuarioCache = response.data || null;
         return usuarioCache;
     } catch {
@@ -43,7 +43,7 @@ export async function registrarErroTela(payload: ErrorLogPayload) {
     try {
         const user = await buscarUsuarioLogado();
 
-        await api.post("/v1/error-logs", {
+        await errorLogApi.post("/v1/error-logs", {
             USERNAME: payload.USERNAME || user?.username || null,
             NOME_COMPLETO: payload.NOME_COMPLETO || user?.nome_completo || null,
             EMAIL: payload.EMAIL || user?.email || null,

@@ -57,6 +57,7 @@ type QuickAccessItem = {
 
 type PopupAvisoComImagem = PopupAviso & {
     IMAGEM_BASE64?: string | null;
+    DS_LINK?: string | null;
 };
 
 function normalizeSearch(value: string) {
@@ -344,8 +345,8 @@ export default function HomePage() {
                 <section className="mb-2">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                         <div>
-                            <h1 className="text-2xl font-semibold text-[var(--title)]">Intranet</h1>
-                            <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            <h1 className="text-2xl font-semibold text-(--title)">Intranet</h1>
+                            <p className="mt-1 text-sm text-(--paragraph)">
                                 Central de acesso rápido aos módulos.
                             </p>
                         </div>
@@ -404,10 +405,10 @@ export default function HomePage() {
                                             <FaBell className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <h2 className="text-lg font-semibold text-[var(--title)]">
+                                            <h2 className="text-lg font-semibold text-(--title)">
                                                 Aviso com ciência do usuário
                                             </h2>
-                                            <p className="mt-1 text-sm text-[var(--paragraph)]">
+                                            <p className="mt-1 text-sm text-(--paragraph)">
                                                 Destaque aqui os comunicados que exigem leitura e confirmação.
                                             </p>
                                         </div>
@@ -429,13 +430,13 @@ export default function HomePage() {
                                                 Comunicado em destaque
                                             </div>
 
-                                            <h3 className="text-lg font-semibold text-[var(--title)]">
+                                            <h3 className="text-lg font-semibold text-(--title)">
                                                 {loadingPopupHome
                                                     ? "Carregando comunicado..."
                                                     : popupConteudo?.TITULO || "Nenhum comunicado pendente"}
                                             </h3>
 
-                                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--paragraph)]">
+                                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-(--paragraph)">
                                                 {loadingPopupHome
                                                     ? "Buscando informações do aviso..."
                                                     : popupConteudo?.MENSAGEM ||
@@ -459,7 +460,7 @@ export default function HomePage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => setModalPopupAberta(true)}
-                                                        className="inline-flex items-center gap-2 rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-[var(--title)] transition hover:border-[#00AE9D]/30 hover:bg-[#00AE9D]/5"
+                                                        className="inline-flex items-center gap-2 rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-(--title) transition hover:border-[#00AE9D]/30 hover:bg-[#00AE9D]/5"
                                                     >
                                                         <FaEye className="h-4 w-4" />
                                                         Ler comunicado
@@ -469,10 +470,10 @@ export default function HomePage() {
                                         </div>
 
                                         <div className="min-w-55 rounded-[22px] border border-white bg-white p-4 shadow-sm">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-(--text-darken)">
                                                 Status sugerido
                                             </p>
-                                            <p className="mt-2 text-sm font-semibold text-[var(--title)]">
+                                            <p className="mt-2 text-sm font-semibold text-(--title)">
                                                 {loadingPopupHome
                                                     ? "Carregando..."
                                                     : statusResposta === "ACEITO"
@@ -483,7 +484,7 @@ export default function HomePage() {
                                                                 ? "Aguardando ciência"
                                                                 : "Sem pendência"}
                                             </p>
-                                            <p className="mt-2 text-xs leading-5 text-[var(--paragraph)]">
+                                            <p className="mt-2 text-xs leading-5 text-(--paragraph)">
                                                 {loadingPopupHome
                                                     ? "Buscando status do comunicado."
                                                     : statusResposta === "ACEITO"
@@ -507,10 +508,10 @@ export default function HomePage() {
                                         <FaBolt className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-semibold text-[var(--title)]">
+                                        <h2 className="text-lg font-semibold text-(--title)">
                                             O que você pode fazer agora
                                         </h2>
-                                        <p className="text-sm text-[var(--paragraph)]">
+                                        <p className="text-sm text-(--paragraph)">
                                             Atalhos pensados para facilitar o uso da intranet.
                                         </p>
                                     </div>
@@ -531,10 +532,10 @@ export default function HomePage() {
                                         <FaStar className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-semibold text-[var(--title)]">
+                                        <h2 className="text-lg font-semibold text-(--title)">
                                             Acesso rápido
                                         </h2>
-                                        <p className="text-sm text-[var(--paragraph)]">
+                                        <p className="text-sm text-(--paragraph)">
                                             Entradas principais da intranet para navegação mais ágil.
                                         </p>
                                     </div>
@@ -558,10 +559,10 @@ export default function HomePage() {
                                             <FaBirthdayCake className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <h2 className="text-lg font-semibold text-[var(--title)]">
+                                            <h2 className="text-lg font-semibold text-(--title)">
                                                 Aniversariantes do dia
                                             </h2>
-                                            <p className="text-sm text-[var(--paragraph)]">
+                                            <p className="text-sm text-(--paragraph)">
                                                 Confira quem está comemorando hoje.
                                             </p>
                                         </div>
@@ -580,10 +581,10 @@ export default function HomePage() {
                                 {aniversariantesHoje.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-[#D0D5DD] bg-[#FAFAFA] px-4 py-10 text-center">
                                         <FaBirthdayCake className="mb-3 h-12 w-12 text-[#C7D300]" />
-                                        <p className="text-base font-semibold text-[var(--title)]">
+                                        <p className="text-base font-semibold text-(--title)">
                                             Nenhum aniversariante hoje
                                         </p>
-                                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                                        <p className="mt-1 text-sm text-(--paragraph)">
                                             Volte amanhã para conferir os próximos aniversariantes.
                                         </p>
                                     </div>
@@ -606,10 +607,10 @@ export default function HomePage() {
                                                 </div>
 
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="truncate text-sm font-semibold text-[var(--title)]">
+                                                    <p className="truncate text-sm font-semibold text-(--title)">
                                                         {p.nome}
                                                     </p>
-                                                    <p className="truncate text-xs text-[var(--paragraph)]">
+                                                    <p className="truncate text-xs text-(--paragraph)">
                                                         {p.setor || "Setor não informado"}
                                                     </p>
                                                 </div>
@@ -618,7 +619,7 @@ export default function HomePage() {
                                                     <p className="text-[10px] font-semibold uppercase tracking-wide text-[#00AE9D]">
                                                         Ramal
                                                     </p>
-                                                    <p className="text-sm font-semibold text-[var(--title)]">
+                                                    <p className="text-sm font-semibold text-(--title)">
                                                         {p.ramal || "—"}
                                                     </p>
                                                 </div>
@@ -677,11 +678,11 @@ export default function HomePage() {
                                     </div>
 
                                     <div>
-                                        <h2 className="text-base font-semibold text-[var(--title)]">
+                                        <h2 className="text-base font-semibold text-(--title)">
                                             Acessos diários na intranet
                                         </h2>
 
-                                        <p className="text-sm text-[var(--paragraph)]">
+                                        <p className="text-sm text-(--paragraph)">
                                             Quantidade de acessos por dia, em tempo real.
                                         </p>
                                     </div>
@@ -691,37 +692,37 @@ export default function HomePage() {
                             <div className="p-5">
                                 <div className="mb-4 grid grid-cols-3 gap-3">
                                     <div className="rounded-2xl bg-[#00AE9D]/6 p-4">
-                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-(--text-darken)">
                                             Total semanal
                                         </p>
 
-                                        <p className="mt-2 text-2xl font-semibold text-[var(--title)]">
+                                        <p className="mt-2 text-2xl font-semibold text-(--title)">
                                             {totalSemanal}
                                         </p>
                                     </div>
 
                                     <div className="rounded-2xl bg-[#79B729]/8 p-4">
-                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-(--text-darken)">
                                             Pico diário
                                         </p>
 
-                                        <p className="mt-2 text-2xl font-semibold text-[var(--title)]">
+                                        <p className="mt-2 text-2xl font-semibold text-(--title)">
                                             {picoDiario}
                                         </p>
                                     </div>
 
                                     <div className="rounded-2xl bg-[#49479D]/8 p-4">
-                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-darken)]">
+                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-(--text-darken)">
                                             Média diária
                                         </p>
 
-                                        <p className="mt-2 text-2xl font-semibold text-[var(--title)]">
+                                        <p className="mt-2 text-2xl font-semibold text-(--title)">
                                             {mediaDiaria}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="h-[280px] w-full rounded-3xl border border-[#EAECF0] bg-[linear-gradient(180deg,#F8FFFE_0%,#FFFFFF_100%)] p-4">
+                                <div className="h-70 w-full rounded-3xl border border-[#EAECF0] bg-[linear-gradient(180deg,#F8FFFE_0%,#FFFFFF_100%)] p-4">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <AreaChart
                                             data={acessosDiarios}
@@ -800,10 +801,65 @@ export default function HomePage() {
                                 </div>
                             </div>
                         </div>
+                        <Link
+                            href="/auth/leiloes_ao_vivo"
+                            className="group relative block overflow-hidden rounded-[28px] border border-emerald-200 bg-[linear-gradient(135deg,#065F46_0%,#00AE9D_48%,#79B729_100%)] p-6 shadow-[0_16px_40px_rgba(0,174,157,0.24)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_22px_55px_rgba(0,174,157,0.38)]"
+                        >
+                            <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+                            <div className="absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-amber-300/10 blur-3xl" />
+
+                            <div className="relative flex flex-col gap-5">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-start gap-4">
+                                        {/*<div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
+                                            <FaBolt className="h-7 w-7 text-yellow-300" />
+                                        </div>*/}
+
+                                        <div>
+                                            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white backdrop-blur">
+                                                <FaStar className="text-yellow-300" />
+                                                Leilão Online Cressem
+                                            </div>
+
+                                            <h2 className="max-w-107.5 text-2xl font-black leading-tight text-white xl:text-[26px]">
+                                                Dê seu lance e leve equipamentos por preços incríveis.
+                                            </h2>
+                                        </div>
+                                    </div>
+
+                                    <div className="hidden shrink-0 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-900 shadow-lg sm:block">
+                                        🔥 Novidade
+                                    </div>
+                                </div>
+
+                                <p className="max-w-130 text-sm leading-6 text-white/90">
+                                    Já está disponível o novo sistema de <strong>Leilões ao Vivo</strong>.
+                                    Acompanhe os produtos em tempo real, dispute lances com outros
+                                    colaboradores e aproveite oportunidades exclusivas da cooperativa.
+                                </p>
+
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="inline-flex w-fit rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-900 shadow-lg sm:hidden">
+                                        🔥 Novidade
+                                    </div>
+
+                                    <div className="flex flex-col gap-2 sm:items-end">
+                                        <div className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-black uppercase tracking-wider text-[#00AE9D] shadow-xl transition-all duration-300 group-hover:scale-105">
+                                            Participar agora
+                                            <FaArrowRight className="transition-transform duration-300 group-hover:translate-x-1" />
+                                        </div>
+
+                                        {/*<span className="text-xs font-medium text-white/80">
+                                            Clique para abrir a nova plataforma
+                                        </span>*/}
+                                    </div>
+                                </div>
+                            </div>
+                        </Link>
 
                         <div className="rounded-[28px] border border-[#79B729]/15 bg-[linear-gradient(135deg,#00AE9D_0%,#79B729_100%)] p-6 text-white shadow-[0_12px_30px_rgba(0,174,157,0.18)]">
                             <div className="flex items-start gap-3">
-                                <div className="flex items-center justify-center w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-white/20">
+                                <div className="flex items-center justify-center w-12 h-12 min-w-12 min-h-12 rounded-full bg-white/20">
                                     <FaCheckCircle className="h-5 w-5" />
                                 </div>
                                 <div>
@@ -820,13 +876,13 @@ export default function HomePage() {
                     </div>
                 </section>
 
-                <div className="px-1 text-xs text-[var(--text-darken)]">
+                <div className="px-1 text-xs text-(--text-darken)">
                     * Dados reais — integrados via API.
                 </div>
 
                 {modalPopupAberta && popupConteudo && (
                     <div
-                        className="fixed inset-0 z-[99999]"
+                        className="fixed inset-0 z-99999"
                         aria-modal="true"
                         role="dialog"
                     >
@@ -842,7 +898,7 @@ export default function HomePage() {
                             >
                                 <div className="max-h-[90vh] overflow-y-auto">
                                     {imagemValidaPopupHome ? (
-                                        <div className="relative h-[440px] w-full overflow-hidden bg-slate-100">
+                                        <div className="relative h-110 w-full overflow-hidden bg-slate-100">
                                             <img
                                                 src={imagemValidaPopupHome}
                                                 alt="Imagem do aviso"
@@ -920,6 +976,22 @@ export default function HomePage() {
                                                 Fechar
                                             </button>
 
+                                            {popupConteudo?.DS_LINK && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        window.open(
+                                                            String(popupConteudo.DS_LINK),
+                                                            "_blank",
+                                                            "noopener,noreferrer"
+                                                        )
+                                                    }
+                                                    className="inline-flex min-w-42.5 items-center justify-center gap-2 rounded-2xl border border-[#00AE9D] bg-white px-5 py-3 text-sm font-semibold text-[#00AE9D] transition hover:bg-[#00AE9D]/10 cursor-pointer"
+                                                >
+                                                    Clique aqui
+                                                </button>
+                                            )}
+
                                             {popupHome && (
                                                 <button
                                                     type="button"
@@ -942,7 +1014,7 @@ export default function HomePage() {
                     </div>
                 )}
                 {modalErroAberta && (
-                    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="fixed inset-0 z-999999 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                         <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
                             <div className="flex items-start gap-3">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-500">
@@ -985,7 +1057,7 @@ function BadgeInfo({
     label: string;
 }) {
     return (
-        <span className="inline-flex items-center gap-2 rounded-full border border-[#D0D5DD] bg-white px-3 py-2 text-xs font-medium text-[var(--title)] shadow-sm">
+        <span className="inline-flex items-center gap-2 rounded-full border border-[#D0D5DD] bg-white px-3 py-2 text-xs font-medium text-(--title) shadow-sm">
             <span className="text-[#00AE9D]">{icon}</span>
             {label}
         </span>
@@ -1016,11 +1088,11 @@ function ActionHighlightCard({
                 ) : null}
             </div>
 
-            <h3 className="mt-4 text-base font-semibold text-[var(--title)]">
+            <h3 className="mt-4 text-base font-semibold text-(--title)">
                 {title}
             </h3>
 
-            <p className="mt-2 text-sm leading-6 text-[var(--paragraph)]">
+            <p className="mt-2 text-sm leading-6 text-(--paragraph)">
                 {desc}
             </p>
 
@@ -1056,11 +1128,11 @@ function QuickAccessCard({
                 ) : null}
             </div>
 
-            <h3 className="mt-4 text-sm font-semibold text-[var(--title)]">
+            <h3 className="mt-4 text-sm font-semibold text-(--title)">
                 {title}
             </h3>
 
-            <p className="mt-2 text-xs leading-5 text-[var(--paragraph)]">
+            <p className="mt-2 text-xs leading-5 text-(--paragraph)">
                 {desc}
             </p>
 

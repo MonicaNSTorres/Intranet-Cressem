@@ -51,6 +51,9 @@ export type FavorecidoCnab = {
     CIDADE?: string | null;
     UF?: string | null;
     CONTA_ATIVA?: string | null;
+
+    TIPO_TRANSFERENCIA?: 1 | 2;
+    TIPO_TRANSFERENCIA_DESCRICAO?: string;
 };
 
 export type TransferenciaCnabPayload = {
@@ -66,6 +69,38 @@ export type TransferenciaCnabPayload = {
     descricao: string;
 };
 
+export type TipoInscricaoBoleto =
+    | 0
+    | 1
+    | 2;
+
+export type BoletoCnabPayload = {
+    sequencia: number;
+    codigoBarras: string;
+    nomeCedente: string;
+    dataVencimento?: string | null;
+    valorTitulo: number;
+    valorDescontoAbatimento?: number;
+    valorMoraMulta?: number;
+    dataPagamento?: string | null;
+    valorPagamento: number;
+    seuNumero?: string;
+    nossoNumero?: string;
+    sacadoTipoInscricao?: TipoInscricaoBoleto;
+    sacadoDocumento?: string;
+    sacadoNome?: string;
+    cedenteTipoInscricao?: TipoInscricaoBoleto;
+    cedenteDocumento?: string;
+    cedenteNome?: string;
+    sacadorTipoInscricao?: TipoInscricaoBoleto;
+    sacadorDocumento?: string;
+    sacadorNome?: string;
+};
+
+export type RegistroCnabPayload =
+    | TransferenciaCnabPayload
+    | BoletoCnabPayload;
+
 export type RemessaCnab = {
     ID_REMESSA: number;
     NM_ARQUIVO: string;
@@ -73,6 +108,7 @@ export type RemessaCnab = {
     QT_PAGAMENTOS: number;
     VL_TOTAL: number;
     STATUS: string;
+    TIPO_LAYOUT?: TipoLayoutCnab;
 };
 
 export type DetalheRemessaCnab = {
@@ -88,8 +124,14 @@ export type DetalheRemessaCnab = {
     NOME: string;
     VALOR: number;
     TIPO: number;
+    DESCRICAO?: string | null;
     CREATED_AT: string;
 };
+
+export type TipoLayoutCnab =
+    | "SANTANDER"
+    | "SICOOB"
+    | "SICOOB_BOLETO";
 
 export async function buscarFavorecidoPorCpf(
     cpf: string
@@ -107,9 +149,14 @@ export async function listarRemessas(): Promise<RemessaCnab[]> {
     return Array.isArray(response.data) ? response.data : [];
 }
 
-export async function gerarCnab240PorExcel(file: File): Promise<Blob> {
+export async function gerarCnab240PorExcel(
+    file: File,
+    tipoLayout: TipoLayoutCnab
+): Promise<Blob> {
     const formData = new FormData();
+
     formData.append("file", file, file.name);
+    formData.append("tipoLayout", tipoLayout);
 
     const response = await fetch(`${API_URL}/v1/cnab240/gerar`, {
         method: "POST",
@@ -130,19 +177,32 @@ export async function gerarCnab240PorExcel(file: File): Promise<Blob> {
     return await response.blob();
 }
 
-
-export async function gerarCnab240PorTransferencias(
-    transferencias: TransferenciaCnabPayload[]
+export async function gerarCnab240PorRegistros(
+    registros: RegistroCnabPayload[],
+    tipoLayout: TipoLayoutCnab
 ): Promise<Blob> {
     const response = await api.post(
         "/v1/cnab240/gerar-transferencias",
-        { transferencias },
+        {
+            registros,
+            tipoLayout,
+        },
         {
             responseType: "blob",
         }
     );
 
     return response.data;
+}
+
+export async function gerarCnab240PorTransferencias(
+    transferencias: TransferenciaCnabPayload[],
+    tipoLayout: TipoLayoutCnab
+): Promise<Blob> {
+    return gerarCnab240PorRegistros(
+        transferencias,
+        tipoLayout
+    );
 }
 
 export async function importarRetorno(file: File): Promise<any> {
@@ -176,4 +236,13 @@ export async function listarDetalhesRemessa(
     );
 
     return Array.isArray(response.data) ? response.data : [];
+}
+
+export async function gerarCnab240PorBoletos(
+    boletos: BoletoCnabPayload[]
+): Promise<Blob> {
+    return gerarCnab240PorRegistros(
+        boletos,
+        "SICOOB_BOLETO"
+    );
 }

@@ -771,6 +771,9 @@ export function ProducaoMetaCooperativaPAForm() {
     const [ultimaAtualizacaoSisbr, setUltimaAtualizacaoSisbr] = useState("-");
     const [infoTema, setInfoTema] = useState<RelatorioDataInfo | null>(null);
 
+    const exibirAvisoSeguroVida =
+        tema === "seguro_arrecadação";
+
     const mesesOptions = useMemo(() => gerarMesesAteAtual(), []);
     const opcaoProducaoAno = useMemo(() => gerarOpcaoProducaoAno(), []);
 
@@ -1220,6 +1223,24 @@ export function ProducaoMetaCooperativaPAForm() {
                             </select>
                         </div>
                     </div>
+
+                    {exibirAvisoSeguroVida && (
+                        <div className="mt-3 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
+                            <FaInfoCircle className="mt-0.5 shrink-0 text-amber-600" />
+
+                            <div>
+                                <p className="font-semibold">
+                                    Aviso
+                                </p>
+
+                                <p className="text-sm">
+                                    Estamos com problema na base de dados deste relatório específico.
+                                    Os dados exibidos podem estar incompletos ou indisponíveis até a
+                                    normalização da base.
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {(infoTema || avisoTema || mostrarAvisoInconsistenciaSisbr) && (
                         <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr]">
