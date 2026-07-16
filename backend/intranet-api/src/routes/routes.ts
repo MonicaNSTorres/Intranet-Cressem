@@ -80,7 +80,6 @@ import { monitorMetaAlertasController } from "../controllers/monitor-meta-alerta
 import { cnab240Controller } from "../controllers/cnab240.controller";
 import { cnab240FavorecidosController } from "../controllers/cnab-favorecidos.controller";
 import { cnab240AgenciasController } from "../controllers/cnab240-agencias.controller";
-import { cnab240CcoController } from "../controllers/cnab240-cco.controller";
 import { leiloesController } from "../controllers/leiloes.controller";
 import { solicitacaoSubsidioFuneralController } from "../controllers/solicitacao-subsidio-funeral.controller";
 import { solicitacaoSubsidioFuneralPaginadoController } from "../controllers/solicitacao_subsidio_funeral_paginado.controller";
