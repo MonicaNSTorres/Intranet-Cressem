@@ -524,6 +524,16 @@ function gerarOpcaoProducaoAno() {
   };
 }
 
+function extrairMesDoPeriodo(periodo: string) {
+  const inicio = periodo.split("|")[0];
+  if (!inicio) return "";
+
+  const data = new Date(`${inicio}T00:00:00`);
+  if (Number.isNaN(data.getTime())) return "";
+
+  return String(data.getMonth());
+}
+
 export function ProducaoMetaFuncionarioForm() {
   const [tema, setTema] = useState<ChaveRelatorioFuncionario | "">("");
   const [mesSelecionado, setMesSelecionado] = useState("");
@@ -873,8 +883,15 @@ export function ProducaoMetaFuncionarioForm() {
       ? "Este relatório de consórcio possui atualização mensal."
       : "";
 
+  const mesesComInconsistenciaSisbr = new Set(["2", "3", "4"]);
+  const mesDoPeriodoSelecionado = extrairMesDoPeriodo(periodoSelecionado);
+
   const mostrarAvisoInconsistenciaSisbr =
-    tema === "seguro_venda_nova" && ["3", "4"].includes(mesSelecionado);
+    tema === "seguro_gerais_novo" ||
+    (tema === "seguro_venda_nova" &&
+      (mesSelecionado === "__ANO__" ||
+        mesesComInconsistenciaSisbr.has(mesSelecionado) ||
+        mesesComInconsistenciaSisbr.has(mesDoPeriodoSelecionado)));
 
   const mostrarMes =
     !!tema && !TEMAS_SOMENTE_ANO_FUNCIONARIO.has(tema as ChaveRelatorioFuncionario);
