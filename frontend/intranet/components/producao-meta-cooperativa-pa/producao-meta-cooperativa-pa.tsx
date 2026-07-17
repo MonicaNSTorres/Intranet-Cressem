@@ -1068,6 +1068,8 @@ export function ProducaoMetaCooperativaPAForm() {
     }
 
     const mostrarAvisoInconsistenciaSisbr =
+        tema === "seguro_gerais_novo" ||
+        tema === "seguro_gerais_renovado" ||
         (tema === "liquidacao_baixa" && mesSelecionado === "4") ||
         (tema === "seguro_venda_nova" && ["3", "4"].includes(mesSelecionado));
 
