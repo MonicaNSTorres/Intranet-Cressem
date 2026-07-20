@@ -302,9 +302,19 @@ export async function alterarStatusFuncionario(payload: {
     SN_ATIVO: number;
     DT_DESLIGAMENTO?: string | null;
     FICHA_DESIMPEDIMENTO?: File | null;
+    ENVIAR_EMAIL_DESLIGAMENTO?: number;
+    ENVIAR_EMAIL_DESLIGAMENTO_GERAL?: number;
+    ENVIAR_EMAIL_ASSEM?: number;
+    ENVIAR_EMAIL_GREMIO?: number;
+    EFETIVACAO_ESTAGIARIO?: number;
 }) {
     const formData = new FormData();
     formData.append("SN_ATIVO", String(payload.SN_ATIVO));
+    formData.append("ENVIAR_EMAIL_DESLIGAMENTO", String(payload.ENVIAR_EMAIL_DESLIGAMENTO || 0));
+    formData.append("ENVIAR_EMAIL_DESLIGAMENTO_GERAL", String(payload.ENVIAR_EMAIL_DESLIGAMENTO_GERAL || 0));
+    formData.append("ENVIAR_EMAIL_ASSEM", String(payload.ENVIAR_EMAIL_ASSEM || 0));
+    formData.append("ENVIAR_EMAIL_GREMIO", String(payload.ENVIAR_EMAIL_GREMIO || 0));
+    formData.append("EFETIVACAO_ESTAGIARIO", String(payload.EFETIVACAO_ESTAGIARIO || 0));
 
     if (payload.DT_DESLIGAMENTO) {
         formData.append("DT_DESLIGAMENTO", payload.DT_DESLIGAMENTO);

@@ -94,6 +94,20 @@ export function GerenciamentoFuncionarioForm() {
   const [modalModo, setModalModo] = useState<ModalModo>("cadastrar");
   const [funcionarioSelecionado, setFuncionarioSelecionado] =
     useState<FuncionarioItem | null>(null);
+  const [modalStatusOpen, setModalStatusOpen] = useState(false);
+  const [funcionarioStatus, setFuncionarioStatus] =
+    useState<FuncionarioItem | null>(null);
+  const [statusDataDesligamento, setStatusDataDesligamento] = useState("");
+  const [statusFichaDesimpedimento, setStatusFichaDesimpedimento] =
+    useState<File | null>(null);
+  const [statusEnviarEmails, setStatusEnviarEmails] = useState(true);
+  const [statusEnviarEmailGeral, setStatusEnviarEmailGeral] = useState(false);
+  const [statusEfetivacaoEstagiario, setStatusEfetivacaoEstagiario] =
+    useState(false);
+  const [statusEnviarAssem, setStatusEnviarAssem] = useState(false);
+  const [statusEnviarGremio, setStatusEnviarGremio] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusErro, setStatusErro] = useState("");
 
   const [inputNome, setInputNome] = useState("");
   const [inputCPF, setInputCPF] = useState("");
@@ -461,18 +475,86 @@ export function GerenciamentoFuncionarioForm() {
     }
   }
 
-  async function alternarStatus(funcionario: FuncionarioItem) {
+  function abrirModalStatus(funcionario: FuncionarioItem) {
+    const vaiInativar = Number(funcionario.SN_ATIVO) === 1;
+
+    setFuncionarioStatus(funcionario);
+    setStatusDataDesligamento(
+      vaiInativar ? formatarDataInput(funcionario.DT_DESLIGAMENTO) : ""
+    );
+    setStatusFichaDesimpedimento(null);
+    setStatusEnviarEmails(vaiInativar);
+    setStatusEnviarEmailGeral(false);
+    setStatusEfetivacaoEstagiario(false);
+    setStatusEnviarAssem(false);
+    setStatusEnviarGremio(false);
+    setStatusErro("");
+    setErro("");
+    setInfo("");
+    setModalStatusOpen(true);
+  }
+
+  function fecharModalStatus() {
+    if (statusLoading) return;
+
+    setModalStatusOpen(false);
+    setFuncionarioStatus(null);
+    setStatusDataDesligamento("");
+    setStatusFichaDesimpedimento(null);
+    setStatusEnviarEmails(true);
+    setStatusEnviarEmailGeral(false);
+    setStatusEfetivacaoEstagiario(false);
+    setStatusEnviarAssem(false);
+    setStatusEnviarGremio(false);
+    setStatusErro("");
+  }
+
+  async function confirmarStatus() {
+    if (!funcionarioStatus) return;
+
     try {
       setErro("");
       setInfo("");
+      setStatusErro("");
 
-      const novoStatus = Number(funcionario.SN_ATIVO) === 1 ? 0 : 1;
+      const novoStatus = Number(funcionarioStatus.SN_ATIVO) === 1 ? 0 : 1;
+
+      if (novoStatus === 0 && !statusDataDesligamento) {
+        setStatusErro("Preencha a data de desligamento antes de inativar.");
+        return;
+      }
+
+      if (
+        novoStatus === 0 &&
+        !statusFichaDesimpedimento &&
+        !funcionarioStatus.FICHA_DESIMPEDIMENTO
+      ) {
+        setStatusErro("Anexe a ficha de desimpedimento antes de inativar.");
+        return;
+      }
+
+      setStatusLoading(true);
 
       await alterarStatusFuncionario({
-        id: Number(funcionario.ID_FUNCIONARIO),
+        id: Number(funcionarioStatus.ID_FUNCIONARIO),
         SN_ATIVO: novoStatus,
-        DT_DESLIGAMENTO: novoStatus === 0 ? inputDemissao || null : null,
-        FICHA_DESIMPEDIMENTO: null,
+        DT_DESLIGAMENTO: novoStatus === 0 ? statusDataDesligamento : null,
+        FICHA_DESIMPEDIMENTO:
+          novoStatus === 0 ? statusFichaDesimpedimento : null,
+        ENVIAR_EMAIL_DESLIGAMENTO:
+          novoStatus === 0 && statusEnviarEmails ? 1 : 0,
+        ENVIAR_EMAIL_DESLIGAMENTO_GERAL:
+          novoStatus === 0 && statusEnviarEmails && statusEnviarEmailGeral
+            ? 1
+            : 0,
+        ENVIAR_EMAIL_ASSEM:
+          novoStatus === 0 && statusEnviarEmails && statusEnviarAssem ? 1 : 0,
+        ENVIAR_EMAIL_GREMIO:
+          novoStatus === 0 && statusEnviarEmails && statusEnviarGremio ? 1 : 0,
+        EFETIVACAO_ESTAGIARIO:
+          novoStatus === 0 && statusEnviarEmails && statusEfetivacaoEstagiario
+            ? 1
+            : 0,
       });
 
       setInfo(
@@ -483,13 +565,16 @@ export function GerenciamentoFuncionarioForm() {
 
       await carregarFuncionarios(paginaAtual);
       await carregarTotais();
+      fecharModalStatus();
     } catch (e: any) {
       console.error(e);
-      setErro(
+      setStatusErro(
         e?.response?.data?.error ||
         e?.response?.data?.details ||
         "Erro ao alterar o status do funcionário."
       );
+    } finally {
+      setStatusLoading(false);
     }
   }
 
@@ -681,7 +766,7 @@ export function GerenciamentoFuncionarioForm() {
                         <td className="px-4 py-3 text-center">
                           <button
                             type="button"
-                            onClick={() => alternarStatus(funcionario)}
+                            onClick={() => abrirModalStatus(funcionario)}
                             className={`inline-flex min-w-21 items-center justify-center rounded px-3 py-1.5 text-xs font-semibold ${Number(funcionario.SN_ATIVO) === 1
                               ? "bg-secondary text-white hover:bg-third"
                               : "bg-slate-200 text-slate-700 hover:bg-slate-300"
@@ -1265,8 +1350,7 @@ export function GerenciamentoFuncionarioForm() {
                     )}
                   </div>
 
-                  {modalModo === "editar" &&
-                    Boolean(funcionarioSelecionado?.FICHA_DESIMPEDIMENTO) && (
+                  {modalModo === "editar" && (
                       <div>
                         <label className="mb-1 block text-xs font-medium text-gray-600">
                           Ficha de Desimpedimento
@@ -1368,6 +1452,198 @@ export function GerenciamentoFuncionarioForm() {
                   : modalModo === "cadastrar"
                     ? "Cadastrar"
                     : "Editar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalStatusOpen && funcionarioStatus && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
+          <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {Number(funcionarioStatus.SN_ATIVO) === 1
+                    ? "Confirmar inativação"
+                    : "Confirmar ativação"}
+                </h2>
+                <p className="text-sm text-slate-500">
+                  {funcionarioStatus.NM_FUNCIONARIO}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={fecharModalStatus}
+                className="rounded p-2 text-slate-500 hover:bg-slate-100"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className="space-y-4 px-6 py-5">
+              <div
+                className={`rounded border p-4 text-sm ${
+                  Number(funcionarioStatus.SN_ATIVO) === 1
+                    ? "border-amber-200 bg-amber-50 text-amber-900"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-900"
+                }`}
+              >
+                {Number(funcionarioStatus.SN_ATIVO) === 1 ? (
+                  <p>
+                    Para inativar, informe a data de desligamento e anexe a
+                    ficha de desimpedimento. Se o envio de e-mail estiver
+                    marcado, o sistema avisará automaticamente os destinatários
+                    configurados do RH e a gerência vinculada.
+                  </p>
+                ) : (
+                  <p>
+                    Ao confirmar, o funcionário será reativado e a data de
+                    desligamento será limpa.
+                  </p>
+                )}
+              </div>
+
+              {Number(funcionarioStatus.SN_ATIVO) === 1 && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      Data de desligamento
+                    </label>
+                    <input
+                      type="date"
+                      value={statusDataDesligamento}
+                      onChange={(e) => setStatusDataDesligamento(e.target.value)}
+                      className="w-full rounded border px-3 py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      Ficha de desimpedimento
+                    </label>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) =>
+                        setStatusFichaDesimpedimento(e.target.files?.[0] || null)
+                      }
+                      className="w-full rounded border px-3 py-2"
+                    />
+                    {funcionarioStatus.FICHA_DESIMPEDIMENTO && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        Arquivo salvo atualmente:{" "}
+                        {getNomeArquivo(funcionarioStatus.FICHA_DESIMPEDIMENTO)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded border border-slate-200 p-4">
+                    <label className="mb-2 block text-xs font-medium text-gray-600">
+                      Deseja enviar e-mail às partes responsáveis?
+                    </label>
+
+                    <div className="flex flex-wrap gap-5 text-sm">
+                      <label className="inline-flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={statusEnviarEmails === true}
+                          onChange={() => setStatusEnviarEmails(true)}
+                        />
+                        Sim
+                      </label>
+
+                      <label className="inline-flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={statusEnviarEmails === false}
+                          onChange={() => setStatusEnviarEmails(false)}
+                        />
+                        Não
+                      </label>
+                    </div>
+
+                    {statusEnviarEmails && (
+                      <div className="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+                        <label className="inline-flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={statusEfetivacaoEstagiario}
+                            onChange={(e) =>
+                              setStatusEfetivacaoEstagiario(e.target.checked)
+                            }
+                          />
+                          Efetivação de estagiário
+                        </label>
+
+                        <label className="inline-flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={statusEnviarEmailGeral}
+                            onChange={(e) =>
+                              setStatusEnviarEmailGeral(e.target.checked)
+                            }
+                          />
+                          Avisar lista geral
+                        </label>
+
+                        <label className="inline-flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={statusEnviarAssem}
+                            onChange={(e) => setStatusEnviarAssem(e.target.checked)}
+                          />
+                          ASSEM
+                        </label>
+
+                        <label className="inline-flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={statusEnviarGremio}
+                            onChange={(e) =>
+                              setStatusEnviarGremio(e.target.checked)
+                            }
+                          />
+                          Grêmio
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {statusErro && (
+                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {statusErro}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
+              <button
+                type="button"
+                onClick={fecharModalStatus}
+                className="rounded bg-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-300"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmarStatus}
+                disabled={statusLoading}
+                className={`rounded px-4 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${
+                  Number(funcionarioStatus.SN_ATIVO) === 1
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                }`}
+              >
+                {statusLoading
+                  ? "Processando..."
+                  : Number(funcionarioStatus.SN_ATIVO) === 1
+                    ? "Inativar funcionário"
+                    : "Ativar funcionário"}
               </button>
             </div>
           </div>

@@ -64,7 +64,7 @@ export default function GerenciamentoSubsidioFuneralPage() {
               </h1>
 
               <p className="mt-1 text-sm text-gray-600">
-                Acompanhe o fluxo, confira documentos e mova a solicitação entre atendimento, diretoria e financeiro.
+                Acompanhe o fluxo, confira documentos e mova a solicitação entre atendimento e financeiro.
               </p>
             </div>
           </div>

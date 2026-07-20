@@ -8,6 +8,7 @@ import fs from "fs/promises";
 import path from "path";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { sendEmail, type EmailAttachment } from "../services/email.service";
 
 const execFileAsync = promisify(execFile);
 
@@ -85,6 +86,30 @@ function getShareRoot() {
     return `\\\\${server}\\${share}`;
 }
 
+async function lerArquivoUploadBuffer(arquivo: any) {
+    const nomeArquivo = String(arquivo?.name || arquivo?.filename || "arquivo");
+
+    if (arquivo?.data) {
+        const data = Buffer.isBuffer(arquivo.data)
+            ? arquivo.data
+            : Buffer.from(arquivo.data);
+
+        if (data.length) {
+            return data;
+        }
+    }
+
+    if (arquivo?.tempFilePath) {
+        const data = await fs.readFile(arquivo.tempFilePath);
+
+        if (data.length) {
+            return data;
+        }
+    }
+
+    throw new Error(`Arquivo ${nomeArquivo} chegou sem conteúdo para anexar.`);
+}
+
 async function conectarShareWindows() {
     const { server, share, user, password, domain } = getSmbConfig();
     const remote = `\\\\${server}\\${share}`;
@@ -153,7 +178,7 @@ async function salvarArquivoNoServidorSMB(
     const shareRoot = getShareRoot();
     const funcionarioSafe = sanitizeFolderName(funcionario);
     const fileName = sanitizeFolderName(arquivo.name || arquivo.filename || "arquivo.pdf");
-    const fileData = arquivo.data;
+    const fileData = await lerArquivoUploadBuffer(arquivo);
 
     await conectarShareWindows();
 
@@ -190,6 +215,447 @@ function getUploadedFile(files: any, fieldName: string) {
     }
 
     return file;
+}
+
+function escapeHtml(value: any) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function formatarDataBrasil(value: any) {
+    if (!value) return "-";
+    const text = String(value).trim();
+    const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+
+    const date = new Date(text);
+    if (Number.isNaN(date.getTime())) return text;
+
+    return date.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
+function bomDiaBoaTarde() {
+    const hora = new Date().getHours();
+    if (hora < 12) return "Bom dia!";
+    if (hora < 18) return "Boa tarde!";
+    return "Boa noite!";
+}
+
+function verificarCargo(nivel: any, sexo: any) {
+    const nivelNormalizado = String(nivel || "").trim().toUpperCase();
+    const sexoNormalizado = String(sexo || "").trim().toUpperCase();
+    const artigo = sexoNormalizado === "F" ? "da" : "do";
+
+    if (nivelNormalizado) {
+        return `${artigo} ${nivelNormalizado.toLowerCase()}`;
+    }
+
+    return sexoNormalizado === "F" ? "da nova funcionária" : "do novo funcionário";
+}
+
+function isTruthyBody(value: any) {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return ["1", "true", "sim", "s", "yes"].includes(normalized);
+}
+
+function emailTemplateRh(title: string, content: string) {
+    return `
+      <div style="margin:0;padding:24px;background:#f4f7fb;font-family:Arial,sans-serif;color:#10233f;">
+        <div style="max-width:760px;margin:0 auto;background:#ffffff;border:1px solid #dbe5ef;border-radius:16px;overflow:hidden;">
+          <div style="background:#64b51f;color:#ffffff;padding:18px 22px;">
+            <h2 style="margin:0;font-size:20px;line-height:1.3;">${escapeHtml(title)}</h2>
+          </div>
+          <div style="padding:22px;font-size:14px;line-height:1.55;">
+            ${content}
+            <p style="margin:22px 0 0;color:#526783;font-size:12px;">
+              Este e-mail foi enviado automaticamente pela intranet.
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+}
+
+function infoTable(rows: Array<[string, any]>) {
+    const htmlRows = rows
+        .map(
+            ([label, value]) => `
+              <tr>
+                <td style="width:220px;padding:9px;border:1px solid #dbe5ef;background:#f8fafc;font-weight:700;">${escapeHtml(label)}</td>
+                <td style="padding:9px;border:1px solid #dbe5ef;">${escapeHtml(value || "-")}</td>
+              </tr>
+            `
+        )
+        .join("");
+
+    return `<table style="width:100%;border-collapse:collapse;margin-top:12px;">${htmlRows}</table>`;
+}
+
+const EMAIL_DESTINOS_RH_EFETIVACAO = [
+    "luiz.gerhard@sicoob.com.br",
+    "fabio.sprado@sicoob.com.br",
+    "paulo.tarso@sicoob.com.br",
+    "tiago.teixeira@sicoob.com.br",
+    "paloma.eduarda@sicoob.com.br",
+    "jorge.gregorio@sicoob.com.br",
+];
+
+const EMAIL_DESTINOS_RH_CADASTRO = [
+    "ana.hespanha@sicoob.com.br",
+    "diego.adriano@sicoob.com.br",
+    "paloma.eduarda@sicoob.com.br",
+    "jorge.gregorio@sicoob.com.br",
+    "cadastro.cressem@sicoob.com.br",
+];
+
+const EMAIL_DESTINOS_RH_DESIMPEDIMENTO = [
+    "diego.adriano@sicoob.com.br",
+    "vanderleia.medeiros@sicoob.com.br",
+    "thais.yumi@sicoob.com.br",
+    "paloma.eduarda@sicoob.com.br",
+    "jorge.gregorio@sicoob.com.br",
+];
+
+const EMAIL_DESTINOS_RH_DESATIVACAO_ACESSOS = [
+    "luiz.gerhard@sicoob.com.br",
+    "fabio.sprado@sicoob.com.br",
+    "paloma.eduarda@sicoob.com.br",
+    "jorge.gregorio@sicoob.com.br",
+];
+
+const EMAIL_DESTINOS_RH_DESLIGAMENTO_GERAL = ["lista.geral.cressem@sicoob.com.br"];
+
+const EMAIL_DESTINOS_ASSEM = [
+    "convenios01@assem.com.br",
+    "convenios@assem.com.br",
+    "assem@assem.com.br",
+];
+
+const EMAIL_DESTINOS_GREMIO = ["devair.pietraroia@sjc.sp.gov.br"];
+
+async function montarAnexosEmailFuncionario(
+    caminhos: Array<string | null>,
+    exigirTodos = false
+) {
+    const attachments: EmailAttachment[] = [];
+    const caminhosValidos = caminhos.filter(Boolean) as string[];
+    const falhas: string[] = [];
+
+    if (!caminhosValidos.length) {
+        return attachments;
+    }
+
+    await conectarShareWindows();
+
+    for (const caminho of caminhosValidos) {
+        try {
+            const bytes = await fs.readFile(caminho);
+            attachments.push({
+                name: path.win32.basename(caminho),
+                contentType: getMimeTypeByFileName(caminho),
+                contentBytes: bytes.toString("base64"),
+            });
+        } catch (error) {
+            console.warn("Não foi possível anexar arquivo ao e-mail de RH:", caminho, error);
+            falhas.push(path.win32.basename(caminho));
+        }
+    }
+
+    if (exigirTodos && falhas.length) {
+        throw new Error(
+            `Não foi possível anexar ao e-mail: ${falhas.join(", ")}.`
+        );
+    }
+
+    return attachments;
+}
+
+async function montarAnexosEmailFuncionarioDeUploads(arquivos: Array<any | null>) {
+    const anexos: EmailAttachment[] = [];
+    const arquivosValidos = arquivos.filter(Boolean);
+
+    for (const arquivo of arquivosValidos) {
+        const fileName = String(arquivo.name || arquivo.filename || "arquivo.pdf");
+        const bytes = await lerArquivoUploadBuffer(arquivo);
+
+        anexos.push({
+            name: path.win32.basename(
+                fileName
+            ),
+            contentType: getMimeTypeByFileName(
+                fileName
+            ),
+            contentBytes: bytes.toString("base64"),
+        });
+    }
+
+    return anexos;
+}
+
+async function buscarFuncionarioCompleto(idFuncionario: number) {
+    const result = await oracleExecute(
+        `
+        SELECT
+          f.ID_FUNCIONARIO,
+          f.NM_FUNCIONARIO,
+          f.EMAIL,
+          f.NR_CPF,
+          f.NR_RG,
+          f.NR_CELULAR,
+          f.SEXO,
+          f.NR_MATRICULA,
+          f.NR_CONTA_CORRENTE,
+          f.FICHA_DESIMPEDIMENTO,
+          TO_CHAR(f.DT_NASCIMENTO, 'YYYY-MM-DD') AS DT_NASCIMENTO,
+          TO_CHAR(f.DT_ADMISSAO, 'YYYY-MM-DD') AS DT_ADMISSAO,
+          TO_CHAR(f.DT_DESLIGAMENTO, 'YYYY-MM-DD') AS DT_DESLIGAMENTO,
+          s.NM_SETOR,
+          c.NM_CARGO,
+          c.NM_NIVEL,
+          p.CD_SICOOB,
+          p.NM_POSICAO,
+          p.DESC_POSICAO,
+          ger.NM_FUNCIONARIO AS NM_GERENCIA,
+          ger.EMAIL AS EMAIL_GERENCIA
+        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+        LEFT JOIN DBACRESSEM.SETOR_SICOOB_CRESSEM s
+          ON s.ID_SETOR = f.ID_SETOR
+        LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM c
+          ON c.ID_CARGO = f.ID_CARGO
+        LEFT JOIN DBACRESSEM.POSICAO_COOPERATIVA_SICOOB p
+          ON p.ID_POSICAO = c.ID_POSICAO
+        LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM ger
+          ON ger.ID_FUNCIONARIO = f.CD_GERENCIA
+        WHERE f.ID_FUNCIONARIO = :idFuncionario
+      `,
+        { idFuncionario },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    return (result.rows?.[0] || null) as any;
+}
+
+async function enviarEmailsCadastroFuncionario(
+    funcionario: any,
+    anexosCadastro: EmailAttachment[]
+) {
+    if (!funcionario) {
+        throw new Error("Funcionário cadastrado não foi encontrado para montar os e-mails de admissão.");
+    }
+
+    const destinosEfetivacao = Array.from(
+        new Set([
+            ...EMAIL_DESTINOS_RH_EFETIVACAO,
+            String(funcionario.EMAIL_GERENCIA || "").trim(),
+        ].filter(Boolean))
+    );
+
+    const descricaoPosicao = String(funcionario.DESC_POSICAO || "")
+        .split(/\r?\n/)
+        .map((linha) => linha.trim())
+        .filter(Boolean)
+        .map((linha) => `<p style="margin:0;">${escapeHtml(linha)}</p>`)
+        .join("");
+
+    const assuntoEfetivacao = `Contratação ${verificarCargo(
+        funcionario.NM_NIVEL,
+        funcionario.SEXO
+    )} no Sicoob Cressem - Procedimentos para criação de login e senha`;
+
+    const htmlEfetivacao = emailTemplateRh(
+        "Nova contratação - procedimentos internos",
+        `
+          <p style="margin:0;">${escapeHtml(bomDiaBoaTarde())}</p>
+          <p>Segue abaixo os dados ${escapeHtml(verificarCargo(funcionario.NM_NIVEL, funcionario.SEXO))}, para <strong>cadastro, criação de e-mail corporativo, logins e senhas</strong>.</p>
+          <p><strong>Observação:</strong> aguardar o cadastro no SISBR pelo setor de cadastro.</p>
+          ${funcionario.CD_SICOOB || funcionario.NM_POSICAO
+            ? `<p><strong>Singular/posição:</strong> ${escapeHtml(funcionario.CD_SICOOB || "-")} - ${escapeHtml(funcionario.NM_POSICAO || "-")}</p>`
+            : ""}
+          ${descricaoPosicao ? `<p><strong>Descrição:</strong></p>${descricaoPosicao}` : ""}
+          ${infoTable([
+            ["Nome", funcionario.NM_FUNCIONARIO],
+            ["CPF", funcionario.NR_CPF],
+            ["RG", funcionario.NR_RG],
+            ["Data de admissão", formatarDataBrasil(funcionario.DT_ADMISSAO)],
+            ["Data de nascimento", formatarDataBrasil(funcionario.DT_NASCIMENTO)],
+            ["Celular", funcionario.NR_CELULAR],
+            ["Matrícula", funcionario.NR_MATRICULA],
+            ["Cargo", funcionario.NM_CARGO],
+            ["Setor", funcionario.NM_SETOR],
+            ["Gerência", funcionario.NM_GERENCIA],
+          ])}
+          <p style="margin-top:16px;">Equipe RH</p>
+        `
+    );
+
+    const sexo = String(funcionario.SEXO || "").toUpperCase();
+    const contaTexto = sexo === "F" ? "da funcionária nova" : "do funcionário novo";
+    const assuntoCadastro = "SICOOB CRESSEM - ABERTURA DE CONTA FUNCIONARIO NOVO";
+    const htmlCadastro = emailTemplateRh(
+        "Abertura de conta - funcionário novo",
+        `
+          <p style="margin:0;">${escapeHtml(bomDiaBoaTarde())}</p>
+          <p>
+            Seguem em anexo os documentos necessários para a abertura de conta ${contaTexto}
+            <strong>${escapeHtml(funcionario.NM_FUNCIONARIO)}</strong>.
+          </p>
+          ${infoTable([
+            ["Nome", funcionario.NM_FUNCIONARIO],
+            ["CPF", funcionario.NR_CPF],
+            ["RG", funcionario.NR_RG],
+            ["Data de admissão", formatarDataBrasil(funcionario.DT_ADMISSAO)],
+            ["Cargo", funcionario.NM_CARGO],
+            ["Setor", funcionario.NM_SETOR],
+          ])}
+          <p style="margin-top:16px;">Equipe RH</p>
+        `
+    );
+
+    await sendEmail(destinosEfetivacao, assuntoEfetivacao, htmlEfetivacao);
+    await sendEmail(EMAIL_DESTINOS_RH_CADASTRO, assuntoCadastro, htmlCadastro, anexosCadastro);
+}
+
+async function enviarEmailDesimpedimentoFuncionario(
+    funcionario: any,
+    anexos: EmailAttachment[],
+    opcoes: {
+        enviarAssem?: boolean;
+        enviarGremio?: boolean;
+        efetivacaoEstagiario?: boolean;
+    } = {}
+) {
+    if (!funcionario) {
+        throw new Error("Funcionário não encontrado para montar o e-mail de desimpedimento.");
+    }
+
+    if (!anexos.length) {
+        throw new Error("Nenhuma ficha de desimpedimento disponível para anexar ao e-mail.");
+    }
+
+    const destinos = Array.from(
+        new Set([
+            ...EMAIL_DESTINOS_RH_DESIMPEDIMENTO,
+            ...(opcoes.enviarAssem ? EMAIL_DESTINOS_ASSEM : []),
+            ...(opcoes.enviarGremio ? EMAIL_DESTINOS_GREMIO : []),
+            String(funcionario.EMAIL_GERENCIA || "").trim(),
+        ].filter(Boolean))
+    );
+
+    const sexo = String(funcionario.SEXO || "").toUpperCase();
+    const artigo = sexo === "F" ? "da" : "do";
+    const observacaoEstagiario = opcoes.efetivacaoEstagiario
+        ? `<p style="margin:12px 0 0;"><strong>OBS:</strong> Se trata de uma efetivação de estagiário (desligamento do contrato de estágio e contratação como CLT).</p>`
+        : "";
+
+    const assunto = `SICOOB CRESSEM-FICHA DE DESIMPEDIMENTO - ${formatarDataBrasil(
+        funcionario.DT_DESLIGAMENTO
+    )}`;
+    const html = emailTemplateRh(
+        "Ficha de desimpedimento",
+        `
+          <p style="margin:0;">${escapeHtml(bomDiaBoaTarde())}</p>
+          <p>
+            Segue em anexo a ficha de desimpedimento ${artigo}
+            <strong>${escapeHtml(funcionario.NM_FUNCIONARIO)}</strong>.
+          </p>
+          ${observacaoEstagiario}
+          ${infoTable([
+            ["Nome", funcionario.NM_FUNCIONARIO],
+            ["CPF", funcionario.NR_CPF],
+            ["RG", funcionario.NR_RG],
+            ["Data de desligamento", formatarDataBrasil(funcionario.DT_DESLIGAMENTO)],
+            ["Cargo", funcionario.NM_CARGO],
+            ["Setor", funcionario.NM_SETOR],
+            ["Gerência", funcionario.NM_GERENCIA],
+          ])}
+          <p style="margin-top:16px;">Equipe RH</p>
+        `
+    );
+
+    await sendEmail(destinos, assunto, html, anexos);
+}
+
+async function enviarEmailDesativacaoAcessosFuncionario(
+    funcionario: any,
+    efetivacaoEstagiario = false
+) {
+    if (!funcionario) {
+        throw new Error("Funcionário não encontrado para montar o e-mail de desativação.");
+    }
+
+    const destinos = Array.from(
+        new Set([
+            ...EMAIL_DESTINOS_RH_DESATIVACAO_ACESSOS,
+            String(funcionario.EMAIL_GERENCIA || "").trim(),
+        ].filter(Boolean))
+    );
+
+    const observacaoEstagiario = efetivacaoEstagiario
+        ? `<p style="margin:12px 0 0;"><strong>OBS:</strong> Se trata de uma efetivação de estagiário (desligamento do contrato de estágio e contratação como CLT).</p>`
+        : "";
+
+    const assunto = `Desligamento ${verificarCargo(
+        funcionario.NM_NIVEL,
+        funcionario.SEXO
+    ).replace("nova ", "").replace("novo ", "")} no Sicoob Cressem em ${formatarDataBrasil(
+        funcionario.DT_DESLIGAMENTO
+    )}`;
+
+    const html = emailTemplateRh(
+        "Desativação de acessos",
+        `
+          <p style="margin:0;">${escapeHtml(bomDiaBoaTarde())}</p>
+          <p>
+            Seguem abaixo os dados para <strong>desativação de e-mail corporativo, contas, logins e senhas</strong>.
+          </p>
+          ${infoTable([
+            ["Nome", funcionario.NM_FUNCIONARIO],
+            ["CPF", funcionario.NR_CPF],
+            ["Data de desligamento", formatarDataBrasil(funcionario.DT_DESLIGAMENTO)],
+            ["Matrícula", funcionario.NR_MATRICULA],
+            ["Cargo", funcionario.NM_CARGO],
+            ["Setor", funcionario.NM_SETOR],
+            ["Gerência", funcionario.NM_GERENCIA],
+          ])}
+          ${observacaoEstagiario}
+          <p style="margin-top:16px;">Equipe RH</p>
+        `
+    );
+
+    await sendEmail(destinos, assunto, html);
+}
+
+async function enviarEmailDesligamentoGeralFuncionario(funcionario: any) {
+    if (!funcionario) {
+        throw new Error("Funcionário não encontrado para montar o e-mail geral de desligamento.");
+    }
+
+    const sexo = String(funcionario.SEXO || "").toUpperCase();
+    const desligado = sexo === "F" ? "desligada" : "desligado";
+
+    const html = emailTemplateRh(
+        "Desligamento",
+        `
+          <p style="margin:0;">${escapeHtml(bomDiaBoaTarde())}</p>
+          <p>
+            Informamos que, a partir do dia
+            <strong>${escapeHtml(formatarDataBrasil(funcionario.DT_DESLIGAMENTO))}</strong>,
+            <strong>${escapeHtml(funcionario.NM_FUNCIONARIO)}</strong>, do setor
+            <strong>${escapeHtml(funcionario.NM_SETOR || "-")}</strong>, está ${desligado} de nossa equipe.
+          </p>
+          <p style="margin-top:16px;">Equipe RH</p>
+        `
+    );
+
+    await sendEmail(
+        EMAIL_DESTINOS_RH_DESLIGAMENTO_GERAL,
+        "SICOOB CRESSEM-DESLIGAMENTO",
+        html
+    );
 }
 
 export const gerenciamentoFuncionarioController = {
@@ -648,6 +1114,110 @@ export const gerenciamentoFuncionarioController = {
                 return res.status(400).json({ error: "Preencha o setor." });
             }
 
+            const ENVIAR_EMAIL_ADMISSAO = isTruthyBody(req.body.ENVIAR_EMAIL_ADMISSAO);
+            const funcionarioNomePasta = NM_FUNCIONARIO;
+            const warnings: string[] = [];
+
+            const fileDocIdentidade = getUploadedFile(req.files, "DOC_INDENTIDADE");
+            const fileCompEndereco = getUploadedFile(req.files, "COMP_ENDERECO");
+            const fileFichaRh = getUploadedFile(req.files, "FICHA_RH");
+            const fileCertNascimento = getUploadedFile(req.files, "CERT_NASCIMENTO");
+            const fileCertCasamento = getUploadedFile(req.files, "CERT_CASAMENTO");
+            const fileDocConjuge = getUploadedFile(req.files, "DOC_IDENTIDADE_CONJ");
+            const fileFichaDesimpedimento = getUploadedFile(req.files, "FICHA_DESIMPEDIMENTO");
+
+            let caminhoDocIdentidade: string | null = null;
+            let caminhoCompEndereco: string | null = null;
+            let caminhoFichaRh: string | null = null;
+            let caminhoCertNascimento: string | null = null;
+            let caminhoCertCasamento: string | null = null;
+            let caminhoDocConjuge: string | null = null;
+            let caminhoFichaDesimpedimento: string | null = null;
+
+            if (fileDocIdentidade) {
+                try {
+                    caminhoDocIdentidade = await salvarArquivoNoServidorSMB(
+                        fileDocIdentidade,
+                        funcionarioNomePasta
+                    );
+                } catch (error: any) {
+                    console.error("Falha DOC_INDENTIDADE:", error);
+                    warnings.push("Não foi possível salvar o documento de identidade no servidor de arquivos.");
+                }
+            }
+
+            if (fileCompEndereco) {
+                try {
+                    caminhoCompEndereco = await salvarArquivoNoServidorSMB(
+                        fileCompEndereco,
+                        funcionarioNomePasta
+                    );
+                } catch (error: any) {
+                    console.error("Falha COMP_ENDERECO:", error);
+                    warnings.push("Não foi possível salvar o comprovante de endereço no servidor de arquivos.");
+                }
+            }
+
+            if (fileFichaRh) {
+                try {
+                    caminhoFichaRh = await salvarArquivoNoServidorSMB(
+                        fileFichaRh,
+                        funcionarioNomePasta
+                    );
+                } catch (error: any) {
+                    console.error("Falha FICHA_RH:", error);
+                    warnings.push("Não foi possível salvar a ficha RH no servidor de arquivos.");
+                }
+            }
+
+            if (fileCertNascimento) {
+                try {
+                    caminhoCertNascimento = await salvarArquivoNoServidorSMB(
+                        fileCertNascimento,
+                        funcionarioNomePasta
+                    );
+                } catch (error: any) {
+                    console.error("Falha CERT_NASCIMENTO:", error);
+                    warnings.push("Não foi possível salvar a certidão de nascimento no servidor de arquivos.");
+                }
+            }
+
+            if (fileCertCasamento) {
+                try {
+                    caminhoCertCasamento = await salvarArquivoNoServidorSMB(
+                        fileCertCasamento,
+                        funcionarioNomePasta
+                    );
+                } catch (error: any) {
+                    console.error("Falha CERT_CASAMENTO:", error);
+                    warnings.push("Não foi possível salvar a certidão de casamento no servidor de arquivos.");
+                }
+            }
+
+            if (fileDocConjuge) {
+                try {
+                    caminhoDocConjuge = await salvarArquivoNoServidorSMB(
+                        fileDocConjuge,
+                        funcionarioNomePasta
+                    );
+                } catch (error: any) {
+                    console.error("Falha DOC_IDENTIDADE_CONJ:", error);
+                    warnings.push("Não foi possível salvar o documento do cônjuge no servidor de arquivos.");
+                }
+            }
+
+            if (fileFichaDesimpedimento) {
+                try {
+                    caminhoFichaDesimpedimento = await salvarArquivoNoServidorSMB(
+                        fileFichaDesimpedimento,
+                        funcionarioNomePasta
+                    );
+                } catch (error: any) {
+                    console.error("Falha FICHA_DESIMPEDIMENTO:", error);
+                    warnings.push("Não foi possível salvar a ficha de desimpedimento no servidor de arquivos.");
+                }
+            }
+
             const sql = `
         INSERT INTO DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM (
           NM_FUNCIONARIO,
@@ -665,7 +1235,14 @@ export const gerenciamentoFuncionarioController = {
           DT_ADMISSAO,
           DT_DESLIGAMENTO,
           NR_MATRICULA,
-          NR_CONTA_CORRENTE
+          NR_CONTA_CORRENTE,
+          DOC_INDENTIDADE,
+          COMP_ENDERECO,
+          FICHA_RH,
+          CERT_NASCIMENTO,
+          CERT_CASAMENTO,
+          DOC_IDENTIDADE_CONJ,
+          FICHA_DESIMPEDIMENTO
         ) VALUES (
           :NM_FUNCIONARIO,
           TO_DATE(:DT_NASCIMENTO, 'YYYY-MM-DD'),
@@ -685,7 +1262,14 @@ export const gerenciamentoFuncionarioController = {
             ELSE NULL
           END,
           :NR_MATRICULA,
-          :NR_CONTA_CORRENTE
+          :NR_CONTA_CORRENTE,
+          :DOC_INDENTIDADE,
+          :COMP_ENDERECO,
+          :FICHA_RH,
+          :CERT_NASCIMENTO,
+          :CERT_CASAMENTO,
+          :DOC_IDENTIDADE_CONJ,
+          :FICHA_DESIMPEDIMENTO
         )
         RETURNING ID_FUNCIONARIO INTO :ID_FUNCIONARIO
       `;
@@ -709,6 +1293,13 @@ export const gerenciamentoFuncionarioController = {
                     DT_DESLIGAMENTO,
                     NR_MATRICULA,
                     NR_CONTA_CORRENTE,
+                    DOC_INDENTIDADE: caminhoDocIdentidade,
+                    COMP_ENDERECO: caminhoCompEndereco,
+                    FICHA_RH: caminhoFichaRh,
+                    CERT_NASCIMENTO: caminhoCertNascimento,
+                    CERT_CASAMENTO: caminhoCertCasamento,
+                    DOC_IDENTIDADE_CONJ: caminhoDocConjuge,
+                    FICHA_DESIMPEDIMENTO: caminhoFichaDesimpedimento,
                     ID_FUNCIONARIO: {
                         dir: oracledb.BIND_OUT,
                         type: oracledb.NUMBER,
@@ -718,11 +1309,50 @@ export const gerenciamentoFuncionarioController = {
             );
 
             const id = (result.outBinds as any)?.ID_FUNCIONARIO?.[0];
+            let emailEnviado = false;
+            let emailErro = "";
+
+            if (ENVIAR_EMAIL_ADMISSAO && id) {
+                try {
+                    const funcionarioCompleto = await buscarFuncionarioCompleto(Number(id));
+                    const anexosCadastro = await montarAnexosEmailFuncionarioDeUploads([
+                        fileDocIdentidade,
+                        fileCompEndereco,
+                        fileFichaRh,
+                        fileCertNascimento,
+                        fileCertCasamento,
+                        fileDocConjuge,
+                    ]);
+
+                    if (!anexosCadastro.length) {
+                        throw new Error(
+                            "Nenhum arquivo foi recebido para anexar ao e-mail de abertura de conta."
+                        );
+                    }
+
+                    await enviarEmailsCadastroFuncionario(funcionarioCompleto, anexosCadastro);
+                    emailEnviado = true;
+                } catch (emailError: any) {
+                    emailErro = String(emailError?.message || emailError);
+                    console.error("Falha ao enviar e-mails de admissão do funcionário:", emailError);
+                    warnings.push("Funcionário cadastrado, mas não foi possível enviar os e-mails de admissão.");
+                }
+            }
 
             return res.status(201).json({
                 ID_FUNCIONARIO: id,
                 NM_FUNCIONARIO,
                 SN_ATIVO: 1,
+                DOC_INDENTIDADE: caminhoDocIdentidade,
+                COMP_ENDERECO: caminhoCompEndereco,
+                FICHA_RH: caminhoFichaRh,
+                CERT_NASCIMENTO: caminhoCertNascimento,
+                CERT_CASAMENTO: caminhoCertCasamento,
+                DOC_IDENTIDADE_CONJ: caminhoDocConjuge,
+                FICHA_DESIMPEDIMENTO: caminhoFichaDesimpedimento,
+                emailEnviado,
+                ...(emailErro ? { emailErro } : {}),
+                warnings,
             });
         } catch (err: any) {
             console.error("cadastrar funcionario erro:", err);
@@ -1053,6 +1683,16 @@ export const gerenciamentoFuncionarioController = {
             const id = Number(req.params.id || 0);
             const SN_ATIVO = Number(req.body.SN_ATIVO);
             const DT_DESLIGAMENTO = req.body.DT_DESLIGAMENTO || null;
+            const ENVIAR_EMAIL_DESLIGAMENTO = isTruthyBody(
+                req.body.ENVIAR_EMAIL_DESLIGAMENTO ?? "1"
+            );
+            const ENVIAR_EMAIL_DESLIGAMENTO_GERAL = isTruthyBody(
+                req.body.ENVIAR_EMAIL_DESLIGAMENTO_GERAL
+            );
+            const ENVIAR_EMAIL_ASSEM = isTruthyBody(req.body.ENVIAR_EMAIL_ASSEM);
+            const ENVIAR_EMAIL_GREMIO = isTruthyBody(req.body.ENVIAR_EMAIL_GREMIO);
+            const EFETIVACAO_ESTAGIARIO = isTruthyBody(req.body.EFETIVACAO_ESTAGIARIO);
+            const warnings: string[] = [];
 
             if (!id) {
                 return res.status(400).json({
@@ -1066,6 +1706,22 @@ export const gerenciamentoFuncionarioController = {
                 });
             }
 
+            const funcionarioAntes = await buscarFuncionarioCompleto(id);
+            const fileFichaDesimpedimento = getUploadedFile(req.files, "FICHA_DESIMPEDIMENTO");
+            let caminhoFichaDesimpedimento: string | null = null;
+
+            if (fileFichaDesimpedimento && funcionarioAntes?.NM_FUNCIONARIO) {
+                try {
+                    caminhoFichaDesimpedimento = await salvarArquivoNoServidorSMB(
+                        fileFichaDesimpedimento,
+                        funcionarioAntes.NM_FUNCIONARIO
+                    );
+                } catch (error: any) {
+                    console.error("Falha FICHA_DESIMPEDIMENTO no desligamento:", error);
+                    warnings.push("Não foi possível salvar a ficha de desimpedimento no servidor de arquivos.");
+                }
+            }
+
             const sql = `
         UPDATE DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM
         SET
@@ -1076,7 +1732,8 @@ export const gerenciamentoFuncionarioController = {
             WHEN :SN_ATIVO = 1
               THEN NULL
             ELSE DT_DESLIGAMENTO
-          END
+          END,
+          FICHA_DESIMPEDIMENTO = COALESCE(:FICHA_DESIMPEDIMENTO, FICHA_DESIMPEDIMENTO)
         WHERE ID_FUNCIONARIO = :ID_FUNCIONARIO
       `;
 
@@ -1087,6 +1744,7 @@ export const gerenciamentoFuncionarioController = {
                     ID_FUNCIONARIO: id,
                     SN_ATIVO,
                     DT_DESLIGAMENTO,
+                    FICHA_DESIMPEDIMENTO: caminhoFichaDesimpedimento,
                 },
                 {} as any
             );
@@ -1097,9 +1755,75 @@ export const gerenciamentoFuncionarioController = {
                 });
             }
 
+            let emailDesimpedimentoEnviado = false;
+            let emailDesimpedimentoErro = "";
+            let emailDesativacaoAcessosEnviado = false;
+            let emailDesativacaoAcessosErro = "";
+            let emailDesligamentoGeralEnviado = false;
+            let emailDesligamentoGeralErro = "";
+
+            if (SN_ATIVO === 0 && ENVIAR_EMAIL_DESLIGAMENTO) {
+                const funcionarioCompleto = await buscarFuncionarioCompleto(id);
+
+                try {
+                    const anexos = fileFichaDesimpedimento
+                        ? await montarAnexosEmailFuncionarioDeUploads([fileFichaDesimpedimento])
+                        : await montarAnexosEmailFuncionario(
+                            [
+                                caminhoFichaDesimpedimento ||
+                                String(funcionarioCompleto?.FICHA_DESIMPEDIMENTO || "").trim() ||
+                                null,
+                            ],
+                            true
+                        );
+
+                    await enviarEmailDesimpedimentoFuncionario(funcionarioCompleto, anexos, {
+                        enviarAssem: ENVIAR_EMAIL_ASSEM,
+                        enviarGremio: ENVIAR_EMAIL_GREMIO,
+                        efetivacaoEstagiario: EFETIVACAO_ESTAGIARIO,
+                    });
+                    emailDesimpedimentoEnviado = true;
+                } catch (emailError: any) {
+                    emailDesimpedimentoErro = String(emailError?.message || emailError);
+                    console.error("Falha ao enviar e-mail de desimpedimento:", emailError);
+                    warnings.push("Funcionário inativado, mas não foi possível enviar o e-mail com a ficha de desimpedimento.");
+                }
+
+                try {
+                    await enviarEmailDesativacaoAcessosFuncionario(
+                        funcionarioCompleto,
+                        EFETIVACAO_ESTAGIARIO
+                    );
+                    emailDesativacaoAcessosEnviado = true;
+                } catch (emailError: any) {
+                    emailDesativacaoAcessosErro = String(emailError?.message || emailError);
+                    console.error("Falha ao enviar e-mail de desativação de acessos:", emailError);
+                    warnings.push("Funcionário inativado, mas não foi possível enviar o e-mail de desativação de acessos.");
+                }
+
+                if (ENVIAR_EMAIL_DESLIGAMENTO_GERAL) {
+                    try {
+                        await enviarEmailDesligamentoGeralFuncionario(funcionarioCompleto);
+                        emailDesligamentoGeralEnviado = true;
+                    } catch (emailError: any) {
+                        emailDesligamentoGeralErro = String(emailError?.message || emailError);
+                        console.error("Falha ao enviar e-mail geral de desligamento:", emailError);
+                        warnings.push("Funcionário inativado, mas não foi possível enviar o e-mail geral de desligamento.");
+                    }
+                }
+            }
+
             return res.json({
                 ID_FUNCIONARIO: id,
                 SN_ATIVO,
+                FICHA_DESIMPEDIMENTO: caminhoFichaDesimpedimento,
+                emailDesimpedimentoEnviado,
+                emailDesativacaoAcessosEnviado,
+                emailDesligamentoGeralEnviado,
+                ...(emailDesimpedimentoErro ? { emailDesimpedimentoErro } : {}),
+                ...(emailDesativacaoAcessosErro ? { emailDesativacaoAcessosErro } : {}),
+                ...(emailDesligamentoGeralErro ? { emailDesligamentoGeralErro } : {}),
+                warnings,
             });
         } catch (err: any) {
             console.error("ativar/desativar funcionario erro:", err);
