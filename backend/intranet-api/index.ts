@@ -25,6 +25,11 @@ const MAX_PDF_UPLOAD_MB = Number(process.env.MAX_PDF_UPLOAD_MB || 50);
 const allowedOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
+  "http://10.0.107.232:3000",
+  "https://intranet2",
+  "http://intranet2",
+  "http://intranet",
+  "https://intranet",
 ];
 
 app.use(
