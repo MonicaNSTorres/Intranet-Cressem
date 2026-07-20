@@ -1,38 +1,4 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const api = axios.create({
-    baseURL: API_URL,
-    withCredentials: true,
-    timeout: 60000,
-});
-
-api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        try {
-            await registrarErroTela({
-                PAGE_URL:
-                    typeof window !== "undefined"
-                        ? window.location.href
-                        : null,
-                ERROR_MESSAGE:
-                    error?.response?.data?.error ||
-                    error?.response?.data?.details ||
-                    error?.message ||
-                    "Erro desconhecido",
-                ERROR_STACK: error?.stack || null,
-                SOURCE: "cnab240.service.ts",
-            });
-        } catch (e) {
-            console.error("Erro ao registrar log:", e);
-        }
-
-        return Promise.reject(error);
-    }
-);
+import { api } from "./api.service";
 
 export type FavorecidoCnab = {
     CPF: string;
@@ -138,15 +104,21 @@ export async function buscarFavorecidoPorCpf(
 ): Promise<FavorecidoCnab> {
     const cpfLimpo = cpf.replace(/\D/g, "");
 
-    const response = await api.get(`/v1/cnab240/favorecido/${cpfLimpo}`);
+    const response = await api.get(
+        `/v1/cnab240/favorecido/${cpfLimpo}`
+    );
 
     return response.data;
 }
 
 export async function listarRemessas(): Promise<RemessaCnab[]> {
-    const response = await api.get("/v1/cnab240/remessas");
+    const response = await api.get(
+        "/v1/cnab240/remessas"
+    );
 
-    return Array.isArray(response.data) ? response.data : [];
+    return Array.isArray(response.data)
+        ? response.data
+        : [];
 }
 
 export async function gerarCnab240PorExcel(
@@ -158,30 +130,23 @@ export async function gerarCnab240PorExcel(
     formData.append("file", file, file.name);
     formData.append("tipoLayout", tipoLayout);
 
-    const response = await fetch(`${API_URL}/v1/cnab240/gerar`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-    });
+    const response = await api.post<Blob>(
+        "/v1/cnab240/gerar",
+        formData,
+        {
+            responseType: "blob",
+            timeout: 60000,
+        }
+    );
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => null);
-
-        throw new Error(
-            error?.details ||
-            error?.error ||
-            "Erro ao gerar CNAB240."
-        );
-    }
-
-    return await response.blob();
+    return response.data;
 }
 
 export async function gerarCnab240PorRegistros(
     registros: RegistroCnabPayload[],
     tipoLayout: TipoLayoutCnab
 ): Promise<Blob> {
-    const response = await api.post(
+    const response = await api.post<Blob>(
         "/v1/cnab240/gerar-transferencias",
         {
             registros,
@@ -189,6 +154,7 @@ export async function gerarCnab240PorRegistros(
         },
         {
             responseType: "blob",
+            timeout: 60000,
         }
     );
 
@@ -205,27 +171,22 @@ export async function gerarCnab240PorTransferencias(
     );
 }
 
-export async function importarRetorno(file: File): Promise<any> {
+export async function importarRetorno(
+    file: File
+): Promise<any> {
     const formData = new FormData();
+
     formData.append("file", file, file.name);
 
-    const response = await fetch(`${API_URL}/v1/cnab240/importar-retorno`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-    });
+    const response = await api.post(
+        "/v1/cnab240/importar-retorno",
+        formData,
+        {
+            timeout: 60000,
+        }
+    );
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => null);
-
-        throw new Error(
-            error?.details ||
-            error?.error ||
-            "Erro ao importar retorno."
-        );
-    }
-
-    return await response.json();
+    return response.data;
 }
 
 export async function listarDetalhesRemessa(
@@ -235,7 +196,9 @@ export async function listarDetalhesRemessa(
         `/v1/cnab240/remessas/${idLote}/detalhes`
     );
 
-    return Array.isArray(response.data) ? response.data : [];
+    return Array.isArray(response.data)
+        ? response.data
+        : [];
 }
 
 export async function gerarCnab240PorBoletos(

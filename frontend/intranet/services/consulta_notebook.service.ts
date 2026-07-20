@@ -1,6 +1,5 @@
-import { registrarErroTela } from "./error_log.service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { api } from "./api.service";
 
 export type NotebookRow = {
   ID_NOTEBOOKS_SICOOB: number | string;
@@ -56,137 +55,55 @@ export type AtualizarNotebookResponse = {
 export async function buscarNotebooks(
   q?: string
 ): Promise<BuscarNotebooksResponse> {
-  try {
-    if (!API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
+  const response = await api.get<BuscarNotebooksResponse>(
+    "/v1/consulta-notebook",
+    {
+      params: q?.trim()
+        ? {
+            q: q.trim(),
+          }
+        : undefined,
     }
+  );
 
-    const url = new URL(`${API_URL}/v1/consulta-notebook`);
-
-    if (q?.trim()) {
-      url.searchParams.set("q", q.trim());
-    }
-
-    const res = await fetch(url.toString(), {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      cache: "no-store",
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(json?.error || "Falha na consulta.");
-    }
-
-    return json as BuscarNotebooksResponse;
-  } catch (error: any) {
-    await registrarErroTela({
-      PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-      ERROR_MESSAGE: error?.message || "Erro ao buscar notebooks",
-      ERROR_STACK: error?.stack || null,
-      ERROR_DETAIL: {
-        endpoint: "/v1/consulta-notebook",
-        method: "GET",
-        query: q,
-      },
-      SOURCE: "BUSCAR_NOTEBOOKS",
-    });
-
-    throw error;
-  }
+  return response.data;
 }
 
 export async function buscarFuncionariosNotebook(
   q?: string
 ): Promise<BuscarFuncionariosResponse> {
-  try {
-    if (!API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
+  const response = await api.get<BuscarFuncionariosResponse>(
+    "/v1/funcionarios-notebook",
+    {
+      params: q?.trim()
+        ? {
+            q: q.trim(),
+          }
+        : undefined,
     }
+  );
 
-    const url = new URL(`${API_URL}/v1/funcionarios-notebook`);
-
-    if (q?.trim()) {
-      url.searchParams.set("q", q.trim());
-    }
-
-    const res = await fetch(url.toString(), {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      cache: "no-store",
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(json?.error || "Falha ao buscar funcionários.");
-    }
-
-    return json as BuscarFuncionariosResponse;
-  } catch (error: any) {
-    await registrarErroTela({
-      PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-      ERROR_MESSAGE: error?.message || "Erro ao buscar funcionários notebook",
-      ERROR_STACK: error?.stack || null,
-      ERROR_DETAIL: {
-        endpoint: "/v1/funcionarios-notebook",
-        method: "GET",
-        query: q,
-      },
-      SOURCE: "BUSCAR_FUNCIONARIOS_NOTEBOOK_CONSULTA",
-    });
-
-    throw error;
-  }
+  return response.data;
 }
 
 export async function atualizarNotebook(
   id: string,
   payload: AtualizarNotebookPayload
 ): Promise<AtualizarNotebookResponse> {
-  try {
-    if (!API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
-    }
+  const telaOrigem =
+    typeof window !== "undefined"
+      ? window.location.href
+      : "";
 
-    const telaOrigem =
-      typeof window !== "undefined" ? window.location.href : "";
-
-    const res = await fetch(`${API_URL}/v1/consulta-notebook/${id}`, {
-      method: "PUT",
+  const response = await api.put<AtualizarNotebookResponse>(
+    `/v1/consulta-notebook/${id}`,
+    payload,
+    {
       headers: {
-        "Content-Type": "application/json",
         "x-tela-origem": telaOrigem,
       },
-      credentials: "include",
-      cache: "no-store",
-      body: JSON.stringify(payload),
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(json?.error || "Falha ao atualizar notebook.");
     }
+  );
 
-    return json as AtualizarNotebookResponse;
-  } catch (error: any) {
-    await registrarErroTela({
-      PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-      ERROR_MESSAGE: error?.message || "Erro ao atualizar notebook",
-      ERROR_STACK: error?.stack || null,
-      ERROR_DETAIL: {
-        endpoint: `/v1/consulta-notebook/${id}`,
-        method: "PUT",
-        id,
-        payload,
-      },
-      SOURCE: "ATUALIZAR_NOTEBOOK",
-    });
-
-    throw error;
-  }
+  return response.data;
 }

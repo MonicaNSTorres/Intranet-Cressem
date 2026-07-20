@@ -196,7 +196,15 @@ export const SCREENS: ScreenItem[] = [
     href: "/auth/cnab240",
     group: "Financeiro",
     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
-    keywords: ["termos mensais", "cadastrar", "termos", "caixa", "formulario"],
+    keywords: ["cnab", "cadastrar", "gerar", "favorecidos", "pagamento"],
+  },
+  {
+    title: "Cnab240 Fornecedores",
+    desc: "Gere boleto para os fornecedores.",
+    href: "/auth/cnab240_fornecedores",
+    group: "Financeiro",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
+    keywords: ["cnab", "cadastrar", "fornecedores", "gerar", "pagamento"],
   },
   {
     title: "Leilões",

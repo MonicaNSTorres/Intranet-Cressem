@@ -61,6 +61,14 @@ export type SubsidioFuneralDetalhe = SubsidioFuneralPayload & {
   HISTORICO?: SubsidioFuneralHistoricoItem[];
 };
 
+export type SalvarSubsidioFuneralResponse = {
+  id?: number;
+  status?: string;
+  motivoDevolucao?: string | null;
+  message?: string;
+  data?: SubsidioFuneralDetalhe;
+};
+
 function validarIdSubsidioFuneral(id: number | string) {
   if (
     id === undefined ||
@@ -73,8 +81,8 @@ function validarIdSubsidioFuneral(id: number | string) {
 
 export async function cadastrarSubsidioFuneral(
   payload: SubsidioFuneralPayload
-): Promise<SubsidioFuneralDetalhe> {
-  const response = await api.post<SubsidioFuneralDetalhe>(
+): Promise<SalvarSubsidioFuneralResponse> {
+  const response = await api.post<SalvarSubsidioFuneralResponse>(
     "/v1/solicitacao_subsidio_funeral",
     payload,
     {
@@ -87,7 +95,7 @@ export async function cadastrarSubsidioFuneral(
 
 export async function editarSubsidioFuneral(
   payload: SubsidioFuneralPayload
-): Promise<SubsidioFuneralDetalhe> {
+): Promise<SalvarSubsidioFuneralResponse> {
   if (
     payload.ID_SUBSIDIO_FUNERAL === undefined ||
     payload.ID_SUBSIDIO_FUNERAL === null ||
@@ -98,7 +106,7 @@ export async function editarSubsidioFuneral(
     );
   }
 
-  const response = await api.put<SubsidioFuneralDetalhe>(
+  const response = await api.put<SalvarSubsidioFuneralResponse>(
     "/v1/solicitacao_subsidio_funeral",
     payload,
     {

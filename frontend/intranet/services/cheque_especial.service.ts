@@ -1,6 +1,7 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
+
+const CHEQUE_ESPECIAL_TIMEOUT_MS = 20000;
 
 export type ChequeEspecialItem = {
   ID_ATUALIZACAO_BENEFICIO_CHEQUE_ESPECIAL: number;
@@ -36,65 +37,21 @@ export type UsuarioLogadoChequeEspecial = {
   grupos?: string[];
 };
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-  timeout: 20000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      const url = error?.config?.url || "";
-
-      const deveIgnorar = String(url).includes("/v1/me");
-
-      if (!deveIgnorar) {
-        await registrarErroTela({
-          PAGE_URL:
-            typeof window !== "undefined"
-              ? window.location.href
-              : null,
-
-          ERROR_MESSAGE:
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            error?.response?.data?.details ||
-            error?.message ||
-            "Erro no service de cheque especial",
-
-          ERROR_STACK: error?.stack || null,
-
-          ERROR_DETAIL: {
-            status: error?.response?.status,
-            url,
-            baseURL: error?.config?.baseURL,
-            method: error?.config?.method,
-            responseType: error?.config?.responseType,
-            responseData:
-              error?.config?.responseType === "blob"
-                ? "Resposta blob não registrada"
-                : error?.response?.data,
-          },
-
-          SOURCE: "CHEQUE_ESPECIAL_AXIOS",
-        });
-      }
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
-
 export async function buscarChequeEspecialPaginado(
   params: BuscarChequeEspecialParams
 ): Promise<PaginatedChequeEspecialResponse> {
-  const response = await api.get("/v1/atualizacao_cheque_especial/paginado", {
-    params,
-  });
+  const response = await api.get<PaginatedChequeEspecialResponse>(
+    "/v1/atualizacao_cheque_especial/paginado",
+    {
+      params: {
+        nome: String(params.nome || "").trim(),
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+        status: params.status || undefined,
+      },
+      timeout: CHEQUE_ESPECIAL_TIMEOUT_MS,
+    }
+  );
 
   return response.data;
 }
@@ -102,20 +59,46 @@ export async function buscarChequeEspecialPaginado(
 export async function buscarChequeEspecialTotais(): Promise<
   ChequeEspecialItem[]
 > {
-  const response = await api.get("/v1/atualizacao_cheque_especial");
-  return response.data;
+  const response = await api.get<ChequeEspecialItem[]>(
+    "/v1/atualizacao_cheque_especial",
+    {
+      timeout: CHEQUE_ESPECIAL_TIMEOUT_MS,
+    }
+  );
+
+  return Array.isArray(response.data)
+    ? response.data
+    : [];
 }
 
 export async function atualizarChequeEspecial(
   id: number,
   atendente: string,
   data: string
-) {
+): Promise<unknown> {
+  if (!id) {
+    throw new Error("ID do cheque especial não informado.");
+  }
+
+  const atendenteLimpo = String(atendente || "").trim();
+  const dataLimpa = String(data || "").trim();
+
+  if (!atendenteLimpo) {
+    throw new Error("Nome do atendente não informado.");
+  }
+
+  if (!dataLimpa) {
+    throw new Error("Data da alteração não informada.");
+  }
+
   const response = await api.put(
-    `/v1/atualizacao_cheque_especial/${id}/${encodeURIComponent(atendente)}/${data}`,
+    `/v1/atualizacao_cheque_especial/${id}/${encodeURIComponent(
+      atendenteLimpo
+    )}/${encodeURIComponent(dataLimpa)}`,
     {},
     {
       headers: getAuditoriaHeaders(),
+      timeout: CHEQUE_ESPECIAL_TIMEOUT_MS,
     }
   );
 
@@ -123,14 +106,26 @@ export async function atualizarChequeEspecial(
 }
 
 export async function baixarRelatorioChequeEspecial(): Promise<Blob> {
-  const response = await api.get("/v1/download_alteracao_cheque_especial", {
-    responseType: "blob",
-  });
+  const response = await api.get<Blob>(
+    "/v1/download_alteracao_cheque_especial",
+    {
+      responseType: "blob",
+      timeout: CHEQUE_ESPECIAL_TIMEOUT_MS,
+    }
+  );
 
   return response.data;
 }
 
-export async function buscarUsuarioLogadoChequeEspecial(): Promise<UsuarioLogadoChequeEspecial> {
-  const response = await api.get("/v1/me");
+export async function buscarUsuarioLogadoChequeEspecial(): Promise<
+  UsuarioLogadoChequeEspecial
+> {
+  const response = await api.get<UsuarioLogadoChequeEspecial>(
+    "/v1/me",
+    {
+      timeout: CHEQUE_ESPECIAL_TIMEOUT_MS,
+    }
+  );
+
   return response.data;
 }

@@ -1,53 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:3001";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL:
-          typeof window !== "undefined" ? window.location.href : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro no service de convênio odonto",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          baseURL: error?.config?.baseURL,
-          method: error?.config?.method,
-          responseType: error?.config?.responseType,
-          responseData:
-            error?.config?.responseType === "blob"
-              ? "Resposta blob não registrada"
-              : error?.response?.data,
-        },
-
-        SOURCE: "CONVENIO_ODONTO_AXIOS",
-      });
-    } catch {
-      // evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
+import { api } from "./api.service";
 
 function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
@@ -136,12 +88,18 @@ export type PessoaOdontoHistorico = {
 };
 
 export async function listarFatorAjuste() {
-  const { data } = await api.get<FatorAjuste[]>("/v1/fator_ajuste");
+  const { data } = await api.get<FatorAjuste[]>(
+    "/v1/fator_ajuste"
+  );
+
   return data || [];
 }
 
 export async function listarParentesco() {
-  const { data } = await api.get<Parentesco[]>("/v1/parentesco");
+  const { data } = await api.get<Parentesco[]>(
+    "/v1/parentesco"
+  );
+
   return data || [];
 }
 
@@ -149,6 +107,7 @@ export async function buscarConvenioPorCpfTitular(cpf: string) {
   const { data } = await api.get<PessoaOdonto[]>(
     `/v1/pessoa_odontologica/cpf_titular/${onlyDigits(cpf)}`
   );
+
   return data || [];
 }
 
@@ -156,41 +115,63 @@ export async function buscarConvenioTitularUnico(cpf: string) {
   const { data } = await api.get<PessoaOdonto>(
     `/v1/pessoa_odontologica/cpf_titular_unico/${onlyDigits(cpf)}`
   );
+
   return data;
 }
 
-export async function buscarPessoaOdontoPorCpfUsuario(cpf: string) {
+export async function buscarPessoaOdontoPorCpfUsuario(
+  cpf: string
+) {
   const { data } = await api.get<PessoaOdonto>(
     `/v1/pessoa_odontologica/cpf_usuario/${onlyDigits(cpf)}`
   );
+
   return data;
 }
 
-export async function buscarPessoaOdontoPorCpfUsuarioLista(cpf: string) {
+export async function buscarPessoaOdontoPorCpfUsuarioLista(
+  cpf: string
+) {
   const { data } = await api.get<PessoaOdonto[]>(
     `/v1/pessoa_odontologica/cpf_usuario/lista/${onlyDigits(cpf)}`
   );
+
   return data || [];
 }
 
-export async function buscarPessoaOdontoSemCpf(nome: string) {
+export async function buscarPessoaOdontoSemCpf(
+  nome: string
+) {
   const { data } = await api.get<PessoaOdonto>(
-    `/v1/pessoa_odontologica/cpf_usuario/sem_cpf/${encodeURIComponent(nome)}`
+    `/v1/pessoa_odontologica/cpf_usuario/sem_cpf/${encodeURIComponent(
+      nome
+    )}`
   );
+
   return data;
 }
 
-export async function buscarPessoaOdontoTodosCpfUsuario(cpf: string) {
+export async function buscarPessoaOdontoTodosCpfUsuario(
+  cpf: string
+) {
   const { data } = await api.get<PessoaOdonto>(
     `/v1/pessoa_odontologica/todos_cpf_usuario/${onlyDigits(cpf)}`
   );
+
   return data;
 }
 
-export async function buscarPessoaOdontoPorCodAssociado(cod: string) {
-  const { data } = await api.get<PessoaOdonto[]>(
-    `/v1/pessoa_odontologica/cod_associado/${encodeURIComponent(String(cod || "").trim())}`
+export async function buscarPessoaOdontoPorCodAssociado(
+  cod: string
+) {
+  const codigo = encodeURIComponent(
+    String(cod || "").trim()
   );
+
+  const { data } = await api.get<PessoaOdonto[]>(
+    `/v1/pessoa_odontologica/cod_associado/${codigo}`
+  );
+
   return data || [];
 }
 
@@ -200,60 +181,106 @@ export async function verificarCodCartaoOdonto(
   cpfTitular: string,
   nome: string
 ) {
-  const { data } = await api.get(
-    `/v1/pessoa_odontologica/cod_cartao/${encodeURIComponent(
-      String(cod || "").trim()
-    )}/cpf_usuario/${onlyDigits(cpfUsuario)}/cpf_titular/${onlyDigits(
-      cpfTitular
-    )}/nome/${encodeURIComponent(nome)}`
+  const codigo = encodeURIComponent(
+    String(cod || "").trim()
   );
+
+  const nomeCodificado = encodeURIComponent(nome);
+
+  const { data } = await api.get(
+    `/v1/pessoa_odontologica/cod_cartao/${codigo}` +
+      `/cpf_usuario/${onlyDigits(cpfUsuario)}` +
+      `/cpf_titular/${onlyDigits(cpfTitular)}` +
+      `/nome/${nomeCodificado}`
+  );
+
   return data;
 }
 
-export async function buscarTotalCustoEStatus(cpf: string) {
+export async function buscarTotalCustoEStatus(
+  cpf: string
+) {
   const { data } = await api.get(
     `/v1/pessoa_odontologica/total_custo_e_status/${onlyDigits(cpf)}`
   );
+
   return data;
 }
 
-export async function criarPessoaOdonto(payload: PessoaOdonto) {
-  const { data } = await api.post("/v1/pessoa_odontologica", payload);
+export async function criarPessoaOdonto(
+  payload: PessoaOdonto
+) {
+  const { data } = await api.post(
+    "/v1/pessoa_odontologica",
+    payload
+  );
+
   return data;
 }
 
-export async function editarPessoaOdonto(id: number, payload: Partial<PessoaOdonto>) {
-  const { data } = await api.put(`/v1/pessoa_odontologica/id/${id}`, payload);
+export async function editarPessoaOdonto(
+  id: number,
+  payload: Partial<PessoaOdonto>
+) {
+  const { data } = await api.put(
+    `/v1/pessoa_odontologica/id/${id}`,
+    payload
+  );
+
   return data;
 }
 
-export async function criarHistoricoConvenioOdonto(payload: PessoaOdontoHistorico) {
-  const { data } = await api.post("/v1/pessoa_odontologica_historico", payload);
+export async function criarHistoricoConvenioOdonto(
+  payload: PessoaOdontoHistorico
+) {
+  const { data } = await api.post(
+    "/v1/pessoa_odontologica_historico",
+    payload
+  );
+
   return data;
 }
 
-export async function desativarConvenioPorCpfTitular(cpf: string) {
+export async function desativarConvenioPorCpfTitular(
+  cpf: string
+) {
   const { data } = await api.put(
     `/v1/pessoa_odontologica/desativar/cpf_titular/${onlyDigits(cpf)}`
   );
+
   return data;
 }
 
-export async function buscarAssociadoBasePorCpf(cpf: string) {
+export async function buscarAssociadoBasePorCpf(
+  cpf: string
+) {
   const { data } = await api.get<AssociadoBase>(
     `/v1/associado_analitico/${onlyDigits(cpf)}`
   );
+
   return data;
 }
 
-export async function listarEmpresasDoAssociado(cpf: string): Promise<EmpresaAssociado[]> {
+export async function listarEmpresasDoAssociado(
+  cpf: string
+): Promise<EmpresaAssociado[]> {
   const data = await buscarAssociadoBasePorCpf(cpf);
 
-  if (!data) return [];
+  if (!data) {
+    return [];
+  }
 
-  const matricula = String(data.NR_MATRICULA || "").trim();
-  const empresa = String(data.NM_EMPRESA || "").trim();
-  const cnpj = String(data.NR_CPF_CNPJ_EMPREGADOR || "").trim();
+  const matricula = String(
+    data.NR_MATRICULA || ""
+  ).trim();
+
+  const empresa = String(
+    data.NM_EMPRESA || ""
+  ).trim();
+
+  const cnpj = String(
+    data.NR_CPF_CNPJ_EMPREGADOR || ""
+  ).trim();
 
   if (!matricula && !empresa && !cnpj) {
     return [];
@@ -268,21 +295,33 @@ export async function listarEmpresasDoAssociado(cpf: string): Promise<EmpresaAss
   ];
 }
 
-export async function downloadCsvPessoasOdontologicasTitular(cpf: string) {
-  const response = await api.get(
+export async function downloadCsvPessoasOdontologicasTitular(
+  cpf: string
+) {
+  const response = await api.get<Blob>(
     `/v1/download_pessoas_odontologicas_titular/${onlyDigits(cpf)}`,
     {
       responseType: "blob",
+      timeout: 60000,
     }
   );
 
-  const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(
+    [response.data],
+    {
+      type: "text/csv;charset=utf-8;",
+    }
+  );
+
   const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "convenio_odontologico.csv";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = "convenio_odontologico.csv";
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
   window.URL.revokeObjectURL(url);
 }

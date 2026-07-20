@@ -1,53 +1,5 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-  timeout: 30000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL:
-          typeof window !== "undefined" ? window.location.href : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro no service de gerenciamento de posição",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          baseURL: error?.config?.baseURL,
-          method: error?.config?.method,
-          params: error?.config?.params,
-          data: error?.config?.data,
-          responseType: error?.config?.responseType,
-          responseData:
-            error?.config?.responseType === "blob"
-              ? "Resposta blob não registrada"
-              : error?.response?.data,
-        },
-
-        SOURCE: "GERENCIAMENTO_POSICAO_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type PosicaoItem = {
   ID_POSICAO: number;
@@ -81,8 +33,13 @@ export async function buscarPosicoesPaginadas(params: {
 }
 
 export async function buscarTodasPosicoes() {
-  const response = await api.get<PosicaoItem[]>("/v1/posicao_sicoob");
-  return response.data;
+  const response = await api.get<PosicaoItem[]>(
+    "/v1/posicao_sicoob"
+  );
+
+  return Array.isArray(response.data)
+    ? response.data
+    : [];
 }
 
 export async function cadastrarPosicao(payload: {
@@ -91,9 +48,13 @@ export async function cadastrarPosicao(payload: {
   NM_POSICAO: string;
   DESC_POSICAO: string;
 }) {
-  const response = await api.post("/v1/posicao_sicoob", payload, {
-    headers: getAuditoriaHeaders(),
-  });
+  const response = await api.post(
+    "/v1/posicao_sicoob",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
   return response.data;
 }
@@ -123,10 +84,14 @@ export async function editarPosicao(payload: {
   return response.data;
 }
 
-export async function baixarRelatorioPosicoes() {
-  const response = await api.get("/v1/download_posicoes", {
-    responseType: "blob",
-  });
+export async function baixarRelatorioPosicoes(): Promise<Blob> {
+  const response = await api.get<Blob>(
+    "/v1/download_posicoes",
+    {
+      responseType: "blob",
+      timeout: 60000,
+    }
+  );
 
   return response.data;
 }

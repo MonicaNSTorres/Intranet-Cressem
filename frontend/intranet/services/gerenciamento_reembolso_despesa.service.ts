@@ -1,62 +1,5 @@
 ﻿/* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:3001";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      const url = error?.config?.url || "";
-
-      const deveIgnorar = String(url).includes("/v1/me");
-
-      if (!deveIgnorar) {
-        await registrarErroTela({
-          PAGE_URL:
-            typeof window !== "undefined" ? window.location.href : null,
-
-          ERROR_MESSAGE:
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            error?.response?.data?.details ||
-            error?.message ||
-            "Erro no service de gerenciamento de reembolso de despesa",
-
-          ERROR_STACK: error?.stack || null,
-
-          ERROR_DETAIL: {
-            status: error?.response?.status,
-            url,
-            baseURL: error?.config?.baseURL,
-            method: error?.config?.method,
-            params: error?.config?.params,
-            data: error?.config?.data,
-            responseType: error?.config?.responseType,
-            responseData:
-              error?.config?.responseType === "blob"
-                ? "Resposta blob não registrada"
-                : error?.response?.data,
-          },
-
-          SOURCE: "GERENCIAMENTO_REEMBOLSO_DESPESA_AXIOS",
-        });
-      }
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
+import { api } from "./api.service";
 
 export type AuthMeResponse = {
   nome?: string;
@@ -112,14 +55,20 @@ export type SolicitacaoDetalheItem = SolicitaoListaItem & {
 };
 
 export async function buscarUsuarioLogadoGerenciamentoReembolso() {
-  const { data } = await api.get<AuthMeResponse>("/v1/me");
+  const { data } = await api.get<AuthMeResponse>(
+    "/v1/me"
+  );
+
   return data;
 }
 
-export async function buscarFuncionarioPorNomeGerenciamento(nome: string) {
+export async function buscarFuncionarioPorNomeGerenciamento(
+  nome: string
+) {
   const { data } = await api.get<FuncionarioResponse>(
     `/v1/funcionarios_sicoob_cressem/nome/${encodeURIComponent(nome)}`
   );
+
   return data;
 }
 
@@ -134,14 +83,19 @@ export async function buscarSolicitacoesReembolsoPaginado(params: {
   limit: number;
 }) {
   const { verTodos, ...rest } = params;
+
   const queryParams = {
     ...rest,
     ver_todos: verTodos ? "1" : "0",
   };
 
-  const { data } = await api.get("/v1/solicitacao_reembolso_despesa_paginado", {
-    params: queryParams,
-  });
+  const { data } = await api.get(
+    "/v1/solicitacao_reembolso_despesa_paginado",
+    {
+      params: queryParams,
+    }
+  );
+
   return data;
 }
 
@@ -160,20 +114,33 @@ export async function decidirSolicitacaoReembolso(params: {
       parecer: params.parecer,
     }
   );
+
   return data;
 }
 
-export async function concluirSolicitacaoReembolso(id: number | string) {
-  const { data } = await api.put(`/v1/solicitacao_reembolso_despesa/${id}/concluir`);
-  return data;
-}
-
-export async function baixarComprovanteGerenciamentoReembolso(oficio: string) {
-  const { data } = await api.post(
-    "/v1/solicitacao_reembolso_despesa/download",
-    { oficio },
-    { responseType: "blob" }
+export async function concluirSolicitacaoReembolso(
+  id: number | string
+) {
+  const { data } = await api.put(
+    `/v1/solicitacao_reembolso_despesa/${id}/concluir`
   );
+
   return data;
 }
 
+export async function baixarComprovanteGerenciamentoReembolso(
+  oficio: string
+): Promise<Blob> {
+  const { data } = await api.post<Blob>(
+    "/v1/solicitacao_reembolso_despesa/download",
+    {
+      oficio,
+    },
+    {
+      responseType: "blob",
+      timeout: 60000,
+    }
+  );
+
+  return data;
+}

@@ -1,56 +1,18 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const api = axios.create({
-    baseURL: API_URL,
-    withCredentials: true,
-    timeout: 30000,
-});
-
-api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        try {
-            await registrarErroTela({
-                PAGE_URL:
-                    typeof window !== "undefined" ? window.location.href : null,
-
-                ERROR_MESSAGE:
-                    error?.response?.data?.error ||
-                    error?.response?.data?.message ||
-                    error?.response?.data?.details ||
-                    error?.message ||
-                    "Erro no service de estoque de consumíveis",
-
-                ERROR_STACK: error?.stack || null,
-
-                ERROR_DETAIL: {
-                    status: error?.response?.status,
-                    url: error?.config?.url,
-                    baseURL: error?.config?.baseURL,
-                    method: error?.config?.method,
-                    responseData: error?.response?.data,
-                },
-
-                SOURCE: "ESTOQUE_CONSUMIVEIS_AXIOS",
-            });
-        } catch {
-            //evita loop infinito
-        }
-
-        return Promise.reject(error);
-    }
-);
+import { api } from "./api.service";
 
 export async function listarItensEstoqueConsumiveis() {
-    const { data } = await api.get("/v1/estoque-consumiveis/itens");
+    const { data } = await api.get(
+        "/v1/estoque-consumiveis/itens"
+    );
+
     return data;
 }
 
 export async function listarSolicitacoesEstoqueGlpi() {
-    const { data } = await api.get("/v1/estoque-consumiveis/solicitacoes-glpi");
+    const { data } = await api.get(
+        "/v1/estoque-consumiveis/solicitacoes-glpi"
+    );
+
     return data;
 }
 
@@ -67,6 +29,7 @@ export async function sincronizarSolicitacaoEstoqueGlpi(payload: {
         "/v1/estoque-consumiveis/solicitacoes-glpi/sincronizar",
         payload
     );
+
     return data;
 }
 
@@ -83,6 +46,7 @@ export async function darBaixaSolicitacaoEstoque(
         `/v1/estoque-consumiveis/solicitacoes-glpi/${idSolicitacao}/baixa`,
         payload
     );
+
     return data;
 }
 
@@ -96,24 +60,36 @@ export async function lancarEntradaEstoque(payload: {
         "/v1/estoque-consumiveis/entrada",
         payload
     );
+
     return data;
 }
 
-export async function buscarBalancoMensalEstoque(ano: number, mes: number) {
+export async function buscarBalancoMensalEstoque(
+    ano: number,
+    mes: number
+) {
     const { data } = await api.get(
         "/v1/estoque-consumiveis/balanco-mensal",
         {
-            params: { ano, mes },
+            params: {
+                ano,
+                mes,
+            },
         }
     );
+
     return data;
 }
 
 export async function sincronizarChamadosReaisGlpi() {
     const { data } = await api.post(
         "/v1/estoque-consumiveis/solicitacoes-glpi/sincronizar-real",
-        {}
+        {},
+        {
+            timeout: 30000,
+        }
     );
+
     return data;
 }
 
@@ -150,17 +126,18 @@ export async function criarItemEstoqueConsumiveis(payload: {
     return data;
 }
 
-export async function importarProdutosExcelEstoque(file: File) {
+export async function importarProdutosExcelEstoque(
+    file: File
+) {
     const formData = new FormData();
+
     formData.append("file", file);
 
     const { data } = await api.post(
         "/v1/estoque-consumiveis/importar-excel",
         formData,
         {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
+            timeout: 60000,
         }
     );
 
@@ -176,7 +153,9 @@ export async function listarAlertasEmailEstoque() {
 }
 
 export async function buscarPainelGlpiEstoque() {
-    const { data } = await api.get("/v1/estoque-consumiveis/painel-glpi");
+    const { data } = await api.get(
+        "/v1/estoque-consumiveis/painel-glpi"
+    );
 
     return data;
 }
@@ -191,17 +170,26 @@ export async function registrarSaidaManualComGlpi(payload: {
 }) {
     const { data } = await api.post(
         "/v1/estoque-consumiveis/saida-manual-glpi",
-        payload
+        payload,
+        {
+            timeout: 30000,
+        }
     );
 
     return data;
 }
 
-export async function listarMovimentacoesMensaisEstoque(ano: number, mes: number) {
+export async function listarMovimentacoesMensaisEstoque(
+    ano: number,
+    mes: number
+) {
     const { data } = await api.get(
         "/v1/estoque-consumiveis/movimentacoes-mensais",
         {
-            params: { ano, mes },
+            params: {
+                ano,
+                mes,
+            },
         }
     );
 
@@ -226,18 +214,18 @@ export async function atualizarItemEstoqueConsumiveis(
 }
 
 export async function darBaixaItemSolicitacaoEstoque(
-  idSolicitacaoItem: number,
-  payload: {
-    idItem: number;
-    quantidadeAtendida: number;
-    observacao?: string;
-    usuarioAtendimento: string;
-  }
+    idSolicitacaoItem: number,
+    payload: {
+        idItem: number;
+        quantidadeAtendida: number;
+        observacao?: string;
+        usuarioAtendimento: string;
+    }
 ) {
-  const { data } = await api.post(
-    `/v1/estoque-consumiveis/solicitacoes-glpi/itens/${idSolicitacaoItem}/baixa`,
-    payload
-  );
+    const { data } = await api.post(
+        `/v1/estoque-consumiveis/solicitacoes-glpi/itens/${idSolicitacaoItem}/baixa`,
+        payload
+    );
 
-  return data;
+    return data;
 }

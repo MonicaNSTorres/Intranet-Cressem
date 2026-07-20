@@ -1,35 +1,5 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: true,
-  timeout: 30000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro desconhecido",
-        ERROR_STACK: error?.stack || null,
-        SOURCE: "leiloes.service.ts",
-      });
-    } catch (e) {
-      console.error("Erro ao registrar log:", e);
-    }
-
-    return Promise.reject(error);
-  }
-);
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { api } from "./api.service";
 
 export type Leilao = {
   ID_LEILAO: number;
@@ -135,11 +105,21 @@ export type LeilaoFinalizado = {
   TOTAL_LANCES: number;
 };
 
-export async function listarLeiloesFinalizados(params: {
-  busca?: string;
-  page?: number;
-  limit?: number;
-} = {}) {
+export type ListarLeiloesFinalizadosResponse = {
+  data: LeilaoFinalizado[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+export async function listarLeiloesFinalizados(
+  params: {
+    busca?: string;
+    page?: number;
+    limit?: number;
+  } = {}
+): Promise<ListarLeiloesFinalizadosResponse> {
   const response = await api.get("/v1/leiloes-finalizados", {
     params: {
       busca: params.busca || "",
@@ -149,7 +129,9 @@ export async function listarLeiloesFinalizados(params: {
   });
 
   return {
-    data: Array.isArray(response.data?.data) ? response.data.data : [],
+    data: Array.isArray(response.data?.data)
+      ? response.data.data
+      : [],
     total: Number(response.data?.total || 0),
     page: Number(response.data?.page || 1),
     limit: Number(response.data?.limit || 20),
@@ -160,7 +142,10 @@ export async function listarLeiloesFinalizados(params: {
 export async function buscarVencedorLeilao(
   id: number
 ): Promise<VencedorLeilao> {
-  const response = await api.get(`/v1/leiloes/${id}/vencedor`);
+  const response = await api.get<VencedorLeilao>(
+    `/v1/leiloes/${id}/vencedor`
+  );
+
   return response.data;
 }
 
@@ -177,27 +162,48 @@ export async function listarLeiloes(
   });
 
   return {
-    data: Array.isArray(response.data?.data) ? response.data.data : [],
+    data: Array.isArray(response.data?.data)
+      ? response.data.data
+      : [],
     total: Number(response.data?.total || 0),
     page: Number(response.data?.page || 1),
     limit: Number(response.data?.limit || 20),
     totalPages: Number(response.data?.totalPages || 1),
     resumo: {
-      totalLeiloes: Number(response.data?.resumo?.totalLeiloes || 0),
-      totalEmAndamento: Number(response.data?.resumo?.totalEmAndamento || 0),
-      totalAgendados: Number(response.data?.resumo?.totalAgendados || 0),
-      totalFinalizados: Number(response.data?.resumo?.totalFinalizados || 0),
+      totalLeiloes: Number(
+        response.data?.resumo?.totalLeiloes || 0
+      ),
+      totalEmAndamento: Number(
+        response.data?.resumo?.totalEmAndamento || 0
+      ),
+      totalAgendados: Number(
+        response.data?.resumo?.totalAgendados || 0
+      ),
+      totalFinalizados: Number(
+        response.data?.resumo?.totalFinalizados || 0
+      ),
     },
   };
 }
 
-export async function buscarLeilaoPorId(id: number): Promise<Leilao> {
-  const response = await api.get(`/v1/leiloes/${id}`);
+export async function buscarLeilaoPorId(
+  id: number
+): Promise<Leilao> {
+  const response = await api.get<Leilao>(
+    `/v1/leiloes/${id}`
+  );
+
   return response.data;
 }
 
-export async function criarLeilao(payload: LeilaoPayload): Promise<any> {
-  const response = await api.post("/v1/leiloes", payload);
+export async function criarLeilao(
+  payload: LeilaoPayload
+): Promise<any> {
+  const response = await api.post(
+    "/v1/leiloes",
+    payload
+  );
+
   return response.data;
 }
 
@@ -205,18 +211,34 @@ export async function atualizarLeilao(
   id: number,
   payload: LeilaoPayload
 ): Promise<any> {
-  const response = await api.put(`/v1/leiloes/${id}`, payload);
+  const response = await api.put(
+    `/v1/leiloes/${id}`,
+    payload
+  );
+
   return response.data;
 }
 
-export async function excluirLeilao(id: number): Promise<any> {
-  const response = await api.delete(`/v1/leiloes/${id}`);
+export async function excluirLeilao(
+  id: number
+): Promise<any> {
+  const response = await api.delete(
+    `/v1/leiloes/${id}`
+  );
+
   return response.data;
 }
 
-export async function listarLances(idLeilao: number): Promise<Lance[]> {
-  const response = await api.get(`/v1/leiloes/${idLeilao}/lances`);
-  return Array.isArray(response.data) ? response.data : [];
+export async function listarLances(
+  idLeilao: number
+): Promise<Lance[]> {
+  const response = await api.get<Lance[]>(
+    `/v1/leiloes/${idLeilao}/lances`
+  );
+
+  return Array.isArray(response.data)
+    ? response.data
+    : [];
 }
 
 export async function darLance(
@@ -228,12 +250,18 @@ export async function darLance(
     DS_EMAIL?: string | null;
   }
 ): Promise<any> {
-  const response = await api.post(`/v1/leiloes/${idLeilao}/lances`, payload);
+  const response = await api.post(
+    `/v1/leiloes/${idLeilao}/lances`,
+    payload
+  );
+
   return response.data;
 }
 
 export async function buscarDashboardLeiloes() {
-  const response = await api.get("/v1/leiloes-dashboard");
+  const response = await api.get(
+    "/v1/leiloes-dashboard"
+  );
 
   return response.data;
 }

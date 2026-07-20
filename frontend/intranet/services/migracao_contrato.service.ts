@@ -1,8 +1,11 @@
-import { onlyCpfCnpjChars, onlyDigits } from "@/utils/br";
-import { registrarErroTela } from "./error_log.service";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { onlyCpfCnpjChars } from "@/utils/br";
+import { api } from "./api.service";
 
 export type BuscarMigracaoContratoResponse =
-  | { found: false }
+  | {
+    found: false;
+  }
   | {
     found: true;
     nascimento: string;
@@ -24,9 +27,11 @@ export type MigracaoContratoLinhaPayload = {
   NR_MATRICULA: string;
 };
 
-//usado de fato na tela de migracao contrato
+// Usado de fato na tela de migração de contrato
 export type BuscarMigracaoContratoAssociadoResponse =
-  | { found: false }
+  | {
+    found: false;
+  }
   | {
     found: true;
     DT_NASCIMENTO: string;
@@ -38,155 +43,87 @@ export type BuscarMigracaoContratoAssociadoResponse =
     NR_MATRICULA: string;
   };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-async function registrarErroMigracaoContrato(
-  error: any,
-  detail: Record<string, any>,
-  source: string
-) {
-  await registrarErroTela({
-    PAGE_URL:
-      typeof window !== "undefined" ? window.location.href : null,
-
-    ERROR_MESSAGE:
-      error?.message || "Erro no service de migração de contrato",
-
-    ERROR_STACK: error?.stack || null,
-
-    ERROR_DETAIL: detail,
-
-    SOURCE: source,
-  });
-}
-
 export async function buscarMigracaoContratoPorCpf(
   cpf: string
 ): Promise<BuscarMigracaoContratoResponse> {
-  try {
-    if (!API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
-    }
+  const clean = onlyCpfCnpjChars(cpf);
 
-    const clean = onlyCpfCnpjChars(cpf);
-
-    const res = await fetch(
-      `${API_URL}/v1/migracao-contrato/buscar-cpf/${clean}`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        cache: "no-store",
-      }
+  const { data } =
+    await api.get<BuscarMigracaoContratoResponse>(
+      `/v1/migracao-contrato/buscar-cpf/${encodeURIComponent(clean)}`
     );
 
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(json?.error || "Falha na consulta.");
-    }
-
-    return json as BuscarMigracaoContratoResponse;
-  } catch (error: any) {
-    await registrarErroMigracaoContrato(
-      error,
-      {
-        endpoint: "/v1/migracao-contrato/cpf",
-        method: "GET",
-        cpf,
-      },
-      "MIGRACAO_CONTRATO_BUSCAR_CPF"
-    );
-
-    throw error;
-  }
+  return data;
 }
 
 export async function gerarArquivoMigracaoContrato(
   payload: MigracaoContratoLinhaPayload[]
 ): Promise<Blob> {
   try {
-    if (!API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
-    }
-
-    const res = await fetch(`${API_URL}/v1/migracao-contrato/gerar-arquivo`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      let errorMessage = "Falha ao gerar arquivo.";
-      try {
-        const json = await res.json();
-        errorMessage = json?.error || errorMessage;
-      } catch {
-
-      }
-      throw new Error(errorMessage);
-    }
-
-    return await res.blob();
-  } catch (error: any) {
-    await registrarErroMigracaoContrato(
-      error,
+    const response = await api.post<Blob>(
+      "/v1/migracao-contrato/gerar-arquivo",
+      payload,
       {
-        endpoint: "/v1/migracao-contrato/gerar-arquivo",
-        method: "POST",
-        payload,
-      },
-      "MIGRACAO_CONTRATO_GERAR_ARQUIVO"
+        responseType: "blob",
+        timeout: 60000,
+      }
     );
+
+    return response.data;
+  } catch (error: any) {
+    const data = error?.response?.data;
+
+    if (data instanceof Blob) {
+      const text = await data.text();
+
+      if (text) {
+        try {
+          const parsed = JSON.parse(text);
+
+          throw new Error(
+            parsed?.error ||
+            parsed?.details ||
+            parsed?.message ||
+            "Falha ao gerar arquivo."
+          );
+        } catch (parseError) {
+          if (
+            parseError instanceof Error &&
+            parseError.message !==
+            "Unexpected end of JSON input" &&
+            !parseError.message.includes(
+              "is not valid JSON"
+            ) &&
+            !parseError.message.includes(
+              "Unexpected token"
+            )
+          ) {
+            throw parseError;
+          }
+
+          throw new Error(text);
+        }
+      }
+
+      throw new Error("Falha ao gerar arquivo.");
+    }
 
     throw error;
   }
 }
 
-//consulta correta usada na tela de migracao contrato
+// Consulta correta usada na tela de migração de contrato
 export async function buscarMigracaoContratoAssociadoPorCpf(
   cpf: string
 ): Promise<BuscarMigracaoContratoAssociadoResponse> {
-  try {
-    if (!API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
-    }
+  const clean = String(cpf || "")
+    .replace(/[^A-Za-z0-9/-]/g, "")
+    .toUpperCase();
 
-    const clean = String(cpf || "")
-      .replace(/[^A-Za-z0-9/-]/g, "")
-      .toUpperCase();
-
-    const res = await fetch(
-      `${API_URL}/v1/migracao-contrato/buscar-cpf/${encodeURIComponent(clean)}`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        cache: "no-store",
-      }
+  const { data } =
+    await api.get<BuscarMigracaoContratoAssociadoResponse>(
+      `/v1/migracao-contrato/buscar-cpf/${encodeURIComponent(clean)}`
     );
 
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(json?.error || "Falha na consulta do associado.");
-    }
-
-    return json as BuscarMigracaoContratoAssociadoResponse;
-  } catch (error: any) {
-    await registrarErroMigracaoContrato(
-      error,
-      {
-        endpoint: "/v1/migracao-contrato/buscar-cpf",
-        method: "GET",
-        cpf,
-      },
-      "MIGRACAO_CONTRATO_BUSCAR_CPF_ASSOCIADO"
-    );
-
-    throw error;
-  }
+  return data;
 }

@@ -1,53 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:3001";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL:
-          typeof window !== "undefined"
-            ? window.location.href
-            : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro no service de consulta de recibo financeiro",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          baseURL: error?.config?.baseURL,
-          method: error?.config?.method,
-          responseData: error?.response?.data,
-        },
-
-        SOURCE: "CONSULTA_RECIBO_FINANCEIRO_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type ParcelaItem = {
   NR_CONTRATO: string;
@@ -96,20 +49,29 @@ export async function listarRecibosFinanceiros(params: {
 }) {
   const { data } = await api.get<ReciboFinanceiroPaginadoResponse>(
     "/v1/recibo_crm_paginado",
-    { params }
+    {
+      params,
+    }
   );
+
   return data;
 }
 
 export async function buscarReciboFinanceiroPorId(id: number) {
-  const { data } = await api.get<ReciboFinanceiroResponse>(`/v1/recibo_crm/${id}`);
+  const { data } = await api.get<ReciboFinanceiroResponse>(
+    `/v1/recibo_crm/${id}`
+  );
+
   return data;
 }
 
 export async function excluirReciboFinanceiro(id: number) {
-  const { data } = await api.delete(`/v1/recibo_crm/${id}`, {
-    headers: getAuditoriaHeaders(),
-  });
+  const { data } = await api.delete(
+    `/v1/recibo_crm/${id}`,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
   return data;
 }

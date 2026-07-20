@@ -1,53 +1,5 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
-    withCredentials: true,
-    timeout: 30000,
-});
-
-api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        try {
-            await registrarErroTela({
-                PAGE_URL:
-                    typeof window !== "undefined" ? window.location.href : null,
-
-                ERROR_MESSAGE:
-                    error?.response?.data?.error ||
-                    error?.response?.data?.message ||
-                    error?.response?.data?.details ||
-                    error?.message ||
-                    "Erro no service de gerenciamento de funcionário",
-
-                ERROR_STACK: error?.stack || null,
-
-                ERROR_DETAIL: {
-                    status: error?.response?.status,
-                    url: error?.config?.url,
-                    baseURL: error?.config?.baseURL,
-                    method: error?.config?.method,
-                    params: error?.config?.params,
-                    data: error?.config?.data,
-                    responseType: error?.config?.responseType,
-                    responseData:
-                        error?.config?.responseType === "blob"
-                            ? "Resposta blob não registrada"
-                            : error?.response?.data,
-                },
-
-                SOURCE: "GERENCIAMENTO_FUNCIONARIO_AXIOS",
-            });
-        } catch {
-            //evita loop infinito
-        }
-
-        return Promise.reject(error);
-    }
-);
 
 export type SetorFuncionarioItem = {
     ID_SETOR: number;
@@ -119,32 +71,52 @@ export async function buscarFuncionariosPaginados(params: {
 }) {
     const response = await api.get<FuncionarioPaginadoResponse>(
         "/v1/funcionarios_sicoob_cressem_paginado",
-        { params }
+        {
+            params,
+        }
     );
 
     return response.data;
 }
 
 export async function buscarTodosFuncionarios() {
-    const response = await api.get<FuncionarioItem[]>("/v1/funcionarios_sicoob_cressem");
-    return response.data;
+    const response = await api.get<FuncionarioItem[]>(
+        "/v1/funcionarios_sicoob_cressem"
+    );
+
+    return Array.isArray(response.data)
+        ? response.data
+        : [];
 }
 
 export async function buscarSetoresFuncionario() {
-    const response = await api.get<SetorFuncionarioItem[]>("/v1/setor_sicoob_cressem");
-    return response.data;
+    const response = await api.get<SetorFuncionarioItem[]>(
+        "/v1/setor_sicoob_cressem"
+    );
+
+    return Array.isArray(response.data)
+        ? response.data
+        : [];
 }
 
 export async function buscarCargosFuncionario() {
-    const response = await api.get<CargoFuncionarioItem[]>("/v1/cargo_gerentes_sicoob_cressem");
-    return response.data;
+    const response = await api.get<CargoFuncionarioItem[]>(
+        "/v1/cargo_gerentes_sicoob_cressem"
+    );
+
+    return Array.isArray(response.data)
+        ? response.data
+        : [];
 }
 
 export async function buscarGerenciasFuncionario() {
     const response = await api.get<GerenciaFuncionarioItem[]>(
         "/v1/funcionarios_sicoob_cressem_gerencia"
     );
-    return response.data;
+
+    return Array.isArray(response.data)
+        ? response.data
+        : [];
 }
 
 export async function cadastrarFuncionario(payload: {
@@ -174,39 +146,147 @@ export async function cadastrarFuncionario(payload: {
 }) {
     const formData = new FormData();
 
-    formData.append("NM_FUNCIONARIO", payload.NM_FUNCIONARIO);
-    formData.append("DT_NASCIMENTO", payload.DT_NASCIMENTO);
-    formData.append("ID_SETOR", String(payload.ID_SETOR));
-    if (payload.ID_CARGO !== null) formData.append("ID_CARGO", String(payload.ID_CARGO));
-    formData.append("NR_RAMAL", payload.NR_RAMAL || " ");
-    if (payload.CD_GERENCIA !== null) formData.append("CD_GERENCIA", String(payload.CD_GERENCIA));
-    formData.append("EMAIL", payload.EMAIL || " ");
-    formData.append("NR_CPF", payload.NR_CPF);
-    formData.append("NR_RG", payload.NR_RG);
-    formData.append("NR_CELULAR", payload.NR_CELULAR);
-    formData.append("SEXO", payload.SEXO);
-    formData.append("DT_ADMISSAO", payload.DT_ADMISSAO);
-    if (payload.DT_DESLIGAMENTO) formData.append("DT_DESLIGAMENTO", payload.DT_DESLIGAMENTO);
-    formData.append("NR_MATRICULA", payload.NR_MATRICULA || " ");
-    formData.append("NR_CONTA_CORRENTE", payload.NR_CONTA_CORRENTE || "0000000000");
-    formData.append("ENVIAR_EMAIL_ADMISSAO", String(payload.ENVIAR_EMAIL_ADMISSAO || 0));
+    formData.append(
+        "NM_FUNCIONARIO",
+        payload.NM_FUNCIONARIO
+    );
 
-    if (payload.DOC_INDENTIDADE) formData.append("DOC_INDENTIDADE", payload.DOC_INDENTIDADE);
-    if (payload.COMP_ENDERECO) formData.append("COMP_ENDERECO", payload.COMP_ENDERECO);
-    if (payload.FICHA_RH) formData.append("FICHA_RH", payload.FICHA_RH);
-    if (payload.CERT_NASCIMENTO) formData.append("CERT_NASCIMENTO", payload.CERT_NASCIMENTO);
-    if (payload.CERT_CASAMENTO) formData.append("CERT_CASAMENTO", payload.CERT_CASAMENTO);
-    if (payload.DOC_IDENTIDADE_CONJ) formData.append("DOC_IDENTIDADE_CONJ", payload.DOC_IDENTIDADE_CONJ);
-    if (payload.FICHA_DESIMPEDIMENTO) formData.append("FICHA_DESIMPEDIMENTO", payload.FICHA_DESIMPEDIMENTO);
+    formData.append(
+        "DT_NASCIMENTO",
+        payload.DT_NASCIMENTO
+    );
+
+    formData.append(
+        "ID_SETOR",
+        String(payload.ID_SETOR)
+    );
+
+    if (payload.ID_CARGO !== null) {
+        formData.append(
+            "ID_CARGO",
+            String(payload.ID_CARGO)
+        );
+    }
+
+    formData.append(
+        "NR_RAMAL",
+        payload.NR_RAMAL || " "
+    );
+
+    if (payload.CD_GERENCIA !== null) {
+        formData.append(
+            "CD_GERENCIA",
+            String(payload.CD_GERENCIA)
+        );
+    }
+
+    formData.append(
+        "EMAIL",
+        payload.EMAIL || " "
+    );
+
+    formData.append(
+        "NR_CPF",
+        payload.NR_CPF
+    );
+
+    formData.append(
+        "NR_RG",
+        payload.NR_RG
+    );
+
+    formData.append(
+        "NR_CELULAR",
+        payload.NR_CELULAR
+    );
+
+    formData.append(
+        "SEXO",
+        payload.SEXO
+    );
+
+    formData.append(
+        "DT_ADMISSAO",
+        payload.DT_ADMISSAO
+    );
+
+    if (payload.DT_DESLIGAMENTO) {
+        formData.append(
+            "DT_DESLIGAMENTO",
+            payload.DT_DESLIGAMENTO
+        );
+    }
+
+    formData.append(
+        "NR_MATRICULA",
+        payload.NR_MATRICULA || " "
+    );
+
+    formData.append(
+        "NR_CONTA_CORRENTE",
+        payload.NR_CONTA_CORRENTE || "0000000000"
+    );
+
+    formData.append(
+        "ENVIAR_EMAIL_ADMISSAO",
+        String(payload.ENVIAR_EMAIL_ADMISSAO || 0)
+    );
+
+    if (payload.DOC_INDENTIDADE) {
+        formData.append(
+            "DOC_INDENTIDADE",
+            payload.DOC_INDENTIDADE
+        );
+    }
+
+    if (payload.COMP_ENDERECO) {
+        formData.append(
+            "COMP_ENDERECO",
+            payload.COMP_ENDERECO
+        );
+    }
+
+    if (payload.FICHA_RH) {
+        formData.append(
+            "FICHA_RH",
+            payload.FICHA_RH
+        );
+    }
+
+    if (payload.CERT_NASCIMENTO) {
+        formData.append(
+            "CERT_NASCIMENTO",
+            payload.CERT_NASCIMENTO
+        );
+    }
+
+    if (payload.CERT_CASAMENTO) {
+        formData.append(
+            "CERT_CASAMENTO",
+            payload.CERT_CASAMENTO
+        );
+    }
+
+    if (payload.DOC_IDENTIDADE_CONJ) {
+        formData.append(
+            "DOC_IDENTIDADE_CONJ",
+            payload.DOC_IDENTIDADE_CONJ
+        );
+    }
+
+    if (payload.FICHA_DESIMPEDIMENTO) {
+        formData.append(
+            "FICHA_DESIMPEDIMENTO",
+            payload.FICHA_DESIMPEDIMENTO
+        );
+    }
 
     const response = await api.post(
         "/v1/funcionarios_sicoob_cressem",
         formData,
         {
-            headers: {
-                ...getAuditoriaHeaders(),
-                "Content-Type": "multipart/form-data",
-            },
+            headers: getAuditoriaHeaders(),
+            timeout: 60000,
         }
     );
 
@@ -241,56 +321,145 @@ export async function editarFuncionario(payload: {
 }) {
     const formData = new FormData();
 
-    formData.append("NM_FUNCIONARIO", payload.NM_FUNCIONARIO);
-    formData.append("DT_NASCIMENTO", payload.DT_NASCIMENTO);
-    formData.append("ID_SETOR", String(payload.ID_SETOR));
-    formData.append("ID_CARGO", payload.ID_CARGO !== null ? String(payload.ID_CARGO) : "");
-    formData.append("NR_RAMAL", payload.NR_RAMAL || " ");
+    formData.append(
+        "NM_FUNCIONARIO",
+        payload.NM_FUNCIONARIO
+    );
+
+    formData.append(
+        "DT_NASCIMENTO",
+        payload.DT_NASCIMENTO
+    );
+
+    formData.append(
+        "ID_SETOR",
+        String(payload.ID_SETOR)
+    );
+
+    formData.append(
+        "ID_CARGO",
+        payload.ID_CARGO !== null
+            ? String(payload.ID_CARGO)
+            : ""
+    );
+
+    formData.append(
+        "NR_RAMAL",
+        payload.NR_RAMAL || " "
+    );
+
     formData.append(
         "CD_GERENCIA",
-        payload.CD_GERENCIA !== null ? String(payload.CD_GERENCIA) : ""
+        payload.CD_GERENCIA !== null
+            ? String(payload.CD_GERENCIA)
+            : ""
     );
-    formData.append("EMAIL", payload.EMAIL || " ");
-    formData.append("NR_CPF", payload.NR_CPF);
-    formData.append("NR_RG", payload.NR_RG);
-    formData.append("NR_CELULAR", payload.NR_CELULAR);
-    formData.append("SEXO", payload.SEXO);
-    formData.append("DT_ADMISSAO", payload.DT_ADMISSAO);
-    formData.append("DT_DESLIGAMENTO", payload.DT_DESLIGAMENTO || "");
-    formData.append("NR_MATRICULA", payload.NR_MATRICULA || " ");
-    formData.append("NR_CONTA_CORRENTE", payload.NR_CONTA_CORRENTE || "0000000000");
-    formData.append("SN_ATIVO", String(payload.SN_ATIVO));
+
+    formData.append(
+        "EMAIL",
+        payload.EMAIL || " "
+    );
+
+    formData.append(
+        "NR_CPF",
+        payload.NR_CPF
+    );
+
+    formData.append(
+        "NR_RG",
+        payload.NR_RG
+    );
+
+    formData.append(
+        "NR_CELULAR",
+        payload.NR_CELULAR
+    );
+
+    formData.append(
+        "SEXO",
+        payload.SEXO
+    );
+
+    formData.append(
+        "DT_ADMISSAO",
+        payload.DT_ADMISSAO
+    );
+
+    formData.append(
+        "DT_DESLIGAMENTO",
+        payload.DT_DESLIGAMENTO || ""
+    );
+
+    formData.append(
+        "NR_MATRICULA",
+        payload.NR_MATRICULA || " "
+    );
+
+    formData.append(
+        "NR_CONTA_CORRENTE",
+        payload.NR_CONTA_CORRENTE || "0000000000"
+    );
+
+    formData.append(
+        "SN_ATIVO",
+        String(payload.SN_ATIVO)
+    );
 
     if (payload.DOC_INDENTIDADE) {
-        formData.append("DOC_INDENTIDADE", payload.DOC_INDENTIDADE);
+        formData.append(
+            "DOC_INDENTIDADE",
+            payload.DOC_INDENTIDADE
+        );
     }
+
     if (payload.COMP_ENDERECO) {
-        formData.append("COMP_ENDERECO", payload.COMP_ENDERECO);
+        formData.append(
+            "COMP_ENDERECO",
+            payload.COMP_ENDERECO
+        );
     }
+
     if (payload.FICHA_RH) {
-        formData.append("FICHA_RH", payload.FICHA_RH);
+        formData.append(
+            "FICHA_RH",
+            payload.FICHA_RH
+        );
     }
+
     if (payload.CERT_NASCIMENTO) {
-        formData.append("CERT_NASCIMENTO", payload.CERT_NASCIMENTO);
+        formData.append(
+            "CERT_NASCIMENTO",
+            payload.CERT_NASCIMENTO
+        );
     }
+
     if (payload.CERT_CASAMENTO) {
-        formData.append("CERT_CASAMENTO", payload.CERT_CASAMENTO);
+        formData.append(
+            "CERT_CASAMENTO",
+            payload.CERT_CASAMENTO
+        );
     }
+
     if (payload.DOC_IDENTIDADE_CONJ) {
-        formData.append("DOC_IDENTIDADE_CONJ", payload.DOC_IDENTIDADE_CONJ);
+        formData.append(
+            "DOC_IDENTIDADE_CONJ",
+            payload.DOC_IDENTIDADE_CONJ
+        );
     }
+
     if (payload.FICHA_DESIMPEDIMENTO) {
-        formData.append("FICHA_DESIMPEDIMENTO", payload.FICHA_DESIMPEDIMENTO);
+        formData.append(
+            "FICHA_DESIMPEDIMENTO",
+            payload.FICHA_DESIMPEDIMENTO
+        );
     }
 
     const response = await api.put(
         `/v1/funcionarios_sicoob_cressem/${payload.id}`,
         formData,
         {
-            headers: {
-                ...getAuditoriaHeaders(),
-                "Content-Type": "multipart/form-data",
-            },
+            headers: getAuditoriaHeaders(),
+            timeout: 60000,
         }
     );
 
@@ -304,44 +473,61 @@ export async function alterarStatusFuncionario(payload: {
     FICHA_DESIMPEDIMENTO?: File | null;
 }) {
     const formData = new FormData();
-    formData.append("SN_ATIVO", String(payload.SN_ATIVO));
+
+    formData.append(
+        "SN_ATIVO",
+        String(payload.SN_ATIVO)
+    );
 
     if (payload.DT_DESLIGAMENTO) {
-        formData.append("DT_DESLIGAMENTO", payload.DT_DESLIGAMENTO);
+        formData.append(
+            "DT_DESLIGAMENTO",
+            payload.DT_DESLIGAMENTO
+        );
     }
 
     if (payload.FICHA_DESIMPEDIMENTO) {
-        formData.append("FICHA_DESIMPEDIMENTO", payload.FICHA_DESIMPEDIMENTO);
+        formData.append(
+            "FICHA_DESIMPEDIMENTO",
+            payload.FICHA_DESIMPEDIMENTO
+        );
     }
 
     const response = await api.put(
         `/v1/funcionarios_sicoob_cressem/ativar_desativar/${payload.id}`,
         formData,
         {
-            headers: {
-                ...getAuditoriaHeaders(),
-                "Content-Type": "multipart/form-data",
-            },
+            headers: getAuditoriaHeaders(),
+            timeout: 60000,
         }
     );
 
     return response.data;
 }
 
-export async function baixarRelatorioFuncionarios() {
-    const response = await api.get("/v1/download_funcionarios", {
-        responseType: "blob",
-    });
+export async function baixarRelatorioFuncionarios(): Promise<Blob> {
+    const response = await api.get<Blob>(
+        "/v1/download_funcionarios",
+        {
+            responseType: "blob",
+            timeout: 60000,
+        }
+    );
 
     return response.data;
 }
 
-export async function baixarArquivoFuncionario(caminho: string) {
-    const response = await api.post(
+export async function baixarArquivoFuncionario(
+    caminho: string
+) {
+    const response = await api.post<Blob>(
         "/v1/funcionarios_sicoob_cressem_download",
-        { caminho },
+        {
+            caminho,
+        },
         {
             responseType: "blob",
+            timeout: 60000,
         }
     );
 

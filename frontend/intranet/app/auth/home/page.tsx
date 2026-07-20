@@ -22,7 +22,14 @@ import {
 import HomeScreenSearch from "@/components/search-home/search-home";
 import { SCREENS } from "@/config/screens";
 import { buscarAniversariantesHoje } from "@/services/home.service";
-import { buscarAcessosSemana } from "@/services/dashboard.service";
+import {
+    buscarAcessosSemana,
+    buscarPaginasMaisAcessadas,
+    type PaginaMaisAcessada,
+} from "@/services/dashboard.service";
+import {
+    QUICK_ACCESS_MAP,
+} from "@/config/quick-access";
 import UserInfo from "@/components/user-info/user-info";
 import {
     buscarPopupPendenteMe,
@@ -53,6 +60,7 @@ type QuickAccessItem = {
     href: string;
     icon: React.ReactNode;
     badge?: string;
+    quantidadeAcessos?: number;
 };
 
 type PopupAvisoComImagem = PopupAviso & {
@@ -97,6 +105,10 @@ export default function HomePage() {
 
     const [acessosDiarios, setAcessosDiarios] = useState<
         { dia: string; acessos: number }[]
+    >([]);
+
+    const [paginasMaisAcessadas, setPaginasMaisAcessadas] = useState<
+        PaginaMaisAcessada[]
     >([]);
 
     useEffect(() => {
@@ -188,6 +200,26 @@ export default function HomePage() {
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        async function carregarPaginasMaisAcessadas() {
+            try {
+                const paginas =
+                    await buscarPaginasMaisAcessadas();
+
+                setPaginasMaisAcessadas(paginas);
+            } catch (error) {
+                console.error(
+                    "Erro ao buscar páginas mais acessadas:",
+                    error
+                );
+
+                setPaginasMaisAcessadas([]);
+            }
+        }
+
+        carregarPaginasMaisAcessadas();
+    }, []);
+
     async function handleResponderPopupHome(resposta: "ACEITO" | "RECUSADO") {
         if (!popupHome) return;
 
@@ -250,7 +282,7 @@ export default function HomePage() {
         []
     );
 
-    const acessosRapidos = useMemo<QuickAccessItem[]>(
+    {/*const acessosRapidos = useMemo<QuickAccessItem[]>(
         () => [
             {
                 title: "Telas intranet",
@@ -291,7 +323,65 @@ export default function HomePage() {
             },
         ],
         []
-    );
+    );*/}
+
+    const acessosRapidos = useMemo<QuickAccessItem[]>(() => {
+        const atalhosPadrao: PaginaMaisAcessada[] = [
+            { href: "/auth/links_uteis", quantidadeAcessos: 0 },
+            { href: "/auth/aniversariantes", quantidadeAcessos: 0 },
+            {
+                href: "/auth/cadastro_reembolso_despesa",
+                quantidadeAcessos: 0,
+            },
+            {
+                href: "/auth/conversor_arquivos",
+                quantidadeAcessos: 0,
+            },
+            {
+                href: "/auth/gerenciamento_convenio_odonto",
+                quantidadeAcessos: 0,
+            },
+            { href: "/auth/ramais", quantidadeAcessos: 0 },
+        ];
+
+        function montarAtalhos(
+            paginas: PaginaMaisAcessada[]
+        ): QuickAccessItem[] {
+            return paginas.reduce<QuickAccessItem[]>(
+                (lista, pagina) => {
+                    const config = QUICK_ACCESS_MAP[pagina.href];
+
+                    if (!config) {
+                        return lista;
+                    }
+
+                    const item: QuickAccessItem = {
+                        title: config.title,
+                        desc: config.desc,
+                        href: pagina.href,
+                        icon: config.icon,
+                        quantidadeAcessos: pagina.quantidadeAcessos,
+                    };
+
+                    if (config.badge) {
+                        item.badge = config.badge;
+                    }
+
+                    lista.push(item);
+
+                    return lista;
+                },
+                []
+            );
+        }
+
+        const atalhosPersonalizados =
+            montarAtalhos(paginasMaisAcessadas);
+
+        return atalhosPersonalizados.length > 0
+            ? atalhosPersonalizados
+            : montarAtalhos(atalhosPadrao);
+    }, [paginasMaisAcessadas]);
 
     {/*const ultimosAcessos = [
         {
@@ -338,6 +428,7 @@ export default function HomePage() {
         ? Math.round(totalSemanal / acessosDiarios.length)
         : 0;
 
+    console.log(paginasMaisAcessadas);
 
     return (
         <div className="min-h-full bg-linear-to-b from-white via-white to-[#F6FBFA] p-6 lg:p-8">
@@ -397,11 +488,11 @@ export default function HomePage() {
 
                 <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="xl:col-span-2 space-y-6">
-                        <div className="overflow-hidden rounded-[28px] border border-[#79B729]/15 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+                        <div className="overflow-hidden rounded-[28px] border border-secondary/15 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
                             <div className="border-b border-[#EAECF0] bg-[linear-gradient(135deg,rgba(121,183,41,0.10)_0%,rgba(199,211,0,0.10)_100%)] px-6 py-5">
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-start gap-3">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#79B729] text-white shadow-sm">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary text-white shadow-sm">
                                             <FaBell className="h-5 w-5" />
                                         </div>
                                         <div>
@@ -414,7 +505,7 @@ export default function HomePage() {
                                         </div>
                                     </div>
 
-                                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-[#79B729]/20 bg-white px-3 py-1 text-xs font-semibold text-[#79B729]">
+                                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-secondary/20 bg-white px-3 py-1 text-xs font-semibold text-secondary">
                                         <FaShieldAlt className="h-3.5 w-3.5" />
                                         Requer ação
                                     </span>
@@ -422,10 +513,10 @@ export default function HomePage() {
                             </div>
 
                             <div className="px-6 py-6">
-                                <div className="rounded-3xl border border-[#79B729]/15 bg-[#F8FFF1] p-5">
+                                <div className="rounded-3xl border border-secondary/15 bg-[#F8FFF1] p-5">
                                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                         <div className="flex-1">
-                                            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#79B729]/10 px-3 py-1 text-xs font-semibold text-[#79B729]">
+                                            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-secondary/10 px-3 py-1 text-xs font-semibold text-secondary">
                                                 <FaBell className="h-3.5 w-3.5" />
                                                 Comunicado em destaque
                                             </div>
@@ -450,7 +541,7 @@ export default function HomePage() {
                                                             type="button"
                                                             onClick={() => handleResponderPopupHome("ACEITO")}
                                                             disabled={submittingPopupHome}
-                                                            className="inline-flex items-center gap-2 rounded-2xl bg-[#00AE9D] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.01] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                                            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.01] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
                                                         >
                                                             <FaCheckCircle className="h-4 w-4" />
                                                             {popupHome.BOTAO_ACEITAR || "Li e estou ciente"}
@@ -501,18 +592,20 @@ export default function HomePage() {
                             </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-[28px] border border-[#00AE9D]/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+                        <div className="overflow-hidden rounded-[28px] border border-primary/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
                             <div className="border-b border-[#EAECF0] px-6 py-5">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00AE9D] text-white">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white">
                                         <FaBolt className="h-5 w-5" />
                                     </div>
+
                                     <div>
                                         <h2 className="text-lg font-semibold text-(--title)">
-                                            O que você pode fazer agora
+                                            Comece por aqui
                                         </h2>
+
                                         <p className="text-sm text-(--paragraph)">
-                                            Atalhos pensados para facilitar o uso da intranet.
+                                            Ações comuns para resolver tarefas do dia a dia.
                                         </p>
                                     </div>
                                 </div>
@@ -520,31 +613,45 @@ export default function HomePage() {
 
                             <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2">
                                 {acoesPrincipais.map((item) => (
-                                    <ActionHighlightCard key={item.title} {...item} />
+                                    <ActionHighlightCard
+                                        key={item.href}
+                                        {...item}
+                                    />
                                 ))}
                             </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-[28px] border border-[#49479D]/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+                        <div className="overflow-hidden rounded-[28px] border border-fourth/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
                             <div className="border-b border-[#EAECF0] px-6 py-5">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fourth text-white">
-                                        <FaStar className="h-5 w-5" />
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fourth text-white">
+                                            <FaStar className="h-5 w-5" />
+                                        </div>
+
+                                        <div>
+                                            <h2 className="text-lg font-semibold text-(--title)">
+                                                Seus acessos frequentes
+                                            </h2>
+
+                                            <p className="text-sm text-(--paragraph)">
+                                                Atalhos organizados automaticamente conforme as páginas que você mais utiliza.
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-(--title)">
-                                            Acesso rápido
-                                        </h2>
-                                        <p className="text-sm text-(--paragraph)">
-                                            Entradas principais da intranet para navegação mais ágil.
-                                        </p>
-                                    </div>
+
+                                    <span className="inline-flex w-fit items-center rounded-full border border-fourth/15 bg-[fourth/5 px-3 py-1.5 text-xs font-semibold text-fourth">
+                                        Personalizado para você
+                                    </span>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 xl:grid-cols-3">
                                 {acessosRapidos.map((item) => (
-                                    <QuickAccessCard key={item.title} {...item} />
+                                    <QuickAccessCard
+                                        key={item.href}
+                                        {...item}
+                                    />
                                 ))}
                             </div>
                         </div>
@@ -570,7 +677,7 @@ export default function HomePage() {
 
                                     <Link
                                         href="/auth/aniversariantes"
-                                        className="text-sm font-semibold text-[#00AE9D] transition hover:opacity-80"
+                                        className="text-sm font-semibold text-primary transition hover:opacity-80"
                                     >
                                         Ver todos
                                     </Link>
@@ -580,7 +687,7 @@ export default function HomePage() {
                             <div className="p-6">
                                 {aniversariantesHoje.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-[#D0D5DD] bg-[#FAFAFA] px-4 py-10 text-center">
-                                        <FaBirthdayCake className="mb-3 h-12 w-12 text-[#C7D300]" />
+                                        <FaBirthdayCake className="mb-3 h-12 w-12 text-third" />
                                         <p className="text-base font-semibold text-(--title)">
                                             Nenhum aniversariante hoje
                                         </p>
@@ -593,9 +700,9 @@ export default function HomePage() {
                                         {aniversariantesHoje.map((p) => (
                                             <div
                                                 key={`${p.nome}-${p.ramal}`}
-                                                className="flex items-center gap-3 rounded-[22px] border border-[#EAECF0] bg-[#FCFCFD] p-4 transition hover:border-[#00AE9D]/20 hover:bg-[#F6FFFE]"
+                                                className="flex items-center gap-3 rounded-[22px] border border-[#EAECF0] bg-[#FCFCFD] p-4 transition hover:border-primary/20 hover:bg-[#F6FFFE]"
                                             >
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#00AE9D]/10 text-sm font-semibold text-[#00AE9D]">
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                                                     {String(p.nome || "")
                                                         .trim()
                                                         .split(" ")
@@ -615,8 +722,8 @@ export default function HomePage() {
                                                     </p>
                                                 </div>
 
-                                                <div className="rounded-xl bg-[#00AE9D]/8 px-3 py-2 text-right">
-                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#00AE9D]">
+                                                <div className="rounded-xl bg-primary/8 px-3 py-2 text-right">
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
                                                         Ramal
                                                     </p>
                                                     <p className="text-sm font-semibold text-(--title)">
@@ -670,10 +777,10 @@ export default function HomePage() {
                             </div>
                         </div>*/}
 
-                        <div className="overflow-hidden rounded-[28px] border border-[#00AE9D]/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+                        <div className="overflow-hidden rounded-[28px] border border-primary/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
                             <div className="border-b border-[#EAECF0] px-6 py-5">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#00AE9D]/10 text-[#00AE9D]">
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                         <FaHistory className="h-5 w-5" />
                                     </div>
 
@@ -691,7 +798,7 @@ export default function HomePage() {
 
                             <div className="p-5">
                                 <div className="mb-4 grid grid-cols-3 gap-3">
-                                    <div className="rounded-2xl bg-[#00AE9D]/6 p-4">
+                                    <div className="rounded-2xl bg-primary/6 p-4">
                                         <p className="text-[11px] font-semibold uppercase tracking-wide text-(--text-darken)">
                                             Total semanal
                                         </p>
@@ -701,7 +808,7 @@ export default function HomePage() {
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl bg-[#79B729]/8 p-4">
+                                    <div className="rounded-2xl bg-secondary/8 p-4">
                                         <p className="text-[11px] font-semibold uppercase tracking-wide text-(--text-darken)">
                                             Pico diário
                                         </p>
@@ -711,7 +818,7 @@ export default function HomePage() {
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl bg-[#49479D]/8 p-4">
+                                    <div className="rounded-2xl bg-fourth/8 p-4">
                                         <p className="text-[11px] font-semibold uppercase tracking-wide text-(--text-darken)">
                                             Média diária
                                         </p>
@@ -857,7 +964,7 @@ export default function HomePage() {
                             </div>
                         </Link>
 
-                        <div className="rounded-[28px] border border-[#79B729]/15 bg-[linear-gradient(135deg,#00AE9D_0%,#79B729_100%)] p-6 text-white shadow-[0_12px_30px_rgba(0,174,157,0.18)]">
+                        <div className="rounded-[28px] border border-secondary/15 bg-[linear-gradient(135deg,#00AE9D_0%,#79B729_100%)] p-6 text-white shadow-[0_12px_30px_rgba(0,174,157,0.18)]">
                             <div className="flex items-start gap-3">
                                 <div className="flex items-center justify-center w-12 h-12 min-w-12 min-h-12 rounded-full bg-white/20">
                                     <FaCheckCircle className="h-5 w-5" />
@@ -908,19 +1015,19 @@ export default function HomePage() {
                                             <div className="absolute inset-0 bg-linear-to-t from-black/40 via-black/10 to-transparent" />
 
                                             <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-700 shadow">
-                                                <FaBell className="text-[#00AE9D]" />
+                                                <FaBell className="text-primary" />
                                                 Aviso institucional
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="border-b border-slate-200 bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+                                        <div className="border-b border-slate-200 bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#00AE9D]/10 text-[#00AE9D]">
+                                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                                     <FaBell size={22} />
                                                 </div>
 
                                                 <div>
-                                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#00AE9D]">
+                                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
                                                         Aviso importante
                                                     </p>
                                                     <p className="mt-1 text-sm text-slate-500">
@@ -933,12 +1040,12 @@ export default function HomePage() {
 
                                     <div className="px-6 py-6">
                                         <div className="flex items-start gap-3">
-                                            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#C7D300]/25 text-slate-700 md:flex">
+                                            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-third/25 text-slate-700 md:flex">
                                                 <FaBell size={18} />
                                             </div>
 
                                             <div className="min-w-0 flex-1">
-                                                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#00AE9D]">
+                                                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
                                                     Aviso importante
                                                 </p>
 
@@ -955,9 +1062,9 @@ export default function HomePage() {
                                         </div>
 
                                         {popupHome && (
-                                            <div className="mt-5 rounded-2xl border border-[#79B729]/20 bg-[#79B729]/10 px-4 py-3">
+                                            <div className="mt-5 rounded-2xl border border-secondary/20 bg-secondary/10 px-4 py-3">
                                                 <div className="flex items-start gap-3 text-sm text-slate-700">
-                                                    <FaCheckCircle className="mt-0.5 shrink-0 text-[#79B729]" />
+                                                    <FaCheckCircle className="mt-0.5 shrink-0 text-secondary" />
                                                     <span>
                                                         Ao clicar em confirmar ciência, sua resposta será registrada automaticamente.
                                                     </span>
@@ -986,7 +1093,7 @@ export default function HomePage() {
                                                             "noopener,noreferrer"
                                                         )
                                                     }
-                                                    className="inline-flex min-w-42.5 items-center justify-center gap-2 rounded-2xl border border-[#00AE9D] bg-white px-5 py-3 text-sm font-semibold text-[#00AE9D] transition hover:bg-[#00AE9D]/10 cursor-pointer"
+                                                    className="inline-flex min-w-42.5 items-center justify-center gap-2 rounded-2xl border border-primary bg-white px-5 py-3 text-sm font-semibold text-[#00AE9D] transition hover:bg-[#00AE9D]/10 cursor-pointer"
                                                 >
                                                     Clique aqui
                                                 </button>
@@ -1036,7 +1143,7 @@ export default function HomePage() {
                                 <button
                                     type="button"
                                     onClick={() => setModalErroAberta(false)}
-                                    className="rounded-2xl bg-[#00AE9D] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                                    className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
                                 >
                                     Entendi
                                 </button>
@@ -1058,7 +1165,7 @@ function BadgeInfo({
 }) {
     return (
         <span className="inline-flex items-center gap-2 rounded-full border border-[#D0D5DD] bg-white px-3 py-2 text-xs font-medium text-(--title) shadow-sm">
-            <span className="text-[#00AE9D]">{icon}</span>
+            <span className="text-primary">{icon}</span>
             {label}
         </span>
     );
@@ -1077,12 +1184,12 @@ function ActionHighlightCard({
             className="group rounded-3xl border border-[#EAECF0] bg-[linear-gradient(180deg,#FFFFFF_0%,#F8FAFC_100%)] p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[#00AE9D]/20 hover:shadow-[0_14px_30px_rgba(0,174,157,0.08)]"
         >
             <div className="flex items-start justify-between gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00AE9D]/10 text-[#00AE9D] transition group-hover:bg-[#00AE9D] group-hover:text-white">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
                     {icon}
                 </div>
 
                 {badge ? (
-                    <span className="rounded-full bg-[#79B729]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#79B729]">
+                    <span className="rounded-full bg-secondary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-secondary">
                         {badge}
                     </span>
                 ) : null}
@@ -1096,7 +1203,7 @@ function ActionHighlightCard({
                 {desc}
             </p>
 
-            <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#00AE9D]">
+            <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary">
                 Abrir
                 <FaArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
             </div>
@@ -1110,29 +1217,41 @@ function QuickAccessCard({
     href,
     icon,
     badge,
+    quantidadeAcessos,
 }: QuickAccessItem) {
     return (
         <Link
             href={href}
-            className="group rounded-3xl border border-[#EAECF0] bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[#49479D]/20 hover:bg-[#FAFAFF] hover:shadow-[0_10px_24px_rgba(73,71,157,0.08)]"
+            className="group flex h-full flex-col rounded-3xl border border-[#EAECF0] bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-fourth/20 hover:bg-[#FAFAFF] hover:shadow-[0_10px_24px_rgba(73,71,157,0.08)]"
         >
             <div className="flex items-start justify-between gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#49479D]/10 text-fourth">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-fourth/10 text-fourth">
                     {icon}
                 </div>
 
-                {badge ? (
-                    <span className="rounded-full border border-[#00AE9D]/15 bg-[#00AE9D]/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#00AE9D]">
-                        {badge}
-                    </span>
-                ) : null}
+                <div className="flex flex-col items-end gap-1.5">
+                    {badge && (
+                        <span className="rounded-full border border-primary/15 bg-primary/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                            {badge}
+                        </span>
+                    )}
+
+                    {typeof quantidadeAcessos === "number" &&
+                        quantidadeAcessos > 0 && (
+                            <span className="whitespace-nowrap rounded-full border border-fourth/10 bg-fourth/5 px-2.5 py-1 text-[10px] font-semibold text-fourth">
+                                {quantidadeAcessos === 1
+                                    ? "1 acesso recente"
+                                    : `${quantidadeAcessos} acessos recentes`}
+                            </span>
+                        )}
+                </div>
             </div>
 
             <h3 className="mt-4 text-sm font-semibold text-(--title)">
                 {title}
             </h3>
 
-            <p className="mt-2 text-xs leading-5 text-(--paragraph)">
+            <p className="mt-2 flex-1 text-xs leading-5 text-(--paragraph)">
                 {desc}
             </p>
 

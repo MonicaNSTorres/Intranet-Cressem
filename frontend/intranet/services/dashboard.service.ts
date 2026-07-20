@@ -1,66 +1,60 @@
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 
 export type BuscarAcessosSemanaResponse = {
   DIA: string;
   ACESSOS: number;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export type AcessosSemanaItem = {
+  dia: string;
+  acessos: number;
+};
 
-export async function buscarAcessosSemana() {
-  try {
-    if (!API_URL) {
-      throw new Error(
-        "NEXT_PUBLIC_API_URL não definido no .env do front"
-      );
-    }
+export type PaginaMaisAcessada = {
+  href: string;
+  quantidadeAcessos: number;
+};
 
-    const res = await fetch(
-      `${API_URL}/v1/dashboard/acessos`,
+type BuscarPaginasMaisAcessadasResponse = {
+  success: boolean;
+  data: PaginaMaisAcessada[];
+};
+
+export async function buscarAcessosSemana(): Promise<AcessosSemanaItem[]> {
+  const { data } = await api.get<BuscarAcessosSemanaResponse[]>(
+    "/v1/dashboard/acessos"
+  );
+
+  const acessos = Array.isArray(data) ? data : [];
+
+  return acessos.map((item) => ({
+    dia: item.DIA,
+    acessos: Number(item.ACESSOS || 0),
+  }));
+}
+
+export async function registrarPaginaAcessada(
+  pagina: string
+): Promise<void> {
+  await api.post("/v1/dashboard/paginas/acesso", {
+    pagina,
+  });
+}
+
+export async function buscarPaginasMaisAcessadas(
+  limit = 6
+): Promise<PaginaMaisAcessada[]> {
+  const { data } =
+    await api.get<BuscarPaginasMaisAcessadasResponse>(
+      "/v1/dashboard/paginas/mais-acessadas",
       {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
+        params: {
+          limit,
         },
-        credentials: "include",
-        cache: "no-store",
       }
     );
 
-    const json = await res.json().catch(() => []);
-
-    if (!res.ok) {
-      throw new Error(
-        json?.error || "Falha ao buscar acessos."
-      );
-    }
-
-    return (json as BuscarAcessosSemanaResponse[]).map(
-      (item) => ({
-        dia: item.DIA,
-        acessos: Number(item.ACESSOS || 0),
-      })
-    );
-  } catch (error: any) {
-    await registrarErroTela({
-      PAGE_URL:
-        typeof window !== "undefined"
-          ? window.location.href
-          : null,
-
-      ERROR_MESSAGE:
-        error?.message || "Erro ao buscar acessos do dashboard",
-
-      ERROR_STACK: error?.stack || null,
-
-      ERROR_DETAIL: {
-        endpoint: "/v1/dashboard/acessos",
-        method: "GET",
-      },
-
-      SOURCE: "DASHBOARD_ACESSOS",
-    });
-
-    throw error;
-  }
+  return Array.isArray(data?.data)
+    ? data.data
+    : [];
 }

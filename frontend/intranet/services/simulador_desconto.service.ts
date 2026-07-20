@@ -1,70 +1,5 @@
 import { onlyDigits } from "@/utils/br";
-import { registrarErroTela } from "./error_log.service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-async function registrarErroSimuladorDesconto(
-  error: any,
-  detail: Record<string, any>,
-  source: string
-) {
-  await registrarErroTela({
-    PAGE_URL:
-      typeof window !== "undefined" ? window.location.href : null,
-
-    ERROR_MESSAGE:
-      error?.message || "Erro no service de simulador desconto",
-
-    ERROR_STACK: error?.stack || null,
-
-    ERROR_DETAIL: detail,
-
-    SOURCE: source,
-  });
-}
-
-async function getJson<T>(path: string): Promise<T> {
-  if (!API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
-  }
-
-  const res = await fetch(`${API_URL}${path}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-    credentials: "include",
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(json?.error || json?.detail || "Falha na consulta.");
-  }
-
-  return json as T;
-}
-
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  if (!API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL não definido no .env do front");
-  }
-
-  const res = await fetch(`${API_URL}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-    body: JSON.stringify(body),
-    credentials: "include",
-  });
-
-  const json = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(json?.error || json?.detail || "Falha no processamento.");
-  }
-
-  return json as T;
-}
+import { api } from "./api.service";
 
 export type AssociadoSimuladorResponse = {
   ID_CLIENTE?: number | null;
@@ -196,77 +131,153 @@ export async function buscarAssociadoAnaliticoSimulador(
   cpf: string
 ): Promise<AssociadoSimuladorResponse | null> {
   const clean = onlyDigits(cpf);
-  if (!clean) return null;
 
-  return await getJson<AssociadoSimuladorResponse>(
+  if (!clean) {
+    return null;
+  }
+
+  const { data } = await api.get<AssociadoSimuladorResponse>(
     `/v1/associado_analitico/${clean}`
   );
+
+  return data || null;
 }
 
-export async function listarAnosAssociado() {
-  return await getJson<AnosAssociadoOption[]>(`/v1/simulador/anos-associado`);
-}
-
-export async function listarAnosCorrentista() {
-  return await getJson<AnosCorrentistaOption[]>(
-    `/v1/simulador/anos-correntista`
+export async function listarAnosAssociado(): Promise<
+  AnosAssociadoOption[]
+> {
+  const { data } = await api.get<AnosAssociadoOption[]>(
+    "/v1/simulador/anos-associado"
   );
+
+  return Array.isArray(data) ? data : [];
 }
 
-export async function listarCidades() {
-  return await getJson<CidadeOption[]>(`/v1/simulador/cidades`);
-}
-
-export async function listarClassificacaoRisco() {
-  return await getJson<ClassificacaoRiscoOption[]>(
-    `/v1/simulador/classificacao-risco`
+export async function listarAnosCorrentista(): Promise<
+  AnosCorrentistaOption[]
+> {
+  const { data } = await api.get<AnosCorrentistaOption[]>(
+    "/v1/simulador/anos-correntista"
   );
+
+  return Array.isArray(data) ? data : [];
 }
 
-export async function listarCorrentista() {
-  return await getJson<CorrentistaOption[]>(`/v1/simulador/correntista`);
-}
-
-export async function listarOutrosProdutos() {
-  return await getJson<OutrosProdutosOption[]>(`/v1/simulador/outros-produtos`);
-}
-
-export async function listarPortabilidadeSalario() {
-  return await getJson<PortabilidadeSalarioOption[]>(
-    `/v1/simulador/portabilidade-salario`
+export async function listarCidades(): Promise<CidadeOption[]> {
+  const { data } = await api.get<CidadeOption[]>(
+    "/v1/simulador/cidades"
   );
+
+  return Array.isArray(data) ? data : [];
 }
 
-export async function listarTaxaTrabalhador() {
-  return await getJson<TaxaTrabalhadorOption[]>(
-    `/v1/simulador/taxa-trabalhador`
+export async function listarClassificacaoRisco(): Promise<
+  ClassificacaoRiscoOption[]
+> {
+  const { data } = await api.get<ClassificacaoRiscoOption[]>(
+    "/v1/simulador/classificacao-risco"
   );
+
+  return Array.isArray(data) ? data : [];
 }
 
-export async function listarTaxaParcela() {
-  return await getJson<TaxaParcelaOption[]>(`/v1/simulador/taxa-parcela`);
+export async function listarCorrentista(): Promise<
+  CorrentistaOption[]
+> {
+  const { data } = await api.get<CorrentistaOption[]>(
+    "/v1/simulador/correntista"
+  );
+
+  return Array.isArray(data) ? data : [];
 }
 
-export async function buscarTaxaParcelaPorNumero(parcela: string) {
+export async function listarOutrosProdutos(): Promise<
+  OutrosProdutosOption[]
+> {
+  const { data } = await api.get<OutrosProdutosOption[]>(
+    "/v1/simulador/outros-produtos"
+  );
+
+  return Array.isArray(data) ? data : [];
+}
+
+export async function listarPortabilidadeSalario(): Promise<
+  PortabilidadeSalarioOption[]
+> {
+  const { data } = await api.get<PortabilidadeSalarioOption[]>(
+    "/v1/simulador/portabilidade-salario"
+  );
+
+  return Array.isArray(data) ? data : [];
+}
+
+export async function listarTaxaTrabalhador(): Promise<
+  TaxaTrabalhadorOption[]
+> {
+  const { data } = await api.get<TaxaTrabalhadorOption[]>(
+    "/v1/simulador/taxa-trabalhador"
+  );
+
+  return Array.isArray(data) ? data : [];
+}
+
+export async function listarTaxaParcela(): Promise<
+  TaxaParcelaOption[]
+> {
+  const { data } = await api.get<TaxaParcelaOption[]>(
+    "/v1/simulador/taxa-parcela"
+  );
+
+  return Array.isArray(data) ? data : [];
+}
+
+export async function buscarTaxaParcelaPorNumero(
+  parcela: string
+): Promise<TaxaParcelaOption | null> {
   const clean = String(parcela || "").trim();
-  if (!clean) return null;
 
-  return await getJson<TaxaParcelaOption>(
-    `/v1/simulador/taxa-parcela/${clean}`
+  if (!clean) {
+    return null;
+  }
+
+  const { data } = await api.get<TaxaParcelaOption>(
+    `/v1/simulador/taxa-parcela/${encodeURIComponent(clean)}`
   );
+
+  return data || null;
 }
 
-export async function listarTempoRegime() {
-  return await getJson<TempoRegimeOption[]>(`/v1/simulador/tempo-regime`);
+export async function listarTempoRegime(): Promise<
+  TempoRegimeOption[]
+> {
+  const { data } = await api.get<TempoRegimeOption[]>(
+    "/v1/simulador/tempo-regime"
+  );
+
+  return Array.isArray(data) ? data : [];
 }
 
 export async function buscarUsuarioLogado(): Promise<UsuarioLogadoResponse> {
-  return await getJson<UsuarioLogadoResponse>(`/v1/me`);
+  const { data } = await api.get<UsuarioLogadoResponse>(
+    "/v1/me"
+  );
+
+  return data;
 }
 
-export async function salvarSimulacaoDesconto(payload: SimulacaoPayload) {
-  return await postJson<{ success: boolean; message: string }>(
-    `/v1/simulacao`,
+export async function salvarSimulacaoDesconto(
+  payload: SimulacaoPayload
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const { data } = await api.post<{
+    success: boolean;
+    message: string;
+  }>(
+    "/v1/simulacao",
     payload
   );
+
+  return data;
 }

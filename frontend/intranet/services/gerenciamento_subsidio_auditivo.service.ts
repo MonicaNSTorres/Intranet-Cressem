@@ -1,54 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 import { getHeadersPerfilTesteSubsidioAuditivo } from "@/lib/subsidio-auditivo-perfil-teste";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-  "http://localhost:3001";
-
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      const url = error?.config?.url || "";
-      const deveIgnorar = String(url).includes("/v1/me");
-
-      if (!deveIgnorar) {
-        await registrarErroTela({
-          PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-          ERROR_MESSAGE:
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            error?.response?.data?.details ||
-            error?.message ||
-            "Erro no service de gerenciamento de subsídio auditivo",
-          ERROR_STACK: error?.stack || null,
-          ERROR_DETAIL: {
-            status: error?.response?.status,
-            url,
-            baseURL: error?.config?.baseURL,
-            method: error?.config?.method,
-            params: error?.config?.params,
-            data: error?.config?.data,
-            responseData: error?.response?.data,
-          },
-          SOURCE: "GERENCIAMENTO_SUBSIDIO_AUDITIVO_AXIOS",
-        });
-      }
-    } catch {
-      // evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type SubsidioAuditivoListaItem = {
   ID_SUBSIDIO_AUDITIVO: number;
@@ -78,23 +31,35 @@ export type SubsidioAuditivoListaItem = {
   };
 };
 
+export type SubsidioAuditivoPaginadoResponse = {
+  rows: SubsidioAuditivoListaItem[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export async function buscarSolicitacoesSubsidioAuditivoPaginado(params: {
   pesquisa?: string;
   status?: string;
   cpfAssociado?: string;
   page: number;
   limit: number;
-}) {
-  const { data } = await api.get("/v1/solicitacao_subsidio_auditivo_paginado", {
-    params,
-    headers: getHeadersPerfilTesteSubsidioAuditivo(),
-  });
-  return data as {
-    rows: SubsidioAuditivoListaItem[];
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
+}): Promise<SubsidioAuditivoPaginadoResponse> {
+  const { data } = await api.get<SubsidioAuditivoPaginadoResponse>(
+    "/v1/solicitacao_subsidio_auditivo_paginado",
+    {
+      params,
+      headers: getHeadersPerfilTesteSubsidioAuditivo(),
+    }
+  );
+
+  return {
+    rows: Array.isArray(data?.rows) ? data.rows : [],
+    page: Number(data?.page || params.page),
+    limit: Number(data?.limit || params.limit),
+    total: Number(data?.total || 0),
+    totalPages: Number(data?.totalPages || 0),
   };
 }
 

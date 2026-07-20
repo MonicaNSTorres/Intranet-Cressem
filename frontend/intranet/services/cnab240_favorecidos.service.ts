@@ -1,35 +1,6 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: true,
-  timeout: 30000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL: typeof window !== "undefined" ? window.location.href : null,
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro desconhecido",
-        ERROR_STACK: error?.stack || null,
-        SOURCE: "cnab240-favorecidos.service.ts",
-      });
-    } catch (e) {
-      console.error("Erro ao registrar log:", e);
-    }
-
-    return Promise.reject(error);
-  }
-);
+const CNAB_FAVORECIDOS_TIMEOUT_MS = 30000;
 
 export type CnabFavorecido = {
   ID_FAVORECIDO: number;
@@ -57,8 +28,16 @@ export type CnabFavorecidoPayload = Omit<
   "ID_FAVORECIDO" | "CREATED_AT" | "UPDATED_AT"
 >;
 
-export type CnabFavorecidoLotePayload = CnabFavorecidoPayload & {
-  LINHA?: number;
+export type CnabFavorecidoLotePayload =
+  CnabFavorecidoPayload & {
+    LINHA?: number;
+  };
+
+export type ImportarFavorecidoErro = {
+  linha: number;
+  cpf?: string;
+  nome?: string;
+  erro: string;
 };
 
 export type ImportarFavorecidosEmMassaResponse = {
@@ -68,12 +47,7 @@ export type ImportarFavorecidosEmMassaResponse = {
   inseridos: number;
   atualizados: number;
   rejeitados: number;
-  erros: Array<{
-    linha: number;
-    cpf?: string;
-    nome?: string;
-    erro: string;
-  }>;
+  erros: ImportarFavorecidoErro[];
 };
 
 export type ListarFavorecidosParams = {
@@ -95,35 +69,117 @@ export type ListarFavorecidosResponse = {
   };
 };
 
+export type CnabFavorecidoOperacaoResponse = {
+  success?: boolean;
+  message?: string;
+  data?: CnabFavorecido;
+};
+
+function onlyDigits(value: string | null | undefined) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function normalizarTexto(
+  value: string | null | undefined
+): string | null {
+  const texto = String(value || "").trim();
+
+  return texto || null;
+}
+
+function normalizarFavorecidoPayload(
+  payload: CnabFavorecidoPayload
+): CnabFavorecidoPayload {
+  return {
+    ...payload,
+    CPF: onlyDigits(payload.CPF),
+    NOME: String(payload.NOME || "").trim(),
+    IDCLIENTE: normalizarTexto(payload.IDCLIENTE),
+    BANCO: normalizarTexto(payload.BANCO),
+    AGENCIA: normalizarTexto(payload.AGENCIA),
+    CONTA: normalizarTexto(payload.CONTA),
+    DV_CONTA: normalizarTexto(payload.DV_CONTA),
+    ENDERECO: normalizarTexto(payload.ENDERECO),
+    NUMERO: normalizarTexto(payload.NUMERO),
+    COMPLEMENTO: normalizarTexto(payload.COMPLEMENTO),
+    BAIRRO: normalizarTexto(payload.BAIRRO),
+    CEP: payload.CEP
+      ? onlyDigits(payload.CEP)
+      : null,
+    CEP_COMPLEMENTO: normalizarTexto(
+      payload.CEP_COMPLEMENTO
+    ),
+    CIDADE: normalizarTexto(payload.CIDADE),
+    UF: normalizarTexto(payload.UF)?.toUpperCase() || null,
+  };
+}
+
 export async function listarFavorecidos(
   params: ListarFavorecidosParams = {}
 ): Promise<ListarFavorecidosResponse> {
-  const response = await api.get("/v1/cnab240/favorecidos", {
-    params: {
-      busca: params.busca || "",
-      page: params.page || 1,
-      limit: params.limit || 20,
-    },
-  });
+  const response = await api.get<ListarFavorecidosResponse>(
+    "/v1/cnab240/favorecidos",
+    {
+      params: {
+        busca: String(params.busca || "").trim(),
+        page: params.page ?? 1,
+        limit: params.limit ?? 20,
+      },
+      timeout: CNAB_FAVORECIDOS_TIMEOUT_MS,
+    }
+  );
 
   return {
-    data: Array.isArray(response.data?.data) ? response.data.data : [],
+    data: Array.isArray(response.data?.data)
+      ? response.data.data
+      : [],
+
     total: Number(response.data?.total || 0),
+
     page: Number(response.data?.page || 1),
+
     limit: Number(response.data?.limit || 20),
+
     totalPages: Number(response.data?.totalPages || 1),
+
     resumo: {
-      totalFavorecidos: Number(response.data?.resumo?.totalFavorecidos || 0),
-      totalBancos: Number(response.data?.resumo?.totalBancos || 0),
-      totalCidades: Number(response.data?.resumo?.totalCidades || 0),
+      totalFavorecidos: Number(
+        response.data?.resumo?.totalFavorecidos || 0
+      ),
+
+      totalBancos: Number(
+        response.data?.resumo?.totalBancos || 0
+      ),
+
+      totalCidades: Number(
+        response.data?.resumo?.totalCidades || 0
+      ),
     },
   };
 }
 
 export async function criarFavorecido(
   payload: CnabFavorecidoPayload
-): Promise<any> {
-  const response = await api.post("/v1/cnab240/favorecidos", payload);
+): Promise<CnabFavorecidoOperacaoResponse> {
+  const payloadNormalizado =
+    normalizarFavorecidoPayload(payload);
+
+  if (!payloadNormalizado.CPF) {
+    throw new Error("CPF do favorecido não informado.");
+  }
+
+  if (!payloadNormalizado.NOME) {
+    throw new Error("Nome do favorecido não informado.");
+  }
+
+  const response =
+    await api.post<CnabFavorecidoOperacaoResponse>(
+      "/v1/cnab240/favorecidos",
+      payloadNormalizado,
+      {
+        timeout: CNAB_FAVORECIDOS_TIMEOUT_MS,
+      }
+    );
 
   return response.data;
 }
@@ -131,8 +187,30 @@ export async function criarFavorecido(
 export async function atualizarFavorecido(
   id: number,
   payload: CnabFavorecidoPayload
-): Promise<any> {
-  const response = await api.put(`/v1/cnab240/favorecidos/${id}`, payload);
+): Promise<CnabFavorecidoOperacaoResponse> {
+  if (!id) {
+    throw new Error("ID do favorecido não informado.");
+  }
+
+  const payloadNormalizado =
+    normalizarFavorecidoPayload(payload);
+
+  if (!payloadNormalizado.CPF) {
+    throw new Error("CPF do favorecido não informado.");
+  }
+
+  if (!payloadNormalizado.NOME) {
+    throw new Error("Nome do favorecido não informado.");
+  }
+
+  const response =
+    await api.put<CnabFavorecidoOperacaoResponse>(
+      `/v1/cnab240/favorecidos/${id}`,
+      payloadNormalizado,
+      {
+        timeout: CNAB_FAVORECIDOS_TIMEOUT_MS,
+      }
+    );
 
   return response.data;
 }
@@ -140,25 +218,76 @@ export async function atualizarFavorecido(
 export async function importarFavorecidosEmMassa(
   favorecidos: CnabFavorecidoLotePayload[]
 ): Promise<ImportarFavorecidosEmMassaResponse> {
-  const response = await api.post(
-    "/v1/cnab240/favorecidos/importar-massa",
-    { favorecidos }
+  if (
+    !Array.isArray(favorecidos) ||
+    favorecidos.length === 0
+  ) {
+    throw new Error(
+      "Nenhum favorecido foi informado para importação."
+    );
+  }
+
+  const favorecidosNormalizados = favorecidos.map(
+    (item) => ({
+      ...normalizarFavorecidoPayload(item),
+      LINHA: item.LINHA,
+    })
   );
+
+  const response =
+    await api.post<ImportarFavorecidosEmMassaResponse>(
+      "/v1/cnab240/favorecidos/importar-massa",
+      {
+        favorecidos: favorecidosNormalizados,
+      },
+      {
+        timeout: CNAB_FAVORECIDOS_TIMEOUT_MS,
+      }
+    );
 
   return {
     success: Boolean(response.data?.success),
+
     message:
-      response.data?.message || "Importação de favorecidos concluída.",
-    totalRecebidos: Number(response.data?.totalRecebidos || 0),
-    inseridos: Number(response.data?.inseridos || 0),
-    atualizados: Number(response.data?.atualizados || 0),
-    rejeitados: Number(response.data?.rejeitados || 0),
-    erros: Array.isArray(response.data?.erros) ? response.data.erros : [],
+      response.data?.message ||
+      "Importação de favorecidos concluída.",
+
+    totalRecebidos: Number(
+      response.data?.totalRecebidos || 0
+    ),
+
+    inseridos: Number(
+      response.data?.inseridos || 0
+    ),
+
+    atualizados: Number(
+      response.data?.atualizados || 0
+    ),
+
+    rejeitados: Number(
+      response.data?.rejeitados || 0
+    ),
+
+    erros: Array.isArray(response.data?.erros)
+      ? response.data.erros
+      : [],
   };
 }
 
-export async function excluirFavorecido(id: number): Promise<any> {
-  const response = await api.delete(`/v1/cnab240/favorecidos/${id}`);
+export async function excluirFavorecido(
+  id: number
+): Promise<CnabFavorecidoOperacaoResponse> {
+  if (!id) {
+    throw new Error("ID do favorecido não informado.");
+  }
+
+  const response =
+    await api.delete<CnabFavorecidoOperacaoResponse>(
+      `/v1/cnab240/favorecidos/${id}`,
+      {
+        timeout: CNAB_FAVORECIDOS_TIMEOUT_MS,
+      }
+    );
 
   return response.data;
 }

@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { api } from "./api.service";
 
 export type StatusTermoMensalCaixa =
   | "RASCUNHO"
@@ -42,21 +42,65 @@ export type SalvarTermoMensalCaixaPayload = {
   usuarioAtualizacao?: string;
 };
 
-export async function listarPAsTermoMensalCaixa() {
-  const res = await fetch(`${API_URL}/v1/termos-mensais-caixa/pas`, {
-    method: "GET",
-    cache: "no-store",
-  });
+export type ListarPAsTermoMensalCaixaResponse = {
+  success: boolean;
+  data: PAOption[];
+};
 
-  const json = await res.json();
+export type ListarTermosMensaisCaixaResponse = {
+  success: boolean;
+  data: TermoMensalCaixa[];
+};
 
-  if (!res.ok) {
-    throw new Error(json?.error || "Erro ao listar PAs.");
+export type ObterTermoMensalCaixaResponse = {
+  success: boolean;
+  data: TermoMensalCaixa;
+};
+
+function obterMensagemErro(
+  error: any,
+  mensagemPadrao: string
+): string {
+  return (
+    error?.response?.data?.error ||
+    error?.response?.data?.message ||
+    error?.response?.data?.details ||
+    error?.message ||
+    mensagemPadrao
+  );
+}
+
+function tratarErroDuplicidade(
+  error: any,
+  mensagemPadrao: string
+): never {
+  const detalhes =
+    error?.response?.data?.details ||
+    error?.response?.data?.error ||
+    error?.response?.data?.message ||
+    error?.message ||
+    "";
+
+  if (String(detalhes).includes("ORA-00001")) {
+    throw new Error(
+      "Já existe um termo mensal cadastrado para essa competência e PA."
+    );
   }
 
-  return json as {
-    success: boolean;
-    data: PAOption[];
+  throw new Error(
+    obterMensagemErro(error, mensagemPadrao)
+  );
+}
+
+export async function listarPAsTermoMensalCaixa(): Promise<ListarPAsTermoMensalCaixaResponse> {
+  const { data } =
+    await api.get<ListarPAsTermoMensalCaixaResponse>(
+      "/v1/termos-mensais-caixa/pas"
+    );
+
+  return {
+    success: Boolean(data?.success),
+    data: Array.isArray(data?.data) ? data.data : [],
   };
 }
 
@@ -64,102 +108,77 @@ export async function listarTermosMensaisCaixa(params?: {
   competencia?: string;
   pa?: string;
   status?: string;
-}) {
-  const searchParams = new URLSearchParams();
+}): Promise<ListarTermosMensaisCaixaResponse> {
+  const { data } =
+    await api.get<ListarTermosMensaisCaixaResponse>(
+      "/v1/termos-mensais-caixa",
+      {
+        params: {
+          competencia: params?.competencia || undefined,
+          pa: params?.pa || undefined,
+          status: params?.status || undefined,
+        },
+      }
+    );
 
-  if (params?.competencia) searchParams.append("competencia", params.competencia);
-  if (params?.pa) searchParams.append("pa", params.pa);
-  if (params?.status) searchParams.append("status", params.status);
-
-  const res = await fetch(
-    `${API_URL}/v1/termos-mensais-caixa?${searchParams.toString()}`,
-    {
-      method: "GET",
-      cache: "no-store",
-    }
-  );
-
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new Error(json?.error || "Erro ao listar termos mensais caixa.");
-  }
-
-  return json as {
-    success: boolean;
-    data: TermoMensalCaixa[];
+  return {
+    success: Boolean(data?.success),
+    data: Array.isArray(data?.data) ? data.data : [],
   };
 }
 
-export async function obterTermoMensalCaixaPorId(id: number) {
-  const res = await fetch(`${API_URL}/v1/termos-mensais-caixa/${id}`, {
-    method: "GET",
-    cache: "no-store",
-  });
+export async function obterTermoMensalCaixaPorId(
+  id: number
+): Promise<ObterTermoMensalCaixaResponse> {
+  const { data } =
+    await api.get<ObterTermoMensalCaixaResponse>(
+      `/v1/termos-mensais-caixa/${id}`
+    );
 
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new Error(json?.error || "Erro ao buscar termo mensal caixa.");
-  }
-
-  return json as {
-    success: boolean;
-    data: TermoMensalCaixa;
-  };
+  return data;
 }
 
 export async function criarTermoMensalCaixa(
   payload: SalvarTermoMensalCaixaPayload
 ) {
-  const res = await fetch(`${API_URL}/v1/termos-mensais-caixa`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      ...getAuditoriaHeaders(),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const { data } = await api.post(
+      "/v1/termos-mensais-caixa",
+      payload,
+      {
+        headers: getAuditoriaHeaders(),
+      }
+    );
 
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new Error(
-      String(json?.details || "").includes("ORA-00001")
-        ? "Já existe um termo mensal cadastrado para essa competência e PA."
-        : json?.error || "Erro ao criar termo mensal caixa."
+    return data;
+  } catch (error: any) {
+    tratarErroDuplicidade(
+      error,
+      "Erro ao criar termo mensal caixa."
     );
   }
-
-  return json;
 }
 
 export async function atualizarTermoMensalCaixa(
   id: number,
   payload: SalvarTermoMensalCaixaPayload
 ) {
-  const res = await fetch(`${API_URL}/v1/termos-mensais-caixa/${id}`, {
-    method: "PUT",
-    credentials: "include",
-    headers: {
-      ...getAuditoriaHeaders(),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const { data } = await api.put(
+      `/v1/termos-mensais-caixa/${id}`,
+      payload,
+      {
+        headers: getAuditoriaHeaders(),
+      }
+    );
 
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new Error(
-      String(json?.details || "").includes("ORA-00001")
-        ? "Já existe um termo mensal cadastrado para essa competência e PA."
-        : json?.error || "Erro ao atualizar termo mensal caixa."
+    return data;
+  } catch (error: any) {
+    tratarErroDuplicidade(
+      error,
+      "Erro ao atualizar termo mensal caixa."
     );
   }
-
-  return json;
 }
 
 export async function alterarStatusTermoMensalCaixa(data: {
@@ -167,29 +186,19 @@ export async function alterarStatusTermoMensalCaixa(data: {
   status: StatusTermoMensalCaixa;
   usuarioAtualizacao?: string;
 }) {
-  const res = await fetch(
-    `${API_URL}/v1/termos-mensais-caixa/${data.id}/status`,
+  const response = await api.patch(
+    `/v1/termos-mensais-caixa/${data.id}/status`,
     {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        ...getAuditoriaHeaders(),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        status: data.status,
-        usuarioAtualizacao: data.usuarioAtualizacao || "INTRANET",
-      }),
+      status: data.status,
+      usuarioAtualizacao:
+        data.usuarioAtualizacao || "INTRANET",
+    },
+    {
+      headers: getAuditoriaHeaders(),
     }
   );
 
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new Error(json?.error || "Erro ao alterar status do termo.");
-  }
-
-  return json;
+  return response.data;
 }
 
 export async function uploadTermoMensalCaixaAssinado(data: {
@@ -200,49 +209,42 @@ export async function uploadTermoMensalCaixaAssinado(data: {
   const formData = new FormData();
 
   formData.append("arquivo", data.arquivo);
-  formData.append("usuarioAtualizacao", data.usuarioAtualizacao || "INTRANET");
+  formData.append(
+    "usuarioAtualizacao",
+    data.usuarioAtualizacao || "INTRANET"
+  );
 
-  const res = await fetch(
-    `${API_URL}/v1/termos-mensais-caixa/${data.id}/assinado`,
+  const response = await api.post(
+    `/v1/termos-mensais-caixa/${data.id}/assinado`,
+    formData,
     {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "x-tela-origem":
-          typeof window !== "undefined" ? window.location.href : "",
-      },
-      body: formData,
+      headers: getAuditoriaHeaders(),
+      timeout: 60000,
     }
   );
 
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new Error(json?.error || "Erro ao anexar termo assinado.");
-  }
-
-  return json;
+  return response.data;
 }
 
-export function getDownloadTermoMensalCaixaAssinadoUrl(id: number) {
-  return `${API_URL}/v1/termos-mensais-caixa/${id}/assinado/download`;
+export function getDownloadTermoMensalCaixaAssinadoUrl(
+  id: number
+): string {
+  const baseURL = String(
+    api.defaults.baseURL || ""
+  ).replace(/\/$/, "");
+
+  return `${baseURL}/v1/termos-mensais-caixa/${id}/assinado/download`;
 }
 
-export async function excluirTermoMensalCaixa(id: number) {
-  const res = await fetch(`${API_URL}/v1/termos-mensais-caixa/${id}`, {
-    method: "DELETE",
-    credentials: "include",
-    headers: {
-      ...getAuditoriaHeaders(),
-      "Content-Type": "application/json",
-    },
-  });
+export async function excluirTermoMensalCaixa(
+  id: number
+) {
+  const { data } = await api.delete(
+    `/v1/termos-mensais-caixa/${id}`,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new Error(json?.error || "Erro ao excluir termo mensal caixa.");
-  }
-
-  return json;
+  return data;
 }

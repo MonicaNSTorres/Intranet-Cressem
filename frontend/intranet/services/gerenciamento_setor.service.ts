@@ -1,53 +1,5 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-  timeout: 30000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL:
-          typeof window !== "undefined" ? window.location.href : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro no service de gerenciamento de setor",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          baseURL: error?.config?.baseURL,
-          method: error?.config?.method,
-          params: error?.config?.params,
-          data: error?.config?.data,
-          responseType: error?.config?.responseType,
-          responseData:
-            error?.config?.responseType === "blob"
-              ? "Resposta blob não registrada"
-              : error?.response?.data,
-        },
-
-        SOURCE: "GERENCIAMENTO_SETOR_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type SetorItem = {
   ID_SETOR: number;
@@ -80,8 +32,13 @@ export async function buscarSetoresPaginados(params: {
 }
 
 export async function buscarTodosSetores() {
-  const response = await api.get<SetorItem[]>("/v1/setor_sicoob_cressem");
-  return response.data;
+  const response = await api.get<SetorItem[]>(
+    "/v1/setor_sicoob_cressem"
+  );
+
+  return Array.isArray(response.data)
+    ? response.data
+    : [];
 }
 
 export async function cadastrarSetor(payload: {
@@ -89,9 +46,13 @@ export async function cadastrarSetor(payload: {
   NM_ENDERECO: string;
   NR_RAMAL?: string;
 }) {
-  const response = await api.post("/v1/setor_sicoob_cressem", payload, {
-    headers: getAuditoriaHeaders(),
-  });
+  const response = await api.post(
+    "/v1/setor_sicoob_cressem",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
   return response.data;
 }
@@ -119,10 +80,14 @@ export async function editarSetor(payload: {
   return response.data;
 }
 
-export async function baixarRelatorioSetores() {
-  const response = await api.get("/v1/download_setor", {
-    responseType: "blob",
-  });
+export async function baixarRelatorioSetores(): Promise<Blob> {
+  const response = await api.get<Blob>(
+    "/v1/download_setor",
+    {
+      responseType: "blob",
+      timeout: 60000,
+    }
+  );
 
   return response.data;
 }

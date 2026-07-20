@@ -204,7 +204,7 @@ export function ReservaSalaReuniaoForm() {
                 fim,
             });
 
-            setReservas(response?.items || response?.data || response || []);
+            setReservas(Array.isArray(response) ? response : []);
         } catch (error) {
             console.error(error);
             setReservas([]);

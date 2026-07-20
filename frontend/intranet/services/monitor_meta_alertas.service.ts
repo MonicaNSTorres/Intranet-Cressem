@@ -1,15 +1,18 @@
-import axios from "axios";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-  timeout: 30000,
-});
+export type StatusAlertaMeta =
+  | "aberto"
+  | "resolvido"
+  | "todos";
 
-export type StatusAlertaMeta = "aberto" | "resolvido" | "todos";
-export type OrigemAlertaMeta = "META" | "CARGA";
-export type TipoCargaAlertaMeta = "INSERCAO" | "EMAIL";
+export type OrigemAlertaMeta =
+  | "META"
+  | "CARGA";
+
+export type TipoCargaAlertaMeta =
+  | "INSERCAO"
+  | "EMAIL";
 
 export type MonitorMetaAlerta = {
   id_alerta: string;
@@ -59,29 +62,50 @@ export async function listarMonitorMetaAlertas(params: {
   page?: number;
   limit?: number;
 }) {
-  const response = await api.get<MonitorMetaAlertasResponse>(
-    "/v1/monitor-meta-alertas",
-    { params }
-  );
+  const response =
+    await api.get<MonitorMetaAlertasResponse>(
+      "/v1/monitor-meta-alertas",
+      {
+        params,
+        timeout: 30000,
+      }
+    );
 
   return response.data;
 }
 
-export async function detalharMonitorMetaAlerta(id: string) {
-  const response = await api.get<{ ocorrencias: MonitorMetaAlerta[] }>(
+export async function detalharMonitorMetaAlerta(
+  id: string
+) {
+  const response = await api.get<{
+    ocorrencias: MonitorMetaAlerta[];
+  }>(
     "/v1/monitor-meta-alertas/detalhes",
     {
-      params: { id_alerta: id },
+      params: {
+        id_alerta: id,
+      },
+      timeout: 30000,
     }
   );
 
-  return response.data;
+  return {
+    ocorrencias: Array.isArray(
+      response.data?.ocorrencias
+    )
+      ? response.data.ocorrencias
+      : [],
+  };
 }
 
-export async function resolverMonitorMetaAlerta(id: string) {
+export async function resolverMonitorMetaAlerta(
+  id: string
+) {
   const response = await api.patch(
     "/v1/monitor-meta-alertas/resolver",
-    { id_alerta: id },
+    {
+      id_alerta: id,
+    },
     {
       headers: getAuditoriaHeaders(),
     }

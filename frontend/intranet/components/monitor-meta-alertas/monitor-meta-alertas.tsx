@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   FaBell,
+  FaChevronLeft,
+  FaChevronRight,
   FaCheckCircle,
   FaDatabase,
   FaEnvelope,
@@ -291,6 +293,8 @@ export function MonitorMetaAlertas() {
   const [tipoEntidade, setTipoEntidade] = useState<"" | "PA" | "FUNC">("");
   const [tipoCarga, setTipoCarga] = useState<"" | TipoCargaAlertaMeta>("");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
 
   const [items, setItems] = useState<MonitorMetaAlerta[]>([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -311,10 +315,6 @@ export function MonitorMetaAlertas() {
   const filtrosAtivos = useMemo(() => {
     return [origem, tela, tema, gravidade, entidade, tipoEntidade, tipoCarga].filter(Boolean).length;
   }, [entidade, gravidade, origem, tela, tema, tipoCarga, tipoEntidade]);
-
-  const paginasVisiveis = useMemo(() => {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }, [totalPages]);
 
   const observacoesDetalhe = useMemo(() => {
     return extrairObservacao(alertaDetalhe?.nm_observacao || null);
@@ -378,10 +378,11 @@ export function MonitorMetaAlertas() {
         tipo_entidade: tipoEntidadeConsulta || undefined,
         tipo_carga: tipoCargaConsulta || undefined,
         page: pagina,
-        limit: 10,
+        limit,
       });
 
       setItems(data.items || []);
+      setTotal(data.total || 0);
       setTotalPages(data.total_pages || 1);
       setPage(data.page || pagina);
       setResumo(data.resumo || { total: 0, abertos: 0, resolvidos: 0 });
@@ -406,7 +407,7 @@ export function MonitorMetaAlertas() {
   useEffect(() => {
     carregar(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+  }, [status, limit]);
 
   function limparFiltros() {
     setTela("");
@@ -465,6 +466,9 @@ export function MonitorMetaAlertas() {
       setCarregandoDetalhes(false);
     }
   }
+
+  const primeiroRegistro = total === 0 ? 0 : (page - 1) * limit + 1;
+  const ultimoRegistro = Math.min(page * limit, total);
 
   return (
     <div className="space-y-5">
@@ -931,23 +935,62 @@ export function MonitorMetaAlertas() {
         </div>
 
         <div className="border-t border-gray-100 bg-white px-4 py-4">
-          <div className="flex justify-center overflow-x-auto">
-            <div className="flex min-w-max gap-2">
-              {paginasVisiveis.map((pagina) => (
-                <button
-                  key={pagina}
-                  type="button"
-                  onClick={() => carregar(pagina)}
-                  disabled={loading || pagina === page}
-                  className={`inline-flex h-9 min-w-9 items-center justify-center rounded-md border px-3 text-sm font-semibold transition ${
-                    pagina === page
-                      ? "border-[#00995D] bg-[#00995D] text-white shadow-sm"
-                      : "border-gray-300 bg-white text-gray-700 hover:border-[#00995D] hover:text-[#00995D]"
-                  } disabled:cursor-default`}
-                >
-                  {pagina}
-                </button>
-              ))}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <p className="text-sm text-gray-500">
+                Mostrando{" "}
+                <span className="font-semibold text-gray-700">
+                  {primeiroRegistro}
+                </span>{" "}
+                até{" "}
+                <span className="font-semibold text-gray-700">
+                  {ultimoRegistro}
+                </span>{" "}
+                de{" "}
+                <span className="font-semibold text-gray-700">{total}</span>{" "}
+                alerta(s)
+              </p>
+
+              <select
+                value={limit}
+                onChange={(event) => {
+                  setLimit(Number(event.target.value));
+                  setPage(1);
+                }}
+                disabled={loading}
+                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <option value={10}>10 por página</option>
+                <option value={20}>20 por página</option>
+                <option value={50}>50 por página</option>
+                <option value={100}>100 por página</option>
+              </select>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => carregar(Math.max(page - 1, 1))}
+                disabled={page <= 1 || loading}
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <FaChevronLeft />
+                Anterior
+              </button>
+
+              <span className="rounded-xl bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700">
+                Página {page} de {totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => carregar(Math.min(page + 1, totalPages))}
+                disabled={page >= totalPages || loading}
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Próxima
+                <FaChevronRight />
+              </button>
             </div>
           </div>
         </div>

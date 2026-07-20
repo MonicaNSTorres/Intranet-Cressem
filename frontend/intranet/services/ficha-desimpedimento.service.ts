@@ -1,50 +1,5 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL:
-          typeof window !== "undefined"
-            ? window.location.href
-            : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro no service de ficha desimpedimento",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          baseURL: error?.config?.baseURL,
-          method: error?.config?.method,
-          params: error?.config?.params,
-          data: error?.config?.data,
-          responseData: error?.response?.data,
-        },
-
-        SOURCE: "FICHA_DESIMPEDIMENTO_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type TipoFicha = "DEVEDOR" | "CREDOR";
 
@@ -140,42 +95,72 @@ export interface SalvarFichaPayload {
   contasBancarias: Conta[];
 }
 
-export async function buscarAssociadoPorCpf(cpf: string): Promise<AssociadoResponse> {
-  const { data } = await api.get("/v1/ficha-desimpedimento/associado-por-cpf", {
-    params: { cpf },
-  });
+export async function buscarAssociadoPorCpf(
+  cpf: string
+): Promise<AssociadoResponse> {
+  const { data } = await api.get<AssociadoResponse>(
+    "/v1/ficha-desimpedimento/associado-por-cpf",
+    {
+      params: { cpf },
+    }
+  );
+
   return data;
 }
 
 export async function buscarProximoSequencial(): Promise<number> {
-  const { data } = await api.get("/v1/ficha-desimpedimento/proximo-sequencial");
+  const { data } = await api.get<{ sequencial?: number | string }>(
+    "/v1/ficha-desimpedimento/proximo-sequencial"
+  );
+
   return Number(data?.sequencial || 10000);
 }
 
 export async function listarFichas(): Promise<FichaRow[]> {
-  const { data } = await api.get("/v1/ficha-desimpedimento/fichas");
-  return data;
+  const { data } = await api.get<FichaRow[]>(
+    "/v1/ficha-desimpedimento/fichas"
+  );
+
+  return Array.isArray(data) ? data : [];
 }
 
-export async function listarContasDevedoras(idFicha: string): Promise<Conta[]> {
-  const { data } = await api.get("/v1/ficha-desimpedimento/contas-devedoras", {
-    params: { idFicha },
-  });
-  return data;
+export async function listarContasDevedoras(
+  idFicha: string
+): Promise<Conta[]> {
+  const { data } = await api.get<Conta[]>(
+    "/v1/ficha-desimpedimento/contas-devedoras",
+    {
+      params: { idFicha },
+    }
+  );
+
+  return Array.isArray(data) ? data : [];
 }
 
-export async function listarContasCredoras(idFicha: string): Promise<Conta[]> {
-  const { data } = await api.get("/v1/ficha-desimpedimento/contas-credoras", {
-    params: { idFicha },
-  });
-  return data;
+export async function listarContasCredoras(
+  idFicha: string
+): Promise<Conta[]> {
+  const { data } = await api.get<Conta[]>(
+    "/v1/ficha-desimpedimento/contas-credoras",
+    {
+      params: { idFicha },
+    }
+  );
+
+  return Array.isArray(data) ? data : [];
 }
 
-export async function listarContasBancarias(idFicha: string): Promise<Conta[]> {
-  const { data } = await api.get("/v1/ficha-desimpedimento/contas-bancarias", {
-    params: { idFicha },
-  });
-  return data;
+export async function listarContasBancarias(
+  idFicha: string
+): Promise<Conta[]> {
+  const { data } = await api.get<Conta[]>(
+    "/v1/ficha-desimpedimento/contas-bancarias",
+    {
+      params: { idFicha },
+    }
+  );
+
+  return Array.isArray(data) ? data : [];
 }
 
 export async function criarFicha(payload: SalvarFichaPayload) {
@@ -190,7 +175,9 @@ export async function criarFicha(payload: SalvarFichaPayload) {
   return data;
 }
 
-export async function editarFicha(payload: SalvarFichaPayload & { id: string }) {
+export async function editarFicha(
+  payload: SalvarFichaPayload & { id: string }
+) {
   const { data } = await api.put(
     "/v1/ficha-desimpedimento/fichas",
     payload,
@@ -203,10 +190,13 @@ export async function editarFicha(payload: SalvarFichaPayload & { id: string }) 
 }
 
 export async function excluirFicha(id: string) {
-  const { data } = await api.delete("/v1/ficha-desimpedimento/fichas", {
-    params: { id },
-    headers: getAuditoriaHeaders(),
-  });
+  const { data } = await api.delete(
+    "/v1/ficha-desimpedimento/fichas",
+    {
+      params: { id },
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
   return data;
 }

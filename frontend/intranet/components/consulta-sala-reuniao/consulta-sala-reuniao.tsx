@@ -150,7 +150,7 @@ export function ConsultaSalaReuniao() {
         nomeEspaco: nomeFiltro === "TODOS" ? undefined : nomeFiltro,
       });
 
-      setReservas(response?.items || response?.data || response || []);
+      setReservas(Array.isArray(response) ? response : []);
     } catch (error: any) {
       console.error(error);
       setErro(

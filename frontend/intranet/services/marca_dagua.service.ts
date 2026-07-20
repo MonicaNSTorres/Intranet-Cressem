@@ -1,74 +1,27 @@
-﻿import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+import { api } from "./api.service";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: true,
-  timeout: 30000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL:
-          typeof window !== "undefined" ? window.location.href : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro no service de marca d’água",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          baseURL: error?.config?.baseURL,
-          method: error?.config?.method,
-          responseData: error?.response?.data,
-        },
-
-        SOURCE: "MARCA_DAGUA_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
-
-function getApiUrl() {
-  if (!API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL nao definido no .env do front");
-  }
-
-  return API_URL;
-}
-
-export async function aplicarMarcaDagua(file: File) {
-  const apiUrl = getApiUrl();
-
+export async function aplicarMarcaDagua(
+  file: File
+): Promise<Blob> {
   const formData = new FormData();
+
   formData.append("file", file);
 
   try {
-    const response = await api.post("/v1/marca_dagua", formData, {
-      responseType: "blob",
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.post<Blob>(
+      "/v1/marca_dagua",
+      formData,
+      {
+        responseType: "blob",
+        timeout: 120000,
+      }
+    );
 
     return response.data;
   } catch (error: any) {
-    let mensagem = "Falha ao processar o PDF. Tente novamente.";
+    let mensagem =
+      "Falha ao processar o PDF. Tente novamente.";
 
     try {
       const data = error?.response?.data;
@@ -89,9 +42,16 @@ export async function aplicarMarcaDagua(file: File) {
             mensagem = text;
           }
         }
+      } else {
+        mensagem =
+          data?.error ||
+          data?.details ||
+          data?.message ||
+          error?.message ||
+          mensagem;
       }
     } catch {
-      // mantem mensagem padrao
+      // mantém a mensagem padrão
     }
 
     throw new Error(mensagem);

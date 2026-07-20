@@ -72,6 +72,14 @@ export type SubsidioAuditivoDetalhe =
     PERMISSOES?: SubsidioAuditivoPermissoes;
   };
 
+export type SalvarSubsidioAuditivoResponse = {
+  id?: number;
+  status?: string;
+  motivoDevolucao?: string | null;
+  message?: string;
+  data?: SubsidioAuditivoDetalhe;
+};
+
 export type SalvarAnexoFluxoSubsidioAuditivoParams = {
   id: number | string;
   tipo: string;
@@ -93,8 +101,8 @@ function validarIdSubsidio(id: number | string) {
 
 export async function cadastrarSubsidioAuditivo(
   payload: SubsidioAuditivoPayload
-): Promise<SubsidioAuditivoDetalhe> {
-  const response = await api.post<SubsidioAuditivoDetalhe>(
+): Promise<SalvarSubsidioAuditivoResponse> {
+  const response = await api.post<SalvarSubsidioAuditivoResponse>(
     "/v1/solicitacao_subsidio_auditivo",
     payload,
     {
@@ -110,14 +118,14 @@ export async function cadastrarSubsidioAuditivo(
 
 export async function editarSubsidioAuditivo(
   payload: SubsidioAuditivoPayload
-): Promise<SubsidioAuditivoDetalhe> {
+): Promise<SalvarSubsidioAuditivoResponse> {
   if (!payload.ID_SUBSIDIO_AUDITIVO) {
     throw new Error(
       "ID do subsídio auditivo não informado para edição."
     );
   }
 
-  const response = await api.put<SubsidioAuditivoDetalhe>(
+  const response = await api.put<SalvarSubsidioAuditivoResponse>(
     "/v1/solicitacao_subsidio_auditivo",
     payload,
     {

@@ -1,4 +1,5 @@
 import { api } from "./api.service";
+import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 export type ContratoEmpresaPayload = {
   NR_CNPJ: string;
@@ -51,12 +52,55 @@ export type EmailContratoItem = {
   };
 };
 
+export type ContatoContratoPayload = {
+  NM_RESPONSAVEL: string;
+  NR_TELEFONE: string;
+  DESC_EMAIL: string;
+};
+
+export type ContatoContratoItem = {
+  ID_RH_CONTATO?: number;
+  ID_CONTRATO?: number;
+  NM_RESPONSAVEL?: string;
+  NR_TELEFONE?: string;
+  DESC_EMAIL?: string;
+};
+
+export type ContratoEmpresaItem = {
+  ID_CONTRATOS_EMPRESAS: number;
+  NR_CNPJ: string;
+  NM_EMPRESA: string;
+  NM_CIDADE: string;
+  NM_TIPO_CONTRATO: string;
+  NM_SISTEMA_CONSIG: string;
+  DT_INICIO: string;
+  DT_FIM: string | null;
+  SN_ATIVO?: number;
+  CD_CONTA_CAPITAL?: string;
+  NM_TIPO_TEMPO_CONTRATO?: string;
+  OBS_CONTRATO?: string;
+};
+
+export type ConsultaContratosParams = {
+  page?: number;
+  limit?: number;
+  NM_EMPRESA?: string;
+  NR_CNPJ?: string;
+  NM_CIDADE?: string;
+  NM_TIPO_CONTRATO?: string;
+  NM_SISTEMA_CONSIG?: string;
+  SN_ATIVO?: number;
+};
+
 export async function cadastrarContratoEmpresa(
   payload: ContratoEmpresaPayload
 ): Promise<ContratoEmpresaResponse> {
   const response = await api.post<ContratoEmpresaResponse>(
     "/v1/contratos_empresas",
-    payload
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
 
   return response.data;
@@ -72,7 +116,10 @@ export async function editarContratoEmpresa(
 
   const response = await api.put<ContratoEmpresaResponse>(
     `/v1/contratos_empresas/${id}`,
-    payload
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
 
   return response.data;
@@ -153,7 +200,10 @@ export async function criarEmailContrato(
 ): Promise<EmailContratoItem> {
   const response = await api.post<EmailContratoItem>(
     "/v1/email_contrato",
-    payload
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
 
   return response.data;
@@ -195,7 +245,10 @@ export async function removerEmailContrato(
   }
 
   const response = await api.delete(
-    `/v1/email_contrato/${idContratoEmail}`
+    `/v1/email_contrato/${idContratoEmail}`,
+    {
+      headers: getAuditoriaHeaders(),
+    }
   );
 
   return response.data;
@@ -213,4 +266,87 @@ export async function buscarEmailsDoContratoSeparados(
     )
     .filter(Boolean)
     .join("/");
+}
+
+export async function listarContatosContratoPorContrato(
+  idContrato: number
+): Promise<ContatoContratoItem[]> {
+  if (!idContrato) {
+    throw new Error("ID do contrato não informado.");
+  }
+
+  const response = await api.get<ContatoContratoItem[]>(
+    `/v1/rh_contato_contrato_lista/${idContrato}`
+  );
+
+  return Array.isArray(response.data) ? response.data : [];
+}
+
+export async function cadastrarContatosContratoLote(
+  idContrato: number,
+  contatos: ContatoContratoPayload[]
+): Promise<unknown> {
+  if (!idContrato) {
+    throw new Error("ID do contrato não informado.");
+  }
+
+  const response = await api.post(
+    "/v1/rh_contato/lote",
+    {
+      ID_CONTRATO: idContrato,
+      CONTATOS: contatos,
+    },
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
+  return response.data;
+}
+
+export async function editarContatosContratoLote(
+  idContrato: number,
+  contatos: ContatoContratoPayload[]
+): Promise<unknown> {
+  if (!idContrato) {
+    throw new Error("ID do contrato não informado.");
+  }
+
+  const response = await api.put(
+    `/v1/rh_contato/lote/${idContrato}`,
+    {
+      ID_CONTRATO: idContrato,
+      CONTATOS: contatos,
+    },
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
+
+  return response.data;
+}
+
+export async function consultarContratosEmpresas(
+  params: ConsultaContratosParams
+): Promise<unknown> {
+  const response = await api.get(
+    "/v1/contratos_empresas",
+    {
+      params,
+    }
+  );
+
+  return response.data;
+}
+
+export async function carregarCidadesContratoConsulta(): Promise<string[]> {
+  return carregarCidadesContrato();
+}
+
+export async function carregarTiposContratoConsulta(): Promise<string[]> {
+  return carregarTiposContrato();
+}
+
+export async function carregarSistemasConsignadosConsulta(): Promise<string[]> {
+  return carregarSistemasConsignados();
 }

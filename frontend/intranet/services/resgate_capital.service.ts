@@ -1,50 +1,6 @@
-import axios from "axios";
+import { api } from "./api.service";
 import { onlyDigits } from "@/utils/br";
-import { registrarErroTela } from "./error_log.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-  timeout: 30000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL:
-          typeof window !== "undefined" ? window.location.href : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro no service de resgate capital",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          baseURL: error?.config?.baseURL,
-          method: error?.config?.method,
-          params: error?.config?.params,
-          data: error?.config?.data,
-          responseData: error?.response?.data,
-        },
-
-        SOURCE: "RESGATE_CAPITAL_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type MotivoResgateItem = {
   ID_MOTIVO_RESGATE?: number;
@@ -71,13 +27,15 @@ export type EmprestimoAssociadoItem = {
 };
 
 export type BuscarIdAssociadoResponse =
-  | { found: false }
   | {
-    found: true;
-    ID_CLIENTE: number;
-    NM_CLIENTE?: string;
-    NR_CPF_CNPJ?: string;
-  };
+      found: false;
+    }
+  | {
+      found: true;
+      ID_CLIENTE: number;
+      NM_CLIENTE?: string;
+      NR_CPF_CNPJ?: string;
+    };
 
 export type CriarResgatePayload = {
   ID_CLIENTE?: number | null;
@@ -144,37 +102,63 @@ export type CriarParcelaPayload = {
   ID_CONTA_DEPOSITO: number;
 };
 
-export async function buscarMotivosResgate() {
-  const response = await api.get<MotivoResgateItem[]>("/v1/resgate-capital/motivos");
-  return response.data;
+export async function buscarMotivosResgate(): Promise<
+  MotivoResgateItem[]
+> {
+  const response = await api.get<MotivoResgateItem[]>(
+    "/v1/resgate-capital/motivos"
+  );
+
+  return Array.isArray(response.data)
+    ? response.data
+    : [];
 }
 
-export async function buscarAutorizacoesResgate() {
+export async function buscarAutorizacoesResgate(): Promise<
+  AutorizacaoResgateItem[]
+> {
   const response = await api.get<AutorizacaoResgateItem[]>(
     "/v1/resgate-capital/autorizacoes"
   );
-  return response.data;
+
+  return Array.isArray(response.data)
+    ? response.data
+    : [];
 }
 
-export async function buscarCidadesResgate() {
-  const response = await api.get<CidadeResgateItem[]>("/v1/resgate-capital/cidades");
-  return response.data;
+export async function buscarCidadesResgate(): Promise<
+  CidadeResgateItem[]
+> {
+  const response = await api.get<CidadeResgateItem[]>(
+    "/v1/resgate-capital/cidades"
+  );
+
+  return Array.isArray(response.data)
+    ? response.data
+    : [];
 }
 
-export async function buscarEmprestimosPorCpf(cpf: string) {
+export async function buscarEmprestimosPorCpf(
+  cpf: string
+): Promise<EmprestimoAssociadoItem[]> {
   const response = await api.get<EmprestimoAssociadoItem[]>(
     "/v1/resgate-capital/emprestimos",
     {
       params: {
         cpf: onlyDigits(cpf),
       },
+      timeout: 30000,
     }
   );
 
-  return response.data;
+  return Array.isArray(response.data)
+    ? response.data
+    : [];
 }
 
-export async function buscarIdAssociado(cpf: string) {
+export async function buscarIdAssociado(
+  cpf: string
+): Promise<BuscarIdAssociadoResponse> {
   const response = await api.get<BuscarIdAssociadoResponse>(
     "/v1/resgate-capital/associado-id",
     {
@@ -187,7 +171,9 @@ export async function buscarIdAssociado(cpf: string) {
   return response.data;
 }
 
-export async function buscarDiaUtil(data: string) {
+export async function buscarDiaUtil(
+  data: string
+): Promise<{ diaUtil: boolean }> {
   const response = await api.get<{ diaUtil: boolean }>(
     "/v1/resgate-capital/dia-util",
     {
@@ -200,7 +186,9 @@ export async function buscarDiaUtil(data: string) {
   return response.data;
 }
 
-export async function criarResgate(payload: CriarResgatePayload) {
+export async function criarResgate(
+  payload: CriarResgatePayload
+): Promise<CriarResgateResponse> {
   const response = await api.post<CriarResgateResponse>(
     "/v1/resgate-capital",
     payload,
@@ -212,7 +200,9 @@ export async function criarResgate(payload: CriarResgatePayload) {
   return response.data;
 }
 
-export async function criarEmprestimo(payload: CriarEmprestimoPayload) {
+export async function criarEmprestimo(
+  payload: CriarEmprestimoPayload
+) {
   const response = await api.post(
     "/v1/resgate-capital/emprestimo",
     payload,
@@ -224,7 +214,9 @@ export async function criarEmprestimo(payload: CriarEmprestimoPayload) {
   return response.data;
 }
 
-export async function criarContaCorrente(payload: CriarContaCorrentePayload) {
+export async function criarContaCorrente(
+  payload: CriarContaCorrentePayload
+) {
   const response = await api.post(
     "/v1/resgate-capital/conta-corrente",
     payload,
@@ -236,7 +228,9 @@ export async function criarContaCorrente(payload: CriarContaCorrentePayload) {
   return response.data;
 }
 
-export async function criarCartaoCredito(payload: CriarCartaoCreditoPayload) {
+export async function criarCartaoCredito(
+  payload: CriarCartaoCreditoPayload
+) {
   const response = await api.post(
     "/v1/resgate-capital/cartao-credito",
     {
@@ -251,7 +245,9 @@ export async function criarCartaoCredito(payload: CriarCartaoCreditoPayload) {
   return response.data;
 }
 
-export async function criarContaDeposito(payload: CriarContaDepositoPayload) {
+export async function criarContaDeposito(
+  payload: CriarContaDepositoPayload
+): Promise<CriarContaDepositoResponse> {
   const response = await api.post<CriarContaDepositoResponse>(
     "/v1/resgate-capital/conta-deposito",
     payload,
@@ -263,7 +259,9 @@ export async function criarContaDeposito(payload: CriarContaDepositoPayload) {
   return response.data;
 }
 
-export async function criarParcela(payload: CriarParcelaPayload) {
+export async function criarParcela(
+  payload: CriarParcelaPayload
+) {
   const response = await api.post(
     "/v1/resgate-capital/parcela",
     payload,
@@ -275,8 +273,14 @@ export async function criarParcela(payload: CriarParcelaPayload) {
   return response.data;
 }
 
-export async function buscarFuncionarioUnicoPorCpf(cpf: string) {
-  const clean = onlyDigits(cpf);
-  const { data } = await api.get(`/v1/funcionarios_sicoob_cressem_unico/cpf/${clean}`);
+export async function buscarFuncionarioUnicoPorCpf(
+  cpf: string
+) {
+  const cpfLimpo = onlyDigits(cpf);
+
+  const { data } = await api.get(
+    `/v1/funcionarios_sicoob_cressem_unico/cpf/${cpfLimpo}`
+  );
+
   return data;
 }

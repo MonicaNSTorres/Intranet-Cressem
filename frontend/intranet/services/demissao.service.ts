@@ -1,5 +1,5 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
 
 export type DemissaoAssociadoResponse = {
@@ -28,63 +28,14 @@ export type ConvenioStatusResponse = {
   total_custo?: number;
 };
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-  timeout: 15000,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      const url = error?.config?.url || "";
-      const status = error?.response?.status;
-
-      const convenio404Esperado =
-        String(url).includes("/v1/demissao/convenio/") && status === 404;
-
-      if (!convenio404Esperado) {
-        await registrarErroTela({
-          PAGE_URL:
-            typeof window !== "undefined"
-              ? window.location.href
-              : null,
-
-          ERROR_MESSAGE:
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            error?.response?.data?.details ||
-            error?.message ||
-            "Erro no service de demissão",
-
-          ERROR_STACK: error?.stack || null,
-
-          ERROR_DETAIL: {
-            status,
-            url,
-            baseURL: error?.config?.baseURL,
-            method: error?.config?.method,
-            responseData: error?.response?.data,
-          },
-
-          SOURCE: "DEMISSAO_AXIOS",
-        });
-      }
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
-
 function onlyDigits(value: string) {
   return (value || "").replace(/\D/g, "");
 }
 
 function onlyCpfCnpjChars(value: string) {
-  return (value || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return (value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
 }
 
 export async function buscarAssociadoDemissaoPorCpf(
@@ -92,18 +43,38 @@ export async function buscarAssociadoDemissaoPorCpf(
 ): Promise<DemissaoAssociadoResponse | null> {
   const cpfLimpo = onlyCpfCnpjChars(cpf);
 
-  if (cpfLimpo.length !== 11 && cpfLimpo.length !== 14) return null;
+  if (cpfLimpo.length !== 11 && cpfLimpo.length !== 14) {
+    return null;
+  }
 
-  const response = await api.get(`/v1/demissao/associado/${cpfLimpo}`);
+  const response = await api.get<DemissaoAssociadoResponse>(
+    `/v1/demissao/associado/${cpfLimpo}`
+  );
+
   return response.data || null;
 }
 
-export async function buscarMotivosDemissao(): Promise<MotivoDemissaoOption[]> {
+export async function buscarMotivosDemissao(): Promise<
+  MotivoDemissaoOption[]
+> {
   const response = await api.get("/v1/demissao/motivos");
 
-  return (response.data || []).map((item: any) => ({
-    value: item.value || item.VALUE || item.NM_MOTIVO || "",
-    label: item.label || item.LABEL || item.NM_MOTIVO || "",
+  const itens = Array.isArray(response.data)
+    ? response.data
+    : [];
+
+  return itens.map((item: any) => ({
+    value:
+      item.value ||
+      item.VALUE ||
+      item.NM_MOTIVO ||
+      "",
+
+    label:
+      item.label ||
+      item.LABEL ||
+      item.NM_MOTIVO ||
+      "",
   }));
 }
 
@@ -112,9 +83,22 @@ export async function buscarCidadesDemissao(): Promise<
 > {
   const response = await api.get("/v1/demissao/cidades");
 
-  return (response.data || []).map((item: any) => ({
-    value: item.value || item.VALUE || item.NM_CIDADE || "",
-    label: item.label || item.LABEL || item.NM_CIDADE || "",
+  const itens = Array.isArray(response.data)
+    ? response.data
+    : [];
+
+  return itens.map((item: any) => ({
+    value:
+      item.value ||
+      item.VALUE ||
+      item.NM_CIDADE ||
+      "",
+
+    label:
+      item.label ||
+      item.LABEL ||
+      item.NM_CIDADE ||
+      "",
   }));
 }
 
@@ -123,13 +107,21 @@ export async function buscarConvenioDemissaoPorCpf(
 ): Promise<ConvenioStatusResponse | null> {
   const cpfLimpo = onlyCpfCnpjChars(cpf);
 
-  if (cpfLimpo.length !== 11 && cpfLimpo.length !== 14) return null;
+  if (cpfLimpo.length !== 11 && cpfLimpo.length !== 14) {
+    return null;
+  }
 
   try {
-    const response = await api.get(`/v1/demissao/convenio/${cpfLimpo}`);
+    const response = await api.get<ConvenioStatusResponse>(
+      `/v1/demissao/convenio/${cpfLimpo}`
+    );
+
     return response.data || null;
   } catch (error: any) {
-    if (error?.response?.status === 404) return null;
+    if (error?.response?.status === 404) {
+      return null;
+    }
+
     throw error;
   }
 }
@@ -141,12 +133,16 @@ export async function desativarConvenioDemissao(
   const cpfLimpo = onlyCpfCnpjChars(cpf);
 
   if (cpfLimpo.length !== 11 && cpfLimpo.length !== 14) {
-    throw new Error("CPF/CNPJ inválido para desativação do convênio.");
+    throw new Error(
+      "CPF/CNPJ inválido para desativação do convênio."
+    );
   }
 
   const response = await api.post(
     `/v1/demissao/convenio/${cpfLimpo}/desativacao`,
-    { atendente },
+    {
+      atendente,
+    },
     {
       headers: getAuditoriaHeaders(),
     }

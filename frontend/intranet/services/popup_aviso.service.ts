@@ -1,46 +1,6 @@
-import axios from "axios";
-import { registrarErroTela } from "./error_log.service";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { api } from "./api.service";
 import { getAuditoriaHeaders } from "@/utils/auditoria-headers";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    try {
-      await registrarErroTela({
-        PAGE_URL:
-          typeof window !== "undefined" ? window.location.href : null,
-
-        ERROR_MESSAGE:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          error?.response?.data?.details ||
-          error?.message ||
-          "Erro no service de popup aviso",
-
-        ERROR_STACK: error?.stack || null,
-
-        ERROR_DETAIL: {
-          status: error?.response?.status,
-          url: error?.config?.url,
-          baseURL: error?.config?.baseURL,
-          method: error?.config?.method,
-          responseData: error?.response?.data,
-        },
-
-        SOURCE: "POPUP_AVISO_AXIOS",
-      });
-    } catch {
-      //evita loop infinito
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 export type PopupAviso = {
   ID_POPUP: number;
@@ -57,11 +17,19 @@ export type PopupAviso = {
   DS_LINK?: string | null;
 };
 
-export async function buscarPopupPendenteMe() {
-  const { data } = await api.get("/v1/popup-aviso/pendente/me");
-  return data as {
-    temPopupPendente: boolean;
-    popup: PopupAviso | null;
+export type PopupPendenteResponse = {
+  temPopupPendente: boolean;
+  popup: PopupAviso | null;
+};
+
+export async function buscarPopupPendenteMe(): Promise<PopupPendenteResponse> {
+  const { data } = await api.get<PopupPendenteResponse>(
+    "/v1/popup-aviso/pendente/me"
+  );
+
+  return {
+    temPopupPendente: Boolean(data?.temPopupPendente),
+    popup: data?.popup || null,
   };
 }
 
@@ -69,43 +37,71 @@ export async function responderPopupAviso(payload: {
   idPopup: number;
   resposta: "ACEITO" | "RECUSADO";
 }) {
-  const { data } = await api.post("/v1/popup-aviso/responder", payload, {
-    headers: getAuditoriaHeaders(),
-  });
+  const { data } = await api.post(
+    "/v1/popup-aviso/responder",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
   return data;
 }
 
-export async function listarPopupsAviso() {
-  const { data } = await api.get("/v1/popup-aviso");
-  return data;
+export async function listarPopupsAviso(): Promise<PopupAviso[]> {
+  const { data } = await api.get<PopupAviso[]>(
+    "/v1/popup-aviso"
+  );
+
+  return Array.isArray(data) ? data : [];
 }
 
-export async function buscarPopupAvisoPorId(id: number) {
-  const { data } = await api.get(`/v1/popup-aviso/${id}`);
+export async function buscarPopupAvisoPorId(
+  id: number
+): Promise<PopupAviso> {
+  const { data } = await api.get<PopupAviso>(
+    `/v1/popup-aviso/${id}`
+  );
+
   return data;
 }
 
 export async function criarPopupAviso(payload: any) {
-  const { data } = await api.post("/v1/popup-aviso", payload, {
-    headers: getAuditoriaHeaders(),
-  });
+  const { data } = await api.post(
+    "/v1/popup-aviso",
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
   return data;
 }
 
-export async function editarPopupAviso(id: number, payload: any) {
-  const { data } = await api.put(`/v1/popup-aviso/${id}`, payload, {
-    headers: getAuditoriaHeaders(),
-  });
+export async function editarPopupAviso(
+  id: number,
+  payload: any
+) {
+  const { data } = await api.put(
+    `/v1/popup-aviso/${id}`,
+    payload,
+    {
+      headers: getAuditoriaHeaders(),
+    }
+  );
 
   return data;
 }
 
-export async function ativarPopupAviso(id: number, stAtivo: "S" | "N") {
+export async function ativarPopupAviso(
+  id: number,
+  stAtivo: "S" | "N"
+) {
   const { data } = await api.patch(
     `/v1/popup-aviso/${id}/ativar`,
-    { stAtivo },
+    {
+      stAtivo,
+    },
     {
       headers: getAuditoriaHeaders(),
     }
