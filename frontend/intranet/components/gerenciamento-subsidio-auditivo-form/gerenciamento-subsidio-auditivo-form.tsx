@@ -70,7 +70,7 @@ function statusLabel(item: { ST_SOLICITACAO?: string; DT_APROVACAO_DIRETORIA?: s
     AGUARDANDO_FINANCEIRO: "Aguardando financeiro",
     DEVOLVIDO_AO_ATENDIMENTO: "Devolvido ao atendimento",
     FINALIZADO: "Finalizado",
-    CANCELADO: "Reprovado pela diretoria",
+    CANCELADO: "Cancelado",
   };
 
   return labels[status] || status || "-";
@@ -273,10 +273,6 @@ export function GerenciamentoSubsidioAuditivoForm() {
   );
   const isTesteFinanceiro = usuarioEmTeste && PERFIL_TESTE_SUBSIDIO_AUDITIVO === "FINANCEIRO";
   const isTesteDiretoria = usuarioEmTeste && PERFIL_TESTE_SUBSIDIO_AUDITIVO === "DIRETORIA";
-  const isSuporte = useMemo(
-    () => !usuarioEmTeste && gruposUsuario.includes(AD_GROUPS.SUPORTE),
-    [gruposUsuario, usuarioEmTeste]
-  );
   const isFinanceiro = useMemo(
     () =>
       isTesteFinanceiro ||
@@ -385,11 +381,11 @@ export function GerenciamentoSubsidioAuditivoForm() {
   }
 
   function podeExecutarAcao(acao: string) {
-    if (acao === "ENVIAR_DIRETORIA" && !podeAtuarComoSolicitante) return false;
+    if (acao === "ENVIAR_FINANCEIRO" && !podeAtuarComoSolicitante) return false;
     if ((acao === "DEVOLVER_ATENDIMENTO" || acao === "FINALIZAR") && !podeAtuarComoFinanceiro) return false;
     if ((acao === "APROVAR_DIRETORIA" || acao === "REPROVAR_DIRETORIA") && !podeAtuarComoDiretoria) return false;
 
-    if (acao === "ENVIAR_DIRETORIA") {
+    if (acao === "ENVIAR_FINANCEIRO") {
       return Boolean(termoSolicitanteFile || temAnexo(TIPO_ANEXO_TERMO_SOLICITANTE));
     }
 
@@ -426,9 +422,9 @@ export function GerenciamentoSubsidioAuditivoForm() {
         return;
       }
 
-      if (acao === "ENVIAR_DIRETORIA") {
+      if (acao === "ENVIAR_FINANCEIRO") {
         if (!termoSolicitanteFile && !temAnexo(TIPO_ANEXO_TERMO_SOLICITANTE)) {
-          setErro("Anexe o termo assinado pelo solicitante antes de enviar à diretoria.");
+          setErro("Anexe o termo assinado pelo solicitante antes de enviar ao financeiro.");
           return;
         }
         await salvarAnexoNoGerenciamento(TIPO_ANEXO_TERMO_SOLICITANTE, termoSolicitanteFile);
@@ -471,7 +467,7 @@ export function GerenciamentoSubsidioAuditivoForm() {
 
     if (st === "AGUARDANDO_ASSINATURA_SOLICITANTE" && podeAtuarComoSolicitante) {
       return [
-        { acao: "ENVIAR_DIRETORIA", label: "Anexar termo e enviar à diretoria", style: "secondary", icon: FaCheck },
+        { acao: "ENVIAR_FINANCEIRO", label: "Anexar termo e enviar ao financeiro", style: "secondary", icon: FaCheck },
       ];
     }
 
@@ -482,15 +478,8 @@ export function GerenciamentoSubsidioAuditivoForm() {
       ];
     }
 
-    if (st === "AGUARDANDO_DIRETORIA" && podeAtuarComoDiretoria) {
-      return [
-        { acao: "APROVAR_DIRETORIA", label: "Aprovar e enviar ao financeiro", style: "secondary", icon: FaCheck },
-        { acao: "REPROVAR_DIRETORIA", label: "Reprovar solicitação", style: "danger", icon: FaTimes },
-      ];
-    }
-
     return [];
-  }, [detalhe, podeAtuarComoDiretoria, podeAtuarComoFinanceiro, podeAtuarComoSolicitante]);
+  }, [detalhe, podeAtuarComoFinanceiro, podeAtuarComoSolicitante]);
 
   function podeEditarCadastro(item: SubsidioAuditivoListaItem) {
     const statusAtual = String(item.ST_SOLICITACAO || "");
@@ -538,10 +527,9 @@ export function GerenciamentoSubsidioAuditivoForm() {
               <option value="">Todos</option>
               <option value="AGUARDANDO_ASSINATURA_SOLICITANTE">Aguardando termo assinado</option>
               <option value="AGUARDANDO_FINANCEIRO">Aguardando financeiro / depósito</option>
-              <option value="AGUARDANDO_DIRETORIA">Aguardando aprovação diretoria</option>
               <option value="DEVOLVIDO_AO_ATENDIMENTO">Devolvido</option>
               <option value="FINALIZADO">Finalizado</option>
-              <option value="CANCELADO">Reprovado pela diretoria</option>
+              <option value="CANCELADO">Cancelado</option>
             </select>
           </div>
 
@@ -765,7 +753,7 @@ export function GerenciamentoSubsidioAuditivoForm() {
                       <div>
                         <div className="font-semibold text-amber-900">Solicitação devolvida ao atendimento</div>
                         <div className="mt-1">
-                          Revise o motivo da devolução e clique em <span className="font-semibold">Editar cadastro</span> para corrigir a documentação antes de reenviar à diretoria.
+                          Revise o motivo da devolução e clique em <span className="font-semibold">Editar cadastro</span> para corrigir a documentação antes de reenviar ao financeiro.
                         </div>
                       </div>
                       <button
@@ -792,31 +780,9 @@ export function GerenciamentoSubsidioAuditivoForm() {
                           onChange={(e) => setTermoSolicitanteFile(e.target.files?.[0] || null)}
                         />
                         <p className="mt-2 text-xs text-emerald-700">
-                          Anexe aqui a solicitação impressa e assinada. Ao confirmar, o sistema envia para aprovação da diretoria.
+                          Anexe aqui a solicitação impressa e assinada. Ao confirmar, o sistema envia para conferência do financeiro.
                         </p>
                       </div>
-                    ) : null}
-
-                    {String(detalhe.ST_SOLICITACAO || "") === "AGUARDANDO_DIRETORIA" && podeAtuarComoDiretoria ? (
-                      <>
-                        <div className="mt-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-sm text-sky-800">
-                          <div className="font-semibold">Análise da diretoria</div>
-                          <p className="mt-1">
-                            Aprove para encaminhar ao financeiro ou informe o motivo caso a solicitação seja reprovada.
-                          </p>
-                        </div>
-                        <div className="mt-3">
-                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Motivo da reprovação
-                          </label>
-                          <textarea
-                            className={`${inputClass} min-h-[100px]`}
-                            value={observacaoAcao}
-                            onChange={(e) => setObservacaoAcao(e.target.value)}
-                            placeholder="Preencha este campo somente se a diretoria reprovar a solicitação."
-                          />
-                        </div>
-                      </>
                     ) : null}
 
                     {String(detalhe.ST_SOLICITACAO || "") === "AGUARDANDO_FINANCEIRO" &&

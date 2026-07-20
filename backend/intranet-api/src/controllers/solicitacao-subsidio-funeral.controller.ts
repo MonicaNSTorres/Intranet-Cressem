@@ -1122,8 +1122,8 @@ export const solicitacaoSubsidioFuneralController = {
                  DS_OBSERVACAO = :DS_OBSERVACAO,
                  DS_MOTIVO_DEVOLUCAO = :DS_MOTIVO_DEVOLUCAO,
                  ST_SOLICITACAO = :ST_SOLICITACAO,
-                 DT_ENVIO_DIRETORIA = CASE WHEN :RETORNANDO_AO_ATENDIMENTO = 1 THEN SYSDATE ELSE DT_ENVIO_DIRETORIA END,
-                 DT_ENVIO_FINANCEIRO = CASE WHEN :RETORNANDO_AO_ATENDIMENTO = 1 THEN NULL ELSE DT_ENVIO_FINANCEIRO END,
+                 DT_ENVIO_DIRETORIA = CASE WHEN :RETORNANDO_AO_ATENDIMENTO = 1 THEN NULL ELSE DT_ENVIO_DIRETORIA END,
+                 DT_ENVIO_FINANCEIRO = CASE WHEN :RETORNANDO_AO_ATENDIMENTO = 1 THEN SYSDATE ELSE DT_ENVIO_FINANCEIRO END,
                  DT_ATUALIZACAO = SYSDATE
            WHERE ID_SUBSIDIO_FUNERAL = :ID_SUBSIDIO_FUNERAL
         `,
@@ -1156,7 +1156,7 @@ export const solicitacaoSubsidioFuneralController = {
           CHAVE_PIX: String(req.body.CHAVE_PIX || "").trim() || null,
           DS_OBSERVACAO: String(req.body.DS_OBSERVACAO || "").trim() || null,
           DS_MOTIVO_DEVOLUCAO: retornandoAoAtendimento ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
-          ST_SOLICITACAO: retornandoAoAtendimento ? "AGUARDANDO_DIRETORIA" : String(atual.ST_SOLICITACAO || "").trim(),
+          ST_SOLICITACAO: retornandoAoAtendimento ? "AGUARDANDO_FINANCEIRO" : String(atual.ST_SOLICITACAO || "").trim(),
           RETORNANDO_AO_ATENDIMENTO: retornandoAoAtendimento ? 1 : 0,
         },
         { autoCommit: false }
@@ -1230,14 +1230,14 @@ export const solicitacaoSubsidioFuneralController = {
         );
       }
 
-      const novoStatus = retornandoAoAtendimento ? "AGUARDANDO_DIRETORIA" : String(atual.ST_SOLICITACAO || "").trim();
+      const novoStatus = retornandoAoAtendimento ? "AGUARDANDO_FINANCEIRO" : String(atual.ST_SOLICITACAO || "").trim();
 
       await inserirHistorico(connection, {
         idSolicitacao,
         statusAnterior: atual.ST_SOLICITACAO,
         statusNovo: novoStatus,
         acao: retornandoAoAtendimento ? "REENVIO_ATENDIMENTO" : "EDICAO",
-        observacao: retornandoAoAtendimento ? "Solicitação corrigida e reenviada à diretoria." : "Solicitação atualizada.",
+        observacao: retornandoAoAtendimento ? "Solicitação corrigida e reenviada ao financeiro." : "Solicitação atualizada.",
         nomeUsuario: req.body.NM_USUARIO_ABERTURA,
         loginUsuario: req.body.LOGIN_USUARIO_ABERTURA,
       });
@@ -1253,10 +1253,10 @@ export const solicitacaoSubsidioFuneralController = {
               ...atual,
               ST_SOLICITACAO: novoStatus,
             },
-            tipo: "DIRETORIA",
-            titulo: "Documentação corrigida aguardando aprovação da diretoria",
+            tipo: "FINANCEIRO",
+            titulo: "Documentação corrigida aguardando conferência do financeiro",
             introducao:
-              "O atendimento atualizou os anexos da solicitação devolvida e o processo voltou para análise da diretoria.",
+              "O atendimento atualizou os anexos da solicitação devolvida e o processo voltou para conferência do financeiro.",
           });
         } catch (emailErr: any) {
           console.error("[SUBSIDIO_FUNERAL] Erro ao enviar e-mail no reenvio da edição:", emailErr);
@@ -1275,7 +1275,7 @@ export const solicitacaoSubsidioFuneralController = {
         motivoDevolucao: retornandoAoAtendimento ? null : String(req.body.DS_MOTIVO_DEVOLUCAO || "").trim() || null,
         notificacao,
         message: retornandoAoAtendimento
-          ? "Solicitação atualizada e reenviada à diretoria com sucesso."
+          ? "Solicitação atualizada e reenviada ao financeiro com sucesso."
           : "Solicitação de subsídio funeral atualizada com sucesso.",
       });
     } catch (err: any) {
@@ -1386,25 +1386,25 @@ export const solicitacaoSubsidioFuneralController = {
       if (acao === "ENVIAR_DIRETORIA" || acao === "ENVIAR_FINANCEIRO" || acao === "REENVIAR") {
         if (!podeAtuarComoSolicitante) {
           return res.status(403).json({
-            error: "Somente quem abriu a solicitação pode enviar à diretoria.",
+            error: "Somente quem abriu a solicitação pode enviar ao financeiro.",
           });
         }
 
         if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_DOCUMENTOS)) {
           return res.status(400).json({
-            error: "Anexe a documentação obrigatória antes de enviar à diretoria.",
+            error: "Anexe a documentação obrigatória antes de enviar ao financeiro.",
           });
         }
 
         if (!possuiAnexo(anexosAtuais, TIPO_ANEXO_TERMO_ASSINADO)) {
           return res.status(400).json({
-            error: "Anexe o termo assinado pelo solicitante antes de enviar à diretoria.",
+            error: "Anexe o termo assinado pelo solicitante antes de enviar ao financeiro.",
           });
         }
 
-        novoStatus = "AGUARDANDO_DIRETORIA";
+        novoStatus = "AGUARDANDO_FINANCEIRO";
         extraSql =
-          ", DT_ENVIO_DIRETORIA = SYSDATE, DT_ENVIO_FINANCEIRO = NULL, DS_MOTIVO_DEVOLUCAO = NULL";
+          ", DT_ENVIO_DIRETORIA = NULL, DT_ENVIO_FINANCEIRO = SYSDATE, DS_MOTIVO_DEVOLUCAO = NULL";
       } else if (acao === "APROVAR_FINANCEIRO") {
         return res.status(400).json({
           error: "No fluxo atual, a diretoria analisa antes do financeiro.",
@@ -1504,10 +1504,10 @@ export const solicitacaoSubsidioFuneralController = {
           notificacao = await enviarEmailFluxoSubsidio(connection, {
             idSolicitacao: id,
             solicitacao: solicitacaoEmail,
-            tipo: "DIRETORIA",
-            titulo: "Aguardando aprovação da diretoria",
+            tipo: "FINANCEIRO",
+            titulo: "Solicitação aguardando conferência do financeiro",
             introducao:
-              "O termo assinado pelo solicitante foi anexado e a solicitação está aguardando análise da diretoria.",
+              "O termo assinado pelo solicitante foi anexado e a solicitação está aguardando conferência do financeiro.",
             observacao,
           });
         } else if (acao === "DEVOLVER_ATENDIMENTO") {

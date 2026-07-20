@@ -1,6 +1,7 @@
 import "dotenv/config";
 import "./src/cron/ferias.cron";
 import "./src/cron/contratos.cron";
+import "./src/cron/boas-vindas-funcionarios.cron";
 import "./src/cron/reserva-sala-lembrete.cron";
 import { iniciarCronLeiloes } from "./src/cron/leiloes.cron";
 import express from "express";

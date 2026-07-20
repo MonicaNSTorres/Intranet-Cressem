@@ -1,4 +1,5 @@
 ﻿import axios from "axios";
+import os from "os";
 
 function getEnv(name: string) {
   const value = process.env[name];
@@ -27,6 +28,47 @@ function getEmailTimeoutMs() {
   const parsed = Number(raw);
   if (Number.isFinite(parsed) && parsed > 0) return parsed;
   return 20000;
+}
+
+function getAllowedEmailIps() {
+  return String(process.env.EMAIL_ALLOWED_IPS || "")
+    .split(",")
+    .map((ip) => ip.trim())
+    .filter(Boolean);
+}
+
+function getLocalIpv4s() {
+  const nets = os.networkInterfaces();
+  const ips = new Set<string>();
+
+  Object.values(nets).forEach((entries) => {
+    (entries || []).forEach((entry) => {
+      if (!entry) return;
+      if (entry.family !== "IPv4") return;
+      if (entry.internal) return;
+      if (!entry.address) return;
+      ips.add(entry.address);
+    });
+  });
+
+  return Array.from(ips);
+}
+
+export function validarHostAutorizadoParaEmail() {
+  const ipsPermitidos = getAllowedEmailIps();
+  const ipsLocais = getLocalIpv4s();
+
+  if (!ipsPermitidos.length) {
+    throw new Error("EMAIL_ALLOWED_IPS não configurado. Envio de e-mail bloqueado por segurança.");
+  }
+
+  const autorizado = ipsLocais.some((ip) => ipsPermitidos.includes(ip));
+
+  if (!autorizado) {
+    throw new Error(
+      `Host sem IP autorizado para envio de e-mail. Locais=[${ipsLocais.join(", ")}] Permitidos=[${ipsPermitidos.join(", ")}]`
+    );
+  }
 }
 
 async function getAccessToken() {
@@ -72,15 +114,23 @@ function normalizeRecipients(to: string | string[]) {
     .filter(Boolean);
 }
 
+export type EmailAttachment = {
+  name: string;
+  contentBytes: string;
+  contentType?: string;
+};
+
 export async function sendEmail(
   to: string | string[],
   subject: string,
-  html: string
+  html: string,
+  attachments: EmailAttachment[] = []
 ) {
   const accessToken = await getAccessToken();
   const departmentalMailbox = getEnv("DEPARTAMENTBOX");
   const emailModoTeste = isTruthyEnv(getOptionalEnv("EMAIL_MODO_TESTE"));
-  const emailDestinoTeste = getOptionalEnv("EMAIL_DESTINO_TESTE");
+  const emailDestinoTeste =
+    getOptionalEnv("EMAIL_DESTINO_TESTE") || "marcelo.bueno@sicoob.com.br";
 
   const recipients = emailModoTeste
     ? normalizeRecipients(emailDestinoTeste)
@@ -92,23 +142,40 @@ export async function sendEmail(
 
   const graphUrl = `https://graph.microsoft.com/v1.0/users/${departmentalMailbox}/sendMail`;
 
+  const message: any = {
+    subject,
+    body: {
+      contentType: "HTML",
+      content: html,
+    },
+    toRecipients: recipients.map((email) => ({
+      emailAddress: {
+        address: email,
+      },
+    })),
+    from: {
+      emailAddress: {
+        address: departmentalMailbox,
+      },
+    },
+  };
+
+  const validAttachments = attachments.filter(
+    (attachment) => attachment?.name && attachment?.contentBytes
+  );
+
+  if (validAttachments.length) {
+    message.attachments = validAttachments.map((attachment) => ({
+      "@odata.type": "#microsoft.graph.fileAttachment",
+      name: attachment.name,
+      contentType: attachment.contentType || "application/octet-stream",
+      contentBytes: attachment.contentBytes,
+    }));
+  }
+
   const payload = {
     message: {
-      subject,
-      body: {
-        contentType: "HTML",
-        content: html,
-      },
-      toRecipients: recipients.map((email) => ({
-        emailAddress: {
-          address: email,
-        },
-      })),
-      from: {
-        emailAddress: {
-          address: departmentalMailbox,
-        },
-      },
+      ...message,
     },
     saveToSentItems: true,
   };
