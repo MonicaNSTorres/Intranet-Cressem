@@ -1076,13 +1076,17 @@ export async function executarNotificacoesPreviaDia17(options?: {
 
 export async function executarTodasNotificacoesFerias() {
   const mensal = await executarNotificacoesMensaisFerias({
-    force: true,
-    origem: "manual",
+    force: false,
+    origem: "startup",
   });
-  const ti = await enviarEmailTiFerias();
 
   return {
     mensal,
-    ti,
+    ti: {
+      enviados: 0,
+      pulado: true,
+      motivo:
+        "Notificações da TI não são executadas no startup. Execução exclusiva pelo cron.",
+    },
   };
 }

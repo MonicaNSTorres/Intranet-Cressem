@@ -72,7 +72,11 @@ import { estoqueConsumiveisController } from "../controllers/estoque-consumiveis
 import { GlpiService } from "../services/glpi.service";
 import { feriasNotificacaoController } from "../controllers/ferias-notificacao.controller";
 import { contratosNotificacaoController } from "../controllers/contratos-notificacao.controller";
-import { buscarAcessosSemana } from "../controllers/dashboard.controller";
+import {
+  buscarAcessosSemana,
+  registrarPaginaAcessada,
+  buscarPaginasMaisAcessadas,
+} from "../controllers/dashboard.controller";
 import { errorLogController } from "../controllers/errorlog.controller";
 import { termosMensaisCaixaController } from "../controllers/termos-mensais-caixa.controller";
 import { reservaSalaReuniaoController } from "../controllers/reserva-sala-reuniao.controller";
@@ -85,7 +89,7 @@ import { solicitacaoSubsidioFuneralController } from "../controllers/solicitacao
 import { solicitacaoSubsidioFuneralPaginadoController } from "../controllers/solicitacao_subsidio_funeral_paginado.controller";
 import { solicitacaoSubsidioAuditivoController } from "../controllers/solicitacao-subsidio-auditivo.controller";
 import { solicitacaoSubsidioAuditivoPaginadoController } from "../controllers/solicitacao_subsidio_auditivo_paginado.controller";
-import { cnab240CoController } from "../controllers/cnab240-cco.controller";
+import { cnab240CcoController } from "../controllers/cnab240-cco.controller";
 
 const routes = Router();
 
@@ -1234,7 +1238,24 @@ routes.get(
 );
 
 //grafico na home
-routes.get("/v1/dashboard/acessos", buscarAcessosSemana);
+routes.get(
+  "/v1/dashboard/acessos",
+  buscarAcessosSemana
+);
+
+//registra a pagina aberta pelo usuario
+routes.post(
+  "/v1/dashboard/paginas/acesso",
+  authMiddleware,
+  registrarPaginaAcessada
+);
+
+//busca as paginas mais acessadas pelo usuario
+routes.get(
+  "/v1/dashboard/paginas/mais-acessadas",
+  authMiddleware,
+  buscarPaginasMaisAcessadas
+);
 
 //erros
 routes.post("/v1/error-logs", errorLogController.criar);
@@ -1367,37 +1388,37 @@ routes.delete("/v1/cnab240/favorecidos/:id", authMiddleware, cnab240FavorecidosC
 routes.get(
   "/v1/cnab240/cco",
   authMiddleware,
-  cnab240CoController.listar
+  cnab240CcoController.listar
 );
 
 routes.get(
   "/v1/cnab240/cco/:id",
   authMiddleware,
-  cnab240CoController.buscarPorId
+  cnab240CcoController.buscarPorId
 );
 
 routes.post(
   "/v1/cnab240/cco",
   authMiddleware,
-  cnab240CoController.criar
+  cnab240CcoController.criar
 );
 
 routes.put(
   "/v1/cnab240/cco/:id",
   authMiddleware,
-  cnab240CoController.atualizar
+  cnab240CcoController.atualizar
 );
 
 routes.delete(
   "/v1/cnab240/cco/:id",
   authMiddleware,
-  cnab240CoController.excluir
+  cnab240CcoController.excluir
 );
 
 routes.post(
   "/v1/cnab240/cco/importar-massa",
   authMiddleware,
-  cnab240CoController.importarEmMassa
+  cnab240CcoController.importarEmMassa
 );
 
 //cnab agencias

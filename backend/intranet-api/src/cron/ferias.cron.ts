@@ -64,7 +64,7 @@ cron.schedule(
   }
 }, 20_000);*/}
 
-setTimeout(async () => {
+{/*setTimeout(async () => {
   try {
     console.log("[CRON FÉRIAS] Startup catch-up mensal...");
 
@@ -89,4 +89,4 @@ setTimeout(async () => {
   } catch (err) {
     console.error("[CRON FÉRIAS] Erro no startup catch-up TI:", err);
   }
-}, 20_000);
+}, 20_000);*/}

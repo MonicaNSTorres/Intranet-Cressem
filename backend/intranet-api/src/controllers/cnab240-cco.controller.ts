@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { cnab240CcoService } from "../services/cnab240_cco.service";
 
-export const cnab240CoController = {
+export const cnab240CcoController = {
     async listar(req: Request, res: Response) {
         try {
             const busca = String(req.query.busca || "");

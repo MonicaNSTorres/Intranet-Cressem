@@ -6926,3 +6926,301 @@ ERRO AO SALVAR NO ORACLE:
 NJS-510: connection to host 10.0.107.216 port 1521 timed out. Request exceeded "transportConnectTimeout" of 20 seconds. (CONNECTION_ID=iszgrtizM666uawN5nCbYg==)
 ==============================
 
+
+==============================
+DATA: 2026-07-20T11:58:35.866Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=8KN6n9mD23mr8x5nW7i4eg==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T11:58:50.498Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=I/8UQC6R9Px3ZgZeCpzBBw==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T11:59:20.501Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=egtL2NrbInhuHA+fHFpnlQ==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T11:59:50.500Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=i3nVG7JsLWk9ALMgkoa6+w==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T12:00:20.512Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=LWpCqmlZauU9JHIq+KLsXQ==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T12:00:50.514Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=LlYixpmOvp4pgzxL13PGdg==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T12:01:20.518Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=008Bc+y0q3Saq1Pbn65eUQ==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T12:01:50.529Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=VSg5CNNKi46IXyHmecXceg==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T12:02:20.534Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=D5ZEUC2Qix0wo7rKanfKAA==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T12:02:59.833Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=oW+/oPiN/SZuG077hwZSxw==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T12:03:29.852Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=H8ikt9Sorl31CaS+Bff2zw==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T12:04:06.798Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=4+2+7geYIeEtwsiaryyf+Q==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+
+
+==============================
+DATA: 2026-07-20T12:04:36.797Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0
+ERRO: Erro ao buscar acessos da semana.
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+settle@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:3599:16
+onloadend@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4144:174
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CONNECTION_ID=uGiydE+A8Bcc0TXc58AvFQ==)
+connect EHOSTUNREACH 10.0.107.216:1521
+==============================
+

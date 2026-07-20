@@ -20,7 +20,9 @@ function toTrim(v: any) {
   return String(v || "").trim();
 }
 
-async function processarLembretesReservaSala() {
+type TipoLembreteReserva = "08H" | "10MIN";
+
+async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) {
   let conn: oracledb.Connection | undefined;
 
   try {
@@ -42,13 +44,27 @@ async function processarLembretesReservaSala() {
         DS_DEPARTAMENTO
       FROM DBACRESSEM.RESERVA_SALA_REUNIAO
       WHERE ST_RESERVA = 'ATIVA'
-        AND NVL(SN_LEMBRETE_ENVIADO, 'N') = 'N'
         AND DS_EMAIL IS NOT NULL
-        AND DT_INICIO BETWEEN CURRENT_TIMESTAMP
-        AND CURRENT_TIMESTAMP + INTERVAL '30' MINUTE
+        AND (
+          (
+            :TIPO_LEMBRETE = '08H'
+            AND NVL(SN_LEMBRETE_08H_ENVIADO, 'N') = 'N'
+            AND TRUNC(DT_INICIO) = TRUNC(CURRENT_TIMESTAMP)
+            AND DT_INICIO > CURRENT_TIMESTAMP
+          )
+          OR
+          (
+            :TIPO_LEMBRETE = '10MIN'
+            AND NVL(SN_LEMBRETE_10MIN_ENVIADO, 'N') = 'N'
+            AND DT_INICIO > CURRENT_TIMESTAMP
+            AND DT_INICIO <= CURRENT_TIMESTAMP + INTERVAL '10' MINUTE
+          )
+        )
       ORDER BY DT_INICIO ASC
       `,
-      {},
+      {
+        TIPO_LEMBRETE: tipoLembrete,
+      },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
@@ -56,11 +72,15 @@ async function processarLembretesReservaSala() {
 
     if (!reservas.length) return;
 
+    const isLembrete08h = tipoLembrete === "08H";
+
     for (const reserva of reservas) {
       try {
         await sendEmail(
           reserva.DS_EMAIL,
-          "Sua reunião começa em 30 minutos",
+          isLembrete08h
+            ? "Lembrete da sua reserva de hoje"
+            : "Sua reunião começa em 10 minutos",
           `
   <div style="
     background:#79B729;
@@ -87,7 +107,9 @@ async function processarLembretesReservaSala() {
           </h1>
 
           <p style="margin-top:8px;font-size:14px;opacity:.95;">
-            Sua reserva começa em aproximadamente 30 minutos.
+            ${isLembrete08h
+              ? "Você possui uma reserva agendada para hoje."
+              : "Sua reserva começa em aproximadamente 10 minutos."}
           </p>
         </td>
       </tr>
@@ -113,7 +135,9 @@ async function processarLembretesReservaSala() {
             <strong>⚠ Atenção</strong>
 
             <p style="margin:8px 0 0 0;">
-              Sua reunião está prestes a começar.
+              ${isLembrete08h
+                ? "Você possui uma reunião agendada para hoje."
+                : "Sua reunião está prestes a começar."}
             </p>
           </div>
 
@@ -182,7 +206,9 @@ async function processarLembretesReservaSala() {
                 font-size:16px;
               "
             >
-              Início em aproximadamente 30 minutos
+              ${isLembrete08h
+                ? "Reserva agendada para hoje"
+                : "Início em aproximadamente 10 minutos"}
             </div>
           </div>
         </td>
@@ -211,7 +237,9 @@ async function processarLembretesReservaSala() {
         if (toTrim(reserva.TP_ESPACO).toUpperCase() === "AUDITORIO") {
           await sendEmail(
             "monica.torres@sicoob.com.br",
-            "Lembrete - Evento no auditório inicia em 30 minutos",
+            isLembrete08h
+              ? "Lembrete - Evento no auditório agendado para hoje"
+              : "Lembrete - Evento no auditório inicia em 10 minutos",
             `
 <div style="
   background:#00AE9D;
@@ -238,7 +266,9 @@ async function processarLembretesReservaSala() {
         </h1>
 
         <p style="margin-top:8px;font-size:14px;opacity:.95;">
-          Evento no auditório inicia em aproximadamente 30 minutos.
+          ${isLembrete08h
+            ? "Existe um evento no auditório agendado para hoje."
+            : "Evento no auditório inicia em aproximadamente 10 minutos."}
         </p>
       </td>
     </tr>
@@ -250,8 +280,9 @@ async function processarLembretesReservaSala() {
         </p>
 
         <p style="color:#4b5563;font-size:15px;">
-          Este é um aviso para ciência de que existe uma reserva do auditório
-          prestes a iniciar.
+          ${isLembrete08h
+            ? "Este é um aviso para ciência de que existe uma reserva do auditório agendada para hoje."
+            : "Este é um aviso para ciência de que existe uma reserva do auditório prestes a iniciar."}
         </p>
 
         <div
@@ -360,7 +391,9 @@ async function processarLembretesReservaSala() {
 
           await sendEmail(
             "julia.a.coutinho@sicoob.com.br",
-            "Lembrete - Evento no auditório inicia em 30 minutos",
+            isLembrete08h
+              ? "Lembrete - Evento no auditório agendado para hoje"
+              : "Lembrete - Evento no auditório inicia em 10 minutos",
             `
 <div style="
   background:#00AE9D;
@@ -387,7 +420,9 @@ async function processarLembretesReservaSala() {
         </h1>
 
         <p style="margin-top:8px;font-size:14px;opacity:.95;">
-          Evento no auditório inicia em aproximadamente 30 minutos.
+          ${isLembrete08h
+            ? "Existe um evento no auditório agendado para hoje."
+            : "Evento no auditório inicia em aproximadamente 10 minutos."}
         </p>
       </td>
     </tr>
@@ -399,9 +434,9 @@ async function processarLembretesReservaSala() {
         </p>
 
         <p style="color:#4b5563;font-size:15px;">
-          Este é um aviso para ciência de que existe uma reserva do auditório
-          prestes a iniciar, caso seja necessária alguma divulgação, cobertura
-          ou apoio da equipe.
+          ${isLembrete08h
+            ? "Este é um aviso para ciência de que existe uma reserva do auditório agendada para hoje, caso seja necessária alguma divulgação, cobertura ou apoio da equipe."
+            : "Este é um aviso para ciência de que existe uma reserva do auditório prestes a iniciar, caso seja necessária alguma divulgação, cobertura ou apoio da equipe."}
         </p>
 
         <div
@@ -513,12 +548,20 @@ async function processarLembretesReservaSala() {
           `
           UPDATE DBACRESSEM.RESERVA_SALA_REUNIAO
           SET
-            SN_LEMBRETE_ENVIADO = 'S',
+            SN_LEMBRETE_08H_ENVIADO = CASE
+              WHEN :TIPO_LEMBRETE = '08H' THEN 'S'
+              ELSE SN_LEMBRETE_08H_ENVIADO
+            END,
+            SN_LEMBRETE_10MIN_ENVIADO = CASE
+              WHEN :TIPO_LEMBRETE = '10MIN' THEN 'S'
+              ELSE SN_LEMBRETE_10MIN_ENVIADO
+            END,
             UPDATED_AT = CURRENT_TIMESTAMP
           WHERE ID_RESERVA_SALA = :ID_RESERVA_SALA
           `,
           {
             ID_RESERVA_SALA: reserva.ID_RESERVA_SALA,
+            TIPO_LEMBRETE: tipoLembrete,
           },
           { autoCommit: false } as any
         );
@@ -526,13 +569,13 @@ async function processarLembretesReservaSala() {
         await conn.commit();
 
         console.log(
-          `[CRON RESERVA SALA] Lembrete enviado para reserva ${reserva.ID_RESERVA_SALA}`
+          `[CRON RESERVA SALA] Lembrete ${tipoLembrete} enviado para reserva ${reserva.ID_RESERVA_SALA}`
         );
       } catch (emailError) {
         await conn.rollback();
 
         console.error(
-          `[CRON RESERVA SALA] Erro ao enviar lembrete da reserva ${reserva.ID_RESERVA_SALA}:`,
+          `[CRON RESERVA SALA] Erro ao enviar lembrete ${tipoLembrete} da reserva ${reserva.ID_RESERVA_SALA}:`,
           emailError
         );
       }
@@ -549,9 +592,27 @@ async function processarLembretesReservaSala() {
 }
 
 export function iniciarCronLembreteReservaSala() {
-  cron.schedule("* * * * *", async () => {
-    await processarLembretesReservaSala();
-  });
+  cron.schedule(
+    "0 8 * * *",
+    async () => {
+      await processarLembretesReservaSala("08H");
+    },
+    {
+      timezone: "America/Sao_Paulo",
+    }
+  );
 
-  console.log("[CRON RESERVA SALA] Cron de lembretes iniciado.");
+  cron.schedule(
+    "* * * * *",
+    async () => {
+      await processarLembretesReservaSala("10MIN");
+    },
+    {
+      timezone: "America/Sao_Paulo",
+    }
+  );
+
+  console.log(
+    "[CRON RESERVA SALA] Cron das 08h e cron de 10 minutos iniciados."
+  );
 }
