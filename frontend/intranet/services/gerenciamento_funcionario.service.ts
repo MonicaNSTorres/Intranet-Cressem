@@ -170,7 +170,7 @@ export async function cadastrarFuncionario(payload: {
 
     formData.append(
         "NR_RAMAL",
-        payload.NR_RAMAL || " "
+        payload.NR_RAMAL || ""
     );
 
     if (payload.CD_GERENCIA !== null) {
@@ -182,7 +182,7 @@ export async function cadastrarFuncionario(payload: {
 
     formData.append(
         "EMAIL",
-        payload.EMAIL || " "
+        payload.EMAIL || ""
     );
 
     formData.append(
@@ -219,7 +219,7 @@ export async function cadastrarFuncionario(payload: {
 
     formData.append(
         "NR_MATRICULA",
-        payload.NR_MATRICULA || " "
+        payload.NR_MATRICULA || ""
     );
 
     formData.append(
@@ -345,7 +345,7 @@ export async function editarFuncionario(payload: {
 
     formData.append(
         "NR_RAMAL",
-        payload.NR_RAMAL || " "
+        payload.NR_RAMAL || ""
     );
 
     formData.append(
@@ -357,7 +357,7 @@ export async function editarFuncionario(payload: {
 
     formData.append(
         "EMAIL",
-        payload.EMAIL || " "
+        payload.EMAIL || ""
     );
 
     formData.append(
@@ -392,7 +392,7 @@ export async function editarFuncionario(payload: {
 
     formData.append(
         "NR_MATRICULA",
-        payload.NR_MATRICULA || " "
+        payload.NR_MATRICULA || ""
     );
 
     formData.append(

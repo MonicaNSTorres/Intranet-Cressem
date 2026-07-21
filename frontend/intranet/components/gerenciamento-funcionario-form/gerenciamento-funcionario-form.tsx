@@ -51,6 +51,14 @@ function formatPhone(value: string) {
     .slice(0, 15);
 }
 
+function removerEspacoInicial(value: string) {
+  return String(value || "").replace(/^\s+/, "");
+}
+
+function limparTexto(value: string) {
+  return removerEspacoInicial(value).trim();
+}
+
 function getNomeArquivo(caminho?: string | null) {
   if (!caminho) return "Nenhum arquivo salvo!";
   const normalizado = String(caminho).replaceAll("\\", "/");
@@ -283,15 +291,15 @@ export function GerenciamentoFuncionarioForm() {
     setModalModo("editar");
     setFuncionarioSelecionado(funcionario);
 
-    setInputNome(funcionario.NM_FUNCIONARIO || "");
+    setInputNome(removerEspacoInicial(funcionario.NM_FUNCIONARIO || ""));
     setInputCPF(funcionario.NR_CPF || "");
-    setInputRG(funcionario.NR_RG || "");
-    setInputCelular(funcionario.NR_CELULAR || "");
-    setInputEmail(funcionario.EMAIL || "");
+    setInputRG(removerEspacoInicial(funcionario.NR_RG || ""));
+    setInputCelular(removerEspacoInicial(funcionario.NR_CELULAR || ""));
+    setInputEmail(removerEspacoInicial(funcionario.EMAIL || ""));
     setInputNascimento(formatarDataInput(funcionario.DT_NASCIMENTO));
-    setInputCC(funcionario.NR_CONTA_CORRENTE || "");
-    setInputRamal(funcionario.NR_RAMAL || "");
-    setInputMatricula(funcionario.NR_MATRICULA || "");
+    setInputCC(removerEspacoInicial(funcionario.NR_CONTA_CORRENTE || ""));
+    setInputRamal(removerEspacoInicial(funcionario.NR_RAMAL || ""));
+    setInputMatricula(removerEspacoInicial(funcionario.NR_MATRICULA || ""));
     setInputAdmissao(formatarDataInput(funcionario.DT_ADMISSAO));
     setInputDemissao(formatarDataInput(funcionario.DT_DESLIGAMENTO));
     setSecSexo(funcionario.SEXO || "");
@@ -417,21 +425,21 @@ export function GerenciamentoFuncionarioForm() {
       setInfo("");
 
       const payload = {
-        NM_FUNCIONARIO: inputNome.trim().toUpperCase(),
+        NM_FUNCIONARIO: limparTexto(inputNome).toUpperCase(),
         DT_NASCIMENTO: inputNascimento,
         ID_SETOR: Number(secSetor),
         ID_CARGO: secCargo ? Number(secCargo) : null,
-        NR_RAMAL: inputRamal || " ",
+        NR_RAMAL: limparTexto(inputRamal),
         CD_GERENCIA: secGerencia ? Number(secGerencia) : null,
-        EMAIL: inputEmail || " ",
+        EMAIL: limparTexto(inputEmail),
         NR_CPF: inputCPF,
-        NR_RG: inputRG,
-        NR_CELULAR: inputCelular,
+        NR_RG: limparTexto(inputRG),
+        NR_CELULAR: limparTexto(inputCelular),
         SEXO: secSexo,
         DT_ADMISSAO: inputAdmissao,
         DT_DESLIGAMENTO: inputDemissao || null,
-        NR_MATRICULA: inputMatricula || " ",
-        NR_CONTA_CORRENTE: inputCC || "0000000000",
+        NR_MATRICULA: limparTexto(inputMatricula),
+        NR_CONTA_CORRENTE: limparTexto(inputCC) || "0000000000",
         DOC_INDENTIDADE: arquivoDocIdentidade,
         COMP_ENDERECO: arquivoCompEndereco,
         FICHA_RH: arquivoFichaRh,
@@ -636,7 +644,7 @@ export function GerenciamentoFuncionarioForm() {
             <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
               <input
                 value={busca}
-                onChange={(e) => setBusca(e.target.value)}
+                onChange={(e) => setBusca(removerEspacoInicial(e.target.value))}
                 placeholder="Digite o nome do funcionário"
                 className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
               />
@@ -914,7 +922,7 @@ export function GerenciamentoFuncionarioForm() {
                   </label>
                   <input
                     value={inputNome}
-                    onChange={(e) => setInputNome(e.target.value)}
+                    onChange={(e) => setInputNome(removerEspacoInicial(e.target.value))}
                     className="w-full rounded border px-3 py-2"
                     placeholder="Digite o nome"
                   />
@@ -938,7 +946,7 @@ export function GerenciamentoFuncionarioForm() {
                   </label>
                   <input
                     value={inputRG}
-                    onChange={(e) => setInputRG(e.target.value)}
+                    onChange={(e) => setInputRG(removerEspacoInicial(e.target.value))}
                     className="w-full rounded border px-3 py-2"
                     placeholder="Digite o RG"
                   />
@@ -950,7 +958,9 @@ export function GerenciamentoFuncionarioForm() {
                   </label>
                   <input
                     value={inputCelular}
-                    onChange={(e) => setInputCelular(formatPhone(e.target.value))}
+                    onChange={(e) =>
+                      setInputCelular(formatPhone(removerEspacoInicial(e.target.value)))
+                    }
                     className="w-full rounded border px-3 py-2"
                     placeholder="Digite o celular"
                   />
@@ -977,7 +987,7 @@ export function GerenciamentoFuncionarioForm() {
                   </label>
                   <input
                     value={inputEmail}
-                    onChange={(e) => setInputEmail(e.target.value)}
+                    onChange={(e) => setInputEmail(removerEspacoInicial(e.target.value))}
                     className="w-full rounded border px-3 py-2"
                     placeholder="Digite o email"
                   />
@@ -1001,7 +1011,7 @@ export function GerenciamentoFuncionarioForm() {
                   </label>
                   <input
                     value={inputCC}
-                    onChange={(e) => setInputCC(e.target.value)}
+                    onChange={(e) => setInputCC(removerEspacoInicial(e.target.value))}
                     className="w-full rounded border px-3 py-2"
                     placeholder="Digite a conta corrente"
                   />
@@ -1013,7 +1023,7 @@ export function GerenciamentoFuncionarioForm() {
                   </label>
                   <input
                     value={inputRamal}
-                    onChange={(e) => setInputRamal(e.target.value)}
+                    onChange={(e) => setInputRamal(removerEspacoInicial(e.target.value))}
                     className="w-full rounded border px-3 py-2"
                     placeholder="Digite o ramal"
                   />
@@ -1025,7 +1035,9 @@ export function GerenciamentoFuncionarioForm() {
                   </label>
                   <input
                     value={inputMatricula}
-                    onChange={(e) => setInputMatricula(e.target.value)}
+                    onChange={(e) =>
+                      setInputMatricula(removerEspacoInicial(e.target.value))
+                    }
                     className="w-full rounded border px-3 py-2"
                     placeholder="Digite a matrícula"
                   />

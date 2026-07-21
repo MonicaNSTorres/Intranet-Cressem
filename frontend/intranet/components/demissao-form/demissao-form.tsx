@@ -783,11 +783,20 @@ export function DemissaoForm() {
           <label className="mb-1 block text-xs font-medium text-gray-600">
             Possui convênio odontológico
           </label>
-          <input
-            readOnly
+          <select
             value={possuiConvenio}
-            className="w-full border px-3 py-2 rounded bg-gray-50 font-medium"
-          />
+            onChange={(e) => {
+              const valor = e.target.value as "Sim" | "Não";
+              setPossuiConvenio(valor);
+              if (valor === "Não") {
+                setValorConvenio(fmtBRL(0));
+              }
+            }}
+            className="w-full border px-3 py-2 rounded font-medium"
+          >
+            <option value="Sim">Sim</option>
+            <option value="Não">Não</option>
+          </select>
         </div>
 
         <div>
@@ -795,13 +804,9 @@ export function DemissaoForm() {
             Valor convênio odontológico
           </label>
           <input
-            readOnly={possuiConvenio === "Não"}
             value={valorConvenio}
-            onChange={(e) => {
-              if (possuiConvenio === "Não") return;
-              setValorConvenio(monetizarDigitacao(e.target.value));
-            }}
-            className={`w-full border px-3 py-2 rounded text-right ${possuiConvenio === "Não" ? "bg-gray-50 cursor-not-allowed" : ""}`}
+            onChange={(e) => setValorConvenio(monetizarDigitacao(e.target.value))}
+            className="w-full border px-3 py-2 rounded text-right"
             placeholder="R$ 0,00"
           />
         </div>

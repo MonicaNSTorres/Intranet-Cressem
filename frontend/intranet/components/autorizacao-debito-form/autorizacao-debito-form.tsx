@@ -38,6 +38,7 @@ export function AutorizacaoDebitoForm() {
   const [nome, setNome] = useState("");
   const [contaAssociado, setContaAssociado] = useState("");
   const [contasCorrentes, setContasCorrentes] = useState<string[]>([]);
+  const [contaManual, setContaManual] = useState(false);
   const [contaCorrente, setContaCorrente] = useState("");
   const [cartao, setCartao] = useState("");
   const [dividaConsolidada, setDividaConsolidada] = useState("");
@@ -94,6 +95,7 @@ export function AutorizacaoDebitoForm() {
     setInfo("");
     setContaAssociado("");
     setContasCorrentes([]);
+    setContaManual(false);
 
     const clean = onlyDigits(cpf);
 
@@ -108,7 +110,9 @@ export function AutorizacaoDebitoForm() {
       const associado = await buscarAssociadoAutorizacaoDebito(clean);
 
       if (!associado?.found) {
-        setErro("Associado não encontrado.");
+        setNome("");
+        setContaManual(true);
+        setInfo("CPF não encontrado. Preencha o nome e a conta manualmente.");
         return;
       }
 
@@ -126,9 +130,22 @@ export function AutorizacaoDebitoForm() {
         setContaAssociado(listaContas[0]);
       }
 
-      setInfo("Dados do associado carregados com sucesso.");
+      if (listaContas.length === 0) {
+        setContaManual(true);
+        setInfo("Dados do associado carregados, mas nenhuma conta corrente foi encontrada. Digite a conta manualmente.");
+      } else {
+        setInfo("Dados do associado carregados com sucesso.");
+      }
     } catch (e: any) {
-      setErro(e?.message || "Não foi possível buscar o associado.");
+      if (e?.response?.status === 404) {
+        setNome("");
+        setContasCorrentes([]);
+        setContaAssociado("");
+        setContaManual(true);
+        setInfo("CPF não encontrado. Preencha o nome e a conta manualmente.");
+      } else {
+        setErro(e?.message || "Não foi possível buscar o associado.");
+      }
     } finally {
       setLoadingBuscar(false);
     }
@@ -268,27 +285,53 @@ export function AutorizacaoDebitoForm() {
         </div>
 
         <div className="md:col-span-3">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Conta
-          </label>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <label className="block text-xs font-medium text-gray-600">
+              Conta
+            </label>
+          </div>
 
-          <select
-            value={contaAssociado}
-            onChange={(e) => setContaAssociado(e.target.value)}
-            className="w-full rounded border px-3 py-2"
-          >
-            <option value="">
-              {contasCorrentes.length > 0
-                ? "Selecione a conta"
-                : "Pesquise o CPF"}
-            </option>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+            {contaManual ? (
+              <input
+                value={contaAssociado}
+                onChange={(e) => setContaAssociado(e.target.value)}
+                className="w-full rounded border px-3 py-2"
+                placeholder="Digite a conta corrente"
+              />
+            ) : (
+              <select
+                value={contaAssociado}
+                onChange={(e) => setContaAssociado(e.target.value)}
+                className="w-full rounded border px-3 py-2"
+              >
+                <option value="">
+                  {contasCorrentes.length > 0
+                    ? "Selecione a conta"
+                    : "Pesquise o CPF"}
+                </option>
 
-            {contasCorrentes.map((conta) => (
-              <option key={conta} value={conta}>
-                {conta}
-              </option>
-            ))}
-          </select>
+                {contasCorrentes.map((conta) => (
+                  <option key={conta} value={conta}>
+                    {conta}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {contasCorrentes.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setContaManual((prev) => !prev);
+                  setContaAssociado("");
+                }}
+                className="rounded bg-secondary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary"
+              >
+                {contaManual ? "Usar lista" : "Manual"}
+              </button>
+            )}
+          </div>
         </div>
 
       </div>

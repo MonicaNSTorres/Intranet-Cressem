@@ -3,8 +3,91 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useRef, useState } from "react";
-import { FaDownload, FaFilePdf, FaImage } from "react-icons/fa";
+import {
+  FaDownload,
+  FaFileAlt,
+  FaFilePdf,
+  FaFileWord,
+  FaGripVertical,
+  FaImage,
+  FaTrash,
+} from "react-icons/fa";
 import { converterArquivos } from "@/services/conversor_arquivos.service";
+
+const conversoesComuns = [
+  {
+    de: "pdf",
+    para: "pdfa",
+    titulo: "PDF para PDF/A",
+    descricao: "Ideal para arquivamento, auditoria e documentos oficiais.",
+    detalhe: "Gera um PDF compatível com preservação documental.",
+    icone: FaFilePdf,
+  },
+  {
+    de: "pdf",
+    para: "png",
+    titulo: "PDF para PNG",
+    descricao: "Transforma cada página em imagem com boa qualidade.",
+    detalhe: "Cada página do PDF será uma imagem PNG dentro do ZIP.",
+    icone: FaImage,
+  },
+  {
+    de: "pdf",
+    para: "jpg",
+    titulo: "PDF para JPG",
+    descricao: "Útil para envio rápido, prévias e visualização em sistemas.",
+    detalhe: "Cada página do PDF será uma imagem JPG dentro do ZIP.",
+    icone: FaImage,
+  },
+  {
+    de: "pdf",
+    para: "svg",
+    titulo: "PDF para SVG",
+    descricao: "Gera imagens vetoriais para uso técnico ou visual.",
+    detalhe: "Cada página do PDF será um SVG dentro do ZIP.",
+    icone: FaImage,
+  },
+  {
+    de: "pdf",
+    para: "docx",
+    titulo: "PDF para DOCX",
+    descricao: "Extrai o texto do PDF para um documento Word editável.",
+    detalhe: "Gera um DOCX editável com o texto extraído. PDFs escaneados precisam de OCR para virar texto.",
+    icone: FaFileWord,
+  },
+  {
+    de: "docx",
+    para: "pdf",
+    titulo: "DOCX para PDF",
+    descricao: "Transforma documentos Word em PDF para envio ou arquivamento.",
+    detalhe: "Gera um PDF para cada arquivo DOCX enviado.",
+    icone: FaFilePdf,
+  },
+  {
+    de: "imagem",
+    para: "pdf",
+    titulo: "Imagem para PDF",
+    descricao: "Junta imagens PNG ou JPG em um único PDF.",
+    detalhe: "As imagens selecionadas serão agrupadas em um PDF dentro do ZIP.",
+    icone: FaFileAlt,
+  },
+  {
+    de: "imagem",
+    para: "jpg",
+    titulo: "Imagem para JPG",
+    descricao: "Padroniza imagens PNG/JPG em JPG.",
+    detalhe: "Gera uma imagem JPG para cada arquivo enviado.",
+    icone: FaImage,
+  },
+  {
+    de: "imagem",
+    para: "png",
+    titulo: "Imagem para PNG",
+    descricao: "Padroniza imagens PNG/JPG em PNG.",
+    detalhe: "Gera uma imagem PNG para cada arquivo enviado.",
+    icone: FaImage,
+  },
+];
 
 export function ConversorArquivosForm() {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -15,6 +98,45 @@ export function ConversorArquivosForm() {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
+  const [arquivoArrastadoIndex, setArquivoArrastadoIndex] = useState<number | null>(null);
+
+  const conversaoSelecionada = conversoesComuns.find(
+    (conversao) => conversao.de === formatoDe && conversao.para === formatoPara
+  );
+
+  const origemImagem = formatoDe === "imagem";
+  const origemDocx = formatoDe === "docx";
+  const permiteOrdenarImagens = origemImagem;
+  const textoTipoArquivo = !formatoDe
+    ? "arquivos"
+    : origemImagem
+    ? "imagens PNG ou JPG"
+    : origemDocx
+      ? "arquivos DOCX"
+      : "arquivos PDF";
+  const acceptArquivos = !formatoDe
+    ? ".pdf,.docx,image/png,image/jpeg"
+    : origemImagem
+    ? "image/png,image/jpeg"
+    : origemDocx
+      ? ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      : "application/pdf";
+
+  function selecionarConversao(de: string, para: string) {
+    setErro("");
+    setInfo("");
+    setFormatoDe(de);
+    setFormatoPara(para);
+    limparSelecao();
+  }
+
+  function onFormatoDeChange(valor: string) {
+    setErro("");
+    setInfo("");
+    setFormatoDe(valor);
+    setFormatoPara(valor === "imagem" ? "pdf" : valor === "docx" ? "pdf" : "");
+    limparSelecao();
+  }
 
   function limparSelecao() {
     if (inputRef.current) {
@@ -22,6 +144,32 @@ export function ConversorArquivosForm() {
     }
 
     setFiles([]);
+    setArquivoArrastadoIndex(null);
+  }
+
+  function limparInputArquivo() {
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  }
+
+  function removerArquivo(indexParaRemover: number) {
+    setFiles((arquivosAtuais) =>
+      arquivosAtuais.filter((_, index) => index !== indexParaRemover)
+    );
+  }
+
+  function ordenarArquivo(indexOrigem: number, indexDestino: number) {
+    if (indexOrigem === indexDestino) {
+      return;
+    }
+
+    setFiles((arquivosAtuais) => {
+      const novosArquivos = [...arquivosAtuais];
+      const [arquivoMovido] = novosArquivos.splice(indexOrigem, 1);
+      novosArquivos.splice(indexDestino, 0, arquivoMovido);
+      return novosArquivos;
+    });
   }
 
   function onSelecionarClick() {
@@ -37,22 +185,37 @@ export function ConversorArquivosForm() {
     const lista = Array.from(e.target.files || []);
 
     if (!lista.length) {
-      limparSelecao();
+      limparInputArquivo();
+      return;
+    }
+
+    if (!formatoDe) {
+      setErro("Selecione o formato inicial antes de escolher os arquivos.");
+      limparInputArquivo();
       return;
     }
 
     const arquivosInvalidos = lista.filter((file) => {
       const ext = file.name.split(".").pop()?.toLowerCase();
+      if (origemImagem) {
+        return !["png", "jpg", "jpeg"].includes(ext || "");
+      }
+
+      if (origemDocx) {
+        return ext !== "docx";
+      }
+
       return ext !== "pdf" || file.type !== "application/pdf";
     });
 
     if (arquivosInvalidos.length > 0) {
-      setErro("Selecione apenas arquivos PDF.");
-      limparSelecao();
+      setErro(`Selecione apenas ${textoTipoArquivo}.`);
+      limparInputArquivo();
       return;
     }
 
-    setFiles(lista);
+    setFiles((arquivosAtuais) => (origemImagem ? [...arquivosAtuais, ...lista] : lista));
+    limparInputArquivo();
   }
 
   async function onConverter() {
@@ -60,7 +223,7 @@ export function ConversorArquivosForm() {
     setInfo("");
 
     if (!files.length) {
-      setErro("Selecione pelo menos um arquivo PDF.");
+      setErro(`Selecione pelo menos um arquivo de origem: ${textoTipoArquivo}.`);
       return;
     }
 
@@ -110,11 +273,65 @@ export function ConversorArquivosForm() {
         <div className="mt-3 text-sm text-slate-700">
           <p className="mb-2">Para converter seu arquivo:</p>
           <ol className="list-decimal space-y-1 pl-5">
-            <li>Clique em <strong>Selecionar</strong> e escolha o arquivo PDF desejado.</li>
-            <li>Selecione o formato inicial e o formato final da conversão.</li>
+            <li>Clique em <strong>Selecionar</strong> e escolha os arquivos de origem.</li>
+            <li>Escolha uma conversão comum nos cards ou selecione manualmente.</li>
             <li>Clique em <strong>Converter</strong> e aguarde o processamento.</li>
             <li>O download de um arquivo <strong>.zip</strong> será iniciado automaticamente.</li>
           </ol>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <div className="mb-2">
+          <h3 className="text-sm font-semibold text-slate-800">
+            Conversões mais comuns
+          </h3>
+          <p className="text-xs text-slate-500">
+            Clique em uma opção para preencher os formatos automaticamente.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {conversoesComuns.map((conversao) => {
+            const Icone = conversao.icone;
+            const selecionada =
+              formatoDe === conversao.de && formatoPara === conversao.para;
+
+            return (
+              <button
+                key={`${conversao.de}-${conversao.para}`}
+                type="button"
+                onClick={() => selecionarConversao(conversao.de, conversao.para)}
+                disabled={loading}
+                className={`cursor-pointer rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-70 ${
+                  selecionada
+                    ? "border-emerald-300 bg-emerald-50 shadow-sm"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                      selecionada
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    <Icone />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {conversao.titulo}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      {conversao.descricao}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -144,7 +361,7 @@ export function ConversorArquivosForm() {
           ref={inputRef}
           type="file"
           multiple
-          accept="application/pdf"
+          accept={acceptArquivos}
           className="hidden"
           onChange={onArquivosChange}
         />
@@ -152,18 +369,69 @@ export function ConversorArquivosForm() {
 
       {files.length > 0 && (
         <div className="mt-4 rounded border border-slate-200 bg-slate-50 p-3">
-          <p className="mb-2 text-xs font-medium text-gray-600">
-            Arquivos selecionados
-          </p>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-medium text-gray-600">
+                Arquivos selecionados
+              </p>
+              {permiteOrdenarImagens && (
+                <p className="mt-1 text-xs text-slate-500">
+                  Arraste para ordenar os arquivos antes da conversão. Se selecionar mais imagens,
+                  elas entram no final da lista.
+                </p>
+              )}
+            </div>
+          </div>
 
           <ul className="space-y-2">
             {files.map((file, index) => (
               <li
-                key={`${file.name}-${index}`}
-                className="flex items-center gap-2 text-sm text-gray-700"
+                key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                draggable={permiteOrdenarImagens && !loading}
+                onDragStart={() => setArquivoArrastadoIndex(index)}
+                onDragOver={(event) => {
+                  if (permiteOrdenarImagens) {
+                    event.preventDefault();
+                  }
+                }}
+                onDrop={() => {
+                  if (arquivoArrastadoIndex !== null) {
+                    ordenarArquivo(arquivoArrastadoIndex, index);
+                  }
+                  setArquivoArrastadoIndex(null);
+                }}
+                onDragEnd={() => setArquivoArrastadoIndex(null)}
+                className={`flex items-center gap-3 rounded-lg border bg-white px-3 py-2 text-sm text-gray-700 transition ${
+                  permiteOrdenarImagens
+                    ? "cursor-grab active:cursor-grabbing"
+                    : ""
+                } ${
+                  arquivoArrastadoIndex === index
+                    ? "border-emerald-300 bg-emerald-50 opacity-80"
+                    : "border-slate-200"
+                }`}
               >
-                <FaFilePdf className="text-red-500" />
-                <span className="truncate">{file.name}</span>
+                {permiteOrdenarImagens && (
+                  <FaGripVertical className="shrink-0 text-slate-400" />
+                )}
+                {origemImagem ? (
+                  <FaImage className="shrink-0 text-sky-500" />
+                ) : origemDocx ? (
+                  <FaFileWord className="shrink-0 text-blue-600" />
+                ) : (
+                  <FaFilePdf className="shrink-0 text-red-500" />
+                )}
+                <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removerArquivo(index)}
+                  disabled={loading}
+                  className="inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Remover arquivo"
+                >
+                  <FaTrash />
+                  Remover
+                </button>
               </li>
             ))}
           </ul>
@@ -177,12 +445,14 @@ export function ConversorArquivosForm() {
           </label>
           <select
             value={formatoDe}
-            onChange={(e) => setFormatoDe(e.target.value)}
+            onChange={(e) => onFormatoDeChange(e.target.value)}
             className="w-full rounded border px-3 py-2"
             disabled={loading}
           >
             <option value="">Selecione</option>
             <option value="pdf">PDF</option>
+            <option value="imagem">Imagem (PNG/JPG)</option>
+            <option value="docx">DOCX</option>
           </select>
         </div>
 
@@ -196,16 +466,34 @@ export function ConversorArquivosForm() {
             className="w-full rounded border px-3 py-2"
             disabled={loading}
           >
-            <option value="">Selecione</option>
-            <option value="pdfa">PDF/A</option>
-            <option value="png">Imagem (PNG)</option>
+            {!formatoDe ? (
+              <option value="">Selecione o formato inicial</option>
+            ) : origemImagem ? (
+              <>
+                <option value="pdf">PDF</option>
+                <option value="png">Imagem (PNG)</option>
+                <option value="jpg">Imagem (JPG)</option>
+              </>
+            ) : origemDocx ? (
+              <option value="pdf">PDF</option>
+            ) : (
+              <>
+                <option value="">Selecione</option>
+                <option value="pdfa">PDF/A</option>
+                <option value="png">Imagem (PNG)</option>
+                <option value="jpg">Imagem (JPG)</option>
+                <option value="docx">Documento Word (DOCX)</option>
+                <option value="txt">Texto (TXT)</option>
+                <option value="svg">Imagem vetorial (SVG)</option>
+              </>
+            )}
           </select>
         </div>
       </div>
 
-      {formatoPara === "png" && (
+      {conversaoSelecionada && (
         <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Cada página do PDF será convertida em uma imagem PNG dentro do arquivo ZIP.
+          {conversaoSelecionada.detalhe}
         </div>
       )}
 
@@ -230,7 +518,7 @@ export function ConversorArquivosForm() {
           disabled={loading}
           className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
         >
-          {formatoPara === "png" ? <FaImage /> : <FaDownload />}
+          {["png", "jpg", "svg"].includes(formatoPara) ? <FaImage /> : <FaDownload />}
           {loading ? "Convertendo..." : "Converter"}
         </button>
       </div>

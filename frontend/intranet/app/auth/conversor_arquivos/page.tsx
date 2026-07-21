@@ -26,7 +26,7 @@ export default function ConversorArquivosPage() {
               </h1>
 
               <p className="text-sm text-gray-600 mt-1">
-                Converta arquivos PDF para PDF/A ou imagem e faça download em ZIP.
+                Converta PDFs, DOCX e imagens nos formatos mais usados no dia a dia.
               </p>
             </div>
 

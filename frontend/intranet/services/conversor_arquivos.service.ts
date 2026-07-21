@@ -19,7 +19,7 @@ export async function converterArquivos(
     formData,
     {
       responseType: "blob",
-      timeout: 120000,
+      timeout: 300000,
     }
   );
 

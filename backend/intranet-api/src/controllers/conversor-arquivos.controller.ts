@@ -6,6 +6,9 @@ import path from "path";
 import os from "os";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { Document, Packer, Paragraph, TextRun } from "docx";
+import { PDFDocument } from "pdf-lib";
+import { pathToFileURL } from "url";
 
 const execFileAsync = promisify(execFile);
 
@@ -20,9 +23,46 @@ function removerExtensaoPdf(nome: string) {
     return nome.replace(/\.pdf$/i, "");
 }
 
+function removerExtensao(nome: string) {
+    return nome.replace(/\.[^.]+$/i, "");
+}
+
 function isPdf(file: Express.Multer.File) {
     const mime = String(file.mimetype || "").toLowerCase().trim();
     return mime === "application/pdf" || /\.pdf$/i.test(file.originalname || "");
+}
+
+function isDocx(file: Express.Multer.File) {
+    const mime = String(file.mimetype || "").toLowerCase().trim();
+    return (
+        mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        /\.docx$/i.test(file.originalname || "")
+    );
+}
+
+function isImagemParaPdf(file: Express.Multer.File) {
+    const mime = String(file.mimetype || "").toLowerCase().trim();
+    return (
+        mime === "image/png" ||
+        mime === "image/jpeg" ||
+        /\.(png|jpe?g)$/i.test(file.originalname || "")
+    );
+}
+
+function isImagem(file: Express.Multer.File) {
+    return isImagemParaPdf(file);
+}
+
+function getPngDimensions(buffer: Buffer) {
+    const assinaturaPng = "89504e470d0a1a0a";
+    if (buffer.subarray(0, 8).toString("hex") !== assinaturaPng) {
+        return { width: 1200, height: 1600 };
+    }
+
+    return {
+        width: buffer.readUInt32BE(16),
+        height: buffer.readUInt32BE(20),
+    };
 }
 
 async function criarPdfaDefTemporario(
@@ -106,6 +146,176 @@ async function converterPdfParaPngs(
     ]);
 }
 
+async function getLibreOfficeExecutable(): Promise<string> {
+    const candidatos = [
+        process.env.LIBREOFFICE_PATH,
+        "soffice.com",
+        "soffice",
+        "libreoffice",
+        "C:/Program Files/LibreOffice/program/soffice.com",
+        "C:/Program Files/LibreOffice/program/soffice.exe",
+        "C:/Program Files (x86)/LibreOffice/program/soffice.com",
+        "C:/Program Files (x86)/LibreOffice/program/soffice.exe",
+    ].filter(Boolean) as string[];
+
+    for (const candidato of candidatos) {
+        try {
+            await execFileAsync(candidato, ["--version"], { windowsHide: true });
+            return candidato;
+        } catch {
+        }
+    }
+
+    throw new Error(
+        "LibreOffice não encontrado. Instale o LibreOffice no servidor ou configure a variável LIBREOFFICE_PATH apontando para o soffice.exe."
+    );
+}
+
+async function getImageMagickExecutable(): Promise<string> {
+    const candidatos = [
+        process.env.IMAGEMAGICK_PATH,
+        "magick",
+    ].filter(Boolean) as string[];
+
+    for (const candidato of candidatos) {
+        try {
+            await execFileAsync(candidato, ["-version"]);
+            return candidato;
+        } catch {
+        }
+    }
+
+    throw new Error(
+        "ImageMagick não encontrado. Instale o ImageMagick no servidor ou configure a variável IMAGEMAGICK_PATH apontando para o magick.exe."
+    );
+}
+
+async function converterPdfParaJpgs(
+    gsExec: string,
+    inputPdfPath: string,
+    outputPattern: string
+) {
+    await execFileAsync(gsExec, [
+        "-dSAFER",
+        "-dBATCH",
+        "-dNOPAUSE",
+        "-sDEVICE=jpeg",
+        "-dJPEGQ=92",
+        "-r200",
+        `-sOutputFile=${outputPattern}`,
+        inputPdfPath,
+    ]);
+}
+
+async function converterPdfParaTxt(
+    gsExec: string,
+    inputPdfPath: string,
+    outputTxtPath: string
+) {
+    await execFileAsync(gsExec, [
+        "-dSAFER",
+        "-dBATCH",
+        "-dNOPAUSE",
+        "-sDEVICE=txtwrite",
+        `-sOutputFile=${outputTxtPath}`,
+        inputPdfPath,
+    ]);
+}
+
+async function converterPdfParaDocxPorTexto(
+    gsExec: string,
+    inputPdfPath: string,
+    outputDocxPath: string,
+    tempDir: string
+) {
+    const outputTxtPath = path.join(
+        tempDir,
+        `${removerExtensaoPdf(path.basename(inputPdfPath))}_extraido.txt`
+    );
+
+    await converterPdfParaTxt(gsExec, inputPdfPath, outputTxtPath);
+
+    const conteudo = await fsp.readFile(outputTxtPath, "utf8");
+    const linhas = conteudo
+        .replace(/\f/g, "\n")
+        .split(/\r?\n/)
+        .map((linha) => linha.trimEnd());
+
+    const linhasComConteudo = linhas.some((linha) => linha.trim().length > 0)
+        ? linhas
+        : [
+            "Não foi possível extrair texto deste PDF.",
+            "Se o arquivo for uma imagem digitalizada, será necessário OCR para transformar em texto editável.",
+        ];
+
+    const doc = new Document({
+        sections: [
+            {
+                children: linhasComConteudo.map(
+                    (linha) =>
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: linha || " ",
+                                }),
+                            ],
+                        })
+                ),
+            },
+        ],
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    await fsp.writeFile(outputDocxPath, buffer);
+
+    return outputDocxPath;
+}
+
+async function converterPdfParaSvgs(
+    gsExec: string,
+    inputPdfPath: string,
+    outputPattern: string
+) {
+    try {
+        await execFileAsync(gsExec, [
+            "-dSAFER",
+            "-dBATCH",
+            "-dNOPAUSE",
+            "-sDEVICE=svg",
+            `-sOutputFile=${outputPattern}`,
+            inputPdfPath,
+        ]);
+    } catch {
+        const outputDir = path.dirname(outputPattern);
+        const pngPattern = outputPattern.replace(/\.svg$/i, ".png");
+        const nomePrefixo = path.basename(pngPattern).split("%03d")[0];
+
+        await converterPdfParaPngs(gsExec, inputPdfPath, pngPattern);
+
+        const saidas = await fsp.readdir(outputDir);
+        const paginasPng = saidas
+            .filter((nome) => nome.startsWith(nomePrefixo) && nome.endsWith(".png"))
+            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+        if (!paginasPng.length) {
+            throw new Error("Ghostscript não conseguiu gerar SVG nem PNG de fallback para este PDF.");
+        }
+
+        for (const nomePng of paginasPng) {
+            const pngPath = path.join(outputDir, nomePng);
+            const pngBuffer = await fsp.readFile(pngPath);
+            const { width, height } = getPngDimensions(pngBuffer);
+            const base64 = pngBuffer.toString("base64");
+            const svgPath = path.join(outputDir, nomePng.replace(/\.png$/i, ".svg"));
+            const svgConteudo = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <image href="data:image/png;base64,${base64}" width="${width}" height="${height}" />
+</svg>`;
+
+            await fsp.writeFile(svgPath, svgConteudo, "utf8");
+        }
+    }
+}
+
 async function converterPdfParaPdfA(
     gsExec: string,
     inputPdfPath: string,
@@ -128,10 +338,10 @@ async function converterPdfParaPdfA(
 
     if (!iccProfile) {
         const hint = iccEnv
-            ? `Perfil ICC n�o encontrado em: ${iccEnv}`
-            : "Vari�vel GS_ICC_PROFILE n�o configurada";
+            ? `Perfil ICC não encontrado em: ${iccEnv}`
+            : "Variável GS_ICC_PROFILE não configurada";
         throw new Error(
-            `${hint}. Configure GS_ICC_PROFILE para um arquivo v�lido, por exemplo: C:/Program Files/gs/gs10.07.0/iccprofiles/default_rgb.icc`
+            `${hint}. Configure GS_ICC_PROFILE para um arquivo válido, por exemplo: C:/Program Files/gs/gs10.07.0/iccprofiles/default_rgb.icc`
         );
     }
 
@@ -148,6 +358,93 @@ async function converterPdfParaPdfA(
         pdfaDefPath,
         inputPdfPath,
     ]);
+}
+
+async function converterComLibreOffice(
+    libreOfficeExec: string,
+    inputPath: string,
+    outputDir: string,
+    formatoDestino: "pdf"
+) {
+    const profileDir = path.join(path.dirname(outputDir), "libreoffice-profile");
+    await fsp.mkdir(profileDir, { recursive: true });
+
+    await execFileAsync(libreOfficeExec, [
+        `-env:UserInstallation=${pathToFileURL(profileDir).href}`,
+        "--headless",
+        "--invisible",
+        "--nologo",
+        "--nodefault",
+        "--nofirststartwizard",
+        "--norestore",
+        "--nolockcheck",
+        "--convert-to",
+        formatoDestino,
+        "--outdir",
+        outputDir,
+        inputPath,
+    ], {
+        windowsHide: true,
+        env: {
+            ...process.env,
+            SAL_USE_VCLPLUGIN: process.env.SAL_USE_VCLPLUGIN || "gen",
+        },
+    });
+
+    const nomeSaida = `${removerExtensao(path.basename(inputPath))}.${formatoDestino}`;
+    const outputPath = path.join(outputDir, nomeSaida);
+
+    if (!fs.existsSync(outputPath)) {
+        throw new Error(
+            `LibreOffice não gerou o arquivo ${nomeSaida}. Verifique se o formato de conversão é suportado no servidor.`
+        );
+    }
+
+    return outputPath;
+}
+
+async function converterImagem(
+    imageMagickExec: string,
+    inputPath: string,
+    outputPath: string,
+    formatoDestino: "png" | "jpg" | "jpeg"
+) {
+    const args =
+        formatoDestino === "jpg" || formatoDestino === "jpeg"
+            ? [inputPath, "-background", "white", "-alpha", "remove", "-alpha", "off", outputPath]
+            : [inputPath, outputPath];
+
+    await execFileAsync(imageMagickExec, args);
+}
+
+async function converterImagensParaPdf(
+    files: Express.Multer.File[],
+    outputPdfPath: string
+) {
+    const pdfDoc = await PDFDocument.create();
+
+    for (const file of files) {
+        const ext = file.originalname.split(".").pop()?.toLowerCase();
+        const mime = String(file.mimetype || "").toLowerCase().trim();
+
+        const imagem =
+            mime === "image/png" || ext === "png"
+                ? await pdfDoc.embedPng(file.buffer)
+                : await pdfDoc.embedJpg(file.buffer);
+
+        const { width, height } = imagem.scale(1);
+        const page = pdfDoc.addPage([width, height]);
+
+        page.drawImage(imagem, {
+            x: 0,
+            y: 0,
+            width,
+            height,
+        });
+    }
+
+    const pdfBytes = await pdfDoc.save();
+    await fsp.writeFile(outputPdfPath, pdfBytes);
 }
 
 export const conversorArquivosController = {
@@ -170,27 +467,65 @@ export const conversorArquivosController = {
                 });
             }
 
-            if (String(de).toLowerCase() !== "pdf") {
+            const formatoOrigem = String(de).toLowerCase();
+            const formatoDestino = String(para).toLowerCase();
+
+            if (!["pdf", "imagem", "image", "docx"].includes(formatoOrigem)) {
                 return res.status(400).json({
-                    error: "No momento, o formato de origem suportado é apenas PDF.",
+                    error: "Formato de origem inválido. Use 'pdf', 'imagem' ou 'docx'.",
                 });
             }
 
-            if (!["pdfa", "png"].includes(String(para).toLowerCase())) {
+            if (formatoOrigem === "pdf" && !["pdfa", "png", "jpg", "jpeg", "txt", "svg", "docx"].includes(formatoDestino)) {
                 return res.status(400).json({
-                    error: "Formato de destino inválido. Use 'pdfa' ou 'png'.",
+                    error: "Formato de destino inválido. Use 'pdfa', 'png', 'jpg', 'txt', 'svg' ou 'docx'.",
+                });
+            }
+
+            if (["imagem", "image"].includes(formatoOrigem) && !["pdf", "png", "jpg", "jpeg"].includes(formatoDestino)) {
+                return res.status(400).json({
+                    error: "Para imagens, use destino 'pdf', 'png' ou 'jpg'.",
+                });
+            }
+
+            if (formatoOrigem === "docx" && formatoDestino !== "pdf") {
+                return res.status(400).json({
+                    error: "Para DOCX, o formato de destino suportado é PDF.",
                 });
             }
 
             for (const file of files) {
-                if (!isPdf(file)) {
+                if (formatoOrigem === "pdf" && !isPdf(file)) {
                     return res.status(400).json({
                         error: `Arquivo inválido: ${file.originalname}. Envie apenas PDFs.`,
                     });
                 }
+
+                if (["imagem", "image"].includes(formatoOrigem) && !isImagem(file)) {
+                    return res.status(400).json({
+                        error: `Arquivo inválido: ${file.originalname}. Envie apenas imagens PNG ou JPG.`,
+                    });
+                }
+
+                if (formatoOrigem === "docx" && !isDocx(file)) {
+                    return res.status(400).json({
+                        error: `Arquivo inválido: ${file.originalname}. Envie apenas arquivos DOCX.`,
+                    });
+                }
             }
 
-            const gsExec = await getGhostscriptExecutable();
+            const precisaGhostscript =
+                formatoOrigem === "pdf" &&
+                ["pdfa", "png", "jpg", "jpeg", "txt", "svg", "docx"].includes(formatoDestino);
+            const precisaLibreOffice =
+                formatoOrigem === "docx" && formatoDestino === "pdf";
+            const precisaImageMagick =
+                ["imagem", "image"].includes(formatoOrigem) &&
+                ["png", "jpg", "jpeg"].includes(formatoDestino);
+
+            const gsExec = precisaGhostscript ? await getGhostscriptExecutable() : "";
+            const libreOfficeExec = precisaLibreOffice ? await getLibreOfficeExecutable() : "";
+            const imageMagickExec = precisaImageMagick ? await getImageMagickExecutable() : "";
 
             tempRootDir = await criarDiretorioTemporario("conversor-arquivos-");
 
@@ -202,7 +537,68 @@ export const conversorArquivosController = {
 
             const arquivosGerados: Array<{ absPath: string; zipName: string }> = [];
 
+            if (["imagem", "image"].includes(formatoOrigem) && formatoDestino === "pdf") {
+                const outputPdfPath = path.join(outputDir, "imagens_convertidas.pdf");
+
+                await converterImagensParaPdf(files, outputPdfPath);
+
+                arquivosGerados.push({
+                    absPath: outputPdfPath,
+                    zipName: "imagens_convertidas.pdf",
+                });
+            }
+
+            if (["imagem", "image"].includes(formatoOrigem) && ["png", "jpg", "jpeg"].includes(formatoDestino)) {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const nomeOriginalSeguro = nomeSeguro(file.originalname);
+                    const nomeBase = removerExtensao(nomeOriginalSeguro);
+                    const extensaoDestino = formatoDestino === "jpeg" ? "jpg" : formatoDestino;
+                    const inputImagePath = path.join(inputDir, `${i + 1}_${nomeOriginalSeguro}`);
+                    const outputImagePath = path.join(outputDir, `${nomeBase}.${extensaoDestino}`);
+
+                    await fsp.writeFile(inputImagePath, file.buffer);
+                    await converterImagem(
+                        imageMagickExec,
+                        inputImagePath,
+                        outputImagePath,
+                        extensaoDestino as "png" | "jpg"
+                    );
+
+                    arquivosGerados.push({
+                        absPath: outputImagePath,
+                        zipName: `${nomeBase}.${extensaoDestino}`,
+                    });
+                }
+            }
+
+            if (formatoOrigem === "docx" && formatoDestino === "pdf") {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const nomeOriginalSeguro = nomeSeguro(file.originalname);
+                    const inputDocxPath = path.join(inputDir, `${i + 1}_${nomeOriginalSeguro}`);
+
+                    await fsp.writeFile(inputDocxPath, file.buffer);
+
+                    const outputPdfPath = await converterComLibreOffice(
+                        libreOfficeExec,
+                        inputDocxPath,
+                        outputDir,
+                        "pdf"
+                    );
+
+                    arquivosGerados.push({
+                        absPath: outputPdfPath,
+                        zipName: `${removerExtensao(nomeOriginalSeguro)}.pdf`,
+                    });
+                }
+            }
+
             for (let i = 0; i < files.length; i++) {
+                if (formatoOrigem !== "pdf") {
+                    continue;
+                }
+
                 const file = files[i];
                 const nomeOriginalSeguro = nomeSeguro(file.originalname);
                 const nomeBase = removerExtensaoPdf(nomeOriginalSeguro);
@@ -210,7 +606,23 @@ export const conversorArquivosController = {
                 const inputPdfPath = path.join(inputDir, `${i + 1}_${nomeOriginalSeguro}`);
                 await fsp.writeFile(inputPdfPath, file.buffer);
 
-                if (String(para).toLowerCase() === "pdfa") {
+                if (formatoDestino === "docx") {
+                    const outputDocxPath = path.join(outputDir, `${nomeBase}.docx`);
+
+                    await converterPdfParaDocxPorTexto(
+                        gsExec,
+                        inputPdfPath,
+                        outputDocxPath,
+                        tempRootDir
+                    );
+
+                    arquivosGerados.push({
+                        absPath: outputDocxPath,
+                        zipName: `${nomeBase}.docx`,
+                    });
+                }
+
+                if (formatoDestino === "pdfa") {
                     const outputPdfPath = path.join(outputDir, `${nomeBase}_pdfa.pdf`);
 
                     await converterPdfParaPdfA(
@@ -226,7 +638,7 @@ export const conversorArquivosController = {
                     });
                 }
 
-                if (String(para).toLowerCase() === "png") {
+                if (formatoDestino === "png") {
                     const pattern = path.join(outputDir, `${nomeBase}_pagina_%03d.png`);
 
                     await converterPdfParaPngs(gsExec, inputPdfPath, pattern);
@@ -243,6 +655,73 @@ export const conversorArquivosController = {
                     if (!paginasGeradas.length) {
                         throw new Error(
                             `Nenhuma imagem PNG foi gerada para o arquivo ${file.originalname}.`
+                        );
+                    }
+
+                    for (const nomeArquivo of paginasGeradas) {
+                        arquivosGerados.push({
+                            absPath: path.join(outputDir, nomeArquivo),
+                            zipName: nomeArquivo,
+                        });
+                    }
+                }
+
+                if (["jpg", "jpeg"].includes(formatoDestino)) {
+                    const pattern = path.join(outputDir, `${nomeBase}_pagina_%03d.jpg`);
+
+                    await converterPdfParaJpgs(gsExec, inputPdfPath, pattern);
+
+                    const saidas = await fsp.readdir(outputDir);
+                    const paginasGeradas = saidas
+                        .filter(
+                            (nome) =>
+                                nome.startsWith(`${nomeBase}_pagina_`) &&
+                                nome.endsWith(".jpg")
+                        )
+                        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+                    if (!paginasGeradas.length) {
+                        throw new Error(
+                            `Nenhuma imagem JPG foi gerada para o arquivo ${file.originalname}.`
+                        );
+                    }
+
+                    for (const nomeArquivo of paginasGeradas) {
+                        arquivosGerados.push({
+                            absPath: path.join(outputDir, nomeArquivo),
+                            zipName: nomeArquivo,
+                        });
+                    }
+                }
+
+                if (formatoDestino === "txt") {
+                    const outputTxtPath = path.join(outputDir, `${nomeBase}.txt`);
+
+                    await converterPdfParaTxt(gsExec, inputPdfPath, outputTxtPath);
+
+                    arquivosGerados.push({
+                        absPath: outputTxtPath,
+                        zipName: `${nomeBase}.txt`,
+                    });
+                }
+
+                if (formatoDestino === "svg") {
+                    const pattern = path.join(outputDir, `${nomeBase}_pagina_%03d.svg`);
+
+                    await converterPdfParaSvgs(gsExec, inputPdfPath, pattern);
+
+                    const saidas = await fsp.readdir(outputDir);
+                    const paginasGeradas = saidas
+                        .filter(
+                            (nome) =>
+                                nome.startsWith(`${nomeBase}_pagina_`) &&
+                                nome.endsWith(".svg")
+                        )
+                        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+                    if (!paginasGeradas.length) {
+                        throw new Error(
+                            `Nenhum SVG foi gerado para o arquivo ${file.originalname}.`
                         );
                     }
 
