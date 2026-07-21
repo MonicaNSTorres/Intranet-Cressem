@@ -30,6 +30,8 @@ import {
     FaBell,
     FaBarcode,
     FaGavel,
+    FaRegMoneyBillAlt,
+    FaMoneyBill,
 } from "react-icons/fa";
 import { useMe } from "@/hooks/use-me";
 
@@ -143,7 +145,7 @@ const links: LinkItem[] = [
         title: "Custo de Operação de Portabilidade",
         description: "Acesse rapidamente a tela de Custo de Operação de Portabilidade.",
         href: "/auth/rco",
-        icon: FaFileInvoiceDollar,
+        icon: FaMoneyBill,
         category: "Financeiro",
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     },
@@ -192,6 +194,14 @@ const links: LinkItem[] = [
         description: "Processo de geração de cnab.",
         href: "/auth/cnab240",
         icon: FaBarcode,
+        category: "Financeiro",
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+    {
+        title: "Pagamento de Fornecedores",
+        description: "Processo de geração de cnab para fornecedores.",
+        href: "/auth/cnab240_fornecedores",
+        icon: FaRegMoneyBillAlt,
         category: "Financeiro",
         allowedGroups: [AD_GROUPS.SUPORTE],
     },

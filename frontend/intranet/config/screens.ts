@@ -199,7 +199,7 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["cnab", "cadastrar", "gerar", "favorecidos", "pagamento"],
   },
   {
-    title: "Cnab240 Fornecedores",
+    title: "Pagamento de Fornecedores",
     desc: "Gere boleto para os fornecedores.",
     href: "/auth/cnab240_fornecedores",
     group: "Financeiro",
