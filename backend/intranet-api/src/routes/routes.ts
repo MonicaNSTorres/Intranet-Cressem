@@ -1381,6 +1381,12 @@ routes.get(
   cnab240Controller.listarDetalhesRemessa
 );
 
+routes.get(
+  "/v1/cnab240/remessas/:id/boletos",
+  authMiddleware,
+  cnab240Controller.listarBoletosRemessa
+);
+
 //cnab240 favorecidos
 routes.get("/v1/cnab240/favorecidos", authMiddleware, cnab240FavorecidosController.listar);
 

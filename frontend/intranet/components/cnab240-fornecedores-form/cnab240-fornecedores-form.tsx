@@ -21,12 +21,17 @@ import {
     FaPlus,
     FaSyncAlt,
     FaTrash,
+    FaEye,
+    FaTimes,
+    FaCopy,
 } from "react-icons/fa";
 
 import {
     gerarCnab240PorBoletos,
+    listarBoletosRemessa,
     listarRemessas,
     type BoletoCnabPayload,
+    type BoletoRemessaCnab,
     type RemessaCnab,
     type TipoInscricaoBoleto,
 } from "@/services/cnab240.service";
@@ -273,6 +278,26 @@ export function Cnab240FornecedoresForm() {
         gerando,
         setGerando,
     ] = useState(false);
+
+    const [
+        modalVisualizacaoAberto,
+        setModalVisualizacaoAberto,
+    ] = useState(false);
+
+    const [
+        carregandoBoletosRemessa,
+        setCarregandoBoletosRemessa,
+    ] = useState(false);
+
+    const [
+        boletosVisualizacao,
+        setBoletosVisualizacao,
+    ] = useState<BoletoRemessaCnab[]>([]);
+
+    const [
+        remessaSelecionada,
+        setRemessaSelecionada,
+    ] = useState<RemessaCnab | null>(null);
 
     const [
         linhaDigitavel,
@@ -619,6 +644,316 @@ export function Cnab240FornecedoresForm() {
         setMensagem("");
     }
 
+    async function visualizarRemessa(
+        remessa: RemessaCnab
+    ) {
+        try {
+            setCarregandoBoletosRemessa(true);
+            setRemessaSelecionada(remessa);
+            setBoletosVisualizacao([]);
+            setModalVisualizacaoAberto(true);
+
+            const detalhes =
+                await listarBoletosRemessa(
+                    Number(remessa.ID_REMESSA)
+                );
+
+            setBoletosVisualizacao(
+                Array.isArray(detalhes)
+                    ? detalhes
+                    : []
+            );
+        } catch (error: any) {
+            console.error(error);
+
+            setModalVisualizacaoAberto(false);
+
+            exibirMensagem(
+                error?.response?.data?.details ||
+                error?.response?.data?.error ||
+                error?.message ||
+                "Não foi possível carregar os boletos da remessa.",
+                "error"
+            );
+        } finally {
+            setCarregandoBoletosRemessa(false);
+        }
+    }
+
+    function fecharModalVisualizacao() {
+        if (carregandoBoletosRemessa) {
+            return;
+        }
+
+        setModalVisualizacaoAberto(false);
+        setRemessaSelecionada(null);
+        setBoletosVisualizacao([]);
+    }
+
+    function exportarBoletosRemessaCsv() {
+        if (boletosVisualizacao.length === 0) {
+            exibirMensagem(
+                "Esta remessa não possui pagamentos para exportar.",
+                "error"
+            );
+            return;
+        }
+
+        const escaparCsv = (
+            valor: string | number | null | undefined
+        ): string => {
+            const texto = String(valor ?? "");
+
+            return `"${texto.replace(/"/g, '""')}"`;
+        };
+
+        const formatarValorCsv = (
+            valor: string | number | null | undefined
+        ): string => {
+            return Number(valor || 0).toLocaleString(
+                "pt-BR",
+                {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }
+            );
+        };
+
+        const cabecalho = [
+            "Sequência",
+            "Fornecedor",
+            "CPF/CNPJ do fornecedor",
+            "Código de barras",
+            "Data de vencimento",
+            "Valor do título",
+            "Desconto/abatimento",
+            "Mora/multa",
+            "Data do pagamento",
+            "Valor do pagamento",
+            "Identificação interna",
+            "Nosso número",
+            "Documento do sacado",
+            "Nome do sacado",
+            "Documento do sacador",
+            "Nome do sacador",
+        ];
+
+        const linhasCsv =
+            boletosVisualizacao.map((item) => {
+                return [
+                    escaparCsv(item.SEQ),
+                    escaparCsv(
+                        item.NOME_CEDENTE || ""
+                    ),
+                    escaparCsv(
+                        item.DOCUMENTO_CEDENTE || ""
+                    ),
+                    escaparCsv(
+                        item.CODIGO_BARRAS || ""
+                    ),
+                    escaparCsv(
+                        item.DATA_VENCIMENTO || ""
+                    ),
+                    escaparCsv(
+                        formatarValorCsv(
+                            item.VALOR_TITULO
+                        )
+                    ),
+                    escaparCsv(
+                        formatarValorCsv(
+                            item.VALOR_DESCONTO_ABATIMENTO
+                        )
+                    ),
+                    escaparCsv(
+                        formatarValorCsv(
+                            item.VALOR_MORA_MULTA
+                        )
+                    ),
+                    escaparCsv(
+                        item.DATA_PAGAMENTO || ""
+                    ),
+                    escaparCsv(
+                        formatarValorCsv(
+                            item.VALOR_PAGAMENTO
+                        )
+                    ),
+                    escaparCsv(
+                        item.SEU_NUMERO || ""
+                    ),
+                    escaparCsv(
+                        item.NOSSO_NUMERO || ""
+                    ),
+                    escaparCsv(
+                        item.DOCUMENTO_SACADO || ""
+                    ),
+                    escaparCsv(
+                        item.NOME_SACADO || ""
+                    ),
+                    escaparCsv(
+                        item.DOCUMENTO_SACADOR || ""
+                    ),
+                    escaparCsv(
+                        item.NOME_SACADOR || ""
+                    ),
+                ].join(";");
+            });
+
+        const conteudoCsv = [
+            cabecalho
+                .map(escaparCsv)
+                .join(";"),
+            ...linhasCsv,
+        ].join("\r\n");
+
+        const blob = new Blob(
+            ["\uFEFF" + conteudoCsv],
+            {
+                type: "text/csv;charset=utf-8;",
+            }
+        );
+
+        const url =
+            window.URL.createObjectURL(blob);
+
+        const link =
+            document.createElement("a");
+
+        const nomeRemessa = String(
+            remessaSelecionada?.NM_ARQUIVO ||
+            "remessa_cnab240"
+        )
+            .replace(/\.txt$/i, "")
+            .replace(
+                /[^a-zA-Z0-9_-]/g,
+                "_"
+            );
+
+        link.href = url;
+        link.download =
+            `${nomeRemessa}_boletos.csv`;
+
+        document.body.appendChild(link);
+
+        link.click();
+        link.remove();
+
+        window.URL.revokeObjectURL(url);
+    }
+
+    function duplicarRemessa() {
+        if (boletosVisualizacao.length === 0) {
+            exibirMensagem(
+                "Esta remessa não possui boletos disponíveis para duplicação.",
+                "error"
+            );
+            return;
+        }
+
+        const novosBoletos:
+            LinhaBoletoFornecedor[] =
+            boletosVisualizacao.map(
+                (item, index) => ({
+                    id:
+                        typeof crypto !==
+                            "undefined" &&
+                            crypto.randomUUID
+                            ? crypto.randomUUID()
+                            : `${Date.now()}-${index}-${Math.random()}`,
+
+                    sequencia:
+                        index + 1,
+
+                    codigoBarras:
+                        item.CODIGO_BARRAS || "",
+
+                    nomeCedente:
+                        item.NOME_CEDENTE || "",
+
+                    dataVencimento:
+                        item.DATA_VENCIMENTO || null,
+
+                    valorTitulo:
+                        Number(
+                            item.VALOR_TITULO || 0
+                        ),
+
+                    valorDescontoAbatimento:
+                        Number(
+                            item.VALOR_DESCONTO_ABATIMENTO ||
+                            0
+                        ),
+
+                    valorMoraMulta:
+                        Number(
+                            item.VALOR_MORA_MULTA || 0
+                        ),
+
+                    dataPagamento:
+                        item.DATA_PAGAMENTO ||
+                        hoje,
+
+                    valorPagamento:
+                        Number(
+                            item.VALOR_PAGAMENTO ||
+                            0
+                        ),
+
+                    seuNumero:
+                        item.SEU_NUMERO || "",
+
+                    nossoNumero:
+                        item.NOSSO_NUMERO || "",
+
+                    cedenteTipoInscricao:
+                        item.TIPO_INSCRICAO_CEDENTE ||
+                        0,
+
+                    cedenteDocumento:
+                        item.DOCUMENTO_CEDENTE ||
+                        "",
+
+                    cedenteNome:
+                        item.NOME_CEDENTE || "",
+
+                    sacadoTipoInscricao:
+                        item.TIPO_INSCRICAO_SACADO ||
+                        0,
+
+                    sacadoDocumento:
+                        item.DOCUMENTO_SACADO ||
+                        "",
+
+                    sacadoNome:
+                        item.NOME_SACADO || "",
+
+                    sacadorTipoInscricao:
+                        item.TIPO_INSCRICAO_SACADOR ||
+                        0,
+
+                    sacadorDocumento:
+                        item.DOCUMENTO_SACADOR ||
+                        "",
+
+                    sacadorNome:
+                        item.NOME_SACADOR || "",
+                })
+            );
+
+        setBoletos(novosBoletos);
+
+        fecharModalVisualizacao();
+
+        exibirMensagem(
+            "Remessa duplicada. Confira os pagamentos antes de gerar um novo arquivo.",
+            "success"
+        );
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    }
+
     async function gerarArquivo() {
         if (boletos.length === 0) {
             exibirMensagem(
@@ -712,9 +1047,9 @@ export function Cnab240FornecedoresForm() {
                     {mensagem && (
                         <div
                             className={`rounded-2xl px-4 py-3 text-sm font-medium ${tipoMensagem ===
-                                    "success"
-                                    ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                                    : "border border-red-200 bg-red-50 text-red-700"
+                                "success"
+                                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                                : "border border-red-200 bg-red-50 text-red-700"
                                 }`}
                         >
                             <div className="flex items-start gap-2">
@@ -1221,6 +1556,10 @@ export function Cnab240FornecedoresForm() {
                                 <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-400">
                                     Status
                                 </th>
+
+                                <th className="px-4 py-2 text-right text-xs font-bold uppercase tracking-wide text-slate-400">
+                                    Ações
+                                </th>
                             </tr>
                         </thead>
 
@@ -1279,11 +1618,23 @@ export function Cnab240FornecedoresForm() {
                                                     )}
                                                 </td>
 
-                                                <td className="rounded-r-2xl px-4 py-4">
+                                                <td className="px-4 py-4">
                                                     <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                                                        {item.STATUS ||
-                                                            "GERADO"}
+                                                        {item.STATUS || "GERADO"}
                                                     </span>
+                                                </td>
+
+                                                <td className="rounded-r-2xl px-4 py-4 text-right">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            visualizarRemessa(item)
+                                                        }
+                                                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-secondary/30 bg-secondary px-4 py-2 text-xs font-bold text-white transition hover:bg-primary cursor-pointer"
+                                                    >
+                                                        <FaEye />
+                                                        Visualizar
+                                                    </button>
                                                 </td>
                                             </tr>
                                         )
@@ -1293,6 +1644,275 @@ export function Cnab240FornecedoresForm() {
                     </table>
                 </div>
             </div>
+            {modalVisualizacaoAberto && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+                    <div className="max-h-[94vh] w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+                        <div className="bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                                        Histórico CNAB240
+                                    </p>
+
+                                    <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                                        Visualização da remessa
+                                    </h2>
+
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Consulte todos os boletos enviados nesta remessa.
+                                    </p>
+
+                                    <p className="mt-2 text-xs font-semibold text-slate-500">
+                                        {remessaSelecionada?.NM_ARQUIVO ||
+                                            "Arquivo não informado"}
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={fecharModalVisualizacao}
+                                    disabled={carregandoBoletosRemessa}
+                                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="max-h-[78vh] space-y-5 overflow-y-auto p-6">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-5 py-4">
+                                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                                        Gerado em
+                                    </p>
+
+                                    <p className="mt-2 font-bold text-slate-800">
+                                        {remessaSelecionada?.DT_GERACAO || "-"}
+                                    </p>
+                                </div>
+
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-5 py-4">
+                                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                                        Pagamentos
+                                    </p>
+
+                                    <p className="mt-2 text-xl font-bold text-slate-800">
+                                        {String(
+                                            remessaSelecionada?.QT_PAGAMENTOS || 0
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-5 py-4">
+                                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                                        Valor total
+                                    </p>
+
+                                    <p className="mt-2 text-xl font-bold text-slate-800">
+                                        {formatarDinheiro(
+                                            remessaSelecionada?.VL_TOTAL
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {carregandoBoletosRemessa ? (
+                                <div className="flex min-h-56 items-center justify-center gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 text-sm text-slate-500">
+                                    <FaSyncAlt className="animate-spin text-primary" />
+
+                                    Carregando boletos...
+                                </div>
+                            ) : boletosVisualizacao.length === 0 ? (
+                                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+                                    Esta remessa não possui boletos detalhados. Isso pode
+                                    acontecer com remessas geradas antes da criação do
+                                    histórico de boletos.
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {boletosVisualizacao.map((item) => (
+                                        <div
+                                            key={item.ID_DETALHE}
+                                            className="overflow-hidden rounded-3xl border border-slate-200 bg-white"
+                                        >
+                                            <div className="flex flex-col gap-4 bg-linear-to-r from-slate-50 via-white to-[#00AE9D]/5 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                                <div className="flex min-w-0 items-center gap-3">
+                                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#00AE9D]/10 text-[#00AE9D]">
+                                                        <FaFileInvoiceDollar />
+                                                    </div>
+
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                                                            Pagamento {item.SEQ}
+                                                        </p>
+
+                                                        <h3 className="mt-1 truncate font-bold text-slate-800">
+                                                            {item.NOME_CEDENTE || "-"}
+                                                        </h3>
+
+                                                        <p className="mt-1 text-xs text-slate-500">
+                                                            {item.DOCUMENTO_CEDENTE || "-"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="sm:text-right">
+                                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                        Valor pago
+                                                    </p>
+
+                                                    <p className="mt-1 text-xl font-bold text-slate-800">
+                                                        {formatarDinheiro(
+                                                            item.VALOR_PAGAMENTO
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 gap-4 px-5 py-5 sm:grid-cols-2 lg:grid-cols-4">
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-400">
+                                                        CPF/CNPJ
+                                                    </p>
+
+                                                    <p className="mt-1 break-all text-sm font-semibold text-slate-700">
+                                                        {item.DOCUMENTO_CEDENTE || "-"}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-400">
+                                                        Vencimento
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                                                        {item.DATA_VENCIMENTO || "-"}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-400">
+                                                        Data do pagamento
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                                                        {item.DATA_PAGAMENTO || "-"}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-400">
+                                                        Valor do título
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                                                        {formatarDinheiro(
+                                                            item.VALOR_TITULO
+                                                        )}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-400">
+                                                        Desconto/abatimento
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                                                        {formatarDinheiro(
+                                                            item.VALOR_DESCONTO_ABATIMENTO
+                                                        )}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-400">
+                                                        Mora/multa
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                                                        {formatarDinheiro(
+                                                            item.VALOR_MORA_MULTA
+                                                        )}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-400">
+                                                        Identificação interna
+                                                    </p>
+
+                                                    <p className="mt-1 break-all text-sm font-semibold text-slate-700">
+                                                        {item.SEU_NUMERO || "-"}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs font-semibold text-slate-400">
+                                                        Nosso número
+                                                    </p>
+
+                                                    <p className="mt-1 break-all text-sm font-semibold text-slate-700">
+                                                        {item.NOSSO_NUMERO || "-"}
+                                                    </p>
+                                                </div>
+
+                                                <div className="sm:col-span-2 lg:col-span-4">
+                                                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-4">
+                                                        <p className="text-xs font-semibold text-slate-400">
+                                                            Código de barras
+                                                        </p>
+
+                                                        <p className="mt-2 break-all font-mono text-sm font-semibold text-slate-700">
+                                                            {item.CODIGO_BARRAS || "-"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={fecharModalVisualizacao}
+                                    disabled={carregandoBoletosRemessa}
+                                    className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Fechar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={exportarBoletosRemessaCsv}
+                                    disabled={
+                                        carregandoBoletosRemessa ||
+                                        boletosVisualizacao.length === 0
+                                    }
+                                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <FaDownload />
+                                    Exportar CSV
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={duplicarRemessa}
+                                    disabled={
+                                        carregandoBoletosRemessa ||
+                                        boletosVisualizacao.length === 0
+                                    }
+                                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <FaCopy />
+                                    Duplicar remessa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -1323,6 +1943,46 @@ function ResumoCard({
                     {icone}
                 </div>
             </div>
+        </div>
+    );
+}
+
+function ResumoModal({
+    titulo,
+    valor,
+}: {
+    titulo: string;
+    valor: string;
+}) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                {titulo}
+            </p>
+
+            <p className="mt-2 font-bold text-slate-900">
+                {valor}
+            </p>
+        </div>
+    );
+}
+
+function CampoDetalhe({
+    titulo,
+    valor,
+}: {
+    titulo: string;
+    valor: string;
+}) {
+    return (
+        <div>
+            <p className="text-xs font-semibold text-slate-400">
+                {titulo}
+            </p>
+
+            <p className="mt-1 break-all text-sm font-semibold text-slate-700">
+                {valor}
+            </p>
         </div>
     );
 }

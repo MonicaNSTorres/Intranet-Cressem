@@ -583,7 +583,7 @@ function montarHtmlEmailReembolso(params: {
 
   const conteudo = `
     <tr>
-      <td style="background:#006b3f;padding:22px 26px;color:#ffffff;">
+      <td style="background:#00AE9D;padding:22px 26px;color:#ffffff;">
         <div style="font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;opacity:.9;">
           Reembolso de despesa
         </div>
@@ -638,7 +638,7 @@ function montarHtmlEmailReembolso(params: {
               <td colspan="3" style="padding:14px;background:#fafafa;text-align:right;color:#1f2933;font-weight:700;">
                 Total
               </td>
-              <td style="padding:14px;background:#fafafa;text-align:right;color:#006b3f;font-weight:800;white-space:nowrap;">
+              <td style="padding:14px;background:#fafafa;text-align:right;color:#00AE9D;font-weight:800;white-space:nowrap;">
                 ${formatCurrencyBRL(total)}
               </td>
             </tr>

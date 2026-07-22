@@ -2,7 +2,8 @@ import "dotenv/config";
 import "./src/cron/ferias.cron";
 import "./src/cron/contratos.cron";
 import "./src/cron/boas-vindas-funcionarios.cron";
-import "./src/cron/reserva-sala-lembrete.cron";
+//import "./src/cron/reserva-sala-lembrete.cron";
+import { iniciarCronLembreteReservaSala } from "./src/cron/reserva-sala-lembrete.cron";
 import { iniciarCronLeiloes } from "./src/cron/leiloes.cron";
 import express from "express";
 import { routes } from "./src/routes/routes";
@@ -91,6 +92,8 @@ const port = process.env.PORT || 3001;
 
 async function bootstrap() {
   await initOraclePool();
+
+  iniciarCronLembreteReservaSala();
   iniciarCronLeiloes();
 
   const httpServer = createServer(app);

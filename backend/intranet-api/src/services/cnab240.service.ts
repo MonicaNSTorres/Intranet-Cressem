@@ -187,6 +187,62 @@ const SQL_INSERT_DETALHES = `
     )
 `;
 
+const SQL_INSERT_BOLETOS_DETALHE = `
+    INSERT INTO DBACRESSEM.CNAB_BOLETOS_DETALHE (
+        ID_LOTE,
+        NR_LOTE,
+        SEQ,
+        CODIGO_BARRAS,
+        NOME_CEDENTE,
+        TIPO_INSCRICAO_CEDENTE,
+        DOCUMENTO_CEDENTE,
+        DATA_VENCIMENTO,
+        VALOR_TITULO,
+        VALOR_DESCONTO_ABATIMENTO,
+        VALOR_MORA_MULTA,
+        DATA_PAGAMENTO,
+        VALOR_PAGAMENTO,
+        SEU_NUMERO,
+        NOSSO_NUMERO,
+        TIPO_INSCRICAO_SACADO,
+        DOCUMENTO_SACADO,
+        NOME_SACADO,
+        TIPO_INSCRICAO_SACADOR,
+        DOCUMENTO_SACADOR,
+        NOME_SACADOR,
+        CREATED_AT
+    ) VALUES (
+        :id_lote,
+        :nr_lote,
+        :seq,
+        :codigo_barras,
+        :nome_cedente,
+        :tipo_inscricao_cedente,
+        :documento_cedente,
+        CASE
+            WHEN :data_vencimento IS NULL THEN NULL
+            ELSE TO_DATE(:data_vencimento, 'YYYY-MM-DD')
+        END,
+        :valor_titulo,
+        :valor_desconto_abatimento,
+        :valor_mora_multa,
+        CASE
+            WHEN :data_pagamento IS NULL THEN NULL
+            ELSE TO_DATE(:data_pagamento, 'YYYY-MM-DD')
+        END,
+        :valor_pagamento,
+        :seu_numero,
+        :nosso_numero,
+        :tipo_inscricao_sacado,
+        :documento_sacado,
+        :nome_sacado,
+        :tipo_inscricao_sacador,
+        :documento_sacador,
+        :nome_sacador,
+        CURRENT_TIMESTAMP
+    )
+`;
+
 const SQL_BUSCAR_FAVORECIDO = `
     SELECT
         F.CPF,
@@ -230,6 +286,53 @@ const SQL_DETALHES_REMESSA = `
         DESCRICAO,
         TO_CHAR(CREATED_AT, 'DD/MM/YYYY HH24:MI:SS') AS CREATED_AT
     FROM DBACRESSEM.CNAB_LOTES_DETALHE
+    WHERE ID_LOTE = :id_lote
+    ORDER BY SEQ
+`;
+
+const SQL_BOLETOS_REMESSA = `
+    SELECT
+        ID_DETALHE,
+        ID_LOTE,
+        NR_LOTE,
+        SEQ,
+        CODIGO_BARRAS,
+        NOME_CEDENTE,
+        TIPO_INSCRICAO_CEDENTE,
+        DOCUMENTO_CEDENTE,
+
+        TO_CHAR(
+            DATA_VENCIMENTO,
+            'YYYY-MM-DD'
+        ) AS DATA_VENCIMENTO,
+
+        VALOR_TITULO,
+        VALOR_DESCONTO_ABATIMENTO,
+        VALOR_MORA_MULTA,
+
+        TO_CHAR(
+            DATA_PAGAMENTO,
+            'YYYY-MM-DD'
+        ) AS DATA_PAGAMENTO,
+
+        VALOR_PAGAMENTO,
+        SEU_NUMERO,
+        NOSSO_NUMERO,
+
+        TIPO_INSCRICAO_SACADO,
+        DOCUMENTO_SACADO,
+        NOME_SACADO,
+
+        TIPO_INSCRICAO_SACADOR,
+        DOCUMENTO_SACADOR,
+        NOME_SACADOR,
+
+        TO_CHAR(
+            CREATED_AT,
+            'DD/MM/YYYY HH24:MI:SS'
+        ) AS CREATED_AT
+
+    FROM DBACRESSEM.CNAB_BOLETOS_DETALHE
     WHERE ID_LOTE = :id_lote
     ORDER BY SEQ
 `;
@@ -845,13 +948,7 @@ async function gerarPorBoletosInterno(
             dataGeracao: new Date(),
         });
 
-    /*
-     * Por enquanto, como a tabela de detalhes atual foi criada
-     * para transferências bancárias, não vamos gravar os boletos
-     * nela neste momento.
-     *
-     * Vamos registrar somente o lote no histórico.
-     */
+
     await oracleExecuteCommit(
         SQL_INSERT_LOTE,
         {
@@ -882,6 +979,80 @@ async function gerarPorBoletosInterno(
         );
     }
 
+    const boletosBinds = boletos.map(
+        (item) => ({
+            id_lote: lote.ID_LOTE,
+            nr_lote: proximoSequencial,
+            seq: item.sequencia,
+
+            codigo_barras:
+                item.codigoBarras,
+
+            nome_cedente:
+                item.nomeCedente,
+
+            tipo_inscricao_cedente:
+                item.cedenteTipoInscricao || 0,
+
+            documento_cedente:
+                item.cedenteDocumento || null,
+
+            data_vencimento:
+                item.dataVencimento || null,
+
+            valor_titulo:
+                Number(item.valorTitulo || 0),
+
+            valor_desconto_abatimento:
+                Number(
+                    item.valorDescontoAbatimento || 0
+                ),
+
+            valor_mora_multa:
+                Number(
+                    item.valorMoraMulta || 0
+                ),
+
+            data_pagamento:
+                item.dataPagamento || null,
+
+            valor_pagamento:
+                Number(
+                    item.valorPagamento || 0
+                ),
+
+            seu_numero:
+                item.seuNumero || null,
+
+            nosso_numero:
+                item.nossoNumero || null,
+
+            tipo_inscricao_sacado:
+                item.sacadoTipoInscricao || 0,
+
+            documento_sacado:
+                item.sacadoDocumento || null,
+
+            nome_sacado:
+                item.sacadoNome || null,
+
+            tipo_inscricao_sacador:
+                item.sacadorTipoInscricao || 0,
+
+            documento_sacador:
+                item.sacadorDocumento || null,
+
+            nome_sacador:
+                item.sacadorNome || null,
+        })
+    );
+
+    await oracleExecuteManyCommit(
+        SQL_INSERT_BOLETOS_DETALHE,
+        boletosBinds,
+        {}
+    );
+
     await atualizarSequencial(
         config,
         proximoSequencial
@@ -905,17 +1076,22 @@ async function gerarPorBoletosInterno(
 
 export const cnab240Service = {
     async listarRemessas() {
-        const result = await oracleExecute(
-            SQL_LISTAR_REMESSAS,
-            {},
-            {}
-        );
+        const result =
+            await oracleExecute(
+                SQL_LISTAR_REMESSAS,
+                {},
+                {}
+            );
 
         return result.rows || [];
     },
 
-    async buscarFavorecidoPorCpf(cpf: string) {
-        const cpfLimpo = onlyCpfCnpjChars(cpf);
+    async buscarFavorecidoPorCpf(
+        cpf: string,
+        tipoLayoutInput: unknown = "SANTANDER"
+    ) {
+        const cpfLimpo =
+            onlyCpfCnpjChars(cpf);
 
         if (!cpfLimpo) {
             throw new Error(
@@ -923,17 +1099,34 @@ export const cnab240Service = {
             );
         }
 
-        const result = await oracleExecute(
-            SQL_BUSCAR_FAVORECIDO,
-            {
-                cpf: cpfLimpo,
-            },
-            {}
-        );
+        const tipoLayout =
+            validarTipoLayout(
+                tipoLayoutInput ||
+                "SANTANDER"
+            );
 
-        const favorecido = getFirstRow<any>(
-            result
-        );
+        if (
+            tipoLayout ===
+            "SICOOB_BOLETO"
+        ) {
+            throw new Error(
+                "O layout SICOOB_BOLETO não é válido para transferências."
+            );
+        }
+
+        const result =
+            await oracleExecute(
+                SQL_BUSCAR_FAVORECIDO,
+                {
+                    cpf: cpfLimpo,
+                },
+                {}
+            );
+
+        const favorecido =
+            getFirstRow<any>(
+                result
+            );
 
         if (!favorecido) {
             return null;
@@ -941,7 +1134,7 @@ export const cnab240Service = {
 
         const config =
             await obterConfigCnab(
-                "SANTANDER"
+                tipoLayout
             );
 
         const tipoTransferencia =
@@ -953,12 +1146,20 @@ export const cnab240Service = {
         return {
             ...favorecido,
 
+            TIPO_LAYOUT:
+                tipoLayout,
+
+            BANCO_ORIGEM:
+                String(
+                    config.BANCO || ""
+                ).trim(),
+
             TIPO_TRANSFERENCIA:
                 tipoTransferencia,
 
             TIPO_TRANSFERENCIA_DESCRICAO:
                 tipoTransferencia === 1
-                    ? "Crédito bancário"
+                    ? "CC - Crédito em conta"
                     : "TED",
         };
     },
@@ -1274,4 +1475,26 @@ export const cnab240Service = {
 
         return result.rows || [];
     },
+
+    async listarBoletosRemessa(
+        idLote: number
+    ) {
+        if (!idLote) {
+            throw new Error(
+                "ID do lote não informado."
+            );
+        }
+
+        const result =
+            await oracleExecute(
+                SQL_BOLETOS_REMESSA,
+                {
+                    id_lote: idLote,
+                },
+                {}
+            );
+
+        return result.rows || [];
+    },
 };
+
