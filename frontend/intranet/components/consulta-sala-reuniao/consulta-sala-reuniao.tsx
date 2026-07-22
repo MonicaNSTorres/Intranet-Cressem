@@ -1,16 +1,15 @@
-// components/consulta-sala-reuniao/consulta-sala-reuniao.tsx
-
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FaCalendarAlt,
   FaCheckCircle,
   FaClock,
   FaDoorOpen,
+  FaList,
   FaPlus,
   FaSearch,
   FaTimesCircle,
@@ -23,6 +22,11 @@ import {
   type TipoEspacoReserva,
 } from "@/services/reserva_sala_reuniao.service";
 import { getMeAdUser, type MeResponse } from "@/services/auth.service";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 
 const inputBase =
   "h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
@@ -101,6 +105,12 @@ function Field({
 
 export function ConsultaSalaReuniao() {
   const router = useRouter();
+  const calendarioRef = useRef<FullCalendar | null>(null);
+  const [tooltipReserva, setTooltipReserva] = useState<{
+    reserva: ReservaSalaItem;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const [dataConsulta, setDataConsulta] = useState(hojeISO());
   const [modoConsulta, setModoConsulta] = useState<"DIA" | "MES">("DIA");
@@ -115,6 +125,10 @@ export function ConsultaSalaReuniao() {
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
   const [usuarioLogado, setUsuarioLogado] = useState<MeResponse | null>(null);
+
+  const [modoVisualizacao, setModoVisualizacao] = useState<
+    "CALENDARIO" | "LISTA"
+  >("CALENDARIO");
 
   function getPeriodoConsulta(dataBase = dataConsulta, mesBase = mesConsulta) {
     if (modoConsulta === "MES") {
@@ -136,12 +150,15 @@ export function ConsultaSalaReuniao() {
     };
   }
 
-  async function carregarReservas(dataBase = dataConsulta) {
+  async function carregarReservas(
+    dataBase = dataConsulta,
+    mesBase = mesConsulta
+  ) {
     try {
       setLoading(true);
       setErro("");
 
-      const { inicio, fim } = getPeriodoConsulta(dataBase);
+      const { inicio, fim } = getPeriodoConsulta(dataBase, mesBase);
 
       const response = await listarReservasSala({
         inicio,
@@ -151,12 +168,25 @@ export function ConsultaSalaReuniao() {
       });
 
       setReservas(Array.isArray(response) ? response : []);
+
+      const dataCalendario =
+        modoConsulta === "MES"
+          ? `${mesBase}-01`
+          : dataBase;
+
+      setTimeout(() => {
+        calendarioRef.current
+          ?.getApi()
+          .gotoDate(dataCalendario);
+      }, 0);
     } catch (error: any) {
       console.error(error);
+
       setErro(
         error?.response?.data?.error ||
         "Não foi possível carregar as reservas."
       );
+
       setReservas([]);
     } finally {
       setLoading(false);
@@ -193,6 +223,63 @@ export function ConsultaSalaReuniao() {
       (a, b) => toDate(a.DT_INICIO).getTime() - toDate(b.DT_INICIO).getTime()
     );
   }, [reservas]);
+
+  const eventosCalendario = useMemo(() => {
+    return reservasOrdenadas.map((reserva) => {
+      let backgroundColor = "#00AE9D";
+      let borderColor = "#009688";
+
+      switch (reserva.NM_ESPACO) {
+        case "Sala de Reunião":
+        case "Sala Reunião":
+        case "Sala Reunião 1":
+          backgroundColor = "#00AE9D";
+          borderColor = "#009688";
+          break;
+
+        case "Sala da Diretória":
+        case "Sala da Diretoria":
+          backgroundColor = "#F59E0B";
+          borderColor = "#D97706";
+          break;
+
+        case "Auditório":
+          backgroundColor = "#2563EB";
+          borderColor = "#1D4ED8";
+          break;
+
+        default:
+          backgroundColor = "#64748B";
+          borderColor = "#475569";
+      }
+
+      return {
+        id: String(reserva.ID_RESERVA_SALA),
+
+        title: `${reserva.NM_ESPACO} - ${reserva.DS_TITULO}`,
+
+        start: String(reserva.DT_INICIO).replace(" ", "T"),
+        end: String(reserva.DT_FIM).replace(" ", "T"),
+
+        backgroundColor,
+        borderColor,
+        textColor: "#FFFFFF",
+
+        extendedProps: {
+          reserva,
+          espaco: reserva.NM_ESPACO,
+          responsavel:
+            reserva.NM_USUARIO ||
+            reserva.DS_LOGIN ||
+            "Responsável não informado",
+          departamento:
+            reserva.DS_DEPARTAMENTO ||
+            "Departamento não informado",
+          observacao: reserva.DS_OBSERVACAO || "",
+        },
+      };
+    });
+  }, [reservasOrdenadas]);
 
   function reservaAtualDoEspaco(nomeEspaco: string) {
     const hoje = dataConsulta === hojeISO();
@@ -524,133 +611,358 @@ export function ConsultaSalaReuniao() {
         })}
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-          <h3 className="text-lg font-bold text-slate-800">
-            {modoConsulta === "MES"
-              ? `Reservas do mês ${mesConsulta.split("-").reverse().join("/")}`
-              : `Reservas do dia ${formatDateBR(dataConsulta)}`
-            }
-          </h3>
-          <p className="mt-1 text-sm text-slate-500">
-            Lista detalhada com horários, responsável e departamento.
-          </p>
-        </div>
+      {/* ===== SELETOR DE VISUALIZAÇÃO ===== */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">
+              Visualização das reservas
+            </h3>
 
-        <div className="overflow-x-auto p-5">
-          <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl">
-            <thead>
-              <tr className="bg-slate-100 text-left text-xs font-bold uppercase tracking-[0.03em] text-slate-600">
-                <th className="border-b border-slate-200 px-4 py-3">Espaço</th>
-                <th className="border-b border-slate-200 px-4 py-3">Reunião</th>
-                <th className="border-b border-slate-200 px-4 py-3">Horário</th>
-                <th className="border-b border-slate-200 px-4 py-3">
-                  Responsável
-                </th>
-                <th className="border-b border-slate-200 px-4 py-3">
-                  Departamento
-                </th>
-                <th className="border-b border-slate-200 px-4 py-3 text-center">
-                  Status
-                </th>
-                <th className="border-b border-slate-200 px-4 py-3 text-center">
-                  Cancelar
-                </th>
-              </tr>
-            </thead>
+            <p className="mt-1 text-sm text-slate-500">
+              Escolha entre a visualização em calendário ou em lista.
+            </p>
+          </div>
 
-            <tbody className="bg-white text-sm text-slate-700">
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="border-b border-slate-100 px-4 py-10 text-center text-slate-400"
-                  >
-                    Carregando reservas...
-                  </td>
-                </tr>
-              ) : reservasOrdenadas.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="border-b border-slate-100 px-4 py-10 text-center text-slate-400"
-                  >
-                    Nenhuma reserva encontrada para este período.
-                  </td>
-                </tr>
-              ) : (
-                reservasOrdenadas.map((item) => {
-                  const inicio = formatHora(item.DT_INICIO);
-                  const fim = formatHora(item.DT_FIM);
+          <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setModoVisualizacao("CALENDARIO");
 
-                  return (
-                    <tr
-                      key={item.ID_RESERVA_SALA}
-                      className="hover:bg-slate-50"
-                    >
-                      <td className="border-b border-slate-100 px-4 py-4 font-semibold">
-                        <div className="flex items-center gap-2">
-                          <FaDoorOpen className="text-emerald-700" />
-                          {item.NM_ESPACO}
-                        </div>
-                      </td>
+                setTimeout(() => {
+                  calendarioRef.current
+                    ?.getApi()
+                    .gotoDate(
+                      modoConsulta === "MES"
+                        ? `${mesConsulta}-01`
+                        : dataConsulta
+                    );
+                }, 0);
+              }}
+              className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition ${modoVisualizacao === "CALENDARIO"
+                ? "bg-secondary text-white shadow-sm"
+                : "text-slate-600 hover:bg-white"
+                }`}
+            >
+              <FaCalendarAlt />
+              Calendário
+            </button>
 
-                      <td className="border-b border-slate-100 px-4 py-4">
-                        <p className="font-semibold text-slate-800">
-                          {item.DS_TITULO}
-                        </p>
-                        {item.DS_OBSERVACAO ? (
-                          <p className="mt-1 max-w-md text-xs text-slate-500">
-                            {item.DS_OBSERVACAO}
-                          </p>
-                        ) : null}
-                      </td>
-
-                      <td className="border-b border-slate-100 px-4 py-4">
-                        <div className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 font-bold text-slate-700">
-                          <FaCalendarAlt />
-                          {inicio} às {fim}
-                        </div>
-                      </td>
-
-                      <td className="border-b border-slate-100 px-4 py-4">
-                        {item.NM_USUARIO || item.DS_LOGIN || "-"}
-                      </td>
-
-                      <td className="border-b border-slate-100 px-4 py-4">
-                        {item.DS_DEPARTAMENTO || "-"}
-                      </td>
-
-                      <td className="border-b border-slate-100 px-4 py-4 text-center">
-                        <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
-                          ATIVA
-                        </span>
-                      </td>
-
-                      <td className="border-b border-slate-100 px-4 py-4 text-center">
-                        {usuarioPodeCancelarReserva(item) ? (
-                          <button
-                            type="button"
-                            onClick={() => cancelarReserva(Number(item.ID_RESERVA_SALA))}
-                            className={buttonDanger}
-                          >
-                            <FaTrash size={13} />
-                            Cancelar
-                          </button>
-                        ) : (
-                          <span className="text-xs font-semibold text-slate-400">
-                            Apenas o responsável
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+            <button
+              type="button"
+              onClick={() => setModoVisualizacao("LISTA")}
+              className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition ${modoVisualizacao === "LISTA"
+                ? "bg-secondary text-white shadow-sm"
+                : "text-slate-600 hover:bg-white"
+                }`}
+            >
+              <FaList />
+              Lista
+            </button>
+          </div>
         </div>
       </section>
+
+      {modoVisualizacao === "CALENDARIO" && (
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <h3 className="text-lg font-bold text-slate-800">
+              Calendário de reservas
+            </h3>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Visualização mensal, semanal e diária das reservas.
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-5 text-sm font-medium text-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-[#00AE9D]" />
+                Sala de Reunião
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-[#F59E0B]" />
+                Sala da Diretoria
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-[#2563EB]" />
+                Auditório
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5">
+            <FullCalendar
+              ref={calendarioRef}
+              plugins={[
+                dayGridPlugin,
+                timeGridPlugin,
+                interactionPlugin,
+              ]}
+              locale={ptBrLocale}
+              initialView="dayGridMonth"
+
+              events={eventosCalendario}
+
+              eventDisplay="block"
+              eventBorderColor="transparent"
+
+              eventContent={(eventInfo) => {
+                const reserva =
+                  eventInfo.event.extendedProps.reserva as ReservaSalaItem;
+
+                return (
+                  <div className="w-full overflow-hidden px-1 text-xs font-semibold">
+                    <div className="truncate">
+                      {formatHora(reserva.DT_INICIO)} às{" "}
+                      {formatHora(reserva.DT_FIM)}
+                    </div>
+
+                    <div className="truncate">
+                      {reserva.NM_ESPACO} - {reserva.DS_TITULO}
+                    </div>
+                  </div>
+                );
+              }}
+
+              eventMouseEnter={(info) => {
+                const reserva =
+                  info.event.extendedProps.reserva as ReservaSalaItem;
+
+                const rect = info.el.getBoundingClientRect();
+
+                setTooltipReserva({
+                  reserva,
+                  x: Math.min(rect.left, window.innerWidth - 340),
+                  y: rect.bottom + 8,
+                });
+              }}
+
+              eventMouseLeave={() => {
+                setTooltipReserva(null);
+              }}
+
+              displayEventTime={false}
+
+              height="auto"
+              nowIndicator
+              allDaySlot={false}
+              slotMinTime="07:00:00"
+              slotMaxTime="22:00:00"
+
+              headerToolbar={{
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay",
+              }}
+
+              buttonText={{
+                today: "Hoje",
+                month: "Mês",
+                week: "Semana",
+                day: "Dia",
+              }}
+            />
+          </div>
+        </section>
+      )}
+
+      {tooltipReserva && (
+        <div
+          className="pointer-events-none fixed z-9999 w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl"
+          style={{
+            left: tooltipReserva.x,
+            top: tooltipReserva.y,
+          }}
+        >
+          <div className="mb-3 border-b border-slate-100 pb-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-primary">
+              Detalhes da reserva
+            </p>
+
+            <h4 className="mt-1 text-base font-bold text-slate-900">
+              {tooltipReserva.reserva.DS_TITULO}
+            </h4>
+          </div>
+
+          <div className="space-y-2 text-sm text-slate-700">
+            <p>
+              <strong>Espaço:</strong>{" "}
+              {tooltipReserva.reserva.NM_ESPACO}
+            </p>
+
+            <p>
+              <strong>Data:</strong>{" "}
+              {formatDateBR(tooltipReserva.reserva.DT_INICIO)}
+            </p>
+
+            <p>
+              <strong>Horário:</strong>{" "}
+              {formatHora(tooltipReserva.reserva.DT_INICIO)} às{" "}
+              {formatHora(tooltipReserva.reserva.DT_FIM)}
+            </p>
+
+            <p>
+              <strong>Responsável:</strong>{" "}
+              {tooltipReserva.reserva.NM_USUARIO ||
+                tooltipReserva.reserva.DS_LOGIN ||
+                "-"}
+            </p>
+
+            <p>
+              <strong>Departamento:</strong>{" "}
+              {tooltipReserva.reserva.DS_DEPARTAMENTO || "-"}
+            </p>
+
+            {/*tooltipReserva.reserva.DS_OBSERVACAO ? (
+              <div className="rounded-xl bg-slate-50 p-3">
+                <p className="text-xs font-bold uppercase text-slate-500">
+                  Observações
+                </p>
+
+                <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                  {tooltipReserva.reserva.DS_OBSERVACAO}
+                </p>
+              </div>
+            ) : null*/}
+          </div>
+        </div>
+      )}
+
+      {modoVisualizacao === "LISTA" && (
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <h3 className="text-lg font-bold text-slate-800">
+              {modoConsulta === "MES"
+                ? `Reservas do mês ${mesConsulta.split("-").reverse().join("/")}`
+                : `Reservas do dia ${formatDateBR(dataConsulta)}`
+              }
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Lista detalhada com horários, responsável e departamento.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto p-5">
+            <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl">
+              <thead>
+                <tr className="bg-slate-100 text-left text-xs font-bold uppercase tracking-[0.03em] text-slate-600">
+                  <th className="border-b border-slate-200 px-4 py-3">Espaço</th>
+                  <th className="border-b border-slate-200 px-4 py-3">Reunião</th>
+                  <th className="border-b border-slate-200 px-4 py-3">Data e Horário</th>
+                  <th className="border-b border-slate-200 px-4 py-3">
+                    Responsável
+                  </th>
+                  <th className="border-b border-slate-200 px-4 py-3">
+                    Departamento
+                  </th>
+                  <th className="border-b border-slate-200 px-4 py-3 text-center">
+                    Status
+                  </th>
+                  <th className="border-b border-slate-200 px-4 py-3 text-center">
+                    Cancelar
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="bg-white text-sm text-slate-700">
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="border-b border-slate-100 px-4 py-10 text-center text-slate-400"
+                    >
+                      Carregando reservas...
+                    </td>
+                  </tr>
+                ) : reservasOrdenadas.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="border-b border-slate-100 px-4 py-10 text-center text-slate-400"
+                    >
+                      Nenhuma reserva encontrada para este período.
+                    </td>
+                  </tr>
+                ) : (
+                  reservasOrdenadas.map((item) => {
+                    const inicio = formatHora(item.DT_INICIO);
+                    const fim = formatHora(item.DT_FIM);
+
+                    return (
+                      <tr
+                        key={item.ID_RESERVA_SALA}
+                        className="hover:bg-slate-50"
+                      >
+                        <td className="border-b border-slate-100 px-4 py-4 font-semibold">
+                          <div className="flex items-center gap-2">
+                            <FaDoorOpen className="text-emerald-700" />
+                            {item.NM_ESPACO}
+                          </div>
+                        </td>
+
+                        <td className="border-b border-slate-100 px-4 py-4">
+                          <p className="font-semibold text-slate-800">
+                            {item.DS_TITULO}
+                          </p>
+                          {item.DS_OBSERVACAO ? (
+                            <p className="mt-1 max-w-md text-xs text-slate-500">
+                              {item.DS_OBSERVACAO}
+                            </p>
+                          ) : null}
+                        </td>
+
+                        <td className="border-b border-slate-100 px-4 py-4">
+                          <div className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 font-bold text-slate-700">
+                            <FaCalendarAlt />
+
+                            {modoConsulta === "MES"
+                              ? `${formatDateBR(item.DT_INICIO)} - ${inicio} às ${fim}`
+                              : `${inicio} às ${fim}`}
+                          </div>
+                        </td>
+
+                        <td className="border-b border-slate-100 px-4 py-4">
+                          {item.NM_USUARIO || item.DS_LOGIN || "-"}
+                        </td>
+
+                        <td className="border-b border-slate-100 px-4 py-4">
+                          {item.DS_DEPARTAMENTO || "-"}
+                        </td>
+
+                        <td className="border-b border-slate-100 px-4 py-4 text-center">
+                          <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+                            ATIVA
+                          </span>
+                        </td>
+
+                        <td className="border-b border-slate-100 px-4 py-4 text-center">
+                          {usuarioPodeCancelarReserva(item) ? (
+                            <button
+                              type="button"
+                              onClick={() => cancelarReserva(Number(item.ID_RESERVA_SALA))}
+                              className={buttonDanger}
+                            >
+                              <FaTrash size={13} />
+                              Cancelar
+                            </button>
+                          ) : (
+                            <span className="text-xs font-semibold text-slate-400">
+                              Apenas o responsável
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500">
         <strong>Ajuda:</strong> verde significa disponível. Vermelho significa

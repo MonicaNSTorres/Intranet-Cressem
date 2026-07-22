@@ -125,7 +125,9 @@ export function Cnab240Form() {
     const [modalDetalhesOpen, setModalDetalhesOpen] = useState(false);
     const [modalLayoutAberta, setModalLayoutAberta] = useState(false);
     const [tipoLayoutSelecionado, setTipoLayoutSelecionado] =
-        useState<TipoLayoutCnab | null>(null);
+        useState<Exclude<TipoLayoutCnab, "SICOOB_BOLETO">>(
+            "SANTANDER"
+        );
     const [detalhesRemessa, setDetalhesRemessa] = useState<DetalheRemessaCnab[]>([]);
     const [loadingDetalhes, setLoadingDetalhes] = useState(false);
 
@@ -153,20 +155,50 @@ export function Cnab240Form() {
         "success"
     );
 
-    const remessasFiltradas = useMemo(() => {
-        const termo = busca.trim().toLowerCase();
-
-        if (!termo) return remessas;
-
+    const remessasTransferencia = useMemo(() => {
         return remessas.filter((item) => {
+            const tipoLayout = String(
+                item.TIPO_LAYOUT || ""
+            )
+                .trim()
+                .toUpperCase();
+
             return (
-                String(item.NM_ARQUIVO || "").toLowerCase().includes(termo) ||
-                String(item.STATUS || "").toLowerCase().includes(termo)
+                tipoLayout === "SANTANDER" ||
+                tipoLayout === "SICOOB"
             );
         });
-    }, [busca, remessas]);
+    }, [remessas]);
 
-    const totalRemessas = remessas.length;
+    const remessasFiltradas = useMemo(() => {
+        const termo = busca
+            .trim()
+            .toLowerCase();
+
+        if (!termo) {
+            return remessasTransferencia;
+        }
+
+        return remessasTransferencia.filter(
+            (item) => {
+                return (
+                    String(
+                        item.NM_ARQUIVO || ""
+                    )
+                        .toLowerCase()
+                        .includes(termo) ||
+                    String(
+                        item.STATUS || ""
+                    )
+                        .toLowerCase()
+                        .includes(termo)
+                );
+            }
+        );
+    }, [busca, remessasTransferencia]);
+
+    const totalRemessas =
+        remessasTransferencia.length;
 
     const totalRemessasFiltradas = remessasFiltradas.length;
     const totalPagesRemessas = Math.max(
@@ -190,21 +222,31 @@ export function Cnab240Form() {
     );
 
     const totalPagamentos = useMemo(() => {
-        return remessas.reduce(
-            (acc, item) => acc + Number(item.QT_PAGAMENTOS || 0),
+        return remessasTransferencia.reduce(
+            (acc, item) =>
+                acc +
+                Number(
+                    item.QT_PAGAMENTOS || 0
+                ),
             0
         );
-    }, [remessas]);
+    }, [remessasTransferencia]);
 
     const valorTotalLinhas = useMemo(() => {
         return linhas.reduce((acc, item) => acc + Number(item.valor || 0), 0);
     }, [linhas]);
 
-    const totalRetornosImportados = useMemo(() => {
-        return remessas.filter((item) =>
-            String(item.STATUS || "").toUpperCase().includes("CONCILI")
-        ).length;
-    }, [remessas]);
+    const totalRetornosImportados =
+        useMemo(() => {
+            return remessasTransferencia.filter(
+                (item) =>
+                    String(
+                        item.STATUS || ""
+                    )
+                        .toUpperCase()
+                        .includes("CONCILI")
+            ).length;
+        }, [remessasTransferencia]);
 
     function mostrarMensagem(texto: string, tipo: "success" | "error" = "success") {
         setMensagem(texto);
@@ -333,7 +375,7 @@ export function Cnab240Form() {
 
             setBoletos([]);
             setModalBoletosAberta(false);
-            setTipoLayoutSelecionado(null);
+            setTipoLayoutSelecionado("SANTANDER");
 
             mostrarMensagem(
                 "Arquivo CNAB240 Sicoob boleto gerado com sucesso.",
@@ -375,7 +417,10 @@ export function Cnab240Form() {
             setCarregandoCpf(true);
             setMensagem("");
 
-            const favorecido = await buscarFavorecidoPorCpf(cpfLimpo);
+            const favorecido = await buscarFavorecidoPorCpf(
+                cpfLimpo,
+                tipoLayoutSelecionado
+            );
 
             const banco = String(favorecido.BANCO || "").trim();
             const agencia = String(favorecido.AGENCIA || "").trim();
@@ -404,7 +449,10 @@ export function Cnab240Form() {
                 dvConta,
                 nome: String(favorecido.NOME || ""),
                 valor: valorNumerico,
-                tipo,
+                tipo:
+                    favorecido.TIPO_TRANSFERENCIA === 1
+                        ? 1
+                        : 2,
                 descricao,
             };
 
@@ -595,7 +643,10 @@ export function Cnab240Form() {
 
                 try {
                     const favorecido =
-                        await buscarFavorecidoPorCpf(item.cpf);
+                        await buscarFavorecidoPorCpf(
+                            item.cpf,
+                            tipoLayoutSelecionado
+                        );
 
                     const banco = String(
                         favorecido.BANCO || ""
@@ -925,7 +976,7 @@ export function Cnab240Form() {
             setLinhas([]);
 
             setModalLayoutAberta(false);
-            setTipoLayoutSelecionado(null);
+            setTipoLayoutSelecionado("SANTANDER");
 
             await carregarRemessas();
         } catch (error: any) {
@@ -1128,11 +1179,83 @@ export function Cnab240Form() {
                                 <div className="mb-4 flex items-center gap-2">
                                     <FaFileInvoiceDollar className="text-primary" />
                                     <h3 className="text-sm font-semibold text-gray-900">
-                                        Transferências da remessa
+                                        Passo 1 • Escolha o banco da remessa
                                     </h3>
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+                                <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4">
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-800">
+                                                Selecione o banco antes de adicionar os pagamentos
+                                            </p>
+
+                                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                                                Escolha em qual banco o arquivo CNAB240 será gerado. Essa seleção define automaticamente se cada pagamento será Crédito em Conta (CC) ou TED.
+                                            </p>
+                                        </div>
+
+                                        <select
+                                            value={tipoLayoutSelecionado}
+                                            onChange={(e) => {
+                                                const novoLayout =
+                                                    e.target.value as Exclude<
+                                                        TipoLayoutCnab,
+                                                        "SICOOB_BOLETO"
+                                                    >;
+
+                                                if (linhas.length > 0) {
+                                                    mostrarMensagem(
+                                                        "Remova os pagamentos adicionados antes de alterar o banco de origem.",
+                                                        "error"
+                                                    );
+
+                                                    return;
+                                                }
+
+                                                setTipoLayoutSelecionado(
+                                                    novoLayout
+                                                );
+
+                                                setMensagem("");
+                                                setPagamentosValidados([]);
+                                            }}
+                                            className="h-11 min-w-55 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                        >
+                                            <option value="SANTANDER">
+                                                Santander
+                                            </option>
+
+                                            <option value="SICOOB">
+                                                Sicoob
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+                                        <p className="text-xs leading-5 text-blue-800">
+                                            {tipoLayoutSelecionado === "SICOOB"
+                                                ? "✓ Arquivo no layout Sicoob. Favorecidos do banco 756 serão enviados como Crédito em Conta (CC). Os demais bancos serão enviados como TED."
+                                                : "✓ Arquivo no layout Santander. Favorecidos do banco 033 serão enviados como Crédito em Conta (CC). Os demais bancos serão enviados como TED."}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mb-4 mt-6">
+                                    <div className="flex items-center gap-2">
+                                        <FaPlus className="text-primary" />
+
+                                        <h3 className="text-sm font-semibold text-gray-900">
+                                            Passo 2 • Adicione os pagamentos
+                                        </h3>
+                                    </div>
+
+                                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                                        Informe os dados abaixo ou utilize a opção de colar os pagamentos do Excel.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                                     <div>
                                         <label className="mb-1 block text-xs font-semibold text-gray-600">
                                             CPF
@@ -1157,7 +1280,7 @@ export function Cnab240Form() {
                                         />
                                     </div>
 
-                                    <div>
+                                    {/*<div>
                                         <label className="mb-1 block text-xs font-semibold text-gray-600">
                                             Tipo
                                         </label>
@@ -1169,7 +1292,7 @@ export function Cnab240Form() {
                                             <option value={1}>Crédito bancário</option>
                                             <option value={2}>TED</option>
                                         </select>
-                                    </div>
+                                    </div>*/}
 
                                     <div>
                                         <label className="mb-1 block text-xs font-semibold text-gray-600">
@@ -1211,14 +1334,21 @@ export function Cnab240Form() {
                                         type="button"
                                         onClick={() => {
                                             setMensagem("");
-                                            setTipoLayoutSelecionado(null);
-                                            setModalLayoutAberta(true);
+
+                                            onGerarCnab240(
+                                                tipoLayoutSelecionado
+                                            );
                                         }}
-                                        disabled={gerando}
+                                        disabled={
+                                            gerando ||
+                                            linhas.length === 0
+                                        }
                                         className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                                     >
                                         <FaDownload />
-                                        {gerando ? "Gerando..." : "Gerar CNAB240"}
+                                        {gerando
+                                            ? "Gerando..."
+                                            : `Gerar CNAB240 ${tipoLayoutSelecionado}`}
                                     </button>
                                 </div>
 
@@ -1613,7 +1743,7 @@ export function Cnab240Form() {
                                         setPageRemessas(1);
                                     }}
                                     placeholder="Buscar por arquivo ou status..."
-                                    className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+                                    className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
                                 />
                             </div>
                         </div>
@@ -1701,7 +1831,7 @@ export function Cnab240Form() {
                                                     onClick={() =>
                                                         abrirDetalhesRemessa(Number(item.ID_REMESSA))
                                                     }
-                                                    className="inline-flex h-9 items-center justify-center rounded-xl bg-secondary px-4 text-xs font-bold text-white transition hover:bg-primary"
+                                                    className="inline-flex h-9 items-center justify-center rounded-xl bg-secondary px-4 text-xs font-bold text-white transition hover:bg-primary cursor-pointer"
                                                 >
                                                     Ver detalhes
                                                 </button>
@@ -1767,7 +1897,7 @@ export function Cnab240Form() {
             {modalLayoutAberta && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
-                        <div className="bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+                        <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
                                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
@@ -1787,7 +1917,7 @@ export function Cnab240Form() {
                                     type="button"
                                     onClick={() => {
                                         setModalLayoutAberta(false);
-                                        setTipoLayoutSelecionado(null);
+                                        setTipoLayoutSelecionado("SANTANDER");
                                     }}
                                     disabled={gerando}
                                     className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:opacity-60 cursor-pointer"
@@ -1809,8 +1939,8 @@ export function Cnab240Form() {
                                     disabled={gerando}
                                     className={`w-full rounded-2xl border p-4 text-left transition cursor-pointer ${tipoLayoutSelecionado ===
                                         "SANTANDER"
-                                        ? "border-[#00AE9D] bg-[#00AE9D]/10 ring-4 ring-[#00AE9D]/10"
-                                        : "border-slate-200 bg-white hover:border-[#00AE9D]/40 hover:bg-slate-50"
+                                        ? "border-primary bg-primary/10 ring-4 ring-primary/10"
+                                        : "border-slate-200 bg-white hover:border-primary/40 hover:bg-slate-50"
                                         }`}
                                 >
                                     <div className="flex items-center justify-between gap-4">
@@ -1826,7 +1956,7 @@ export function Cnab240Form() {
 
                                         {tipoLayoutSelecionado ===
                                             "SANTANDER" && (
-                                                <FaCheckCircle className="text-xl text-[#00AE9D]" />
+                                                <FaCheckCircle className="text-xl text-primary" />
                                             )}
                                     </div>
                                 </button>
@@ -1838,8 +1968,8 @@ export function Cnab240Form() {
                                     }
                                     disabled={gerando}
                                     className={`w-full rounded-2xl border p-4 text-left transition cursor-pointer ${tipoLayoutSelecionado === "SICOOB"
-                                        ? "border-[#00AE9D] bg-[#00AE9D]/10 ring-4 ring-[#00AE9D]/10"
-                                        : "border-slate-200 bg-white hover:border-[#00AE9D]/40 hover:bg-slate-50"
+                                        ? "border-primary bg-primary/10 ring-4 ring-primary/10"
+                                        : "border-slate-200 bg-white hover:border-primary/40 hover:bg-slate-50"
                                         }`}
                                 >
                                     <div className="flex items-center justify-between gap-4">
@@ -1854,7 +1984,7 @@ export function Cnab240Form() {
                                         </div>
 
                                         {tipoLayoutSelecionado === "SICOOB" && (
-                                            <FaCheckCircle className="text-xl text-[#00AE9D]" />
+                                            <FaCheckCircle className="text-xl text-primary" />
                                         )}
                                     </div>
                                 </button>
@@ -1905,7 +2035,7 @@ export function Cnab240Form() {
                                     type="button"
                                     onClick={() => {
                                         setModalLayoutAberta(false);
-                                        setTipoLayoutSelecionado(null);
+                                        setTipoLayoutSelecionado("SANTANDER");
                                     }}
                                     disabled={gerando}
                                     className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 cursor-pointer"
@@ -1916,37 +2046,11 @@ export function Cnab240Form() {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        if (!tipoLayoutSelecionado) {
-                                            return;
-                                        }
-
-                                        if (
-                                            tipoLayoutSelecionado ===
-                                            "SICOOB_BOLETO"
-                                        ) {
-                                            setModalLayoutAberta(false);
-                                            setModalBoletosAberta(true);
-                                            setMensagemBoleto("");
-
-                                            if (!dataPagamentoBoleto) {
-                                                setDataPagamentoBoleto(
-                                                    new Date()
-                                                        .toISOString()
-                                                        .slice(0, 10)
-                                                );
-                                            }
-
-                                            return;
-                                        }
-
                                         onGerarCnab240(
                                             tipoLayoutSelecionado
                                         );
                                     }}
-                                    disabled={
-                                        !tipoLayoutSelecionado ||
-                                        gerando
-                                    }
+                                    disabled={gerando}
                                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                                 >
                                     <FaDownload />
@@ -1963,7 +2067,7 @@ export function Cnab240Form() {
             {modalBoletosAberta && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
                     <div className="max-h-[94vh] w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
-                        <div className="bg-linear-to-r from-[#00AE9D]/10 via-white to-[#79B729]/10 px-6 py-5">
+                        <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
                                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
@@ -2019,7 +2123,7 @@ export function Cnab240Form() {
                                             )
                                         }
                                         placeholder="44 ou 47 dígitos"
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
                                     />
                                 </div>
 
@@ -2035,7 +2139,7 @@ export function Cnab240Form() {
                                                 e.target.value
                                             )
                                         }
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                                     />
                                 </div>
 
@@ -2052,7 +2156,7 @@ export function Cnab240Form() {
                                                 e.target.value
                                             )
                                         }
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                                     />
                                 </div>
 
@@ -2069,7 +2173,7 @@ export function Cnab240Form() {
                                             )
                                         }
                                         placeholder="0,00"
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                                     />
                                 </div>
 
@@ -2086,7 +2190,7 @@ export function Cnab240Form() {
                                             )
                                         }
                                         placeholder="0,00"
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                                     />
                                 </div>
 
@@ -2103,7 +2207,7 @@ export function Cnab240Form() {
                                             )
                                         }
                                         placeholder="0,00"
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                                     />
                                 </div>
 
@@ -2120,7 +2224,7 @@ export function Cnab240Form() {
                                                 e.target.value
                                             )
                                         }
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                                     />
                                 </div>
 
@@ -2137,7 +2241,7 @@ export function Cnab240Form() {
                                             )
                                         }
                                         placeholder="0,00"
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                                     />
                                 </div>
 
@@ -2154,7 +2258,7 @@ export function Cnab240Form() {
                                             )
                                         }
                                         placeholder="Identificação interna opcional"
-                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#00AE9D]"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                                     />
                                 </div>
                             </div>

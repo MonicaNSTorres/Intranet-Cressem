@@ -18,6 +18,13 @@ export type FavorecidoCnab = {
     UF?: string | null;
     CONTA_ATIVA?: string | null;
 
+    TIPO_LAYOUT?: Exclude<
+        TipoLayoutCnab,
+        "SICOOB_BOLETO"
+    >;
+
+    BANCO_ORIGEM?: string;
+
     TIPO_TRANSFERENCIA?: 1 | 2;
     TIPO_TRANSFERENCIA_DESCRICAO?: string;
 };
@@ -94,19 +101,65 @@ export type DetalheRemessaCnab = {
     CREATED_AT: string;
 };
 
+export type BoletoRemessaCnab = {
+    ID_DETALHE: number;
+    ID_LOTE: number;
+    NR_LOTE: number;
+    SEQ: number;
+
+    CODIGO_BARRAS: string;
+
+    NOME_CEDENTE: string;
+    TIPO_INSCRICAO_CEDENTE: TipoInscricaoBoleto;
+    DOCUMENTO_CEDENTE?: string | null;
+
+    DATA_VENCIMENTO?: string | null;
+
+    VALOR_TITULO: number;
+    VALOR_DESCONTO_ABATIMENTO: number;
+    VALOR_MORA_MULTA: number;
+
+    DATA_PAGAMENTO?: string | null;
+    VALOR_PAGAMENTO: number;
+
+    SEU_NUMERO?: string | null;
+    NOSSO_NUMERO?: string | null;
+
+    TIPO_INSCRICAO_SACADO: TipoInscricaoBoleto;
+    DOCUMENTO_SACADO?: string | null;
+    NOME_SACADO?: string | null;
+
+    TIPO_INSCRICAO_SACADOR: TipoInscricaoBoleto;
+    DOCUMENTO_SACADOR?: string | null;
+    NOME_SACADOR?: string | null;
+
+    CREATED_AT: string;
+};
+
 export type TipoLayoutCnab =
     | "SANTANDER"
     | "SICOOB"
     | "SICOOB_BOLETO";
 
 export async function buscarFavorecidoPorCpf(
-    cpf: string
+    cpf: string,
+    tipoLayout: Exclude<
+        TipoLayoutCnab,
+        "SICOOB_BOLETO"
+    >
 ): Promise<FavorecidoCnab> {
-    const cpfLimpo = cpf.replace(/\D/g, "");
+    const cpfLimpo =
+        cpf.replace(/\D/g, "");
 
-    const response = await api.get(
-        `/v1/cnab240/favorecido/${cpfLimpo}`
-    );
+    const response =
+        await api.get(
+            `/v1/cnab240/favorecido/${cpfLimpo}`,
+            {
+                params: {
+                    tipoLayout,
+                },
+            }
+        );
 
     return response.data;
 }
@@ -208,4 +261,16 @@ export async function gerarCnab240PorBoletos(
         boletos,
         "SICOOB_BOLETO"
     );
+}
+
+export async function listarBoletosRemessa(
+    idLote: number
+): Promise<BoletoRemessaCnab[]> {
+    const response = await api.get(
+        `/v1/cnab240/remessas/${idLote}/boletos`
+    );
+
+    return Array.isArray(response.data)
+        ? response.data
+        : [];
 }
