@@ -169,7 +169,7 @@ export const reservaSalaReuniaoController = {
         if (emailUsuario) {
           await sendEmail(
             emailUsuario,
-            "Reserva de sala confirmada",
+            "Reserva de sala confirmada", //lembrete para o usuario da reserva da sala
             `
 <div style="
   background:#79B729;
@@ -192,7 +192,7 @@ export const reservaSalaReuniaoController = {
     <tr>
       <td
         style="
-          background:#16a34a;
+          background:#79B729;
           padding:24px;
           color:white;
         "
@@ -260,7 +260,7 @@ export const reservaSalaReuniaoController = {
               <td style="
                 padding:8px 0;
                 font-weight:700;
-                color:#00AE9D;
+                color:#79B729;
                 font-size:16px;
               ">
                 ${formatDateTimeBR(DT_INICIO)}
@@ -274,7 +274,7 @@ export const reservaSalaReuniaoController = {
               <td style="
                 padding:8px 0;
                 font-weight:700;
-                color:#00AE9D;
+                color:#79B729;
                 font-size:16px;
               ">
                 ${formatDateTimeBR(DT_FIM)}
@@ -300,7 +300,7 @@ export const reservaSalaReuniaoController = {
           style="
             margin-top:24px;
             background:#ecfdf5;
-            border-left:4px solid #16a34a;
+            border-left:4px solid #79B729;
             padding:16px;
             border-radius:8px;
           "
@@ -315,7 +315,7 @@ export const reservaSalaReuniaoController = {
 
         <div style="margin-top:32px;text-align:center;">
           <a
-            href="https://intranet"
+            href="https://intranet/auth/consulta_sala_reuniao"
             style="
               display:inline-block;
               background:#79B729;

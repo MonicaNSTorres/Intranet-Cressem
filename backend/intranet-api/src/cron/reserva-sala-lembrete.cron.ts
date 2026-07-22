@@ -70,12 +70,18 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
     const reservas = (result.rows || []) as any[];
 
+    console.log("[CRON RESERVA SALA] Tipo:", tipoLembrete);
+    console.log("[CRON RESERVA SALA] Reservas encontradas:", reservas.length);
+
+    console.log(reservas);
+
     if (!reservas.length) return;
 
     const isLembrete08h = tipoLembrete === "08H";
 
     for (const reserva of reservas) {
       try {
+        //lembrete enviado ao usuario que realizou a reserva
         await sendEmail(
           reserva.DS_EMAIL,
           isLembrete08h
@@ -108,8 +114,8 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
           <p style="margin-top:8px;font-size:14px;opacity:.95;">
             ${isLembrete08h
-              ? "Você possui uma reserva agendada para hoje."
-              : "Sua reserva começa em aproximadamente 10 minutos."}
+            ? "Você possui uma reserva agendada para hoje."
+            : "Sua reserva começa em aproximadamente 10 minutos."}
           </p>
         </td>
       </tr>
@@ -136,8 +142,8 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
             <p style="margin:8px 0 0 0;">
               ${isLembrete08h
-                ? "Você possui uma reunião agendada para hoje."
-                : "Sua reunião está prestes a começar."}
+            ? "Você possui uma reunião agendada para hoje."
+            : "Sua reunião está prestes a começar."}
             </p>
           </div>
 
@@ -207,8 +213,8 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
               "
             >
               ${isLembrete08h
-                ? "Reserva agendada para hoje"
-                : "Início em aproximadamente 10 minutos"}
+            ? "Reserva agendada para hoje"
+            : "Início em aproximadamente 10 minutos"}
             </div>
           </div>
         </td>
@@ -234,7 +240,165 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
   `
         );
 
+        if (toTrim(reserva.TP_ESPACO).toUpperCase() !== "AUDITORIO") {
+          //lembrete da Sala de Reuniao para ciencia da Janaina (e-mail temporario da Monica durante os testes)
+          await sendEmail(
+            "monica.torres@sicoob.com.br",
+            isLembrete08h
+              ? "Lembrete - Reserva de sala agendada para hoje"
+              : "Lembrete - Reserva de sala inicia em 10 minutos",
+            `
+<div style="
+  background:#00AE9D;
+  padding:40px 20px;
+  font-family:Segoe UI, Arial, sans-serif;
+">
+  <table
+    width="100%"
+    cellpadding="0"
+    cellspacing="0"
+    style="
+      max-width:700px;
+      margin:auto;
+      background:#ffffff;
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow:0 4px 20px rgba(0,0,0,0.08);
+    "
+  >
+    <tr>
+      <td style="background:#00AE9D;padding:24px;color:white;">
+        <h1 style="margin:0;font-size:24px;">
+          Lembrete de Reserva de Sala
+        </h1>
+
+        <p style="margin-top:8px;font-size:14px;opacity:.95;">
+          ${isLembrete08h
+              ? "Existe uma reserva de sala agendada para hoje."
+              : "Existe uma reserva de sala iniciando em aproximadamente 10 minutos."}
+        </p>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:32px;">
+        <p style="font-size:16px;margin-top:0;">
+          Olá, <strong>Janaina</strong>.
+        </p>
+
+        <p style="color:#4b5563;font-size:15px;">
+          ${isLembrete08h
+              ? "Este é um aviso para ciência de que existe uma reserva de sala de reunião agendada para hoje."
+              : "Este é um aviso para ciência de que existe uma reserva de sala de reunião prestes a iniciar."}
+        </p>
+
+        <div
+          style="
+            background:#f9fafb;
+            border:1px solid #e5e7eb;
+            border-radius:12px;
+            padding:20px;
+            margin-top:24px;
+          "
+        >
+          <table width="100%">
+            <tr>
+              <td style="padding:8px 0;color:#6b7280;">Reunião</td>
+              <td style="padding:8px 0;font-weight:600;">
+                ${toTrim(reserva.DS_TITULO)}
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 0;color:#6b7280;">Sala</td>
+              <td style="padding:8px 0;font-weight:600;">
+                ${toTrim(reserva.NM_ESPACO)}
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 0;color:#6b7280;">Responsável</td>
+              <td style="padding:8px 0;font-weight:600;">
+                ${toTrim(reserva.NM_USUARIO || reserva.DS_LOGIN) || "-"}
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 0;color:#6b7280;">Departamento</td>
+              <td style="padding:8px 0;font-weight:600;">
+                ${toTrim(reserva.DS_DEPARTAMENTO) || "-"}
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 0;color:#6b7280;">Início</td>
+              <td style="padding:8px 0;font-weight:700;color:#00AE9D;font-size:16px;">
+                ${formatDateTimeBR(reserva.DT_INICIO)}
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 0;color:#6b7280;">Fim</td>
+              <td style="padding:8px 0;font-weight:700;color:#00AE9D;font-size:16px;">
+                ${formatDateTimeBR(reserva.DT_FIM)}
+              </td>
+            </tr>
+
+            ${reserva.DS_OBSERVACAO
+              ? `
+                  <tr>
+                    <td style="padding:8px 0;color:#6b7280;">Observação</td>
+                    <td style="padding:8px 0;">
+                      ${toTrim(reserva.DS_OBSERVACAO)}
+                    </td>
+                  </tr>
+                `
+              : ""
+            }
+          </table>
+        </div>
+
+        <div
+          style="
+            margin-top:24px;
+            background:#ecfdf5;
+            border-left:4px solid #00AE9D;
+            padding:16px;
+            border-radius:8px;
+          "
+        >
+          <strong>Aviso automático</strong>
+
+          <p style="margin:8px 0 0 0;color:#374151;">
+            Este e-mail foi enviado apenas para ciência da reserva da sala de reunião.
+          </p>
+        </div>
+      </td>
+    </tr>
+
+    <tr>
+      <td
+        style="
+          background:#f9fafb;
+          padding:20px;
+          text-align:center;
+          color:#6b7280;
+          font-size:12px;
+        "
+      >
+        Este é um lembrete automático da Intranet.
+        <br />
+        Não responda esta mensagem.
+      </td>
+    </tr>
+  </table>
+</div>
+`
+          );
+        }
+
         if (toTrim(reserva.TP_ESPACO).toUpperCase() === "AUDITORIO") {
+          //lembrete do Auditorio para ciencia da Janaina (e-mail temporario da Monica durante os testes)
           await sendEmail(
             "monica.torres@sicoob.com.br",
             isLembrete08h
@@ -267,8 +431,8 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
         <p style="margin-top:8px;font-size:14px;opacity:.95;">
           ${isLembrete08h
-            ? "Existe um evento no auditório agendado para hoje."
-            : "Evento no auditório inicia em aproximadamente 10 minutos."}
+              ? "Existe um evento no auditório agendado para hoje."
+              : "Evento no auditório inicia em aproximadamente 10 minutos."}
         </p>
       </td>
     </tr>
@@ -281,8 +445,8 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
         <p style="color:#4b5563;font-size:15px;">
           ${isLembrete08h
-            ? "Este é um aviso para ciência de que existe uma reserva do auditório agendada para hoje."
-            : "Este é um aviso para ciência de que existe uma reserva do auditório prestes a iniciar."}
+              ? "Este é um aviso para ciência de que existe uma reserva do auditório agendada para hoje."
+              : "Este é um aviso para ciência de que existe uma reserva do auditório prestes a iniciar."}
         </p>
 
         <div
@@ -389,6 +553,7 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 `
           );
 
+          //lembrete do Auditorio para ciencia da equipe de Marketing
           await sendEmail(
             "julia.a.coutinho@sicoob.com.br",
             isLembrete08h
@@ -421,8 +586,8 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
         <p style="margin-top:8px;font-size:14px;opacity:.95;">
           ${isLembrete08h
-            ? "Existe um evento no auditório agendado para hoje."
-            : "Evento no auditório inicia em aproximadamente 10 minutos."}
+              ? "Existe um evento no auditório agendado para hoje."
+              : "Evento no auditório inicia em aproximadamente 10 minutos."}
         </p>
       </td>
     </tr>
@@ -435,8 +600,8 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
         <p style="color:#4b5563;font-size:15px;">
           ${isLembrete08h
-            ? "Este é um aviso para ciência de que existe uma reserva do auditório agendada para hoje, caso seja necessária alguma divulgação, cobertura ou apoio da equipe."
-            : "Este é um aviso para ciência de que existe uma reserva do auditório prestes a iniciar, caso seja necessária alguma divulgação, cobertura ou apoio da equipe."}
+              ? "Este é um aviso para ciência de que existe uma reserva do auditório agendada para hoje, caso seja necessária alguma divulgação, cobertura ou apoio da equipe."
+              : "Este é um aviso para ciência de que existe uma reserva do auditório prestes a iniciar, caso seja necessária alguma divulgação, cobertura ou apoio da equipe."}
         </p>
 
         <div
