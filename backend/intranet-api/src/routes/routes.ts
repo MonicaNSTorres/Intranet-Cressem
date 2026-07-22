@@ -40,6 +40,7 @@ import { fatorAjusteController } from "../controllers/fator-ajuste.controller";
 import { relatorioConvenioOdontoController } from "../controllers/relatorio-convenio-odonto.controller";
 import { consultaContratosController } from "../controllers/consulta-contratos.controller";
 import { contratosEmpresasController } from "../controllers/contratos-empresas.controller";
+import { contatosNaoPertubeController } from "../controllers/contatos-nao-pertube.controller";
 import { funcionariosSimplesController } from "../controllers/funcionarios-simples.controller";
 import { emailContratoController } from "../controllers/email-contrato.controller";
 import { rhContatoController } from "../controllers/rh-contato.controller";
@@ -81,6 +82,7 @@ import { errorLogController } from "../controllers/errorlog.controller";
 import { termosMensaisCaixaController } from "../controllers/termos-mensais-caixa.controller";
 import { reservaSalaReuniaoController } from "../controllers/reserva-sala-reuniao.controller";
 import { monitorMetaAlertasController } from "../controllers/monitor-meta-alertas.controller";
+import { monitorAtendimentoBlipController } from "../controllers/monitor-atendimento-blip.controller";
 import { cnab240Controller } from "../controllers/cnab240.controller";
 import { cnab240FavorecidosController } from "../controllers/cnab-favorecidos.controller";
 import { cnab240AgenciasController } from "../controllers/cnab240-agencias.controller";
@@ -129,6 +131,13 @@ routes.patch(
   monitorMetaAlertasController.resolver
 );
 
+routes.get(
+  "/v1/monitor-atendimento-blip",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE", "GG_USERS_GERENCIA_DIRETORIA"]),
+  monitorAtendimentoBlipController.listar
+);
+
 routes.get("/v1/associados/buscar-por-cpf", associadoController.buscarPorCpf);
 
 routes.get(
@@ -143,6 +152,13 @@ routes.get("/v1/aniversariantes/hoje", kpiController.aniversariantesHoje);
 routes.get("/v1/aniversariantes", kpiController.aniversariantesPorMes);
 
 routes.get("/v1/ramais", ramaisController.listar);
+
+routes.get(
+  "/v1/contatos-nao-pertube",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE"]),
+  contatosNaoPertubeController.listarPaginado
+);
 
 routes.get("/v1/tabela-sisbr-ti", sisbrTiController.listar);
 

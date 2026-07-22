@@ -218,6 +218,14 @@ export const PAGE_ACCESS = {
         allowedGroups: [AD_GROUPS.SUPORTE],
     },
 
+    monitorAtendimentoBlip: {
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.GERENCIA_DIRETORIA],
+    },
+
+    contatosNaoPertube: {
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+
     notebook: {
         allowedGroups: [
             AD_GROUPS.SUPORTE,

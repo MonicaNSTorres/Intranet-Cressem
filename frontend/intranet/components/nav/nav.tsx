@@ -319,6 +319,11 @@ const Sidebar = () => {
                     href: "/auth/producao_meta_funcionario",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.META_PA],
                 },
+                {
+                    label: "Monitor Atendimento Blip",
+                    href: "/auth/monitor_atendimento_blip",
+                    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.GERENCIA_DIRETORIA],
+                },
             ],
         },
         {
@@ -390,6 +395,11 @@ const Sidebar = () => {
                     label: "Aniversariantes",
                     href: "/auth/aniversariantes",
                     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+                },
+                {
+                    label: "Contatos Não Perturbe",
+                    href: "/auth/contatos_nao_pertube",
+                    allowedGroups: [AD_GROUPS.SUPORTE],
                 },
                 {
                     label: "Links Externos",
