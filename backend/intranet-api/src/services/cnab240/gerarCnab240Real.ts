@@ -90,6 +90,19 @@ export function gerarCnab240Real({
 
         const formaLancamento = tipoGrupo === 1 ? "01" : "41";
 
+        console.log(
+            "[CNAB240 GERADOR]",
+            {
+                numeroLote: numeroLoteReal,
+                tipoGrupo,
+                formaLancamento,
+                quantidade: grupo.length,
+                bancos: grupo.map(
+                    (item) => item.banco
+                ),
+            }
+        );
+
         linhas.push(
             gerarHeaderLote({
                 codigoBanco,

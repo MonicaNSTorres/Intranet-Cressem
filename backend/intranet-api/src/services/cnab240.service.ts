@@ -347,18 +347,49 @@ function onlyCpfCnpjChars(value: unknown): string {
         .toUpperCase();
 }
 
+function normalizarCodigoBanco(
+    value: unknown
+): string {
+    const digits = onlyDigits(value);
+
+    if (!digits) {
+        return "";
+    }
+
+    const codigoNumerico =
+        Number(digits);
+
+    if (!Number.isFinite(codigoNumerico)) {
+        return "";
+    }
+
+    return String(codigoNumerico);
+}
+
 function determinarTipoTransferencia(
     bancoFavorecido: unknown,
     bancoConfigurado: unknown
 ): 1 | 2 {
-    const bancoDestino = onlyDigits(bancoFavorecido);
-    const bancoOrigem = onlyDigits(bancoConfigurado);
+    const bancoDestino =
+        normalizarCodigoBanco(
+            bancoFavorecido
+        );
 
-    if (!bancoDestino || !bancoOrigem) {
+    const bancoOrigem =
+        normalizarCodigoBanco(
+            bancoConfigurado
+        );
+
+    if (
+        !bancoDestino ||
+        !bancoOrigem
+    ) {
         return 2;
     }
 
-    return bancoDestino === bancoOrigem ? 1 : 2;
+    return bancoDestino === bancoOrigem
+        ? 1
+        : 2;
 }
 
 function gerarNomeArquivo(
@@ -1239,6 +1270,14 @@ export const cnab240Service = {
                 })
             );
 
+        {/*console.table(
+            transferenciasComTipo.map((t) => ({
+                nome: t.nome,
+                banco: t.banco,
+                tipo: t.tipo,
+            }))
+        );*/}
+
         const conteudo =
             gerarConteudoCnab({
                 config,
@@ -1357,6 +1396,49 @@ export const cnab240Service = {
                 })
             );
 
+        {/*console.log(
+            "========================================"
+        );
+
+        console.log(
+            "[CNAB240] Classificação das transferências"
+        );
+
+        console.log(
+            "[CNAB240] Layout:",
+            tipoLayout
+        );
+
+        console.log(
+            "[CNAB240] Banco configurado:",
+            config.BANCO
+        );
+
+        console.table(
+            transferencias.map(
+                (item) => ({
+                    nome: item.nome,
+                    bancoRecebido:
+                        item.banco,
+                    bancoNormalizado:
+                        normalizarCodigoBanco(
+                            item.banco
+                        ),
+                    bancoOrigem:
+                        config.BANCO,
+                    bancoOrigemNormalizado:
+                        normalizarCodigoBanco(
+                            config.BANCO
+                        ),
+                    tipo:
+                        item.tipo,
+                    classificacao:
+                        item.tipo === 1
+                            ? "CC"
+                            : "TED",
+                })
+            )
+        );*/}
         const invalidas =
             transferencias.filter(
                 (item) => {

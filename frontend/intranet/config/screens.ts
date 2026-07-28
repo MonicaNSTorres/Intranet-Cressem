@@ -231,6 +231,22 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["produtos", "metricas", "leilao", "grafico", "equipamentos"],
   },
   {
+    title: "Banco de Imagens",
+    desc: "Veja as imagens disponiveis para download.",
+    href: "/auth/banco_imagens",
+    group: "Ferramentas",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+    keywords: ["imagens", "download", "baixar", "banco", "imagem"],
+  },
+  {
+    title: "Banco de Imagens Administração",
+    desc: "Administre as imagens que aparece para os usuários.",
+    href: "/auth/banco_imagens_administracao",
+    group: "Ferramentas",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+    keywords: ["imagens", "download", "baixar", "banco", "administração"],
+  },
+  {
     title: "Gerenciar Favorecidos",
     desc: "Adicione ou edite favorecidos vinculados a geração do cnab240.",
     href: "/auth/cnab240_favorecidos",

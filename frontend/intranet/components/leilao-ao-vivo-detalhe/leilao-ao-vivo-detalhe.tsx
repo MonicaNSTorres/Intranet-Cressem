@@ -176,6 +176,22 @@ export function LeilaoAoVivoDetalhe({ idLeilao }: { idLeilao: number }) {
         return new Date(value.replace(" ", "T"));
     }
 
+    function formatarDataHora(value?: string | null) {
+        if (!value) return "-";
+
+        const data = new Date(value.replace(" ", "T"));
+
+        if (isNaN(data.getTime())) return value;
+
+        return data.toLocaleString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    }
+
     function tempoRestante() {
         const fim = parseDataBR(leilao?.DT_FIM);
 
@@ -637,7 +653,7 @@ export function LeilaoAoVivoDetalhe({ idLeilao }: { idLeilao: number }) {
 
                                 <InfoLinha
                                     label="Finaliza"
-                                    value={leilao.DT_FIM || "-"}
+                                    value={formatarDataHora(leilao.DT_FIM)}
                                     icon={<FaClock />}
                                 />
                             </div>

@@ -11,7 +11,7 @@ export default function MarcaDaguaPage() {
         <div className="min-w-0">
           <BackButton />
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-emerald-700">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#00AE9D] bg-[#00AE9D] text-white">
               <FaTint size={16} />
             </div>
             <div className="min-w-0">

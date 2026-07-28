@@ -92,6 +92,7 @@ import { solicitacaoSubsidioFuneralPaginadoController } from "../controllers/sol
 import { solicitacaoSubsidioAuditivoController } from "../controllers/solicitacao-subsidio-auditivo.controller";
 import { solicitacaoSubsidioAuditivoPaginadoController } from "../controllers/solicitacao_subsidio_auditivo_paginado.controller";
 import { cnab240CcoController } from "../controllers/cnab240-cco.controller";
+import { bancoImagensController } from "../controllers/banco-imagens.controller";
 
 const routes = Router();
 
@@ -941,6 +942,18 @@ routes.get(
 );
 
 routes.get(
+  "/v1/popup-aviso/pendente/me",
+  authMiddleware,
+  obterPopupPendenteDoUsuario
+);
+
+routes.post(
+  "/v1/popup-aviso/responder",
+  authMiddleware,
+  responderPopupAviso
+);
+
+routes.get(
   "/v1/popup-aviso/:id",
   authMiddleware,
   buscarPopupAvisoPorId
@@ -958,9 +971,7 @@ routes.patch(
   ativarDesativarPopupAviso
 );
 
-routes.get("/v1/popup-aviso/pendente/me", authMiddleware, obterPopupPendenteDoUsuario);
-routes.post("/v1/popup-aviso/responder", authMiddleware, responderPopupAviso);
-
+//solicitacao reembolso despesa
 routes.post(
   "/v1/solicitacao_reembolso_despesa",
   authMiddleware,
@@ -1539,6 +1550,69 @@ routes.get(
   "/v1/leiloes-dashboard",
   authMiddleware,
   leiloesController.dashboard
+);
+
+// banco de imagens
+routes.get(
+  "/v1/banco-imagens/categorias",
+  authMiddleware,
+  bancoImagensController.listarCategorias
+);
+
+routes.get(
+  "/v1/banco-imagens",
+  authMiddleware,
+  bancoImagensController.listar
+);
+
+routes.post(
+  "/v1/banco-imagens",
+  authMiddleware,
+  singleUploadOrJson("file"),
+  bancoImagensController.criar
+);
+
+routes.get(
+  "/v1/banco-imagens/:id/preview",
+  authMiddleware,
+  bancoImagensController.visualizar
+);
+
+routes.get(
+  "/v1/banco-imagens/:id/download",
+  authMiddleware,
+  bancoImagensController.download
+);
+
+routes.get(
+  "/v1/banco-imagens/:id",
+  authMiddleware,
+  bancoImagensController.buscarPorId
+);
+
+routes.put(
+  "/v1/banco-imagens/:id",
+  authMiddleware,
+  singleUploadOrJson("file"),
+  bancoImagensController.atualizar
+);
+
+routes.patch(
+  "/v1/banco-imagens/:id/status",
+  authMiddleware,
+  bancoImagensController.alterarStatus
+);
+
+routes.patch(
+  "/v1/banco-imagens/:id/destaque",
+  authMiddleware,
+  bancoImagensController.alterarDestaque
+);
+
+routes.delete(
+  "/v1/banco-imagens/:id",
+  authMiddleware,
+  bancoImagensController.excluir
 );
 
 export { routes };

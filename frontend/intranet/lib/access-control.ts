@@ -440,4 +440,12 @@ export const PAGE_ACCESS = {
         allowedGroups: [AD_GROUPS.TODO_MUNDO, AD_GROUPS.SUPORTE],
     },
 
+    bancoImagens: {
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+    },
+
+    bancoImagensAdministrar: {
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+    },
+
 } satisfies Record<string, AccessRule>;

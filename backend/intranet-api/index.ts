@@ -69,12 +69,25 @@ const multerManagedPaths = new Set([
   "/v1/ferias_funcionarios/importar-excel",
   "/v1/cnab240/gerar",
   "/v1/cnab240/importar-retorno",
+  "/v1/banco-imagens",
 ]);
 
 app.use((req, res, next) => {
   const normalizedPath = req.path.replace(/\/+$/, "") || "/";
 
-  if (multerManagedPaths.has(normalizedPath)) {
+  const isBancoImagensUpload =
+    req.method === "POST" &&
+    normalizedPath === "/v1/banco-imagens";
+
+  const isBancoImagensUpdate =
+    req.method === "PUT" &&
+    /^\/v1\/banco-imagens\/\d+$/.test(normalizedPath);
+
+  if (
+    multerManagedPaths.has(normalizedPath) ||
+    isBancoImagensUpload ||
+    isBancoImagensUpdate
+  ) {
     return next();
   }
 
