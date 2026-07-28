@@ -2,6 +2,7 @@
 import oracledb from "oracledb";
 import path from "path";
 import fs from "fs/promises";
+import os from "os";
 import { UploadedFile } from "express-fileupload";
 import { getOraclePool } from "../config/oracle.pool";
 import { execFile } from "child_process";
@@ -136,6 +137,15 @@ function getShareRoot() {
     return `\\\\${server}\\${share}`;
 }
 
+function getShareRootLinux() {
+    const { server, share } = getSmbConfig();
+    return `//${server}/${share}`;
+}
+
+function isWindowsRuntime() {
+    return process.platform === "win32";
+}
+
 function toSlashUncPath(value: string) {
     const normalized = String(value || "").trim().replace(/\\/g, "/");
     if (!normalized) return normalized;
@@ -148,6 +158,21 @@ function toWindowsUncPath(value: string) {
     const normalized = String(value || "").trim();
     if (!normalized) return normalized;
     return normalized.replace(/\//g, "\\");
+}
+
+function getSmbRelativePath(caminhoOriginal: string) {
+    const { server, share } = getSmbConfig();
+    const caminho = String(caminhoOriginal || "")
+        .trim()
+        .replace(/\\/g, "/")
+        .replace(/^\/+/, "");
+    const prefix = `${server}/${share}/`;
+
+    if (caminho.toLowerCase().startsWith(prefix.toLowerCase())) {
+        return caminho.slice(prefix.length);
+    }
+
+    return caminho;
 }
 
 async function readFileByPossibleUncPaths(caminhoOriginal: string) {
@@ -176,6 +201,94 @@ async function readFileByPossibleUncPaths(caminhoOriginal: string) {
             lastError?.message || lastError
         )}`
     );
+}
+
+async function execSmbClient(command: string) {
+    const { server, share, user, password, domain } = getSmbConfig();
+    const args = [`//${server}/${share}`];
+
+    if (domain) {
+        args.push("-W", domain);
+    }
+
+    args.push("-U", `${user}%${password}`, "-c", command);
+
+    try {
+        return await execFileAsync("smbclient", args);
+    } catch (error: any) {
+        throw new Error(
+            `Falha ao executar smbclient. Comando: ${command}. Detalhes: ${String(
+                error?.stderr ||
+                error?.stdout ||
+                error?.message ||
+                error
+            )}`
+        );
+    }
+}
+
+async function tentarCriarDiretorioSmbLinux(diretorio: string) {
+    try {
+        await execSmbClient(`mkdir "${diretorio}"`);
+    } catch {
+        // O smbclient retorna erro quando a pasta já existe. Podemos seguir.
+    }
+}
+
+async function salvarArquivoPatrocinioNoServidorSMBLinux(
+    fileData: Buffer,
+    fileName: string,
+    solicitanteSafe: string
+) {
+    const diretorioDestino = path.posix.join(
+        "CRM",
+        "PATROCINIO",
+        solicitanteSafe
+    );
+    const niveis = [
+        "CRM",
+        "CRM/PATROCINIO",
+        path.posix.join("CRM", "PATROCINIO", solicitanteSafe),
+    ];
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "patrocinio-smb-"));
+    const tempFilePath = path.join(tempDir, fileName);
+
+    try {
+        for (const nivel of niveis) {
+            await tentarCriarDiretorioSmbLinux(nivel);
+        }
+
+        await fs.writeFile(tempFilePath, fileData);
+        await execSmbClient(
+            `cd "${diretorioDestino}"; put "${tempFilePath}" "${fileName}"`
+        );
+
+        return `${getShareRootLinux()}/${diretorioDestino}/${fileName}`;
+    } finally {
+        await fs.rm(tempDir, { recursive: true, force: true });
+    }
+}
+
+async function readFileFromSmbLinux(caminhoOriginal: string) {
+    const caminhoRelativo = getSmbRelativePath(caminhoOriginal);
+    const fileName = path.posix.basename(caminhoRelativo);
+    const remoteDir = path.posix.dirname(caminhoRelativo);
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "patrocinio-smb-download-"));
+    const tempFilePath = path.join(tempDir, fileName);
+
+    try {
+        const cdCommand = remoteDir && remoteDir !== "."
+            ? `cd "${remoteDir}"; `
+            : "";
+        await execSmbClient(`${cdCommand}get "${fileName}" "${tempFilePath}"`);
+        const buffer = await fs.readFile(tempFilePath);
+        return {
+            buffer,
+            caminhoResolvido: `${getShareRootLinux()}/${caminhoRelativo}`,
+        };
+    } finally {
+        await fs.rm(tempDir, { recursive: true, force: true });
+    }
 }
 
 async function conectarShareWindows() {
@@ -253,6 +366,14 @@ async function salvarArquivoPatrocinioNoServidorSMB(
     if (!fileData || fileData.length === 0) {
         throw new Error(
             `Arquivo "${fileName}" veio vazio no upload (0 bytes).`
+        );
+    }
+
+    if (!isWindowsRuntime()) {
+        return await salvarArquivoPatrocinioNoServidorSMBLinux(
+            fileData,
+            fileName,
+            solicitanteSafe
         );
     }
 
@@ -1193,10 +1314,12 @@ export const patrocinioController = {
                 });
             }
 
-            await conectarShareWindows();
-
-            const { buffer: arquivoBuffer, caminhoResolvido } =
-                await readFileByPossibleUncPaths(caminho);
+            const { buffer: arquivoBuffer, caminhoResolvido } = isWindowsRuntime()
+                ? await (async () => {
+                    await conectarShareWindows();
+                    return await readFileByPossibleUncPaths(caminho);
+                })()
+                : await readFileFromSmbLinux(caminho);
             const fileName = path.win32.basename(caminhoResolvido);
             const contentType = getMimeTypeByFileName(caminhoResolvido);
 
