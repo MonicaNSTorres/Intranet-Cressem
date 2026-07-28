@@ -84,7 +84,7 @@ function isUsuarioOculto(value?: string) {
 export default function HomePage() {
     const [aniversariantesHoje, setAniversariantesHoje] = useState<Aniversariante[]>([]);
     const [popupHome, setPopupHome] = useState<PopupAvisoComImagem | null>(null);
-    const [ultimoPopupRespondido, setUltimoPopupRespondido] = useState<PopupAvisoComImagem | null>(null);
+    //const [ultimoPopupRespondido, setUltimoPopupRespondido] = useState<PopupAvisoComImagem | null>(null);
     const [loadingPopupHome, setLoadingPopupHome] = useState(true);
     const [submittingPopupHome, setSubmittingPopupHome] = useState(false);
     const [statusResposta, setStatusResposta] = useState<"PENDENTE" | "ACEITO" | "RECUSADO">("PENDENTE");
@@ -93,7 +93,8 @@ export default function HomePage() {
     const [erroPopup, setErroPopup] = useState("");
     const [modalErroAberta, setModalErroAberta] = useState(false);
 
-    const popupConteudo = popupHome ?? ultimoPopupRespondido;
+    //const popupConteudo = popupHome ?? ultimoPopupRespondido;
+    const popupConteudo = popupHome;
 
     const imagemValidaPopupHome = useMemo(() => {
         const popup = popupConteudo as PopupAvisoComImagem | null;
@@ -178,6 +179,38 @@ export default function HomePage() {
     }, []);
 
     useEffect(() => {
+        function handlePopupRespondido(event: Event) {
+            const customEvent = event as CustomEvent<{
+                idPopup: number;
+                resposta: "ACEITO" | "RECUSADO";
+            }>;
+
+            const { idPopup, resposta } = customEvent.detail || {};
+
+            if (
+                resposta === "ACEITO" &&
+                popupHome?.ID_POPUP === idPopup
+            ) {
+                setStatusResposta("ACEITO");
+                setPopupHome(null);
+                setModalPopupAberta(false);
+            }
+        }
+
+        window.addEventListener(
+            "popup-aviso-respondido",
+            handlePopupRespondido
+        );
+
+        return () => {
+            window.removeEventListener(
+                "popup-aviso-respondido",
+                handlePopupRespondido
+            );
+        };
+    }, [popupHome]);
+
+    useEffect(() => {
         async function loadAcessos() {
             try {
                 const data = await buscarAcessosSemana();
@@ -231,9 +264,10 @@ export default function HomePage() {
                 resposta,
             });
 
-            setUltimoPopupRespondido(popupHome);
+            //setUltimoPopupRespondido(popupHome);
             setStatusResposta(resposta);
             setPopupHome(null);
+            setModalPopupAberta(false);
         } catch (error: any) {
             console.error("Erro ao responder popup da home:", error);
 
@@ -488,109 +522,111 @@ export default function HomePage() {
 
                 <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <div className="xl:col-span-2 space-y-6">
-                        <div className="overflow-hidden rounded-[28px] border border-secondary/15 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
-                            <div className="border-b border-[#EAECF0] bg-[linear-gradient(135deg,rgba(121,183,41,0.10)_0%,rgba(199,211,0,0.10)_100%)] px-6 py-5">
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary text-white shadow-sm">
-                                            <FaBell className="h-5 w-5" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-lg font-semibold text-(--title)">
-                                                Aviso com ciência do usuário
-                                            </h2>
-                                            <p className="mt-1 text-sm text-(--paragraph)">
-                                                Destaque aqui os comunicados que exigem leitura e confirmação.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-secondary/20 bg-white px-3 py-1 text-xs font-semibold text-secondary">
-                                        <FaShieldAlt className="h-3.5 w-3.5" />
-                                        Requer ação
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="px-6 py-6">
-                                <div className="rounded-3xl border border-secondary/15 bg-[#F8FFF1] p-5">
-                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                        <div className="flex-1">
-                                            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-secondary/10 px-3 py-1 text-xs font-semibold text-secondary">
-                                                <FaBell className="h-3.5 w-3.5" />
-                                                Comunicado em destaque
+                        {(loadingPopupHome || popupHome) && (
+                            <div className="overflow-hidden rounded-[28px] border border-secondary/15 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+                                <div className="border-b border-[#EAECF0] bg-[linear-gradient(135deg,rgba(121,183,41,0.10)_0%,rgba(199,211,0,0.10)_100%)] px-6 py-5">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-start gap-3">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary text-white shadow-sm">
+                                                <FaBell className="h-5 w-5" />
                                             </div>
+                                            <div>
+                                                <h2 className="text-lg font-semibold text-(--title)">
+                                                    Aviso com ciência do usuário
+                                                </h2>
+                                                <p className="mt-1 text-sm text-(--paragraph)">
+                                                    Destaque aqui os comunicados que exigem leitura e confirmação.
+                                                </p>
+                                            </div>
+                                        </div>
 
-                                            <h3 className="text-lg font-semibold text-(--title)">
-                                                {loadingPopupHome
-                                                    ? "Carregando comunicado..."
-                                                    : popupConteudo?.TITULO || "Nenhum comunicado pendente"}
-                                            </h3>
+                                        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-secondary/20 bg-white px-3 py-1 text-xs font-semibold text-secondary">
+                                            <FaShieldAlt className="h-3.5 w-3.5" />
+                                            Requer ação
+                                        </span>
+                                    </div>
+                                </div>
 
-                                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-(--paragraph)">
-                                                {loadingPopupHome
-                                                    ? "Buscando informações do aviso..."
-                                                    : popupConteudo?.MENSAGEM ||
-                                                    "No momento, não há comunicados pendentes para ciência."}
-                                            </p>
+                                <div className="px-6 py-6">
+                                    <div className="rounded-3xl border border-secondary/15 bg-[#F8FFF1] p-5">
+                                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                            <div className="flex-1">
+                                                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-secondary/10 px-3 py-1 text-xs font-semibold text-secondary">
+                                                    <FaBell className="h-3.5 w-3.5" />
+                                                    Comunicado em destaque
+                                                </div>
 
-                                            {popupConteudo && (
-                                                <div className="mt-4 flex flex-wrap gap-3">
-                                                    {popupHome && (
+                                                <h3 className="text-lg font-semibold text-(--title)">
+                                                    {loadingPopupHome
+                                                        ? "Carregando comunicado..."
+                                                        : popupConteudo?.TITULO || "Nenhum comunicado pendente"}
+                                                </h3>
+
+                                                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-(--paragraph)">
+                                                    {loadingPopupHome
+                                                        ? "Buscando informações do aviso..."
+                                                        : popupConteudo?.MENSAGEM ||
+                                                        "No momento, não há comunicados pendentes para ciência."}
+                                                </p>
+
+                                                {popupConteudo && (
+                                                    <div className="mt-4 flex flex-wrap gap-3">
+                                                        {popupHome && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleResponderPopupHome("ACEITO")}
+                                                                disabled={submittingPopupHome}
+                                                                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.01] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                                            >
+                                                                <FaCheckCircle className="h-4 w-4" />
+                                                                {popupHome.BOTAO_ACEITAR || "Li e estou ciente"}
+                                                            </button>
+                                                        )}
+
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleResponderPopupHome("ACEITO")}
-                                                            disabled={submittingPopupHome}
-                                                            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.01] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                                            onClick={() => setModalPopupAberta(true)}
+                                                            className="inline-flex items-center gap-2 rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-(--title) transition hover:border-[#00AE9D]/30 hover:bg-[#00AE9D]/5"
                                                         >
-                                                            <FaCheckCircle className="h-4 w-4" />
-                                                            {popupHome.BOTAO_ACEITAR || "Li e estou ciente"}
+                                                            <FaEye className="h-4 w-4" />
+                                                            Ler comunicado
                                                         </button>
-                                                    )}
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setModalPopupAberta(true)}
-                                                        className="inline-flex items-center gap-2 rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-(--title) transition hover:border-[#00AE9D]/30 hover:bg-[#00AE9D]/5"
-                                                    >
-                                                        <FaEye className="h-4 w-4" />
-                                                        Ler comunicado
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="min-w-55 rounded-[22px] border border-white bg-white p-4 shadow-sm">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-(--text-darken)">
-                                                Status sugerido
-                                            </p>
-                                            <p className="mt-2 text-sm font-semibold text-(--title)">
-                                                {loadingPopupHome
-                                                    ? "Carregando..."
-                                                    : statusResposta === "ACEITO"
-                                                        ? "Você aceitou o comunicado"
-                                                        : statusResposta === "RECUSADO"
-                                                            ? "Você recusou o comunicado"
-                                                            : popupHome
-                                                                ? "Aguardando ciência"
-                                                                : "Sem pendência"}
-                                            </p>
-                                            <p className="mt-2 text-xs leading-5 text-(--paragraph)">
-                                                {loadingPopupHome
-                                                    ? "Buscando status do comunicado."
-                                                    : statusResposta === "ACEITO"
-                                                        ? "Sua resposta de aceite foi registrada com sucesso."
-                                                        : statusResposta === "RECUSADO"
-                                                            ? "Sua resposta de recusa foi registrada com sucesso."
-                                                            : popupHome
-                                                                ? "Há um comunicado pendente de resposta para este usuário."
-                                                                : "Não há comunicado pendente no momento."}
-                                            </p>
+                                            <div className="min-w-55 rounded-[22px] border border-white bg-white p-4 shadow-sm">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-(--text-darken)">
+                                                    Status sugerido
+                                                </p>
+                                                <p className="mt-2 text-sm font-semibold text-(--title)">
+                                                    {loadingPopupHome
+                                                        ? "Carregando..."
+                                                        : statusResposta === "ACEITO"
+                                                            ? "Você aceitou o comunicado"
+                                                            : statusResposta === "RECUSADO"
+                                                                ? "Você recusou o comunicado"
+                                                                : popupHome
+                                                                    ? "Aguardando ciência"
+                                                                    : "Sem pendência"}
+                                                </p>
+                                                <p className="mt-2 text-xs leading-5 text-(--paragraph)">
+                                                    {loadingPopupHome
+                                                        ? "Buscando status do comunicado."
+                                                        : statusResposta === "ACEITO"
+                                                            ? "Sua resposta de aceite foi registrada com sucesso."
+                                                            : statusResposta === "RECUSADO"
+                                                                ? "Sua resposta de recusa foi registrada com sucesso."
+                                                                : popupHome
+                                                                    ? "Há um comunicado pendente de resposta para este usuário."
+                                                                    : "Não há comunicado pendente no momento."}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="overflow-hidden rounded-[28px] border border-primary/10 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
                             <div className="border-b border-[#EAECF0] px-6 py-5">
@@ -964,7 +1000,7 @@ export default function HomePage() {
                             </div>
                         </Link>
 
-                        <div className="rounded-[28px] border border-secondary/15 bg-[linear-gradient(135deg,#00AE9D_0%,#79B729_100%)] p-6 text-white shadow-[0_12px_30px_rgba(0,174,157,0.18)]">
+                        {/*<div className="rounded-[28px] border border-secondary/15 bg-[linear-gradient(135deg,#00AE9D_0%,#79B729_100%)] p-6 text-white shadow-[0_12px_30px_rgba(0,174,157,0.18)]">
                             <div className="flex items-start gap-3">
                                 <div className="flex items-center justify-center w-12 h-12 min-w-12 min-h-12 rounded-full bg-white/20">
                                     <FaCheckCircle className="h-5 w-5" />
@@ -979,7 +1015,7 @@ export default function HomePage() {
                                     </p>
                                 </div>
                             </div>
-                        </div>
+                        </div>*/}
                     </div>
                 </section>
 
@@ -1102,10 +1138,7 @@ export default function HomePage() {
                                             {popupHome && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        handleResponderPopupHome("ACEITO");
-                                                        setModalPopupAberta(false);
-                                                    }}
+                                                    onClick={() => handleResponderPopupHome("ACEITO")}
                                                     disabled={submittingPopupHome}
                                                     className="inline-flex min-w-42.5 items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                                                 >

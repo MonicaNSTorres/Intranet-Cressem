@@ -1452,8 +1452,8 @@ export function Cnab240Form() {
                                             </p>
 
                                             <p className="mt-1 text-xs leading-6 text-gray-600">
-                                                O usuário informa CPF, valor, tipo e descrição. O sistema
-                                                busca os dados bancários do favorecido, monta a lista de
+                                                O usuário informa CPF, valor e descrição. O tipo da transferência é definido automaticamente conforme o banco da remessa e o banco do favorecido.
+                                                O sistema busca os dados bancários do favorecido, monta a lista de
                                                 pagamentos e gera o TXT CNAB240.
                                             </p>
                                         </div>

@@ -87,6 +87,14 @@ export function PopupAvisoGate() {
       });
 
       setPopup(null);
+      window.dispatchEvent(
+        new CustomEvent("popup-aviso-respondido", {
+          detail: {
+            idPopup: popup.ID_POPUP,
+            resposta,
+          },
+        })
+      );
     } catch (error) {
       console.error("Erro ao responder popup:", error);
       alert("Não foi possível registrar sua resposta.");
@@ -131,7 +139,7 @@ export function PopupAvisoGate() {
         >
           <div className="max-h-[90vh] overflow-y-auto">
             {imagemValida ? (
-              <div className="relative h-[440px] w-full overflow-hidden bg-slate-100">
+              <div className="relative h-110 w-full overflow-hidden bg-slate-100">
                 <img
                   src={imagemValida}
                   alt="Imagem do aviso"
