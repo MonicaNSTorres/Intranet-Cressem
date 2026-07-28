@@ -227,41 +227,31 @@ async function execSmbClient(command: string) {
     }
 }
 
-async function tentarCriarDiretorioSmbLinux(diretorio: string) {
-    try {
-        await execSmbClient(`mkdir "${diretorio}"`);
-    } catch {
-        // O smbclient retorna erro quando a pasta já existe. Podemos seguir.
-    }
-}
-
 async function salvarArquivoPatrocinioNoServidorSMBLinux(
     fileData: Buffer,
     fileName: string,
     solicitanteSafe: string
 ) {
-    const diretorioDestino = path.posix.join(
-        "CRM",
-        "PATROCINIO",
-        solicitanteSafe
-    );
-    const niveis = [
+    const diretorioDestino = `CRM/PATROCINIO/${solicitanteSafe}`;
+    const pastasParaGarantir = [
         "CRM",
         "CRM/PATROCINIO",
-        path.posix.join("CRM", "PATROCINIO", solicitanteSafe),
+        diretorioDestino,
     ];
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "patrocinio-smb-"));
     const tempFilePath = path.join(tempDir, fileName);
 
     try {
-        for (const nivel of niveis) {
-            await tentarCriarDiretorioSmbLinux(nivel);
+        for (const pasta of pastasParaGarantir) {
+            try {
+                await execSmbClient(`mkdir "${pasta}"`);
+            } catch {
+                // Se a pasta ja existe, o smbclient acusa erro. Pode seguir.
+            }
         }
 
         await fs.writeFile(tempFilePath, fileData);
-        await execSmbClient(
-            `cd "${diretorioDestino}"; put "${tempFilePath}" "${fileName}"`
-        );
+        await execSmbClient(`cd "${diretorioDestino}"; put "${tempFilePath}" "${fileName}"`);
 
         return `${getShareRootLinux()}/${diretorioDestino}/${fileName}`;
     } finally {
@@ -272,16 +262,19 @@ async function salvarArquivoPatrocinioNoServidorSMBLinux(
 async function readFileFromSmbLinux(caminhoOriginal: string) {
     const caminhoRelativo = getSmbRelativePath(caminhoOriginal);
     const fileName = path.posix.basename(caminhoRelativo);
-    const remoteDir = path.posix.dirname(caminhoRelativo);
+    const pastaRemota = path.posix.dirname(caminhoRelativo);
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "patrocinio-smb-download-"));
     const tempFilePath = path.join(tempDir, fileName);
 
     try {
-        const cdCommand = remoteDir && remoteDir !== "."
-            ? `cd "${remoteDir}"; `
-            : "";
-        await execSmbClient(`${cdCommand}get "${fileName}" "${tempFilePath}"`);
+        const comando = pastaRemota && pastaRemota !== "."
+            ? `cd "${pastaRemota}"; get "${fileName}" "${tempFilePath}"`
+            : `get "${fileName}" "${tempFilePath}"`;
+
+        await execSmbClient(comando);
+
         const buffer = await fs.readFile(tempFilePath);
+
         return {
             buffer,
             caminhoResolvido: `${getShareRootLinux()}/${caminhoRelativo}`,
