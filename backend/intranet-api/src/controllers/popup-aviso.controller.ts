@@ -304,11 +304,12 @@ P.DS_LINK
           AND (P.DT_INICIO IS NULL OR TRUNC(SYSDATE) >= TRUNC(P.DT_INICIO))
           AND (P.DT_FIM IS NULL OR TRUNC(SYSDATE) <= TRUNC(P.DT_FIM))
           AND NOT EXISTS (
-            SELECT 1
-              FROM DBACRESSEM.INTRANET_POPUP_RESPOSTAS R
-             WHERE R.ID_POPUP = P.ID_POPUP
-               AND UPPER(R.LOGIN_USUARIO) = UPPER(:loginUsuario)
-          )
+    SELECT 1
+      FROM DBACRESSEM.INTRANET_POPUP_RESPOSTAS R
+     WHERE R.ID_POPUP = P.ID_POPUP
+       AND UPPER(TRIM(R.LOGIN_USUARIO)) = UPPER(TRIM(:loginUsuario))
+       AND UPPER(TRIM(R.RESPOSTA)) = 'ACEITO'
+)
         ORDER BY P.ID_POPUP DESC
       )
       WHERE ROWNUM = 1
@@ -359,22 +360,42 @@ export async function responderPopupAviso(req: Request, res: Response) {
     }
 
     const sql = `
-      INSERT INTO DBACRESSEM.INTRANET_POPUP_RESPOSTAS (
-        ID_POPUP,
-        LOGIN_USUARIO,
-        NOME_USUARIO,
-        RESPOSTA,
-        DT_RESPOSTA,
-        IP_USUARIO
-      ) VALUES (
-        :idPopup,
-        :loginUsuario,
-        :nomeUsuario,
-        :resposta,
-        SYSDATE,
-        :ipUsuario
-      )
-    `;
+  MERGE INTO DBACRESSEM.INTRANET_POPUP_RESPOSTAS R
+  USING (
+    SELECT
+      :idPopup AS ID_POPUP,
+      :loginUsuario AS LOGIN_USUARIO
+    FROM DUAL
+  ) D
+  ON (
+    R.ID_POPUP = D.ID_POPUP
+    AND UPPER(TRIM(R.LOGIN_USUARIO)) =
+        UPPER(TRIM(D.LOGIN_USUARIO))
+  )
+  WHEN MATCHED THEN
+    UPDATE SET
+      R.NOME_USUARIO = :nomeUsuario,
+      R.RESPOSTA = :resposta,
+      R.DT_RESPOSTA = SYSDATE,
+      R.IP_USUARIO = :ipUsuario
+  WHEN NOT MATCHED THEN
+    INSERT (
+      ID_POPUP,
+      LOGIN_USUARIO,
+      NOME_USUARIO,
+      RESPOSTA,
+      DT_RESPOSTA,
+      IP_USUARIO
+    )
+    VALUES (
+      :idPopup,
+      :loginUsuario,
+      :nomeUsuario,
+      :resposta,
+      SYSDATE,
+      :ipUsuario
+    )
+`;
 
     await oracleExecuteCommitWithAudit(req, sql, {
       idPopup: Number(idPopup),
