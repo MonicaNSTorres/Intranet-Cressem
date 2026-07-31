@@ -113,7 +113,7 @@ export function ConsultaSalaReuniao() {
   } | null>(null);
 
   const [dataConsulta, setDataConsulta] = useState(hojeISO());
-  const [modoConsulta, setModoConsulta] = useState<"DIA" | "MES">("DIA");
+  const [modoConsulta, setModoConsulta] = useState<"DIA" | "MES">("MES");
   const [mesConsulta, setMesConsulta] = useState(hojeISO().slice(0, 7));
   const [tipoFiltro, setTipoFiltro] = useState<"TODOS" | TipoEspacoReserva>(
     "TODOS"
@@ -369,7 +369,7 @@ export function ConsultaSalaReuniao() {
   function limparFiltros() {
     const hoje = hojeISO();
 
-    setModoConsulta("DIA");
+    setModoConsulta("MES");
     setTipoFiltro("TODOS");
     setNomeFiltro("TODOS");
     setDataConsulta(hoje);
@@ -442,7 +442,7 @@ export function ConsultaSalaReuniao() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-          <div className="md:col-span-2">
+          <div className="md:col-span-3">
             <Field label="Consulta">
               <select
                 value={modoConsulta}
@@ -457,7 +457,7 @@ export function ConsultaSalaReuniao() {
             </Field>
           </div>
 
-          <div className="md:col-span-2">
+          <div className="md:col-span-3">
             <Field label={modoConsulta === "MES" ? "Mês" : "Data"}>
               {modoConsulta === "MES" ? (
                 <input
@@ -477,7 +477,7 @@ export function ConsultaSalaReuniao() {
             </Field>
           </div>
 
-          <div className="md:col-span-2">
+          {/*<div className="md:col-span-2">
             <Field label="Tipo de espaço">
               <select
                 value={tipoFiltro}
@@ -494,7 +494,7 @@ export function ConsultaSalaReuniao() {
             </Field>
           </div>
 
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
             <Field label="Espaço">
               <select
                 value={nomeFiltro}
@@ -513,9 +513,9 @@ export function ConsultaSalaReuniao() {
                   ))}
               </select>
             </Field>
-          </div>
+          </div>*/}
 
-          <div className="md:col-span-3">
+          <div className="md:col-span-6">
             <Field label="Ações">
               <div className="flex gap-2">
                 <button
@@ -540,7 +540,7 @@ export function ConsultaSalaReuniao() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      {/*<section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {espacosFiltrados.map((espaco) => {
           const status = getStatusEspaco(espaco.nome);
           const ocupado = status.status === "OCUPADO";
@@ -609,9 +609,8 @@ export function ConsultaSalaReuniao() {
             </div>
           );
         })}
-      </section>
+      </section>*/}
 
-      {/* ===== SELETOR DE VISUALIZAÇÃO ===== */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -665,35 +664,47 @@ export function ConsultaSalaReuniao() {
       </section>
 
       {modoVisualizacao === "CALENDARIO" && (
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-            <h3 className="text-lg font-bold text-slate-800">
-              Calendário de reservas
-            </h3>
+        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.35)]">
+          <div className="border-b border-slate-200 bg-linear-to-r from-slate-50 via-white to-emerald-50/60 px-6 py-5 lg:px-8">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-primary">
+                    <FaCalendarAlt size={20} />
+                  </div>
 
-            <p className="mt-1 text-sm text-slate-500">
-              Visualização mensal, semanal e diária das reservas.
-            </p>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">
+                      Calendário de reservas
+                    </h3>
 
-            <div className="mt-4 flex flex-wrap items-center gap-5 text-sm font-medium text-slate-700">
-              <div className="flex items-center gap-2">
-                <span className="h-4 w-4 rounded-full bg-[#00AE9D]" />
-                Sala de Reunião
+                    <p className="mt-1 text-sm text-slate-500">
+                      Acompanhe todas as reservas do período de forma rápida e visual.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="h-4 w-4 rounded-full bg-[#F59E0B]" />
-                Sala da Diretoria
-              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+                  <span className="h-3 w-3 rounded-full bg-[#00AE9D]" />
+                  Sala de Reunião
+                </div>
 
-              <div className="flex items-center gap-2">
-                <span className="h-4 w-4 rounded-full bg-[#2563EB]" />
-                Auditório
+                <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+                  <span className="h-3 w-3 rounded-full bg-[#F59E0B]" />
+                  Sala da Diretoria
+                </div>
+
+                <div className="flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800">
+                  <span className="h-3 w-3 rounded-full bg-[#2563EB]" />
+                  Auditório
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="p-5">
+          <div className="calendar-reservas-wrapper p-4 sm:p-6 lg:p-8">
             <FullCalendar
               ref={calendarioRef}
               plugins={[
@@ -703,30 +714,29 @@ export function ConsultaSalaReuniao() {
               ]}
               locale={ptBrLocale}
               initialView="dayGridMonth"
-
               events={eventosCalendario}
-
               eventDisplay="block"
               eventBorderColor="transparent"
-
+              dayMaxEvents={3}
+              fixedWeekCount={false}
+              showNonCurrentDates
               eventContent={(eventInfo) => {
                 const reserva =
                   eventInfo.event.extendedProps.reserva as ReservaSalaItem;
 
                 return (
-                  <div className="w-full overflow-hidden px-1 text-xs font-semibold">
-                    <div className="truncate">
+                  <div className="w-full overflow-hidden px-1.5 py-0.5 text-xs font-semibold leading-4">
+                    <div className="truncate font-bold">
                       {formatHora(reserva.DT_INICIO)} às{" "}
                       {formatHora(reserva.DT_FIM)}
                     </div>
 
-                    <div className="truncate">
+                    <div className="truncate opacity-95">
                       {reserva.NM_ESPACO} - {reserva.DS_TITULO}
                     </div>
                   </div>
                 );
               }}
-
               eventMouseEnter={(info) => {
                 const reserva =
                   info.event.extendedProps.reserva as ReservaSalaItem;
@@ -739,25 +749,21 @@ export function ConsultaSalaReuniao() {
                   y: rect.bottom + 8,
                 });
               }}
-
               eventMouseLeave={() => {
                 setTooltipReserva(null);
               }}
-
               displayEventTime={false}
-
               height="auto"
+              contentHeight={780}
               nowIndicator
               allDaySlot={false}
               slotMinTime="07:00:00"
               slotMaxTime="22:00:00"
-
               headerToolbar={{
                 left: "prev,next today",
                 center: "title",
                 right: "dayGridMonth,timeGridWeek,timeGridDay",
               }}
-
               buttonText={{
                 today: "Hoje",
                 month: "Mês",
@@ -766,6 +772,156 @@ export function ConsultaSalaReuniao() {
               }}
             />
           </div>
+
+          <style jsx global>{`
+            .calendar-reservas-wrapper .fc {
+              --fc-border-color: #e2e8f0;
+              --fc-page-bg-color: #ffffff;
+              --fc-neutral-bg-color: #f8fafc;
+              --fc-today-bg-color: #fef9c3;
+              font-family: inherit;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-toolbar {
+              margin-bottom: 1.5rem;
+              gap: 1rem;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-toolbar-title {
+              color: #0f172a;
+              font-size: 1.5rem;
+              font-weight: 800;
+              text-transform: capitalize;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-button {
+              border: 0;
+              border-radius: 0.75rem;
+              background: #0f253a;
+              padding: 0.7rem 1rem;
+              font-weight: 700;
+              box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+              transition:
+                transform 150ms ease,
+                background-color 150ms ease,
+                box-shadow 150ms ease;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-button:hover {
+              background: #1e3a52;
+              box-shadow: 0 8px 20px -12px rgb(15 23 42 / 0.65);
+              transform: translateY(-1px);
+            }
+
+            .calendar-reservas-wrapper .fc .fc-button-primary:not(:disabled).fc-button-active,
+            .calendar-reservas-wrapper .fc .fc-button-primary:not(:disabled):active {
+              background: #79b729;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-scrollgrid {
+              overflow: hidden;
+              border-radius: 1rem;
+              border: 1px solid #e2e8f0;
+              box-shadow: 0 12px 30px -24px rgb(15 23 42 / 0.45);
+            }
+
+            .calendar-reservas-wrapper .fc .fc-col-header-cell {
+              background: #f8fafc;
+              padding: 0.75rem 0.4rem;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-col-header-cell-cushion {
+              color: #334155;
+              font-size: 0.78rem;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-daygrid-day {
+              min-height: 8rem;
+              background: #ffffff;
+              transition: background-color 150ms ease;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-daygrid-day:hover {
+              background: #f8fafc;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-daygrid-day-frame {
+              min-height: 8rem;
+              padding: 0.35rem;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-daygrid-day-number {
+              display: inline-flex;
+              min-width: 1.8rem;
+              height: 1.8rem;
+              align-items: center;
+              justify-content: center;
+              border-radius: 9999px;
+              color: #475569;
+              font-size: 0.8rem;
+              font-weight: 800;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-day-today .fc-daygrid-day-number {
+              background: #79b729;
+              color: #ffffff;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-day-other {
+              background: #f8fafc;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-day-other .fc-daygrid-day-number {
+              color: #cbd5e1;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-daygrid-event {
+              margin: 0.18rem 0.25rem;
+              border-radius: 0.6rem;
+              padding: 0.2rem;
+              box-shadow: 0 5px 14px -10px rgb(15 23 42 / 0.8);
+              transition:
+                transform 150ms ease,
+                box-shadow 150ms ease,
+                filter 150ms ease;
+            }
+
+            .calendar-reservas-wrapper .fc .fc-daygrid-event:hover {
+              filter: brightness(0.98);
+              box-shadow: 0 10px 20px -12px rgb(15 23 42 / 0.75);
+              transform: translateY(-1px);
+            }
+
+            .calendar-reservas-wrapper .fc .fc-more-link {
+              margin-left: 0.3rem;
+              color: #047857;
+              font-size: 0.75rem;
+              font-weight: 800;
+            }
+
+            @media (max-width: 1024px) {
+              .calendar-reservas-wrapper .fc .fc-toolbar {
+                align-items: stretch;
+                flex-direction: column;
+              }
+
+              .calendar-reservas-wrapper .fc .fc-toolbar-chunk {
+                display: flex;
+                justify-content: center;
+              }
+
+              .calendar-reservas-wrapper .fc .fc-toolbar-title {
+                font-size: 1.25rem;
+              }
+
+              .calendar-reservas-wrapper .fc .fc-daygrid-day-frame {
+                min-height: 7rem;
+              }
+            }
+          `}</style>
         </section>
       )}
 

@@ -573,8 +573,23 @@ export function CadastroReembolsoDespesaForm() {
             <input
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              className="w-full rounded border bg-gray-50 px-3 py-2"
-              readOnly
+              className="
+    w-full
+    h-11
+    rounded-lg
+    border
+    border-gray-300
+    bg-white
+    px-3
+    text-sm
+    text-gray-700
+    shadow-sm
+    outline-none
+    transition
+    focus:border-[#00AE9D]
+    focus:ring-2
+    focus:ring-[#00AE9D]/20
+  "
             />
           </div>
 

@@ -17,7 +17,15 @@ import {
     FaCheckCircle,
     FaEye,
     FaMapSigns,
-    FaDesktop
+    FaDesktop,
+    FaSun,
+    FaCloud,
+    FaCloudSun,
+    FaCloudRain,
+    FaSnowflake,
+    FaTemperatureHigh,
+    FaWind,
+    FaTint,
 } from "react-icons/fa";
 import HomeScreenSearch from "@/components/search-home/search-home";
 import { SCREENS } from "@/config/screens";
@@ -68,6 +76,17 @@ type PopupAvisoComImagem = PopupAviso & {
     DS_LINK?: string | null;
 };
 
+type ClimaAtual = {
+    temperatura: number;
+    sensacao: number;
+    umidade: number;
+    vento: number;
+    maxima: number;
+    minima: number;
+    codigo: number;
+    atualizadoEm: string;
+};
+
 function normalizeSearch(value: string) {
     return String(value || "")
         .normalize("NFD")
@@ -81,6 +100,50 @@ function isUsuarioOculto(value?: string) {
     return nome === "externo" || nome === "sala ti" || nome === "monica teste";
 }
 
+function obterCondicaoClima(codigo: number) {
+    if (codigo === 0) {
+        return {
+            descricao: "Céu limpo",
+            icon: <FaSun className="h-12 w-12 text-amber-400" />,
+        };
+    }
+
+    if ([1, 2].includes(codigo)) {
+        return {
+            descricao: "Parcialmente nublado",
+            icon: <FaCloudSun className="h-12 w-12 text-amber-400" />,
+        };
+    }
+
+    if ([3, 45, 48].includes(codigo)) {
+        return {
+            descricao: codigo === 3 ? "Nublado" : "Neblina",
+            icon: <FaCloud className="h-12 w-12 text-slate-400" />,
+        };
+    }
+
+    if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(codigo)) {
+        return {
+            descricao: [95, 96, 99].includes(codigo)
+                ? "Trovoadas"
+                : "Chuva",
+            icon: <FaCloudRain className="h-12 w-12 text-sky-500" />,
+        };
+    }
+
+    if ([71, 73, 75, 77, 85, 86].includes(codigo)) {
+        return {
+            descricao: "Neve",
+            icon: <FaSnowflake className="h-12 w-12 text-sky-400" />,
+        };
+    }
+
+    return {
+        descricao: "Condição variável",
+        icon: <FaCloudSun className="h-12 w-12 text-amber-400" />,
+    };
+}
+
 export default function HomePage() {
     const [aniversariantesHoje, setAniversariantesHoje] = useState<Aniversariante[]>([]);
     const [popupHome, setPopupHome] = useState<PopupAvisoComImagem | null>(null);
@@ -92,6 +155,11 @@ export default function HomePage() {
     const [userGroups, setUserGroups] = useState<string[]>([]);
     const [erroPopup, setErroPopup] = useState("");
     const [modalErroAberta, setModalErroAberta] = useState(false);
+    const [climaAtual, setClimaAtual] = useState<ClimaAtual | null>(null);
+    const [loadingClima, setLoadingClima] = useState(true);
+    const [erroClima, setErroClima] = useState(false);
+    const [cidadeClima, setCidadeClima] = useState("São José dos Campos");
+    const [localizacaoAutomatica, setLocalizacaoAutomatica] = useState(false);
 
     //const popupConteudo = popupHome ?? ultimoPopupRespondido;
     const popupConteudo = popupHome;
@@ -251,6 +319,201 @@ export default function HomePage() {
         }
 
         carregarPaginasMaisAcessadas();
+    }, []);
+
+    useEffect(() => {
+        const LOCALIZACAO_PADRAO = {
+            latitude: -23.2237,
+            longitude: -45.9009,
+            cidade: "São José dos Campos",
+        };
+
+        let interval: ReturnType<typeof setInterval> | null = null;
+        let componenteAtivo = true;
+
+        async function buscarNomeCidade(
+            latitude: number,
+            longitude: number
+        ) {
+            try {
+                const params = new URLSearchParams({
+                    latitude: String(latitude),
+                    longitude: String(longitude),
+                    localityLanguage: "pt",
+                });
+
+                const response = await fetch(
+                    `https://api.bigdatacloud.net/data/reverse-geocode-client?${params.toString()}`
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                return (
+                    data.city ||
+                    data.locality ||
+                    data.principalSubdivision ||
+                    "Sua localização"
+                );
+            } catch (error) {
+                console.error("Erro ao identificar cidade:", error);
+                return "Sua localização";
+            }
+        }
+
+        async function carregarClima(
+            latitude: number,
+            longitude: number
+        ) {
+            try {
+                if (componenteAtivo) {
+                    setLoadingClima(true);
+                    setErroClima(false);
+                }
+
+                const params = new URLSearchParams({
+                    latitude: String(latitude),
+                    longitude: String(longitude),
+                    current: [
+                        "temperature_2m",
+                        "relative_humidity_2m",
+                        "apparent_temperature",
+                        "weather_code",
+                        "wind_speed_10m",
+                    ].join(","),
+                    daily: [
+                        "temperature_2m_max",
+                        "temperature_2m_min",
+                    ].join(","),
+                    timezone: "auto",
+                    forecast_days: "1",
+                });
+
+                const response = await fetch(
+                    `https://api.open-meteo.com/v1/forecast?${params.toString()}`
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (!componenteAtivo) return;
+
+                setClimaAtual({
+                    temperatura: Math.round(data.current?.temperature_2m ?? 0),
+                    sensacao: Math.round(data.current?.apparent_temperature ?? 0),
+                    umidade: Math.round(data.current?.relative_humidity_2m ?? 0),
+                    vento: Math.round(data.current?.wind_speed_10m ?? 0),
+                    maxima: Math.round(data.daily?.temperature_2m_max?.[0] ?? 0),
+                    minima: Math.round(data.daily?.temperature_2m_min?.[0] ?? 0),
+                    codigo: Number(data.current?.weather_code ?? 0),
+                    atualizadoEm: data.current?.time ?? "",
+                });
+            } catch (error) {
+                console.error("Erro ao carregar clima:", error);
+
+                if (componenteAtivo) {
+                    setErroClima(true);
+                    setClimaAtual(null);
+                }
+            } finally {
+                if (componenteAtivo) {
+                    setLoadingClima(false);
+                }
+            }
+        }
+
+        function obterLocalizacaoUsuario() {
+            return new Promise<{
+                latitude: number;
+                longitude: number;
+                automatica: boolean;
+            }>((resolve) => {
+                if (!navigator.geolocation) {
+                    resolve({
+                        latitude: LOCALIZACAO_PADRAO.latitude,
+                        longitude: LOCALIZACAO_PADRAO.longitude,
+                        automatica: false,
+                    });
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            automatica: true,
+                        });
+                    },
+                    (error) => {
+                        console.warn(
+                            "Localização não autorizada ou indisponível. Usando São José dos Campos:",
+                            error
+                        );
+
+                        resolve({
+                            latitude: LOCALIZACAO_PADRAO.latitude,
+                            longitude: LOCALIZACAO_PADRAO.longitude,
+                            automatica: false,
+                        });
+                    },
+                    {
+                        enableHighAccuracy: false,
+                        timeout: 10000,
+                        maximumAge: 30 * 60 * 1000,
+                    }
+                );
+            });
+        }
+
+        async function iniciarClima() {
+            const localizacao = await obterLocalizacaoUsuario();
+
+            if (!componenteAtivo) return;
+
+            if (localizacao.automatica) {
+                const cidade = await buscarNomeCidade(
+                    localizacao.latitude,
+                    localizacao.longitude
+                );
+
+                if (!componenteAtivo) return;
+
+                setCidadeClima(cidade);
+                setLocalizacaoAutomatica(true);
+            } else {
+                setCidadeClima(LOCALIZACAO_PADRAO.cidade);
+                setLocalizacaoAutomatica(false);
+            }
+
+            await carregarClima(
+                localizacao.latitude,
+                localizacao.longitude
+            );
+
+            interval = setInterval(() => {
+                carregarClima(
+                    localizacao.latitude,
+                    localizacao.longitude
+                );
+            }, 30 * 60 * 1000);
+        }
+
+        iniciarClima();
+
+        return () => {
+            componenteAtivo = false;
+
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
     }, []);
 
     async function handleResponderPopupHome(resposta: "ACEITO" | "RECUSADO") {
@@ -463,6 +726,10 @@ export default function HomePage() {
         : 0;
 
     console.log(paginasMaisAcessadas);
+
+    const condicaoClima = climaAtual
+        ? obterCondicaoClima(climaAtual.codigo)
+        : null;
 
     return (
         <div className="min-h-full bg-linear-to-b from-white via-white to-[#F6FBFA] p-6 lg:p-8">
@@ -689,6 +956,133 @@ export default function HomePage() {
                                         {...item}
                                     />
                                 ))}
+                            </div>
+                        </div>
+
+                        <div className="overflow-hidden rounded-[28px] border border-sky-200/70 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+                            <div className="border-b border-[#EAECF0] bg-[linear-gradient(135deg,rgba(14,165,233,0.10)_0%,rgba(255,255,255,1)_52%,rgba(250,204,21,0.10)_100%)] px-6 py-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
+                                        <FaCloudSun className="h-6 w-6" />
+                                    </div>
+
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-(--title)">
+                                            Clima em {cidadeClima}
+                                        </h2>
+
+                                        <p className="text-sm text-(--paragraph)">
+                                            {localizacaoAutomatica
+                                                ? "Clima da sua localização atual."
+                                                : "Localização padrão: São José dos Campos."}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6">
+                                {loadingClima ? (
+                                    <div className="flex min-h-52 items-center justify-center rounded-3xl border border-dashed border-sky-200 bg-sky-50/50 px-4 text-center">
+                                        <div>
+                                            <FaCloudSun className="mx-auto h-12 w-12 animate-pulse text-sky-400" />
+                                            <p className="mt-3 text-sm font-semibold text-(--title)">
+                                                Carregando informações do clima...
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : erroClima || !climaAtual || !condicaoClima ? (
+                                    <div className="flex min-h-52 items-center justify-center rounded-3xl border border-dashed border-[#D0D5DD] bg-[#FAFAFA] px-4 text-center">
+                                        <div>
+                                            <FaCloudSun className="mx-auto h-12 w-12 text-slate-400" />
+                                            <p className="mt-3 text-sm font-semibold text-(--title)">
+                                                Clima indisponível no momento
+                                            </p>
+                                            <p className="mt-1 text-xs text-(--paragraph)">
+                                                As informações serão atualizadas automaticamente.
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-5 lg:grid-cols-[1.15fr_1fr]">
+                                        <div className="relative overflow-hidden rounded-3xl border border-sky-100 bg-[linear-gradient(135deg,#F0F9FF_0%,#FFFFFF_55%,#FFFBEB_100%)] p-6">
+                                            <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-200/25 blur-2xl" />
+
+                                            <div className="relative flex items-center justify-between gap-5">
+                                                <div>
+                                                    <p className="text-sm font-medium text-slate-500">
+                                                        Agora
+                                                    </p>
+
+                                                    <div className="mt-1 flex items-start">
+                                                        <span className="text-6xl font-semibold tracking-tight text-(--title)">
+                                                            {climaAtual.temperatura}
+                                                        </span>
+                                                        <span className="mt-2 text-2xl font-semibold text-slate-500">
+                                                            °C
+                                                        </span>
+                                                    </div>
+
+                                                    <p className="mt-2 text-base font-semibold text-(--title)">
+                                                        {condicaoClima.descricao}
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm text-(--paragraph)">
+                                                        Sensação de {climaAtual.sensacao}°C
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-sm">
+                                                    {condicaoClima.icon}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="rounded-2xl border border-[#EAECF0] bg-[#FCFCFD] p-4">
+                                                <FaTemperatureHigh className="h-4 w-4 text-rose-500" />
+                                                <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-(--text-darken)">
+                                                    Máxima
+                                                </p>
+                                                <p className="mt-1 text-xl font-semibold text-(--title)">
+                                                    {climaAtual.maxima}°C
+                                                </p>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-[#EAECF0] bg-[#FCFCFD] p-4">
+                                                <FaTemperatureHigh className="h-4 w-4 text-sky-500" />
+                                                <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-(--text-darken)">
+                                                    Mínima
+                                                </p>
+                                                <p className="mt-1 text-xl font-semibold text-(--title)">
+                                                    {climaAtual.minima}°C
+                                                </p>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-[#EAECF0] bg-[#FCFCFD] p-4">
+                                                <FaTint className="h-4 w-4 text-sky-500" />
+                                                <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-(--text-darken)">
+                                                    Umidade
+                                                </p>
+                                                <p className="mt-1 text-xl font-semibold text-(--title)">
+                                                    {climaAtual.umidade}%
+                                                </p>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-[#EAECF0] bg-[#FCFCFD] p-4">
+                                                <FaWind className="h-4 w-4 text-primary" />
+                                                <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-(--text-darken)">
+                                                    Vento
+                                                </p>
+                                                <p className="mt-1 text-xl font-semibold text-(--title)">
+                                                    {climaAtual.vento}
+                                                    <span className="ml-1 text-xs font-medium text-slate-500">
+                                                        km/h
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
