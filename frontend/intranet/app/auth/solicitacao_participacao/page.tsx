@@ -6,23 +6,19 @@ import { SolicitacaoParticipacaoForm } from "@/components/solicitacao-participac
 
 export default function SolicitacaoParticipacaoPage() {
   return (
-    <div className="p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="p-5 lg:p-8">
+      <BackButton />
+      <div className="mt-4 flex items-center gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-[#006f65] shadow-sm">
+          <FaBullhorn size={18} />
+        </div>
         <div className="min-w-0">
-          <BackButton />
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
-              <FaBullhorn size={16} />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                Solicitação de Participação de Marketing
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Preencha a solicitação, anexe os documentos e envie para aprovação.
-              </p>
-            </div>
-          </div>
+          <h1 className="truncate text-2xl font-black text-slate-950">
+            Solicitação de Participação de Marketing
+          </h1>
+          <p className="mt-1 max-w-3xl text-sm font-medium text-slate-600">
+            Preencha a solicitação, anexe os documentos e envie para aprovação.
+          </p>
         </div>
       </div>
 
@@ -30,7 +26,7 @@ export default function SolicitacaoParticipacaoPage() {
         <SolicitacaoParticipacaoForm />
       </div>
 
-      <div className="mt-8 text-xs text-gray-500">
+      <div className="mt-8 text-xs font-medium text-slate-500">
         * Os dados são enviados para a intranet-api com upload de arquivos e agenda do evento.
       </div>
     </div>

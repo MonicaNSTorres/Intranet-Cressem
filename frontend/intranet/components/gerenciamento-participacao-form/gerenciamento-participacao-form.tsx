@@ -4,6 +4,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaDownload,
+  FaPlus,
+  FaSearch,
+  FaTimes,
+} from "react-icons/fa";
+import {
   baixarArquivoPatrocinio,
   baixarRelatorioPatrocinios,
   buscarFuncionarioTipo,
@@ -17,6 +25,7 @@ import {
   atualizarPatrocinio,
 } from "@/services/gerenciamento_participacao.service";
 import { getMeAdUser } from "@/services/auth.service";
+import { AD_GROUPS } from "@/config/ad-groups";
 
 function capitalizeWords(value: string) {
   return String(value || "")
@@ -100,21 +109,34 @@ const totaisIniciais: Totais = {
   reprovados: 0,
 };
 
+const inputBase =
+  "h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10";
+const primaryButtonBase =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-[#79B729] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#00AE9D] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60";
+const secondaryButtonBase =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[#00AE9D]/35 bg-[#00AE9D]/10 px-4 text-sm font-bold text-[#006f65] shadow-sm transition hover:bg-[#00AE9D] hover:text-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60";
+const neutralButtonBase =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-[#49479D]/40 hover:bg-[#49479D]/10 hover:text-[#49479D] disabled:cursor-not-allowed disabled:opacity-60";
+
 export function GerenciamentoParticipacaoForm() {
   const router = useRouter();
 
   const [nomeResponsavel, setNomeResponsavel] = useState("");
   const [pesquisa, setPesquisa] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState("");
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
 
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(10);
   const [items, setItems] = useState<PatrocinioItem[]>([]);
   const [totais, setTotais] = useState<Totais>(totaisIniciais);
 
   const [funcionarioTipo, setFuncionarioTipo] = useState<FuncionarioTipoResponse | null>(null);
+  const [isSuporte, setIsSuporte] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [selected, setSelected] = useState<PatrocinioItem | null>(null);
@@ -136,6 +158,12 @@ export function GerenciamentoParticipacaoForm() {
       try {
         const me = await getMeAdUser();
         const nome = String(me?.nome_completo || "").trim();
+        const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
+        const suporte = grupos.some(
+          (grupo: string) =>
+            String(grupo || "").trim().toUpperCase() === AD_GROUPS.SUPORTE.toUpperCase()
+        );
+        setIsSuporte(suporte);
         if (!nome) {
           throw new Error("Usuário logado sem nome completo.");
         }
@@ -159,7 +187,7 @@ export function GerenciamentoParticipacaoForm() {
     if (!nomeResponsavel) return;
     buscarLista(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nomeResponsavel]);
+  }, [nomeResponsavel, isSuporte]);
 
   async function buscarTotais() {
     if (!nomeResponsavel) return;
@@ -170,6 +198,7 @@ export function GerenciamentoParticipacaoForm() {
         pesquisa: " ",
         page: 1,
         limit: 999999,
+        verTodos: isSuporte,
       });
 
       const calc = { ...totaisIniciais };
@@ -191,7 +220,12 @@ export function GerenciamentoParticipacaoForm() {
     }
   }
 
-  async function buscarLista(page = 1) {
+  async function buscarLista(
+    page = 1,
+    pageLimit = limit,
+    statusOverride = statusFiltro,
+    pesquisaOverride = pesquisa
+  ) {
     try {
       setLoading(true);
       setErro("");
@@ -199,32 +233,59 @@ export function GerenciamentoParticipacaoForm() {
 
       const response = await buscarPatrociniosPaginado({
         nome: nomeResponsavel,
-        pesquisa: pesquisa || " ",
+        pesquisa: pesquisaOverride || " ",
+        status: statusOverride,
         page,
-        limit: 10,
+        limit: pageLimit,
+        verTodos: isSuporte,
       });
 
-      setItems(response.items || []);
+      const responseItems = response.items || [];
+      const responseTotal = Number(response.total_items ?? response.total ?? 0);
+      const fallbackTotal =
+        response.total_pages && response.total_pages > 1
+          ? (response.total_pages - 1) * pageLimit + responseItems.length
+          : responseItems.length;
+
+      setItems(responseItems);
       setPaginaAtual(page);
       setTotalPages(response.total_pages || 1);
+      setTotalItems(responseTotal || fallbackTotal);
 
       await buscarTotais();
     } catch (err: any) {
       setErro(err?.message || "Falha ao buscar solicitações.");
       setItems([]);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
   }
 
+  function alterarLimite(novoLimit: number) {
+    setLimit(novoLimit);
+    buscarLista(1, novoLimit);
+  }
+
   function limpar() {
     setPesquisa("");
-    setItems([]);
-    setTotais(totaisIniciais);
+    setStatusFiltro("");
     setPaginaAtual(1);
-    setTotalPages(1);
     setErro("");
     setInfo("");
+    if (nomeResponsavel) {
+      buscarLista(1, limit, "", " ");
+    } else {
+      setItems([]);
+      setTotais(totaisIniciais);
+      setTotalPages(1);
+      setTotalItems(0);
+    }
+  }
+
+  function filtrarPorResumo(status: string) {
+    setStatusFiltro(status);
+    buscarLista(1, limit, status);
   }
 
   function abrirCadastro() {
@@ -439,21 +500,6 @@ export function GerenciamentoParticipacaoForm() {
     }
   }
 
-  const paginacao = useMemo(() => {
-    const range = 2;
-    const itemsPag: number[] = [];
-
-    for (
-      let i = Math.max(1, paginaAtual - range);
-      i <= Math.min(totalPages, paginaAtual + range);
-      i++
-    ) {
-      itemsPag.push(i);
-    }
-
-    return itemsPag;
-  }, [paginaAtual, totalPages]);
-
   const selectedContaCooperativa = selected?.CD_CONTA_COOPERATIVA ? "Sim" : "Não";
   const selectedUltimoEvento = selected?.DESC_RETORNO_ULTIMO_EVENTO || "Não preenchido.";
   const selectedVinculo = selected?.DESC_VINCULO || "Não preenchido.";
@@ -510,105 +556,191 @@ export function GerenciamentoParticipacaoForm() {
 
   return (
     <>
-      <div className="rounded-xl bg-white p-6 shadow">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
-            <input
-              value={pesquisa}
-              onChange={(e) => setPesquisa(e.target.value)}
-              placeholder="Digite o solicitante, CPF/CNPJ ou status"
-              className="rounded border px-3 py-2"
-            />
-            <button
-              onClick={() => buscarLista(1)}
-              className="rounded bg-white px-4 py-2 text-sm font-semibold text-primary border border-primary hover:bg-primary hover:text-white"
-            >
-              Buscar
-            </button>
-            <button
-              onClick={limpar}
-              className="rounded bg-white px-4 py-2 text-sm font-semibold text-gray-700 border hover:bg-gray-50"
-            >
-              Limpar
-            </button>
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#C7D300]" />
+        <div className="p-4 lg:p-5">
+        <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#00AE9D]">
+              Filtros
+            </p>
+            <h2 className="mt-0.5 text-base font-black text-slate-900">
+              Solicitações cadastradas
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Pesquise por solicitante, CPF/CNPJ ou andamento da participação.
+            </p>
           </div>
 
           <button
+            type="button"
             onClick={abrirCadastro}
-            className="rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary"
+            className={primaryButtonBase}
           >
+            <FaPlus />
             Cadastrar
           </button>
         </div>
 
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
+            <input
+              value={pesquisa}
+              onChange={(e) => setPesquisa(e.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") buscarLista(1);
+              }}
+              placeholder="Digite o solicitante, CPF/CNPJ ou status"
+              className={inputBase}
+            />
+            <button
+              type="button"
+              onClick={() => buscarLista(1)}
+              disabled={loading}
+              className={primaryButtonBase}
+            >
+              <FaSearch />
+              Buscar
+            </button>
+            <button
+              type="button"
+              onClick={limpar}
+              disabled={loading}
+              className={neutralButtonBase}
+            >
+              <FaTimes />
+              Limpar
+            </button>
+          </div>
+        </div>
+
         {erro && (
-          <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
             {erro}
           </div>
         )}
 
         {info && (
-          <div className="mt-4 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
             {info}
           </div>
         )}
 
-        {items.length > 0 && (
+        {(items.length > 0 || totais.total > 0) && (
           <>
-            <div className="mt-6 overflow-x-auto">
+            <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-7">
+              <ResumoCard
+                label="Total"
+                value={totais.total}
+                active={!statusFiltro}
+                onClick={() => filtrarPorResumo("")}
+              />
+              <ResumoCard
+                label="P. Gerência"
+                value={totais.gerencia}
+                tone="amber"
+                active={normalizeText(statusFiltro) === "PENDENTE GERENCIA"}
+                onClick={() => filtrarPorResumo("Pendente Gerencia")}
+              />
+              <ResumoCard
+                label="P. Diretoria"
+                value={totais.diretoria}
+                tone="sky"
+                active={normalizeText(statusFiltro) === "PENDENTE DIRETORIA"}
+                onClick={() => filtrarPorResumo("Pendente Diretoria")}
+              />
+              <ResumoCard
+                label="P. Conselho"
+                value={totais.conselho}
+                tone="teal"
+                active={normalizeText(statusFiltro) === "PENDENTE CONSELHO"}
+                onClick={() => filtrarPorResumo("Pendente Conselho")}
+              />
+              <ResumoCard
+                label="Aprovados"
+                value={totais.aprovados}
+                tone="emerald"
+                active={normalizeText(statusFiltro) === "APROVADO"}
+                onClick={() => filtrarPorResumo("Aprovado")}
+              />
+              <ResumoCard
+                label="Reprovados"
+                value={totais.reprovados}
+                tone="red"
+                active={normalizeText(statusFiltro) === "REPROVADO"}
+                onClick={() => filtrarPorResumo("Reprovado")}
+              />
+              <button
+                type="button"
+                onClick={baixarCSV}
+                className={`${secondaryButtonBase} min-h-[56px] rounded-xl px-3 py-2`}
+              >
+                <FaDownload />
+                Baixar Relatório
+              </button>
+            </div>
+
+            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="overflow-x-auto">
               <table className="w-full min-w-[1100px] border-separate border-spacing-0">
                 <thead>
                   <tr>
-                    <th className="bg-gray-50 border-b px-3 py-3 text-left text-xs font-semibold text-gray-600">
+                    <th className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
                       Nome Fantasia
                     </th>
-                    <th className="bg-gray-50 border-b px-3 py-3 text-left text-xs font-semibold text-gray-600">
+                    <th className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
                       CPF/CNPJ
                     </th>
-                    <th className="bg-gray-50 border-b px-3 py-3 text-left text-xs font-semibold text-gray-600">
+                    <th className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
                       Cidade
                     </th>
-                    <th className="bg-gray-50 border-b px-3 py-3 text-left text-xs font-semibold text-gray-600">
+                    <th className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
                       Funcionário
                     </th>
-                    <th className="bg-gray-50 border-b px-3 py-3 text-left text-xs font-semibold text-gray-600">
+                    <th className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
                       Dia
                     </th>
-                    <th className="bg-gray-50 border-b px-3 py-3 text-left text-xs font-semibold text-gray-600">
+                    <th className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
                       Status
                     </th>
-                    <th className="bg-gray-50 border-b px-3 py-3 text-center text-xs font-semibold text-gray-600">
+                    <th className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-center text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
                       Ação
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((patrocinio) => (
-                    <tr key={patrocinio.ID_PATROCINIO}>
-                      <td className="border-b px-3 py-3 text-sm text-gray-700">
+                    <tr
+                      key={patrocinio.ID_PATROCINIO}
+                      className="transition hover:bg-emerald-50/40"
+                    >
+                      <td className="border-b border-slate-100 px-3 py-2 text-sm font-semibold text-slate-800">
                         {String(patrocinio.NM_SOLICITANTE || "").toUpperCase()}
                       </td>
-                      <td className="border-b px-3 py-3 text-sm text-gray-700">
+                      <td className="border-b border-slate-100 px-3 py-2 text-sm text-slate-700">
                         {formatarCPFouCNPJ(patrocinio.NR_CPF_CNPJ)}
                       </td>
-                      <td className="border-b px-3 py-3 text-sm text-gray-700">
+                      <td className="border-b border-slate-100 px-3 py-2 text-sm text-slate-700">
                         {String(patrocinio.NM_CIDADE || "").toUpperCase()}
                       </td>
-                      <td className="border-b px-3 py-3 text-sm text-gray-700">
+                      <td className="border-b border-slate-100 px-3 py-2 text-sm text-slate-700">
                         {primeiroUltimoNome(
                           String(patrocinio.NM_FUNCIONARIO || "").toUpperCase()
                         )}
                       </td>
-                      <td className="border-b px-3 py-3 text-sm text-gray-700">
+                      <td className="border-b border-slate-100 px-3 py-2 text-sm text-slate-700">
                         {formatarDataBR(patrocinio.DT_SOLICITACAO)}
                       </td>
-                      <td className="border-b px-3 py-3 text-sm text-gray-700">
-                        {String(patrocinio.NM_ANDAMENTO || "").toUpperCase()}
+                      <td className="border-b border-slate-100 px-3 py-2 text-sm text-slate-700">
+                        <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-black uppercase text-amber-700">
+                          {String(patrocinio.NM_ANDAMENTO || "").toUpperCase()}
+                        </span>
                       </td>
-                      <td className="border-b px-3 py-3 text-center">
+                      <td className="border-b border-slate-100 px-3 py-2 text-center">
                         <button
+                          type="button"
                           onClick={() => abrirAndamento(patrocinio)}
-                          className="rounded bg-primary px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+                          className="rounded-xl border border-[#00AE9D]/35 bg-[#00AE9D]/10 px-3 py-2 text-xs font-black text-[#006f65] shadow-sm transition hover:bg-[#00AE9D] hover:text-white hover:shadow-md"
                         >
                           Andamento
                         </button>
@@ -617,83 +749,30 @@ export function GerenciamentoParticipacaoForm() {
                   ))}
                 </tbody>
               </table>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              {paginaAtual > 1 && (
-                <>
-                  <button
-                    onClick={() => buscarLista(1)}
-                    className="rounded border px-3 py-2 text-sm"
-                  >
-                    1
-                  </button>
-                  <button
-                    onClick={() => buscarLista(paginaAtual - 1)}
-                    className="rounded border px-3 py-2 text-sm"
-                  >
-                    Anterior
-                  </button>
-                </>
-              )}
-
-              {paginacao.map((page) => (
-                <button
-                  key={page}
-                  onClick={() => buscarLista(page)}
-                  className={`rounded px-3 py-2 text-sm ${page === paginaAtual
-                      ? "bg-secondary text-white"
-                      : "border text-gray-700"
-                    }`}
-                >
-                  {page}
-                </button>
-              ))}
-
-              {paginaAtual < totalPages && (
-                <>
-                  <button
-                    onClick={() => buscarLista(paginaAtual + 1)}
-                    className="rounded border px-3 py-2 text-sm"
-                  >
-                    Próxima
-                  </button>
-                  <button
-                    onClick={() => buscarLista(totalPages)}
-                    className="rounded border px-3 py-2 text-sm"
-                  >
-                    {totalPages}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-7">
-              <ResumoCard label="Total" value={totais.total} />
-              <ResumoCard label="P. Gerência" value={totais.gerencia} />
-              <ResumoCard label="P. Diretoria" value={totais.diretoria} />
-              <ResumoCard label="P. Conselho" value={totais.conselho} />
-              <ResumoCard label="Aprovados" value={totais.aprovados} />
-              <ResumoCard label="Reprovados" value={totais.reprovados} />
-              <button
-                onClick={baixarCSV}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-              >
-                Baixar Relatório
-              </button>
+              </div>
+              <Pagination
+                currentPage={paginaAtual}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                limit={limit}
+                loading={loading}
+                onChange={(page) => buscarLista(page)}
+                onLimitChange={alterarLimite}
+              />
             </div>
           </>
         )}
+        </div>
       </div>
 
       {modalOpen && selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div
             ref={modalScrollRef}
-            className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+            className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl"
           >
-            <div className="sticky top-0 flex items-center justify-between border-b bg-white px-6 py-4">
-              <h2 className="text-lg font-semibold text-gray-900">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
+              <h2 className="text-lg font-black text-slate-950">
                 Análise de Patrocínio - {capitalizeWords(selected.NM_SOLICITANTE)}
               </h2>
               <button
@@ -702,7 +781,7 @@ export function GerenciamentoParticipacaoForm() {
                   setModalInfo("");
                   setModalOpen(false);
                 }}
-                className="rounded bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+                className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-600 transition hover:bg-red-100"
               >
                 Fechar
               </button>
@@ -714,11 +793,11 @@ export function GerenciamentoParticipacaoForm() {
                 <CampoInput label="Precisa de dinheiro?" value={selected.VL_MONETARIO ? "Sim" : "Não"} readOnly />
                 <CampoInput label="Valor" value={fmtBRL(selected.VL_PATROCINIO)} readOnly />
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Ofício</label>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Ofício</label>
                   <button
                     onClick={() => visualizarArquivo(selected.DIR_OFICIO)}
                     disabled={!selected.DIR_OFICIO}
-                    className="w-full rounded bg-secondary px-3 py-2 text-center text-white hover:bg-primary disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+                    className={`${secondaryButtonBase} w-full disabled:bg-gray-100 disabled:text-gray-500`}
                   >
                     {selected.DIR_OFICIO ? "Visualizar" : "Não enviado"}
                   </button>
@@ -741,13 +820,13 @@ export function GerenciamentoParticipacaoForm() {
                 <CampoInput label="Auditório Sede" value={selected.CD_AUDITORIO_SEDE ? "Sim" : "Não"} readOnly />
                 <CampoInput label="Auditório Centro de Convivência" value={selected.CD_AUDITORIO_CENTRO ? "Sim" : "Não"} readOnly />
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
                     Declaração de Utilidade Pública
                   </label>
                   <button
                     onClick={() => visualizarArquivo(selected.DIR_DOC_SEM_FINS_LUCRATIVO)}
                     disabled={!selected.DIR_DOC_SEM_FINS_LUCRATIVO}
-                    className="w-full rounded bg-secondary px-3 py-2 text-center text-white hover:bg-primary disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+                    className={`${secondaryButtonBase} w-full disabled:bg-gray-100 disabled:text-gray-500`}
                   >
                     {selected.DIR_DOC_SEM_FINS_LUCRATIVO ? "Visualizar" : "Não enviada"}
                   </button>
@@ -787,6 +866,7 @@ export function GerenciamentoParticipacaoForm() {
                 value={inputParecerGerenciaEscrito}
                 onChange={setInputParecerGerenciaEscrito}
                 readOnly={!(funcionarioTipo?.TIPO === "gerencia" && podeEditar)}
+                maxLength={570}
               />
 
               <CampoInput
@@ -794,6 +874,7 @@ export function GerenciamentoParticipacaoForm() {
                 value={inputResponsavelEvento}
                 onChange={setInputResponsavelEvento}
                 readOnly={!podeEditar || funcionarioTipo?.TIPO === "funcionario"}
+                maxLength={190}
               />
 
               <CampoTextarea
@@ -801,6 +882,7 @@ export function GerenciamentoParticipacaoForm() {
                 value={inputSugestao}
                 onChange={setInputSugestao}
                 readOnly={!podeEditar || funcionarioTipo?.TIPO === "funcionario"}
+                maxLength={285}
               />
 
               <CampoInput label="Nome Diretoria" value={inputDiretoria} readOnly />
@@ -809,6 +891,7 @@ export function GerenciamentoParticipacaoForm() {
                 value={inputParecerDiretoria}
                 onChange={setInputParecerDiretoria}
                 readOnly={!(funcionarioTipo?.TIPO === "diretoria" && podeEditar)}
+                maxLength={285}
               />
 
               <CampoTextarea
@@ -816,17 +899,18 @@ export function GerenciamentoParticipacaoForm() {
                 value={inputConselho}
                 onChange={setInputConselho}
                 readOnly={!(funcionarioTipo?.TIPO === "conselho" && podeEditar)}
+                maxLength={380}
               />
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
                   Parecer Conselho Final
                 </label>
                 <select
                   value={inputConselhoFinal}
                   onChange={(e) => setInputConselhoFinal(e.target.value)}
                   disabled={!(funcionarioTipo?.TIPO === "conselho" && podeEditar)}
-                  className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10 disabled:bg-gray-50"
                 >
                   <option value="">Selecione</option>
                   <option value="Aprovado">APROVADO</option>
@@ -835,20 +919,20 @@ export function GerenciamentoParticipacaoForm() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 flex items-end justify-between gap-3 border-t bg-white px-6 py-4">
+            <div className="sticky bottom-0 flex items-end justify-between gap-3 border-t border-slate-200 bg-white px-6 py-4">
               <div className="flex-1 space-y-2 pr-2">
                 {modalErro && (
-                  <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
                     {modalErro}
                   </div>
                 )}
                 {modalInfo && (
-                  <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
                     {modalInfo}
                   </div>
                 )}
                 {mensagemBloqueioPerfil && (
-                  <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
                     {mensagemBloqueioPerfil}
                   </div>
                 )}
@@ -861,14 +945,14 @@ export function GerenciamentoParticipacaoForm() {
                     setModalInfo("");
                     setModalOpen(false);
                   }}
-                  className="rounded bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
+                  className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-600 transition hover:bg-red-100"
                 >
                   Fechar
                 </button>
                 <button
                   onClick={salvarParecer}
                   disabled={!podeEditar || loading}
-                  className="rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  className={primaryButtonBase}
                 >
                   Salvar
                 </button>
@@ -881,11 +965,129 @@ export function GerenciamentoParticipacaoForm() {
   );
 }
 
-function ResumoCard({ label, value }: { label: string; value: number }) {
+type ResumoTone = "slate" | "amber" | "sky" | "teal" | "emerald" | "red";
+
+function ResumoCard({
+  label,
+  value,
+  tone = "slate",
+  active = false,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  tone?: ResumoTone;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const tones: Record<ResumoTone, string> = {
+    slate: "border-slate-200 bg-slate-50 text-slate-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    sky: "border-sky-200 bg-sky-50 text-sky-700",
+    teal: "border-teal-200 bg-teal-50 text-teal-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    red: "border-red-200 bg-red-50 text-red-700",
+  };
+
+  const content = (
+    <>
+      <div className="text-[10px] font-black uppercase tracking-[0.08em] opacity-75">
+        {label}
+      </div>
+      <div className="mt-1 text-xl font-black leading-none">{value}</div>
+    </>
+  );
+
+  const className = `rounded-xl border px-3 py-2.5 text-left shadow-sm transition ${
+    tones[tone]
+  } ${
+    active
+      ? "ring-2 ring-[#00AE9D]/35 ring-offset-1"
+      : "hover:-translate-y-0.5 hover:border-[#00AE9D]/45 hover:shadow-md"
+  }`;
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {content}
+      </button>
+    );
+  }
+
   return (
-    <div className="rounded-xl border bg-gray-50 p-4">
-      <div className="text-xs font-medium text-gray-500">{label}</div>
-      <div className="mt-1 text-xl font-semibold text-gray-900">{value}</div>
+    <div className={className}>{content}</div>
+  );
+}
+
+function Pagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  limit,
+  loading,
+  onChange,
+  onLimitChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  limit: number;
+  loading: boolean;
+  onChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
+}) {
+  const primeiro = totalItems === 0 ? 0 : (currentPage - 1) * limit + 1;
+  const ultimo = Math.min(currentPage * limit, totalItems);
+
+  return (
+    <div className="border-t border-slate-100 bg-white px-3 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <p className="text-xs text-slate-500">
+            Mostrando <span className="font-semibold text-slate-700">{primeiro}</span> até{" "}
+            <span className="font-semibold text-slate-700">{ultimo}</span> de{" "}
+            <span className="font-semibold text-slate-700">{totalItems}</span> solicitação(ões)
+          </p>
+
+          <select
+            value={limit}
+            onChange={(event) => onLimitChange(Number(event.target.value))}
+            disabled={loading}
+            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <option value={10}>10 por página</option>
+            <option value={20}>20 por página</option>
+            <option value={50}>50 por página</option>
+            <option value={100}>100 por página</option>
+          </select>
+        </div>
+
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(currentPage - 1, 1))}
+            disabled={currentPage <= 1 || loading}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FaChevronLeft />
+            Anterior
+          </button>
+
+          <span className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+            Página {currentPage} de {totalPages}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => onChange(Math.min(currentPage + 1, totalPages))}
+            disabled={currentPage >= totalPages || loading}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Próxima
+            <FaChevronRight />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -895,11 +1097,13 @@ function CampoInput({
   value,
   readOnly = false,
   onChange,
+  maxLength,
 }: {
   label: string;
   value: string;
   readOnly?: boolean;
   onChange?: (v: string) => void;
+  maxLength?: number;
 }) {
   return (
     <div>
@@ -908,8 +1112,14 @@ function CampoInput({
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
+        maxLength={maxLength}
         className="w-full rounded border px-3 py-2 read-only:bg-gray-50"
       />
+      {!readOnly && maxLength ? (
+        <p className="mt-1 text-right text-[11px] text-slate-400">
+          {(value || "").length}/{maxLength}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -919,11 +1129,13 @@ function CampoTextarea({
   value,
   readOnly = false,
   onChange,
+  maxLength,
 }: {
   label: string;
   value: string;
   readOnly?: boolean;
   onChange?: (v: string) => void;
+  maxLength?: number;
 }) {
   return (
     <div>
@@ -932,9 +1144,15 @@ function CampoTextarea({
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
+        maxLength={maxLength}
         rows={3}
         className="w-full rounded border px-3 py-2 read-only:bg-gray-50"
       />
+      {!readOnly && maxLength ? (
+        <p className="mt-1 text-right text-[11px] text-slate-400">
+          {(value || "").length}/{maxLength}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -34,7 +34,7 @@ export default function GerenciamentoParticipacaoPage() {
 
   if (loading) {
     return (
-      <div className="p-6 text-sm text-gray-500">
+      <div className="p-6 text-sm font-medium text-slate-500">
         Carregando...
       </div>
     );
@@ -43,7 +43,7 @@ export default function GerenciamentoParticipacaoPage() {
   if (!allowed) {
     return (
       <div className="p-6">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700 shadow-sm">
           Você não possui permissão para acessar esta tela.
         </div>
       </div>
@@ -51,23 +51,19 @@ export default function GerenciamentoParticipacaoPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="p-5 lg:p-8">
+      <BackButton />
+      <div className="mt-4 flex items-center gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-[#006f65] shadow-sm">
+          <FaClipboardList size={18} />
+        </div>
         <div className="min-w-0">
-          <BackButton />
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
-              <FaClipboardList size={16} />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                Gerenciamento de Participação de Marketing
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Consulte, acompanhe e atualize o andamento das solicitações de participação.
-              </p>
-            </div>
-          </div>
+          <h1 className="truncate text-2xl font-black text-slate-950">
+            Gerenciamento de Participação de Marketing
+          </h1>
+          <p className="mt-1 max-w-3xl text-sm font-medium text-slate-600">
+            Consulte, acompanhe e atualize o andamento das solicitações de participação.
+          </p>
         </div>
       </div>
 

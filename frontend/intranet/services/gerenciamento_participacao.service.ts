@@ -50,6 +50,7 @@ export type PatrocinioPaginadoResponse = {
   items: PatrocinioItem[];
   total_pages: number;
   page: number;
+  total_items?: number;
   total?: number;
 };
 
@@ -83,8 +84,10 @@ async function registrarErroGerenciamentoParticipacao(
 export async function buscarPatrociniosPaginado(params: {
   nome: string;
   pesquisa: string;
+  status?: string;
   page?: number;
   limit?: number;
+  verTodos?: boolean;
 }): Promise<PatrocinioPaginadoResponse> {
   try {
     const api = ensureApiUrl();
@@ -92,8 +95,14 @@ export async function buscarPatrociniosPaginado(params: {
     const url = new URL(`${api}/v1/funcionarios_sicoob_cressem_patrocinio_paginado`);
     url.searchParams.set("nome", params.nome);
     url.searchParams.set("pesquisa", params.pesquisa || " ");
+    if (params.status) {
+      url.searchParams.set("status", params.status);
+    }
     url.searchParams.set("page", String(params.page || 1));
     url.searchParams.set("limit", String(params.limit || 10));
+    if (params.verTodos) {
+      url.searchParams.set("ver_todos", "1");
+    }
 
     const res = await fetch(url.toString(), {
       method: "GET",
@@ -207,7 +216,8 @@ export async function atualizarPatrocinio(id: number, payload: Record<string, an
     const json = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      throw new Error(json?.error || "Falha ao atualizar solicitação.");
+      const mensagem = [json?.error, json?.details].filter(Boolean).join(" ");
+      throw new Error(mensagem || "Falha ao atualizar solicitação.");
     }
 
     return json;

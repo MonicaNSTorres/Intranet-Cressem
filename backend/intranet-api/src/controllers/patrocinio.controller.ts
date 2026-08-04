@@ -12,11 +12,30 @@ import {
     oracleExecuteCommitWithAudit,
     setAuditoriaContext,
 } from "../services/oracle.service";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
 
 const execFileAsync = promisify(execFile);
+const AD_GROUP_SUPORTE = "GG_USERS_SUPORTE";
 
 function onlyDigits(value: string) {
     return String(value || "").replace(/\D/g, "");
+}
+
+function toUpperTrim(value: any) {
+    return String(value || "").trim().toUpperCase();
+}
+
+function hasGroup(grupos: string[], target: string) {
+    const alvo = toUpperTrim(target);
+    return grupos.some((grupo) => toUpperTrim(grupo) === alvo);
+}
+
+function normalizeFiltroTexto(value: any) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toUpperCase();
 }
 
 function onlyCpfCnpjChars(value: string) {
@@ -1011,26 +1030,33 @@ export const patrocinioController = {
         }
     },
 
-    async listarPaginado(req: Request, res: Response) {
+    async listarPaginado(req: AuthenticatedRequest, res: Response) {
         try {
             const nome = String(req.query.nome || "").trim();
             const pesquisa = String(req.query.pesquisa || "").trim().toUpperCase();
+            const status = normalizeFiltroTexto(req.query.status);
             const page = Math.max(Number(req.query.page || 1), 1);
             const limit = Math.max(Number(req.query.limit || 10), 1);
             const offset = (page - 1) * limit;
+            const grupos = Array.isArray(req.user?.grupos) ? req.user!.grupos! : [];
+            const isSuporte = hasGroup(grupos, AD_GROUP_SUPORTE);
+            const verTodos = isSuporte && ["1", "true", "sim"].includes(String(req.query.ver_todos || "").trim().toLowerCase());
 
             const funcionario = await buscarTipoFuncionarioPorNome(nome);
 
             let wherePerfil = "1 = 1";
             const bindsBase: Record<string, any> = {
                 pesquisa: `%${pesquisa || ""}%`,
+                status: status || null,
             };
 
-            if (funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria") {
+            if (!verTodos && funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria") {
                 bindsBase.nome = nome;
             }
 
-            if (funcionario.TIPO === "funcionario") {
+            if (verTodos) {
+                wherePerfil = "1 = 1";
+            } else if (funcionario.TIPO === "funcionario") {
                 wherePerfil = "UPPER(p.NM_FUNCIONARIO) = UPPER(:nome)";
             } else if (funcionario.TIPO === "gerencia") {
                 wherePerfil = `
@@ -1063,11 +1089,23 @@ export const patrocinioController = {
         )
       `;
 
+            const whereStatus = `
+        (
+          :status IS NULL
+          OR TRANSLATE(
+            UPPER(TRIM(p.NM_ANDAMENTO)),
+            'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ',
+            'AAAAAEEEEIIIIOOOOOUUUUC'
+          ) = :status
+        )
+      `;
+
             const sqlCount = `
         SELECT COUNT(*) AS TOTAL
         FROM DBACRESSEM.PATROCINIO p
         WHERE ${wherePerfil}
           AND ${wherePesquisa}
+          AND ${whereStatus}
       `;
 
             const countResult = await oracleExecute(sqlCount, bindsBase, {
@@ -1123,6 +1161,7 @@ export const patrocinioController = {
           FROM DBACRESSEM.PATROCINIO p
           WHERE ${wherePerfil}
             AND ${wherePesquisa}
+            AND ${whereStatus}
         )
         WHERE RN > :offset
           AND RN <= (:offset + :limit)

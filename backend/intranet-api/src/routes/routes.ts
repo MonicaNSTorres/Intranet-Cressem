@@ -625,7 +625,7 @@ routes.get("/v1/cidade", cidadeController.listar);
 
 //patrocinio
 routes.post("/v1/patrocinio_cressem", authMiddleware, patrocinioController.cadastrar);
-routes.get("/v1/funcionarios_sicoob_cressem_patrocinio_paginado", patrocinioController.listarPaginado);
+routes.get("/v1/funcionarios_sicoob_cressem_patrocinio_paginado", authMiddleware, patrocinioController.listarPaginado);
 routes.get("/v1/patrocinio_cressem/:id", patrocinioController.buscarPorId);
 routes.put("/v1/patrocinio_cressem/:id", authMiddleware, patrocinioController.editar);
 routes.post("/v1/patrocinio/download", patrocinioController.downloadArquivo);
