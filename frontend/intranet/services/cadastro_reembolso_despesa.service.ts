@@ -45,6 +45,8 @@ export type SolicitacaoReembolsoResponse = {
   CD_AGENCIA: string;
   NR_CONTA: string;
   DESC_ANDAMENTO: string;
+  NM_USUARIO_ABERTURA?: string;
+  NM_LOGIN_ABERTURA?: string;
   DESPESAS: DespesaResponse[];
 };
 

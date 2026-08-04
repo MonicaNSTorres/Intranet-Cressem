@@ -83,6 +83,53 @@ function parseJsonIfNeeded<T = any>(value: any, fallback: T): T {
   return value as T;
 }
 
+function getUsuarioAbertura(req: Request) {
+  const usuario = ((req as any).user || {}) as any;
+
+  const nomeUsuario = String(
+    usuario.nome_completo ||
+    usuario.nome ||
+    req.body?.NM_USUARIO_ABERTURA ||
+    ""
+  )
+    .trim()
+    .toUpperCase();
+
+  const loginUsuario = String(
+    usuario.sub ||
+    usuario.email ||
+    usuario.username ||
+    req.body?.NM_LOGIN_ABERTURA ||
+    ""
+  )
+    .trim()
+    .toUpperCase();
+
+  return { nomeUsuario, loginUsuario };
+}
+
+function normalizarTextoPermissao(value: any) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function usuarioAtualAbriuSolicitacao(req: Request, solicitacao: any) {
+  const usuarioAtual = getUsuarioAbertura(req);
+  const nomeAtual = normalizarTextoPermissao(usuarioAtual.nomeUsuario);
+  const loginAtual = normalizarTextoPermissao(usuarioAtual.loginUsuario);
+  const nomeAbertura = normalizarTextoPermissao(solicitacao?.NM_USUARIO_ABERTURA);
+  const loginAbertura = normalizarTextoPermissao(solicitacao?.NM_LOGIN_ABERTURA);
+
+  return (
+    (!!nomeAtual && !!nomeAbertura && nomeAtual === nomeAbertura) ||
+    (!!loginAtual && !!loginAbertura && loginAtual === loginAbertura)
+  );
+}
+
 function extFromMime(mime: string) {
   const map: Record<string, string> = {
     "application/pdf": ".pdf",
@@ -787,6 +834,9 @@ type NivelHierarquia =
   | "DIRETORIA"
   | "";
 
+const ID_APROV_DIRETORIA_REEMBOLSO_PADRAO = 94;
+const ID_APROV_DIRETORIA_REEMBOLSO_ALTERNATIVO = 93;
+
 function normalizarNivelHierarquia(value: string): NivelHierarquia {
   const nivel = String(value || "")
     .normalize("NFD")
@@ -917,7 +967,30 @@ async function derivarAprovadoresPorEscala(
     nomeSolicitante,
     cpfSolicitante
   );
+
+  if (!solicitante) {
+    return {
+      idSolicitante: null,
+      idAprovGerencia: null,
+      idAprovGerenciaSup: null,
+      idAprovDiretoria: ID_APROV_DIRETORIA_REEMBOLSO_PADRAO,
+    };
+  }
+
   const idSolicitante = Number(solicitante?.ID_FUNCIONARIO || 0);
+  const nivelSolicitante = normalizarNivelHierarquia(String(solicitante?.NM_NIVEL || ""));
+
+  if (nivelSolicitante === "DIRETORIA") {
+    return {
+      idSolicitante,
+      idAprovGerencia: null,
+      idAprovGerenciaSup: null,
+      idAprovDiretoria:
+        idSolicitante === ID_APROV_DIRETORIA_REEMBOLSO_PADRAO
+          ? ID_APROV_DIRETORIA_REEMBOLSO_ALTERNATIVO
+          : ID_APROV_DIRETORIA_REEMBOLSO_PADRAO,
+    };
+  }
 
   let idAprovGerencia = 0;
   let idAprovGerenciaSup = 0;
@@ -975,6 +1048,10 @@ async function resolverProximoAndamentoPorHierarquia(
   );
   const nivelSolicitante = normalizarNivelHierarquia(String(solicitante?.NM_NIVEL || ""));
   const cdGerenciaSolicitante = Number(solicitante?.CD_GERENCIA || 0);
+
+  if (!solicitante && etapaAtual === "Pendente Financeiro") {
+    return "Pendente Diretoria";
+  }
 
   const aprovadoresDerivados = await derivarAprovadoresPorEscala(
     connection,
@@ -1128,6 +1205,7 @@ export const solicitacaoReembolsoDespesaController = {
       const idSolicitacao = await getNextSolicitacaoId(connection);
       const nomeSolicitanteCadastro = String(req.body.NM_FUNCIONARIO || "").toUpperCase();
       const cpfSolicitanteCadastro = onlyDigits(req.body.NR_CPF_FUNCIONARIO);
+      const usuarioAbertura = getUsuarioAbertura(req);
       const aprovadores = await derivarAprovadoresPorEscala(
         connection,
         nomeSolicitanteCadastro,
@@ -1148,6 +1226,8 @@ export const solicitacaoReembolsoDespesaController = {
           CD_AGENCIA,
           NR_CONTA,
           DESC_ANDAMENTO,
+          NM_USUARIO_ABERTURA,
+          NM_LOGIN_ABERTURA,
           ID_SOLICITANTE,
           ID_APROV_GERENCIA,
           ID_APROV_GERENCIA_SUP,
@@ -1165,6 +1245,8 @@ export const solicitacaoReembolsoDespesaController = {
           :CD_AGENCIA,
           :NR_CONTA,
           :DESC_ANDAMENTO,
+          :NM_USUARIO_ABERTURA,
+          :NM_LOGIN_ABERTURA,
           :ID_SOLICITANTE,
           :ID_APROV_GERENCIA,
           :ID_APROV_GERENCIA_SUP,
@@ -1184,6 +1266,8 @@ export const solicitacaoReembolsoDespesaController = {
         CD_AGENCIA: req.body.CD_AGENCIA,
         NR_CONTA: req.body.NR_CONTA,
         DESC_ANDAMENTO: req.body.DESC_ANDAMENTO || "Pendente Financeiro",
+        NM_USUARIO_ABERTURA: usuarioAbertura.nomeUsuario || null,
+        NM_LOGIN_ABERTURA: usuarioAbertura.loginUsuario || null,
         ID_SOLICITANTE: aprovadores.idSolicitante || null,
         ID_APROV_GERENCIA: aprovadores.idAprovGerencia || null,
         ID_APROV_GERENCIA_SUP: aprovadores.idAprovGerenciaSup || null,
@@ -1608,7 +1692,9 @@ export const solicitacaoReembolsoDespesaController = {
           ID_SOLICITANTE,
           ID_APROV_GERENCIA,
           ID_APROV_GERENCIA_SUP,
-          ID_APROV_DIRETORIA
+          ID_APROV_DIRETORIA,
+          NM_USUARIO_ABERTURA,
+          NM_LOGIN_ABERTURA
         FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
         WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
       `,
@@ -1671,6 +1757,13 @@ export const solicitacaoReembolsoDespesaController = {
       let novoAndamento = andamentoAtual;
 
       if (andamentoAtual === "Pendente Financeiro") {
+        if (usuarioAtualAbriuSolicitacao(req, atual)) {
+          return res.status(403).json({
+            error:
+              "Quem abriu a solicitação não pode dar parecer financeiro nela. Encaminhe para outro usuário do financeiro.",
+          });
+        }
+
         if (acao === "aprovar") {
           const proximoAndamento = await resolverProximoAndamentoPorHierarquia(
             connection,
@@ -1912,6 +2005,33 @@ export const solicitacaoReembolsoDespesaController = {
 
       await setAuditoriaContext(connection, req);
 
+      const resultAtual = await connection.execute(
+        `
+          SELECT
+            ID_SOLICITACAO_REEMBOLSO_DESPESA,
+            DESC_ANDAMENTO,
+            NM_USUARIO_ABERTURA,
+            NM_LOGIN_ABERTURA
+          FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+          WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+        `,
+        { id: idSolicitacao },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      const atual: any = resultAtual.rows?.[0] || null;
+
+      if (!atual) {
+        return res.status(404).json({ error: "Solicitação não encontrada." });
+      }
+
+      if (usuarioAtualAbriuSolicitacao(req, atual)) {
+        return res.status(403).json({
+          error:
+            "Quem abriu a solicitação não pode concluir o próprio reembolso como financeiro.",
+        });
+      }
+
       const result = await connection.execute(
         `
         UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
@@ -1986,7 +2106,9 @@ export const solicitacaoReembolsoDespesaController = {
             NR_BANCO,
             CD_AGENCIA,
             NR_CONTA,
-            DESC_ANDAMENTO
+            DESC_ANDAMENTO,
+            NM_USUARIO_ABERTURA,
+            NM_LOGIN_ABERTURA
           FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
           WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
         `,

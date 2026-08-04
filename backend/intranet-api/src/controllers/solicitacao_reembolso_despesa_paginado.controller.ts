@@ -91,6 +91,7 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
     try {
       const pesquisa = String(req.query.pesquisa || "").trim();
       const nome = String(req.query.nome || "").trim().toUpperCase();
+      const login = String(req.query.login || "").trim().toUpperCase();
       const cpf = onlyDigits(String(req.query.cpf || ""));
       const cidade = String(req.query.cidade || "").trim().toUpperCase();
       const status = String(req.query.status || "").trim().toUpperCase();
@@ -122,6 +123,8 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               OR s.ID_APROV_GERENCIA = :idFuncionarioPerfil
               OR s.ID_APROV_GERENCIA_SUP = :idFuncionarioPerfil
               OR s.ID_APROV_DIRETORIA = :idFuncionarioPerfil
+              OR UPPER(TRIM(NVL(s.NM_USUARIO_ABERTURA, ' '))) = UPPER(TRIM(:nomePerfil))
+              OR UPPER(TRIM(NVL(s.NM_LOGIN_ABERTURA, ' '))) = UPPER(TRIM(:loginPerfil))
               OR UPPER(TRIM(s.NM_FUNCIONARIO)) IN (
                 'ISABELI LOHANA CARVALHO MARTINS',
                 'JANAINA GABRIELA'
@@ -154,10 +157,18 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               OR s.ID_APROV_GERENCIA = :idFuncionarioPerfil
               OR s.ID_APROV_GERENCIA_SUP = :idFuncionarioPerfil
               OR s.ID_APROV_DIRETORIA = :idFuncionarioPerfil
+              OR UPPER(TRIM(NVL(s.NM_USUARIO_ABERTURA, ' '))) = UPPER(TRIM(:nomePerfil))
+              OR UPPER(TRIM(NVL(s.NM_LOGIN_ABERTURA, ' '))) = UPPER(TRIM(:loginPerfil))
             )
           `;
         } else {
-          wherePerfilSql = `UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)`;
+          wherePerfilSql = `
+            (
+              UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)
+              OR UPPER(TRIM(NVL(s.NM_USUARIO_ABERTURA, ' '))) = UPPER(TRIM(:nomePerfil))
+              OR UPPER(TRIM(NVL(s.NM_LOGIN_ABERTURA, ' '))) = UPPER(TRIM(:loginPerfil))
+            )
+          `;
         }
       }
 
@@ -176,6 +187,9 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
 
       if (wherePerfilSql.includes(":nomePerfil")) {
         bindsBase.nomePerfil = nome;
+      }
+      if (wherePerfilSql.includes(":loginPerfil")) {
+        bindsBase.loginPerfil = login || nome;
       }
       if (wherePerfilSql.includes(":idFuncionarioPerfil")) {
         bindsBase.idFuncionarioPerfil = idFuncionario;
@@ -239,6 +253,8 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           s.NR_CONTA,
           s.DESC_ANDAMENTO,
           s.SN_FINALIZADO,
+          s.NM_USUARIO_ABERTURA,
+          s.NM_LOGIN_ABERTURA,
 
           s.DESC_PRC_FINANCEIRO,
           s.NM_FNC_FINANCEIRO,

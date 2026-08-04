@@ -159,6 +159,7 @@ export function GerenciamentoReembolsoDespesaForm() {
   const [nomeResponsavel, setNomeResponsavel] = useState("");
   const [nomeResponsavelAD, setNomeResponsavelAD] = useState("");
   const [nomeUsuarioLogado, setNomeUsuarioLogado] = useState("");
+  const [loginUsuarioLogado, setLoginUsuarioLogado] = useState("");
   const [diretoriaCompleto, setDiretoriaCompleto] = useState<any>(null);
   const [isFinanceiroAD, setIsFinanceiroAD] = useState(false);
   const [podeVerTodos, setPodeVerTodos] = useState(false);
@@ -225,9 +226,11 @@ export function GerenciamentoReembolsoDespesaForm() {
       };
 
       const nomeAD = me?.nome_completo || me?.nome || "";
+      const loginAD = me?.username || "";
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
       setNomeResponsavelAD(nomeAD);
       setNomeUsuarioLogado(nomeAD);
+      setLoginUsuarioLogado(loginAD);
 
       const usuarioEhFinanceiroAD = grupos.includes(AD_GROUPS.FINANCEIRO);
       const usuarioEhSuporteAD = grupos.includes(AD_GROUPS.SUPORTE);
@@ -271,8 +274,8 @@ export function GerenciamentoReembolsoDespesaForm() {
       setDiretoriaCompleto(funcionario);
 
       await Promise.all([
-        buscarDespesas(1, "", nomeBusca, usuarioPodeVerTodos),
-        carregarContadores(nomeBusca, usuarioPodeVerTodos),
+        buscarDespesas(1, "", nomeBusca, usuarioPodeVerTodos, undefined, loginAD),
+        carregarContadores(nomeBusca, usuarioPodeVerTodos, undefined, loginAD),
       ]);
     } catch (error) {
       console.error(error);
@@ -290,7 +293,8 @@ export function GerenciamentoReembolsoDespesaForm() {
       cpf?: string;
       cidade?: string;
       status?: string;
-    }
+    },
+    login = loginUsuarioLogado
   ) {
     try {
       const nomeSeguro = nome || nomeResponsavel || nomeResponsavelAD;
@@ -303,6 +307,7 @@ export function GerenciamentoReembolsoDespesaForm() {
 
       const response = await buscarSolicitacoesReembolsoPaginado({
         nome: nomeSeguro,
+        login,
         pesquisa: (filtros?.pesquisa ?? pesquisa).trim(),
         cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
         cidade: filtros?.cidade ?? filtroCidade ?? "",
@@ -347,7 +352,8 @@ export function GerenciamentoReembolsoDespesaForm() {
       cpf?: string;
       cidade?: string;
       status?: string;
-    }
+    },
+    login = loginUsuarioLogado
   ) {
     try {
       setLoadingBusca(true);
@@ -363,6 +369,7 @@ export function GerenciamentoReembolsoDespesaForm() {
 
       const response = await buscarSolicitacoesReembolsoPaginado({
         nome: nomeFiltro,
+        login,
         pesquisa: textoPesquisa.trim(),
         cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
         cidade: filtros?.cidade ?? filtroCidade ?? "",
@@ -437,6 +444,12 @@ export function GerenciamentoReembolsoDespesaForm() {
     const nomeSolicitacao = normalizeNomeComparacao(
       solicitacaoAtual.NM_FUNCIONARIO || ""
     );
+    const nomeUsuarioAbertura = normalizeNomeComparacao(
+      solicitacaoAtual.NM_USUARIO_ABERTURA || ""
+    );
+    const loginUsuarioAbertura = normalizeNomeComparacao(
+      solicitacaoAtual.NM_LOGIN_ABERTURA || ""
+    );
 
     const nomesPossiveisUsuario = [
       nomeResponsavel,
@@ -446,7 +459,47 @@ export function GerenciamentoReembolsoDespesaForm() {
       .map((n) => normalizeNomeComparacao(n || ""))
       .filter(Boolean);
 
-    return nomesPossiveisUsuario.includes(nomeSolicitacao);
+    const loginsPossiveisUsuario = [loginUsuarioLogado]
+      .map((n) => normalizeNomeComparacao(n || ""))
+      .filter(Boolean);
+
+    return (
+      nomesPossiveisUsuario.includes(nomeSolicitacao) ||
+      (!!nomeUsuarioAbertura && nomesPossiveisUsuario.includes(nomeUsuarioAbertura)) ||
+      (!!loginUsuarioAbertura && loginsPossiveisUsuario.includes(loginUsuarioAbertura))
+    );
+  }
+
+  function usuarioLogadoAbriuSolicitacao() {
+    if (!solicitacaoAtual) return false;
+
+    const nomeUsuarioAbertura = normalizeNomeComparacao(
+      solicitacaoAtual.NM_USUARIO_ABERTURA || ""
+    );
+    const loginUsuarioAbertura = normalizeNomeComparacao(
+      solicitacaoAtual.NM_LOGIN_ABERTURA || ""
+    );
+
+    const nomesPossiveisUsuario = [
+      nomeResponsavel,
+      nomeResponsavelAD,
+      nomeUsuarioLogado,
+    ]
+      .map((n) => normalizeNomeComparacao(n || ""))
+      .filter(Boolean);
+
+    const loginsPossiveisUsuario = [loginUsuarioLogado]
+      .map((n) => normalizeNomeComparacao(n || ""))
+      .filter(Boolean);
+
+    return (
+      (!!nomeUsuarioAbertura && nomesPossiveisUsuario.includes(nomeUsuarioAbertura)) ||
+      (!!loginUsuarioAbertura && loginsPossiveisUsuario.includes(loginUsuarioAbertura))
+    );
+  }
+
+  function podeAtuarComoFinanceiro() {
+    return isFinanceiroAD && !usuarioLogadoAbriuSolicitacao();
   }
 
   function podeSalvarParecer() {
@@ -454,7 +507,7 @@ export function GerenciamentoReembolsoDespesaForm() {
 
     if (
       isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Financeiro") &&
-      isFinanceiroAD
+      podeAtuarComoFinanceiro()
     ) return true;
 
     if (
@@ -477,14 +530,14 @@ export function GerenciamentoReembolsoDespesaForm() {
 
   function podeGerarRelatorio() {
     if (!solicitacaoAtual) return false;
-    return solicitacaoAtual.DESC_ANDAMENTO === "Aprovado" && isFinanceiroAD;
+    return solicitacaoAtual.DESC_ANDAMENTO === "Aprovado" && podeAtuarComoFinanceiro();
   }
 
   function podeConcluir() {
     if (!solicitacaoAtual) return false;
     return (
       solicitacaoAtual.DESC_ANDAMENTO === "Aprovado" &&
-      isFinanceiroAD &&
+      podeAtuarComoFinanceiro() &&
       !solicitacaoAtual.SN_FINALIZADO
     );
   }
@@ -493,7 +546,7 @@ export function GerenciamentoReembolsoDespesaForm() {
     if (!solicitacaoAtual) return false;
     const andamentoAtual = solicitacaoAtual.DESC_ANDAMENTO || "";
 
-    if (isAndamento(andamentoAtual, "Pendente Financeiro") && isFinanceiroAD) {
+    if (isAndamento(andamentoAtual, "Pendente Financeiro") && podeAtuarComoFinanceiro()) {
       const parecerFinanceiroValido =
         parecerFinanceiroSelect.endsWith("OK") ||
         parecerFinanceiroSelect.endsWith("Divergente");
@@ -568,7 +621,7 @@ export function GerenciamentoReembolsoDespesaForm() {
       let parecer = "";
 
       if (
-        isFinanceiroAD &&
+        podeAtuarComoFinanceiro() &&
         isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Financeiro")
       ) {
         parecer = parecerFinanceiroTexto;
@@ -1122,7 +1175,19 @@ export function GerenciamentoReembolsoDespesaForm() {
                 solicitacaoAtual.DESC_ANDAMENTO || "",
                 "Pendente Financeiro"
               ) &&
-                isFinanceiroAD && (
+                isFinanceiroAD &&
+                usuarioLogadoAbriuSolicitacao() && (
+                  <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                    Você abriu esta solicitação. Para manter a conferência independente,
+                    outro usuário do financeiro precisa dar o parecer.
+                  </div>
+                )}
+
+              {isAndamento(
+                solicitacaoAtual.DESC_ANDAMENTO || "",
+                "Pendente Financeiro"
+              ) &&
+                podeAtuarComoFinanceiro() && (
                   <div className="mt-5">
                     <label className="mb-1 block text-xs font-medium text-gray-600">
                       Parecer Financeiro
@@ -1151,7 +1216,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                       solicitacaoAtual.DESC_ANDAMENTO || "",
                       "Pendente Financeiro"
                     ) &&
-                    isFinanceiroAD
+                    podeAtuarComoFinanceiro()
                   )}
                   rows={3}
                   className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
@@ -1162,7 +1227,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                 solicitacaoAtual.DESC_ANDAMENTO || "",
                 "Pendente Financeiro"
               ) &&
-                isFinanceiroAD && (
+                podeAtuarComoFinanceiro() && (
                   <div className="mt-5">
                     <label className="mb-1 block text-xs font-medium text-gray-600">
                       Financeiro
