@@ -33,17 +33,13 @@ export default function ChequeEspecialPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="p-6 text-sm text-gray-500">
-        Carregando...
-      </div>
-    );
+    return <div className="p-6 text-sm font-medium text-slate-500">Carregando...</div>;
   }
 
   if (!allowed) {
     return (
       <div className="p-6">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 shadow-sm">
           Você não possui permissão para acessar esta tela.
         </div>
       </div>
@@ -51,20 +47,23 @@ export default function ChequeEspecialPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <BackButton />
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-emerald-700">
-              <FaMoneyCheckAlt size={16} />
+    <div className="p-5 lg:p-8">
+      <div className="mb-4">
+        <BackButton />
+      </div>
+
+      <div className="p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-[#006f65] shadow-sm">
+              <FaMoneyCheckAlt size={18} />
             </div>
 
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold text-gray-900">
+              <h1 className="truncate text-2xl font-black text-slate-950">
                 Alteração Benefício Cheque Especial
               </h1>
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 max-w-3xl text-sm font-medium text-slate-600">
                 Visualize, pesquise e registre as alterações do benefício de cheque especial dos cooperados.
               </p>
             </div>
@@ -76,7 +75,7 @@ export default function ChequeEspecialPage() {
         <ChequeEspecialForm />
       </div>
 
-      <div className="mt-8 text-xs text-gray-500">
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-500 shadow-sm">
         * O sistema permite acompanhar quem teve o benefício concedido ou retirado, com atualização mensal no dia 15.
       </div>
     </div>
