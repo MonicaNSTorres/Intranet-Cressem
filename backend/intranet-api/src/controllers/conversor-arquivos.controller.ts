@@ -316,32 +316,116 @@ async function converterPdfParaSvgs(
     }
 }
 
+function adicionarCandidatoIcc(candidatos: string[], caminho?: string | null) {
+    const valor = String(caminho || "").trim();
+    if (valor && !candidatos.includes(valor)) {
+        candidatos.push(valor);
+    }
+}
+
+function listarPerfisIccEmDiretorio(dir: string, profundidade = 2): string[] {
+    if (!dir || profundidade < 0 || !fs.existsSync(dir)) {
+        return [];
+    }
+
+    try {
+        const stat = fs.statSync(dir);
+        if (stat.isFile()) {
+            return /\.icc$/i.test(dir) ? [dir] : [];
+        }
+
+        if (!stat.isDirectory()) {
+            return [];
+        }
+
+        const encontrados: string[] = [];
+        const entradas = fs.readdirSync(dir, { withFileTypes: true });
+
+        for (const entrada of entradas) {
+            const caminhoEntrada = path.join(dir, entrada.name);
+            if (entrada.isFile() && /\.icc$/i.test(entrada.name)) {
+                encontrados.push(caminhoEntrada);
+                continue;
+            }
+
+            if (entrada.isDirectory()) {
+                encontrados.push(...listarPerfisIccEmDiretorio(caminhoEntrada, profundidade - 1));
+            }
+        }
+
+        const prioridade = ["default_rgb.icc", "srgb.icc", "sRGB.icc"].map((nome) => nome.toLowerCase());
+        return encontrados.sort((a, b) => {
+            const prioridadeA = prioridade.indexOf(path.basename(a).toLowerCase());
+            const prioridadeB = prioridade.indexOf(path.basename(b).toLowerCase());
+            const ordemA = prioridadeA === -1 ? 999 : prioridadeA;
+            const ordemB = prioridadeB === -1 ? 999 : prioridadeB;
+            return ordemA - ordemB || a.localeCompare(b);
+        });
+    } catch {
+        return [];
+    }
+}
+
+function resolverPerfilIccGhostscript(gsExec: string): { perfil?: string; tentativas: string[] } {
+    const candidatos: string[] = [];
+    const iccEnv = process.env.GS_ICC_PROFILE;
+    const gsLibDir = process.env.GS_LIB_DIR;
+
+    adicionarCandidatoIcc(candidatos, iccEnv);
+
+    if (gsLibDir) {
+        adicionarCandidatoIcc(candidatos, path.resolve(gsLibDir, "../iccprofiles/default_rgb.icc"));
+        adicionarCandidatoIcc(candidatos, path.resolve(gsLibDir, "../iccprofiles/srgb.icc"));
+    }
+
+    if (path.isAbsolute(gsExec)) {
+        const gsBinDir = path.dirname(gsExec);
+        adicionarCandidatoIcc(candidatos, path.resolve(gsBinDir, "../iccprofiles/default_rgb.icc"));
+        adicionarCandidatoIcc(candidatos, path.resolve(gsBinDir, "../iccprofiles/srgb.icc"));
+    }
+
+    [
+        "C:/Program Files/gs/gs10.07.0/iccprofiles/default_rgb.icc",
+        "C:/Program Files/gs/gs10.07.0/iccprofiles/srgb.icc",
+        "C:/Program Files (x86)/gs/gs10.07.0/iccprofiles/default_rgb.icc",
+        "C:/Program Files (x86)/gs/gs10.07.0/iccprofiles/srgb.icc",
+        "/usr/share/color/icc/ghostscript/default_rgb.icc",
+        "/usr/share/color/icc/ghostscript/srgb.icc",
+        "/usr/share/ghostscript/iccprofiles/default_rgb.icc",
+        "/usr/share/ghostscript/iccprofiles/srgb.icc",
+        "/usr/local/share/ghostscript/iccprofiles/default_rgb.icc",
+        "/usr/local/share/ghostscript/iccprofiles/srgb.icc",
+        "/usr/share/color/icc/sRGB.icc",
+        "/usr/share/color/icc/colord/sRGB.icc",
+        "/usr/local/share/color/icc/sRGB.icc",
+    ].forEach((caminho) => adicionarCandidatoIcc(candidatos, caminho));
+
+    [
+        "/usr/share/color/icc/ghostscript",
+        "/usr/share/ghostscript",
+        "/usr/local/share/ghostscript",
+    ].forEach((dir) => {
+        listarPerfisIccEmDiretorio(dir, 3).forEach((perfil) => adicionarCandidatoIcc(candidatos, perfil));
+    });
+
+    return {
+        perfil: candidatos.find((iccPath) => fs.existsSync(iccPath)),
+        tentativas: candidatos,
+    };
+}
+
 async function converterPdfParaPdfA(
     gsExec: string,
     inputPdfPath: string,
     outputPdfPath: string,
     tempDir: string
 ) {
-    const iccEnv = process.env.GS_ICC_PROFILE;
-    const gsLibDir = process.env.GS_LIB_DIR;
-    const iccCandidates = [
-        iccEnv,
-        gsLibDir ? path.resolve(gsLibDir, "../iccprofiles/default_rgb.icc") : undefined,
-        gsLibDir ? path.resolve(gsLibDir, "../iccprofiles/srgb.icc") : undefined,
-        "C:/Program Files/gs/gs10.07.0/iccprofiles/default_rgb.icc",
-        "C:/Program Files/gs/gs10.07.0/iccprofiles/srgb.icc",
-        "C:/Program Files (x86)/gs/gs10.07.0/iccprofiles/default_rgb.icc",
-        "C:/Program Files (x86)/gs/gs10.07.0/iccprofiles/srgb.icc",
-    ].filter(Boolean) as string[];
-
-    const iccProfile = iccCandidates.find((iccPath) => fs.existsSync(iccPath));
+    const { perfil: iccProfile, tentativas } = resolverPerfilIccGhostscript(gsExec);
 
     if (!iccProfile) {
-        const hint = iccEnv
-            ? `Perfil ICC não encontrado em: ${iccEnv}`
-            : "Variável GS_ICC_PROFILE não configurada";
+        const tentativasResumo = tentativas.slice(0, 12).join("; ");
         throw new Error(
-            `${hint}. Configure GS_ICC_PROFILE para um arquivo válido, por exemplo: C:/Program Files/gs/gs10.07.0/iccprofiles/default_rgb.icc`
+            `Perfil ICC não encontrado para gerar PDF/A. Configure GS_ICC_PROFILE para um arquivo válido ou instale os perfis ICC do Ghostscript. Caminhos testados: ${tentativasResumo}`
         );
     }
 

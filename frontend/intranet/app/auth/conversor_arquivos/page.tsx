@@ -6,44 +6,34 @@ import { ConversorArquivosForm } from "@/components/conversor-arquivos-form/conv
 
 export default function ConversorArquivosPage() {
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-5 lg:p-8">
+      <BackButton />
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-
+      <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-
-          <BackButton />
-
-          <div className="flex items-center gap-3">
-
-            <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
-              <FaExchangeAlt size={16} />
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-[#006f65] shadow-sm">
+              <FaExchangeAlt size={18} />
             </div>
-
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-gray-900 truncate">
+              <h1 className="truncate text-2xl font-black text-slate-950">
                 Conversor de Arquivos
               </h1>
-
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="mt-1 max-w-3xl text-sm font-medium text-slate-600">
                 Converta PDFs, DOCX e imagens nos formatos mais usados no dia a dia.
               </p>
             </div>
-
           </div>
-
         </div>
-
       </div>
 
       <div className="mt-6">
         <ConversorArquivosForm />
       </div>
 
-      <div className="mt-8 text-xs text-gray-500">
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-500 shadow-sm">
         * Os arquivos são enviados para a intranet-api e retornados em formato ZIP.
       </div>
-
     </div>
   );
 }

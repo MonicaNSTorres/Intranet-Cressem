@@ -264,29 +264,55 @@ export function ConversorArquivosForm() {
   }
 
   return (
-    <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <h3 className="text-sm font-semibold text-slate-800">
-          Conversão de arquivos
-        </h3>
+    <div className="mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-100 bg-white p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#00AE9D]">
+              Conversor
+            </p>
+            <h3 className="mt-1 text-lg font-black text-slate-950">
+              Conversão de arquivos
+            </h3>
+            <p className="mt-1 max-w-2xl text-sm font-medium text-slate-600">
+              Escolha uma conversão comum ou selecione manualmente os formatos de origem e destino.
+            </p>
+          </div>
 
-        <div className="mt-3 text-sm text-slate-700">
-          <p className="mb-2">Para converter seu arquivo:</p>
-          <ol className="list-decimal space-y-1 pl-5">
-            <li>Clique em <strong>Selecionar</strong> e escolha os arquivos de origem.</li>
-            <li>Escolha uma conversão comum nos cards ou selecione manualmente.</li>
-            <li>Clique em <strong>Converter</strong> e aguarde o processamento.</li>
-            <li>O download de um arquivo <strong>.zip</strong> será iniciado automaticamente.</li>
-          </ol>
+          <div className="rounded-2xl border border-[#C7D300]/40 bg-[#C7D300]/10 px-4 py-3 text-xs font-semibold text-slate-700 lg:max-w-md">
+            O download de um arquivo <strong>.zip</strong> será iniciado automaticamente ao concluir.
+          </div>
         </div>
       </div>
 
+      <div className="p-5">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <h4 className="text-sm font-black text-slate-900">
+            Como usar
+          </h4>
+
+          <ol className="mt-3 grid gap-2 text-sm font-medium text-slate-600 md:grid-cols-2">
+            <li className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+              1. Escolha uma conversão comum ou selecione os formatos.
+            </li>
+            <li className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+              2. Clique em <strong>Selecionar</strong> e escolha os arquivos.
+            </li>
+            <li className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+              3. Se forem imagens, organize a ordem antes de converter.
+            </li>
+            <li className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+              4. Clique em <strong>Converter</strong> e aguarde o ZIP.
+            </li>
+          </ol>
+        </div>
+
       <div className="mt-6">
         <div className="mb-2">
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="text-sm font-black text-slate-900">
             Conversões mais comuns
           </h3>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs font-medium text-slate-500">
             Clique em uma opção para preencher os formatos automaticamente.
           </p>
         </div>
@@ -303,17 +329,17 @@ export function ConversorArquivosForm() {
                 type="button"
                 onClick={() => selecionarConversao(conversao.de, conversao.para)}
                 disabled={loading}
-                className={`cursor-pointer rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-70 ${
+                className={`cursor-pointer rounded-2xl border p-4 text-left transition hover:border-[#00AE9D]/40 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70 ${
                   selecionada
-                    ? "border-emerald-300 bg-emerald-50 shadow-sm"
-                    : "border-slate-200 bg-white"
+                    ? "border-[#00AE9D]/40 bg-[#00AE9D]/10 shadow-sm"
+                    : "border-slate-200 bg-white hover:border-[#79B729]/40"
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
                       selecionada
-                        ? "bg-emerald-100 text-emerald-700"
+                        ? "bg-[#00AE9D] text-white"
                         : "bg-slate-100 text-slate-600"
                     }`}
                   >
@@ -321,10 +347,10 @@ export function ConversorArquivosForm() {
                   </div>
 
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">
+                    <p className="text-sm font-black text-slate-900">
                       {conversao.titulo}
                     </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                    <p className="mt-1 text-xs font-medium leading-5 text-slate-500">
                       {conversao.descricao}
                     </p>
                   </div>
@@ -336,22 +362,22 @@ export function ConversorArquivosForm() {
       </div>
 
       <div className="mt-6">
-        <label className="mb-1 block text-xs font-medium text-gray-600">
+        <label className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
           Selecione os arquivos
         </label>
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-          <div className="rounded border px-3 py-2 text-sm text-gray-700">
-            {files.length > 0
-              ? `${files.length} arquivo(s) selecionado(s)`
-              : "Nenhum arquivo selecionado"}
+            <div className="flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm">
+              {files.length > 0
+                ? `${files.length} arquivo(s) selecionado(s)`
+                : "Nenhum arquivo selecionado"}
           </div>
 
           <button
             type="button"
             onClick={onSelecionarClick}
             disabled={loading}
-            className="cursor-pointer rounded bg-secondary px-6 py-2 font-semibold text-white hover:bg-primary hover:shadow-sm disabled:opacity-70"
+            className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[#49479D] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00AE9D] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Selecionar
           </button>
@@ -368,14 +394,14 @@ export function ConversorArquivosForm() {
       </div>
 
       {files.length > 0 && (
-        <div className="mt-4 rounded border border-slate-200 bg-slate-50 p-3">
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-medium text-gray-600">
+              <p className="text-xs font-black uppercase tracking-wide text-slate-500">
                 Arquivos selecionados
               </p>
               {permiteOrdenarImagens && (
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs font-medium text-slate-500">
                   Arraste para ordenar os arquivos antes da conversão. Se selecionar mais imagens,
                   elas entram no final da lista.
                 </p>
@@ -401,13 +427,13 @@ export function ConversorArquivosForm() {
                   setArquivoArrastadoIndex(null);
                 }}
                 onDragEnd={() => setArquivoArrastadoIndex(null)}
-                className={`flex items-center gap-3 rounded-lg border bg-white px-3 py-2 text-sm text-gray-700 transition ${
+                className={`flex items-center gap-3 rounded-2xl border bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition ${
                   permiteOrdenarImagens
                     ? "cursor-grab active:cursor-grabbing"
                     : ""
                 } ${
                   arquivoArrastadoIndex === index
-                    ? "border-emerald-300 bg-emerald-50 opacity-80"
+                    ? "border-[#00AE9D]/40 bg-[#00AE9D]/10 opacity-80"
                     : "border-slate-200"
                 }`}
               >
@@ -426,7 +452,7 @@ export function ConversorArquivosForm() {
                   type="button"
                   onClick={() => removerArquivo(index)}
                   disabled={loading}
-                  className="inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                   title="Remover arquivo"
                 >
                   <FaTrash />
@@ -440,13 +466,13 @@ export function ConversorArquivosForm() {
 
       <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
             De
           </label>
           <select
             value={formatoDe}
             onChange={(e) => onFormatoDeChange(e.target.value)}
-            className="w-full rounded border px-3 py-2"
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20"
             disabled={loading}
           >
             <option value="">Selecione</option>
@@ -457,13 +483,13 @@ export function ConversorArquivosForm() {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">
             Para
           </label>
           <select
             value={formatoPara}
             onChange={(e) => setFormatoPara(e.target.value)}
-            className="w-full rounded border px-3 py-2"
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20"
             disabled={loading}
           >
             {!formatoDe ? (
@@ -492,7 +518,7 @@ export function ConversorArquivosForm() {
       </div>
 
       {conversaoSelecionada && (
-        <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
           {conversaoSelecionada.detalhe}
         </div>
       )}
@@ -500,27 +526,28 @@ export function ConversorArquivosForm() {
       {(erro || info) && (
         <div className="mt-4">
           {erro ? (
-            <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
               {erro}
             </div>
           ) : (
-            <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
               {info}
             </div>
           )}
         </div>
       )}
 
-      <div className="mt-6 flex items-center justify-end border-t pt-5">
+      <div className="mt-6 flex items-center justify-end border-t border-slate-100 pt-5">
         <button
           type="button"
           onClick={onConverter}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+          className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-[#79B729] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00AE9D] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {["png", "jpg", "svg"].includes(formatoPara) ? <FaImage /> : <FaDownload />}
           {loading ? "Convertendo..." : "Converter"}
         </button>
+      </div>
       </div>
     </div>
   );
