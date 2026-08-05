@@ -271,21 +271,17 @@ export function JuntarPdfForm() {
 
     return (
         <>
-            <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-                <div className="border-b border-slate-100 bg-[linear-gradient(135deg,rgba(0,174,157,0.10),rgba(121,183,41,0.08),rgba(255,255,255,1))] px-6 py-7 sm:px-8">
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div className="border-b border-slate-100 bg-gradient-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/20 px-6 py-5 sm:px-8">
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex items-start gap-4">
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-[#00AE9D]/20">
-                                <FaFilePdf className="text-2xl" />
-                            </div>
-
+                        <div className="min-w-0">
                             <div>
-                                <div className="mb-2 inline-flex items-center rounded-full border border-[#00AE9D]/15 bg-white/80 px-3 py-1 text-xs font-semibold text-primary backdrop-blur">
+                                <div className="mb-2 inline-flex items-center rounded-full border border-[#00AE9D]/20 bg-[#00AE9D]/10 px-3 py-1 text-xs font-semibold text-[#00796F]">
                                     Utilitário de documentos
                                 </div>
 
-                                <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                                    Juntar PDFs
+                                <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                                    Organização dos arquivos
                                 </h1>
                                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
                                     Organize seus arquivos na ordem desejada e gere um único PDF de forma
@@ -295,14 +291,14 @@ export function JuntarPdfForm() {
                         </div>
 
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-105">
-                            <div className="rounded-2xl border border-white/70 bg-white/90 px-4 py-4 shadow-sm backdrop-blur">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                                     Arquivos
                                 </p>
                                 <p className="mt-1 text-2xl font-bold text-slate-900">{selectedFiles.length}</p>
                             </div>
 
-                            <div className="rounded-2xl border border-white/70 bg-white/90 px-4 py-4 shadow-sm backdrop-blur">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                                     Tamanho total
                                 </p>
@@ -311,7 +307,7 @@ export function JuntarPdfForm() {
                                 </p>
                             </div>
 
-                            <div className="rounded-2xl border border-white/70 bg-white/90 px-4 py-4 shadow-sm backdrop-blur">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                                     Ordem pronta
                                 </p>
@@ -325,7 +321,7 @@ export function JuntarPdfForm() {
 
                 <div className="grid gap-6 p-6 sm:p-8 xl:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-6">
-                        <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
                             <div className="mb-4 flex items-center gap-3">
                                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00AE9D]/10 text-primary">
                                     <FiUploadCloud className="text-lg" />
@@ -340,7 +336,7 @@ export function JuntarPdfForm() {
 
                             <div
                                 onClick={handleSelectButtonClick}
-                                className="group cursor-pointer rounded-[22px] border-2 border-dashed border-slate-300 bg-white px-6 py-8 transition hover:border-primary/60 hover:bg-[#00AE9D]/3"
+                                className="group cursor-pointer rounded-2xl border-2 border-dashed border-slate-300 bg-white px-6 py-8 transition hover:border-[#00AE9D]/60 hover:bg-[#00AE9D]/5"
                             >
                                 <input
                                     ref={inputRef}
@@ -368,7 +364,7 @@ export function JuntarPdfForm() {
 
                                     <button
                                         type="button"
-                                        className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                                        className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#49479D] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00AE9D]"
                                     >
                                         <FaPlus className="text-xs" />
                                         Selecionar arquivos
@@ -377,14 +373,14 @@ export function JuntarPdfForm() {
                             </div>
 
                             <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                                <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
+                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
                                     <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                                         Tipo aceito
                                     </p>
                                     <p className="mt-1 text-sm font-semibold text-slate-800">Somente PDF</p>
                                 </div>
 
-                                <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
+                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
                                     <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                                         Validação
                                     </p>
@@ -393,7 +389,7 @@ export function JuntarPdfForm() {
                                     </p>
                                 </div>
 
-                                <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
+                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
                                     <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                                         Reordenação
                                     </p>
@@ -404,7 +400,7 @@ export function JuntarPdfForm() {
                             </div>
                         </div>
 
-                        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <h2 className="text-base font-bold text-slate-900">Arquivos selecionados</h2>
@@ -417,7 +413,7 @@ export function JuntarPdfForm() {
                                     <button
                                         type="button"
                                         onClick={clearFileSelection}
-                                        className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-[#49479D] hover:text-[#49479D]"
                                     >
                                         Limpar lista
                                     </button>
@@ -426,7 +422,7 @@ export function JuntarPdfForm() {
 
                             <ul className="space-y-3">
                                 {selectedFiles.length === 0 ? (
-                                    <li className="rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
+                                    <li className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
                                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200">
                                             <FaFilePdf className="text-2xl" />
                                         </div>
@@ -446,17 +442,17 @@ export function JuntarPdfForm() {
                                             onDragStart={() => handleDragStart(index)}
                                             onDragOver={handleDragOver}
                                             onDrop={() => handleDrop(index)}
-                                            className={`group flex items-center justify-between gap-4 rounded-[22px] border px-4 py-4 shadow-sm transition ${dragIndex === index
+                                            className={`group flex items-center justify-between gap-4 rounded-2xl border px-4 py-4 shadow-sm transition ${dragIndex === index
                                                     ? "scale-[1.01] border-[#00AE9D]/50 bg-[#00AE9D]/5 shadow-md"
                                                     : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
                                                 }`}
                                         >
                                             <div className="flex min-w-0 items-center gap-4">
-                                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 transition group-hover:bg-[#00AE9D]/10 group-hover:text-primary">
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition group-hover:bg-[#00AE9D]/10 group-hover:text-primary">
                                                     <FaGripVertical />
                                                 </div>
 
-                                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500">
                                                     <FaFilePdf />
                                                 </div>
 
@@ -478,7 +474,7 @@ export function JuntarPdfForm() {
                                             <button
                                                 type="button"
                                                 onClick={() => removeFile(index)}
-                                                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
+                                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
                                                 title="Remover arquivo"
                                             >
                                                 <FaTrash className="text-sm" />
@@ -491,7 +487,7 @@ export function JuntarPdfForm() {
                     </div>
 
                     <div className="space-y-6">
-                        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                             <h2 className="text-base font-bold text-slate-900">Como funciona</h2>
                             <p className="mt-1 text-sm text-slate-500">
                                 Siga a sequência abaixo para montar seu documento.
@@ -517,9 +513,9 @@ export function JuntarPdfForm() {
                                 ].map((item) => (
                                     <div
                                         key={item.step}
-                                        className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4"
+                                        className="flex gap-4 rounded-xl border border-slate-100 bg-slate-50/80 p-4"
                                     >
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#00AE9D] text-sm font-bold text-white">
                                             {item.step}
                                         </div>
                                         <div>
@@ -531,7 +527,7 @@ export function JuntarPdfForm() {
                             </div>
                         </div>
 
-                        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                             <h2 className="text-base font-bold text-slate-900">Resumo</h2>
 
                             <div className="mt-5 space-y-3">
@@ -566,7 +562,7 @@ export function JuntarPdfForm() {
                                 type="button"
                                 onClick={handleMergeAndDownload}
                                 disabled={isProcessing}
-                                className="mt-6 inline-flex w-full items-center justify-center gap-3 rounded-[20px] bg-[linear-gradient(135deg,#79B729_0%,#5e9d1d_100%)] px-5 py-4 text-sm font-bold text-white shadow-lg shadow-[#79B729]/20 transition hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="mt-6 inline-flex h-10 w-full items-center justify-center gap-3 rounded-xl bg-[#79B729] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00AE9D] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <FaDownload className="text-sm" />
                                 {isProcessing ? "Processando arquivos..." : "Juntar e Comprimir PDFs"}
@@ -582,9 +578,9 @@ export function JuntarPdfForm() {
 
             {alert.open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-[2px]">
-                    <div className="w-full max-w-md rounded-[28px] border border-white/60 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
+                    <div className="w-full max-w-md rounded-2xl border border-white/60 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
                         <div
-                            className={`flex items-start gap-4 rounded-2xl border p-4 ${alertStyles[alert.type].wrapper
+                            className={`flex items-start gap-4 rounded-xl border p-4 ${alertStyles[alert.type].wrapper
                                 }`}
                         >
                             <div className="mt-0.5 text-xl">{alertStyles[alert.type].icon}</div>
@@ -599,7 +595,7 @@ export function JuntarPdfForm() {
                             <button
                                 type="button"
                                 onClick={closeAlert}
-                                className={`rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition ${alertStyles[alert.type].button}`}
+                                className={`h-10 rounded-xl px-5 text-sm font-semibold text-white transition ${alertStyles[alert.type].button}`}
                             >
                                 Fechar
                             </button>
