@@ -7,18 +7,22 @@ import InvestmentSimulator from "@/components/investimento-simulador/Investmento
 export default function SimuladorInvestimentoPage() {
   return (
     <div className="p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <BackButton />
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
+      <div className="mb-4">
+        <BackButton />
+      </div>
+
+      <div className="p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-[#006f65] shadow-sm">
               <FaChartLine size={16} />
             </div>
+
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                Simulador de Investimento — Renda Fixa
+              <h1 className="truncate text-2xl font-black text-slate-950">
+                Simulador de Investimento - Renda Fixa
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="mt-1 text-sm font-medium text-slate-600">
                 Simule rentabilidade em Poupança, RDC e LCI/LCA (com IR/IOF quando aplicável).
               </p>
             </div>
@@ -30,7 +34,7 @@ export default function SimuladorInvestimentoPage() {
         <InvestmentSimulator />
       </div>
 
-      <div className="mt-8 text-xs text-gray-500">
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-500 shadow-sm">
         * Índices carregados a partir do arquivo de indicadores (CDI/SELIC/Poupança) do Banco Central do Brasil.
       </div>
     </div>

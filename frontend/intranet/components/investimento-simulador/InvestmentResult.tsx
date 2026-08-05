@@ -20,21 +20,25 @@ export default function InvestmentResult(props: {
       : undefined;
 
   return (
-    <div className="border rounded-xl p-4 hover:bg-gray-50 transition">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-[#00AE9D]/30 hover:bg-[#00AE9D]/5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="font-semibold text-gray-900">{name}</div>
-          <div className="text-xs text-gray-600 mt-1">
-            Principal: <span className="font-medium">{money(amount)}</span>
+          <div className="text-base font-black text-slate-900">{name}</div>
+          <div className="mt-1 text-xs font-medium text-slate-600">
+            Principal: <span className="font-semibold text-slate-800">{money(amount)}</span>
           </div>
         </div>
 
         {loading ? (
-          <div className="text-xs text-gray-500">Carregando…</div>
+          <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+            Carregando…
+          </div>
         ) : (
           <div className="text-right">
-            <div className="text-xs text-gray-600">Total estimado</div>
-            <div className="text-base font-semibold text-gray-900">
+            <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Total estimado
+            </div>
+            <div className="text-lg font-black text-[#006f65]">
               {typeof total === "number" ? money(total) : "—"}
             </div>
           </div>
@@ -42,7 +46,7 @@ export default function InvestmentResult(props: {
       </div>
 
       {!loading && typeof interestAmount === "number" && (
-        <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
+        <div className="mt-3 grid grid-cols-1 gap-2 text-sm md:grid-cols-4">
           <Line label="Rendimento" value={money(interestAmount)} />
 
           {typeof iofAmount === "number" && (
@@ -65,9 +69,9 @@ export default function InvestmentResult(props: {
 
 function Line({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white rounded-lg border p-2">
-      <div className="text-xs text-gray-600">{label}</div>
-      <div className="font-semibold text-gray-900">{value}</div>
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-2">
+      <div className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="font-black text-slate-900">{value}</div>
     </div>
   );
 }

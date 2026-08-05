@@ -22,16 +22,18 @@ export default function InvestmentInput(props: {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow p-6 space-y-4">
+    <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Parâmetros</h2>
-        <p className="text-sm text-gray-600">
+        <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
+          Parâmetros
+        </h2>
+        <p className="mt-1 text-sm font-medium text-slate-600">
           Ajuste os valores para simular a rentabilidade.
         </p>
       </div>
 
       {indexesError && (
-        <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
           {indexesError}
         </div>
       )}
@@ -64,7 +66,7 @@ export default function InvestmentInput(props: {
             <select
               value={value.periodType}
               onChange={(e) => set("periodType", e.target.value as PeriodType)}
-              className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 cursor-pointer"
+              className="h-10 w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10"
             >
               <option value="dias">Dias</option>
               <option value="meses">Meses</option>
@@ -102,7 +104,7 @@ export default function InvestmentInput(props: {
             <input
               value={value.di ?? ""}
               readOnly
-              className="w-full border px-3 py-2 rounded bg-gray-50"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none"
               placeholder={loadingIndexes ? "Carregando..." : ""}
             />
           </Field>
@@ -111,7 +113,7 @@ export default function InvestmentInput(props: {
             <input
               value={value.selic ?? ""}
               readOnly
-              className="w-full border px-3 py-2 rounded bg-gray-50"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none"
               placeholder={loadingIndexes ? "Carregando..." : ""}
             />
           </Field>
@@ -120,7 +122,7 @@ export default function InvestmentInput(props: {
             <input
               value={value.poupanca ?? ""}
               readOnly
-              className="w-full border px-3 py-2 rounded bg-gray-50"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none"
               placeholder={loadingIndexes ? "Carregando..." : ""}
             />
           </Field>
@@ -133,7 +135,7 @@ export default function InvestmentInput(props: {
 function Field(props: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">
+      <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
         {props.label}
       </label>
       {props.children}
