@@ -28,6 +28,7 @@ export type BuscarChequeEspecialParams = {
   page?: number;
   limit?: number;
   status?: string;
+  tipoAlteracao?: string;
 };
 
 export type UsuarioLogadoChequeEspecial = {
@@ -48,6 +49,7 @@ export async function buscarChequeEspecialPaginado(
         page: params.page ?? 1,
         limit: params.limit ?? 10,
         status: params.status || undefined,
+        tipoAlteracao: params.tipoAlteracao || undefined,
       },
       timeout: CHEQUE_ESPECIAL_TIMEOUT_MS,
     }

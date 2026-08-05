@@ -33,17 +33,13 @@ export default function CadastroAnaliseLimitePage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="p-6 text-sm text-gray-500">
-        Carregando...
-      </div>
-    );
+    return <div className="p-6 text-sm font-medium text-slate-500">Carregando...</div>;
   }
 
   if (!allowed) {
     return (
       <div className="p-6">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 shadow-sm">
           Você não possui permissão para acessar esta tela.
         </div>
       </div>
@@ -51,24 +47,24 @@ export default function CadastroAnaliseLimitePage() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-5 lg:p-8">
+      <div className="mb-4">
+        <BackButton />
+      </div>
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-
-          <BackButton />
-
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border border-[#C7D300] flex items-center justify-center text-emerald-700">
-              <FaChartLine size={16} />
+      <div className="p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-[#006f65] shadow-sm">
+              <FaChartLine size={18} />
             </div>
 
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-gray-900 truncate">
+              <h1 className="truncate text-2xl font-black text-slate-950">
                 Análise de Concessão de Limites
               </h1>
 
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="mt-1 max-w-3xl text-sm font-medium text-slate-600">
                 Preencha os dados da análise de limite de cheque especial e cartão.
               </p>
             </div>
@@ -80,7 +76,7 @@ export default function CadastroAnaliseLimitePage() {
         <AnaliseLimiteForm />
       </div>
 
-      <div className="mt-8 text-xs text-gray-500">
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-500 shadow-sm">
         * Os dados do associado são carregados automaticamente via consulta por CPF.
       </div>
     </div>

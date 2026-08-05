@@ -88,6 +88,7 @@ export const chequeEspecialController = {
     try {
       const nome = String(req.query.nome || "").trim();
       const status = String(req.query.status || "todos").trim();
+      const tipoAlteracao = String(req.query.tipoAlteracao || "todos").trim();
       const page = Math.max(Number(req.query.page || 1), 1);
       const limit = Math.max(Number(req.query.limit || 15), 1);
       const offset = (page - 1) * limit;
@@ -101,8 +102,14 @@ export const chequeEspecialController = {
 
       const digitos = onlyDigits(nome);
       const termoDigitos = digitos ? `%${digitos}%` : null;
+      const bindsBusca: Record<string, any> = {
+        nome: termoBusca,
+        nomeNumerico: termoDigitos,
+        cpfCnpj: termoDocumento,
+      };
 
       let filtroStatus = "";
+      let filtroTipoAlteracao = "";
 
       if (status === "pendente") {
         filtroStatus = " AND NVL(a.SN_FEITO, 0) = 0 ";
@@ -110,6 +117,20 @@ export const chequeEspecialController = {
 
       if (status === "concluido") {
         filtroStatus = " AND NVL(a.SN_FEITO, 0) <> 0 ";
+      }
+
+      if (tipoAlteracao === "acrescentar") {
+        filtroTipoAlteracao =
+          " AND (INSTR(UPPER(TRANSLATE(a.NM_ALTERACAO, :accentsFrom, :accentsTo)), 'ACRESC') > 0 OR INSTR(UPPER(TRANSLATE(a.NM_ALTERACAO, :accentsFrom, :accentsTo)), 'CONCED') > 0) ";
+        bindsBusca.accentsFrom = ORACLE_ACCENTS_FROM;
+        bindsBusca.accentsTo = ORACLE_ACCENTS_TO;
+      }
+
+      if (tipoAlteracao === "retirar") {
+        filtroTipoAlteracao =
+          " AND INSTR(UPPER(TRANSLATE(a.NM_ALTERACAO, :accentsFrom, :accentsTo)), 'RETIR') > 0 ";
+        bindsBusca.accentsFrom = ORACLE_ACCENTS_FROM;
+        bindsBusca.accentsTo = ORACLE_ACCENTS_TO;
       }
 
       const resultCount = await connection.execute(
@@ -125,12 +146,9 @@ export const chequeEspecialController = {
 
           )
           ${filtroStatus}
+          ${filtroTipoAlteracao}
         `,
-        {
-          nome: termoBusca,
-          nomeNumerico: termoDigitos,
-          cpfCnpj: termoDocumento,
-        },
+        bindsBusca,
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
 
@@ -167,15 +185,14 @@ export const chequeEspecialController = {
 
             )
             ${filtroStatus}
+            ${filtroTipoAlteracao}
           )
           WHERE RN > :offset
             AND RN <= (:offset + :limit)
           ORDER BY RN
         `,
         {
-          nome: termoBusca,
-          nomeNumerico: termoDigitos,
-          cpfCnpj: termoDocumento,
+          ...bindsBusca,
           offset,
           limit,
         },
