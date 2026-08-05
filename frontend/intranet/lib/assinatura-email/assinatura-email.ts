@@ -32,6 +32,52 @@ function escapeHtml(text: string) {
     .replaceAll("'", "&#039;");
 }
 
+const PALAVRAS_MINUSCULAS_PT = new Set([
+  "a",
+  "as",
+  "da",
+  "das",
+  "de",
+  "do",
+  "dos",
+  "e",
+  "em",
+  "na",
+  "nas",
+  "no",
+  "nos",
+  "o",
+  "os",
+]);
+
+function capitalizarTokenPortugues(token: string, index: number) {
+  const match = token.match(
+    /^([^A-Za-zÀ-ÖØ-öø-ÿ]*)([A-Za-zÀ-ÖØ-öø-ÿ.]+)([^A-Za-zÀ-ÖØ-öø-ÿ]*)$/
+  );
+
+  if (!match) return token;
+
+  const [, prefixo, palavraOriginal, sufixo] = match;
+  const palavraMinuscula = palavraOriginal.toLowerCase();
+
+  if (index > 0 && PALAVRAS_MINUSCULAS_PT.has(palavraMinuscula)) {
+    return `${prefixo}${palavraMinuscula}${sufixo}`;
+  }
+
+  return `${prefixo}${
+    palavraMinuscula.charAt(0).toUpperCase() + palavraMinuscula.slice(1)
+  }${sufixo}`;
+}
+
+function formatarNomeAssinatura(nome: string) {
+  return String(nome || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token, index) => capitalizarTokenPortugues(token, index))
+    .join(" ");
+}
+
 export function buildAssinaturaEmailHtml({
   nome,
   funcao,
@@ -41,6 +87,7 @@ export function buildAssinaturaEmailHtml({
   cert1,
   cert2,
 }: BuildAssinaturaEmailParams) {
+  const nomeFormatado = formatarNomeAssinatura(nome);
   const certImg1 = getCertImage(cert1);
   const certImg2 = getCertImage(cert2);
 
@@ -68,7 +115,7 @@ export function buildAssinaturaEmailHtml({
                 <tr>
                   <td style="vertical-align:top;">
                     <div style="font-size:28px; line-height:32px; font-weight:700; color:#0A4051; margin:0;">
-                      ${escapeHtml(nome)}
+                      ${escapeHtml(nomeFormatado)}
                     </div>
                     <div style="font-size:18px; line-height:22px; color:#B3C51B; font-weight:500; margin-top:2px;">
                       ${escapeHtml(funcao)}
@@ -125,7 +172,7 @@ export function buildAssinaturaEmailHtml({
 
                         <td style="vertical-align:bottom;">
                           <img
-                            src="/assinatura-email/gptw.png"
+                            src="/assinatura-email/GPTW_OFICIAL.png"
                             alt="Great Place To Work"
                             style="display:block; width:72px; height:auto; border:0;"
                           />
