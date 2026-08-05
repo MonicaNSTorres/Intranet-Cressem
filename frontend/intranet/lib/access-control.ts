@@ -184,14 +184,14 @@ export const PAGE_ACCESS = {
     contratos: {
         allowedGroups: [
             AD_GROUPS.SUPORTE,
-            AD_GROUPS.GERENCIA_DIRETORIA,
+            AD_GROUPS.DIRETORIA,
         ],
     },
 
     relatorios: {
         allowedGroups: [
             AD_GROUPS.SUPORTE,
-            AD_GROUPS.GERENCIA_DIRETORIA,
+            AD_GROUPS.DIRETORIA,
         ],
     },
 
@@ -219,7 +219,7 @@ export const PAGE_ACCESS = {
     },
 
     monitorAtendimentoBlip: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.GERENCIA_DIRETORIA],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.DIRETORIA],
     },
 
     contatosNaoPertube: {
@@ -325,11 +325,11 @@ export const PAGE_ACCESS = {
     },
 
     cadastroSubsidioFuneral: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.DIRETORIA],
     },
 
     cadastroSubsidioAuditivo: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.DIRETORIA],
     },
 
     consultaContrato: {
@@ -365,11 +365,11 @@ export const PAGE_ACCESS = {
     },
 
     gerenciamentoSubsidioFuneral: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.DIRETORIA],
     },
 
     gerenciamentoSubsidioAuditivo: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.DIRETORIA],
     },
 
     gerenciamentoParticipacao: {

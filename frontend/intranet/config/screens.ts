@@ -13,7 +13,7 @@ const AD_GROUPS = {
   DOCUSIGN: "GG_USERS_DOCUSIGN",
   ESTOQUE: "GG_USERS_ALMO",
 
-  GERENCIA_DIRETORIA: "GG_USERS_GERENCIA_DIRETORIA",
+  DIRETORIA: "GG_USERS_DIR",
   CCONV: "GG_USERS_CCONV",
   TODO_MUNDO: "GG_INTRANET_FULL",
   CHEQUE_ESPCIAL: "GG_INTRANET_CHEQUE_ESPECIAL",
@@ -300,7 +300,7 @@ export const SCREENS: ScreenItem[] = [
     desc: "Cadastrar solicitação de subsídio funeral.",
     href: "/auth/cadastro_subsidio_funeral",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.DIRETORIA],
     keywords: ["subsidio", "subsídio", "funeral", "cadastro", "solicitacao", "solicitação"],
   },
   {
@@ -308,7 +308,7 @@ export const SCREENS: ScreenItem[] = [
     desc: "Acompanhar solicitações de subsídio funeral.",
     href: "/auth/gerenciamento_subsidio_funeral",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.DIRETORIA],
     keywords: ["subsidio", "subsídio", "funeral", "gerenciamento", "consulta", "financeiro"],
   },
   {
@@ -316,7 +316,7 @@ export const SCREENS: ScreenItem[] = [
     desc: "Tela reservada para cadastro de subsídio auditivo.",
     href: "/auth/cadastro_subsidio_auditivo",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.DIRETORIA],
     keywords: ["subsidio", "subsídio", "auditivo", "cadastro"],
   },
   {
@@ -324,7 +324,7 @@ export const SCREENS: ScreenItem[] = [
     desc: "Tela reservada para gerenciamento de subsídio auditivo.",
     href: "/auth/gerenciamento_subsidio_auditivo",
     group: "Financeiro",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.DIRETORIA],
     keywords: ["subsidio", "subsídio", "auditivo", "gerenciamento"],
   },
   {
@@ -663,7 +663,7 @@ export const SCREENS: ScreenItem[] = [
     desc: "Acompanhar atrasos de primeira resposta e espera nas filas do Blip.",
     href: "/auth/monitor_atendimento_blip",
     group: "Métricas",
-    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.GERENCIA_DIRETORIA],
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.DIRETORIA],
     keywords: [
       "monitor",
       "atendimento",
