@@ -88,22 +88,22 @@ function contatoVazio(): ContatoEmpresaForm {
 }
 
 const inputBase =
-  "h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 const inputSelectable =
-  "h-12 w-full rounded-xl border border-slate-300 bg-white pl-5 pr-11 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
-
-const selectBase =
-  "h-12 w-full appearance-none rounded-xl border border-slate-300 bg-white pl-5 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "h-10 w-full rounded-xl border border-slate-200 bg-white pl-3 pr-10 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 const textareaBase =
-  "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 const nativeSelectBase =
-  "h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 const nativeDateBase =
-  "h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
+
+const actionPairCompact =
+  "grid w-full grid-cols-1 gap-3 sm:grid-cols-2 md:max-w-[560px]";
 
 function Section({
   title,
@@ -117,9 +117,9 @@ function Section({
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-        <h3 className="text-sm font-bold text-slate-800">{title}</h3>
+        <h3 className="text-[15px] font-bold text-slate-900">{title}</h3>
         {subtitle ? (
-          <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+          <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>
         ) : null}
       </div>
       <div className="p-5">{children}</div>
@@ -138,7 +138,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-[12px] font-semibold uppercase tracking-[0.03em] text-slate-600">
+      <label className="block text-[11px] font-bold uppercase tracking-[0.05em] text-slate-500">
         {label}
       </label>
       {children}
@@ -185,12 +185,14 @@ function ActionButton({
   type?: "button" | "submit" | "reset";
 }) {
   const styles = {
-    primary: "bg-secondary text-white hover:bg-third",
-    danger: "bg-red-600 text-white hover:bg-red-700",
+    primary:
+      "border border-primary/30 bg-primary/10 text-primary hover:border-primary hover:bg-primary hover:text-white",
+    danger:
+      "border border-fourth/30 bg-fourth/10 text-fourth hover:border-fourth hover:bg-fourth hover:text-white",
     secondary:
-      "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50",
-    success: "bg-emerald-600 text-white hover:bg-emerald-700",
-    info: "bg-sky-600 text-white hover:bg-sky-700",
+      "border border-[var(--text-darken-placeholder)] bg-white text-slate-700 hover:border-fourth hover:text-fourth",
+    success: "border border-secondary bg-secondary text-white hover:border-primary hover:bg-primary",
+    info: "border border-fourth bg-fourth text-white hover:border-primary hover:bg-primary",
   };
 
   return (
@@ -198,7 +200,7 @@ function ActionButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold shadow-sm transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${styles[variant]}`}
+      className={`inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${styles[variant]}`}
     >
       {children}
     </button>
@@ -673,8 +675,8 @@ export function CadastroContratoForm({
 
   if (loadingInicial) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm text-slate-500">
+      <div className="rounded-[24px] border border-slate-200 bg-white p-8 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+        <p className="text-sm font-medium text-slate-500">
           Carregando dados do contrato...
         </p>
       </div>
@@ -683,42 +685,46 @@ export function CadastroContratoForm({
 
   return (
     <div
-      className={`space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 ${isModal ? "mx-auto w-full max-w-full" : "mx-auto w-full min-w-225"
+      className={`space-y-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 ${isModal ? "mx-auto w-full max-w-full" : "mx-auto w-full"
         }`}
     >
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#C7D300]" />
+        <div className="p-5">
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#00AE9D]/25 bg-[#00AE9D]/10 px-3 py-1 text-xs font-black text-[#006f65]">
               Cadastro de contrato
             </div>
 
-            <h2 className="text-xl font-bold text-slate-800">
+            <h2 className="text-xl font-bold text-slate-900">
               {modoEdicao
                 ? "Alteração de Contrato de Empresas"
                 : "Novo Contrato de Empresa"}
             </h2>
-            <p className="mt-2 mb-2 text-sm text-slate-500">
+            <p className="mt-2 mb-2 text-sm font-medium text-slate-500">
               Preencha os campos abaixo para registrar as informações do contrato.
             </p>
           </div>
 
-          <div className="w-full lg:w-auto lg:min-w-60">
-            <ActionButton onClick={irParaConsulta} variant="secondary">
-              {isModal ? <FaTimes /> : <FaArrowRight />}
-              {isModal ? "Fechar" : "Consultar Contratos"}
-            </ActionButton>
-          </div>
+          {!isModal ? (
+            <div className="w-full lg:w-auto lg:min-w-60">
+              <ActionButton onClick={irParaConsulta} variant="secondary">
+                <FaArrowRight />
+                Consultar Contratos
+              </ActionButton>
+            </div>
+          ) : null}
         </div>
 
         {(erro || info) && (
           <div ref={alertaRef} className="mb-5">
             {erro ? (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                 {erro}
               </div>
             ) : (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
                 {info}
               </div>
             )}
@@ -824,6 +830,7 @@ export function CadastroContratoForm({
             </Field>
           </div>
         </div>
+        </div>
       </div>
 
       <Section
@@ -831,8 +838,8 @@ export function CadastroContratoForm({
         subtitle="Adicione os tipos desejados e acompanhe o resultado no campo abaixo."
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:items-end">
-          <div className="md:col-span-4 flex items-end">
-            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex items-end md:col-span-12">
+            <div className={actionPairCompact}>
               <ActionButton onClick={adicionarTipo} variant="primary">
                 <FaPlus />
                 Adicionar
@@ -886,7 +893,7 @@ export function CadastroContratoForm({
             </Field>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className={actionPairCompact}>
             <ActionButton onClick={adicionarEmail} variant="primary">
               <FaPlus />
               Adicionar
@@ -923,10 +930,10 @@ export function CadastroContratoForm({
           {contatosEmpresa.map((contato, index) => (
             <div
               key={`contato-empresa-${index}`}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+              className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm"
             >
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-700">
+                <p className="inline-flex items-center rounded-full border border-[#00AE9D]/20 bg-white px-3 py-1 text-xs font-bold text-slate-700">
                   Contato {index + 1}
                 </p>
 
@@ -934,7 +941,7 @@ export function CadastroContratoForm({
                   <button
                     type="button"
                     onClick={() => removerContatoEmpresa(index)}
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                    className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-xl border border-fourth/30 bg-fourth/10 px-3 text-xs font-bold text-fourth shadow-sm transition hover:border-fourth hover:bg-fourth hover:text-white"
                   >
                     <FaTrash size={12} />
                     Remover
@@ -1000,7 +1007,7 @@ export function CadastroContratoForm({
               type="button"
               onClick={adicionarContatoEmpresa}
               disabled={contatosEmpresa.length >= 4}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-third disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 text-sm font-semibold text-primary shadow-sm transition hover:border-primary hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               <FaPlus />
               Adicionar Contato
@@ -1096,9 +1103,9 @@ export function CadastroContratoForm({
                 <button
                   type="button"
                   onClick={() => setAtivo((old) => !old)}
-                  className={`inline-flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition cursor-pointer ${ativo
-                    ? "bg-third text-white hover:bg-secondary"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  className={`inline-flex h-10 w-full cursor-pointer items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition ${ativo
+                    ? "border border-primary/30 bg-primary/10 text-primary hover:border-primary hover:bg-primary hover:text-white"
+                    : "border border-fourth/30 bg-fourth/10 text-fourth hover:border-fourth hover:bg-fourth hover:text-white"
                     }`}
                 >
                   {ativo ? "Ativo" : "Inativo"}
@@ -1108,8 +1115,7 @@ export function CadastroContratoForm({
               <ActionButton
                 onClick={salvar}
                 disabled={loadingSalvar}
-                //variant={modoEdicao ? "info" : "success"}
-                variant={modoEdicao ? "success" : "primary"}
+                variant="success"
               >
                 <FaSave />
                 {loadingSalvar

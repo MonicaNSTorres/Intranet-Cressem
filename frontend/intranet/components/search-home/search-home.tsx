@@ -207,14 +207,14 @@ export default function HomeScreenSearch({
                 setOpen(true);
                 inputRef.current?.focus();
               }}
-              className="h-10 px-4 rounded-xl bg-secondary text-white hover:opacity-95 cursor-pointer"
+              className="h-10 px-4 rounded-xl bg-secondary font-semibold text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
               Buscar
             </button>
 
             <button
               onClick={clear}
-              className="h-10 px-4 rounded-xl bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer"
+              className="h-10 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
               Limpar
             </button>

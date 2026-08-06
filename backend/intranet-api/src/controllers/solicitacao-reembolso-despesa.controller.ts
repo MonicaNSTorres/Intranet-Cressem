@@ -2,9 +2,14 @@
 import oracledb from "oracledb";
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import { getOraclePool } from "../config/oracle.pool";
 import { sendEmail } from "../services/email.service";
 import { setAuditoriaContext } from "../services/oracle.service";
+
+const execFileAsync = promisify(execFile);
 
 
 function escapeHtml(value: any) {
@@ -196,20 +201,165 @@ function formatFolderDateTime(date = new Date()) {
 }
 
 function getBaseReembolsoPath() {
+  const server = String(process.env.SMB_SERVER || "10.0.107.251").trim();
+  const share = String(process.env.SMB_SHARE || "dados$").trim();
+
   return (
     process.env.REEMBOLSO_DESPESA_BASE_PATH ||
-    "\\\\10.0.107.251\\dados$\\CRM\\REEMBOLSO_DESPESA"
+    `\\\\${server}\\${share}\\CRM\\REEMBOLSO_DESPESA`
   );
 }
 
 function isUncPath(filePath: string | null | undefined) {
-  return String(filePath || "").startsWith("\\\\");
+  const caminho = String(filePath || "");
+  return caminho.startsWith("\\\\") || caminho.startsWith("//");
+}
+
+function isWindowsRuntime() {
+  return process.platform === "win32";
+}
+
+function getSmbConfigReembolso() {
+  const server = String(process.env.SMB_SERVER || "10.0.107.251").trim();
+  const share = String(process.env.SMB_SHARE || "dados$").trim();
+  const user = String(process.env.SMB_USER || "").trim();
+  const password = String(process.env.SMB_PASSWORD || "");
+  const domain = String(process.env.SMB_DOMAIN || "").trim();
+
+  if (!server) throw new Error("SMB_SERVER não configurado.");
+  if (!share) throw new Error("SMB_SHARE não configurado.");
+  if (!user) throw new Error("SMB_USER não configurado.");
+  if (!password) throw new Error("SMB_PASSWORD não configurado.");
+
+  return { server, share, user, password, domain };
+}
+
+function getSmbShareRootLinux() {
+  const { server, share } = getSmbConfigReembolso();
+  return `//${server}/${share}`;
+}
+
+function getSmbRelativePath(caminhoOriginal: string) {
+  const { server, share } = getSmbConfigReembolso();
+  const caminho = String(caminhoOriginal || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+  const prefix = `${server}/${share}/`;
+
+  if (caminho.toLowerCase().startsWith(prefix.toLowerCase())) {
+    return caminho.slice(prefix.length);
+  }
+
+  const marcador = "CRM/REEMBOLSO_DESPESA/";
+  const posicaoMarcador = caminho.toUpperCase().indexOf(marcador);
+
+  if (posicaoMarcador >= 0) {
+    return caminho.slice(posicaoMarcador);
+  }
+
+  return caminho;
+}
+
+async function execSmbClientReembolso(command: string) {
+  const { server, share, user, password, domain } = getSmbConfigReembolso();
+  const args = [`//${server}/${share}`];
+
+  if (domain) {
+    args.push("-W", domain);
+  }
+
+  args.push("-U", `${user}%${password}`, "-c", command);
+
+  try {
+    return await execFileAsync("smbclient", args);
+  } catch (error: any) {
+    throw new Error(
+      `Falha ao executar smbclient. Comando: ${command}. Detalhes: ${String(
+        error?.stderr || error?.stdout || error?.message || error
+      )}`
+    );
+  }
+}
+
+async function salvarComprovanteReembolsoLinux(
+  parsed: NonNullable<ReturnType<typeof parseBase64File>>,
+  funcionarioSafe: string,
+  pastaDataHora: string,
+  finalName: string
+) {
+  const diretorioDestino = `CRM/REEMBOLSO_DESPESA/${funcionarioSafe}/${pastaDataHora}`;
+  const pastasParaGarantir = [
+    "CRM",
+    "CRM/REEMBOLSO_DESPESA",
+    `CRM/REEMBOLSO_DESPESA/${funcionarioSafe}`,
+    diretorioDestino,
+  ];
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "reembolso-smb-"));
+  const tempFilePath = path.join(tempDir, finalName);
+
+  try {
+    for (const pasta of pastasParaGarantir) {
+      try {
+        await execSmbClientReembolso(`mkdir "${pasta}"`);
+      } catch {
+        // Se a pasta ja existe, o smbclient retorna erro. Pode seguir.
+      }
+    }
+
+    await fs.writeFile(tempFilePath, parsed.buffer);
+    await execSmbClientReembolso(
+      `cd "${diretorioDestino}"; put "${tempFilePath}" "${finalName}"`
+    );
+
+    return `${getSmbShareRootLinux()}/${diretorioDestino}/${finalName}`;
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+async function readFileFromSmbLinux(caminhoOriginal: string) {
+  const caminhoRelativo = getSmbRelativePath(caminhoOriginal);
+  const fileName = path.posix.basename(caminhoRelativo);
+  const pastaRemota = path.posix.dirname(caminhoRelativo);
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "reembolso-smb-download-"));
+  const tempFilePath = path.join(tempDir, fileName);
+
+  try {
+    const comando =
+      pastaRemota && pastaRemota !== "."
+        ? `cd "${pastaRemota}"; get "${fileName}" "${tempFilePath}"`
+        : `get "${fileName}" "${tempFilePath}"`;
+
+    await execSmbClientReembolso(comando);
+    const buffer = await fs.readFile(tempFilePath);
+
+    return {
+      buffer,
+      fileName,
+    };
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
 }
 
 async function removeFileIfExists(filePath: string | null | undefined) {
   if (!filePath) return;
 
   try {
+    if (!isWindowsRuntime() && isUncPath(filePath)) {
+      const caminhoRelativo = getSmbRelativePath(filePath);
+      const fileName = path.posix.basename(caminhoRelativo);
+      const pastaRemota = path.posix.dirname(caminhoRelativo);
+      const comando =
+        pastaRemota && pastaRemota !== "."
+          ? `cd "${pastaRemota}"; del "${fileName}"`
+          : `del "${fileName}"`;
+
+      await execSmbClientReembolso(comando);
+      return;
+    }
+
     await fs.unlink(filePath);
   } catch {
     // ignora se não existir
@@ -228,8 +378,18 @@ async function salvarComprovante(
 
   const funcionarioSafe = sanitizeFolderName(nomeFuncionario || "SEM_NOME");
   const pastaDataHora = formatFolderDateTime();
+  const finalName = sanitizeFileName(parsed.nomeOriginal);
 
-  const baseDir = path.join(
+  if (!isWindowsRuntime()) {
+    return salvarComprovanteReembolsoLinux(
+      parsed,
+      funcionarioSafe,
+      pastaDataHora,
+      finalName
+    );
+  }
+
+  const baseDir = path.win32.join(
     getBaseReembolsoPath(),
     funcionarioSafe,
     pastaDataHora
@@ -237,8 +397,7 @@ async function salvarComprovante(
 
   await ensureDir(baseDir);
 
-  const finalName = sanitizeFileName(parsed.nomeOriginal);
-  const finalPath = path.join(baseDir, finalName);
+  const finalPath = path.win32.join(baseDir, finalName);
 
   await fs.writeFile(finalPath, parsed.buffer);
 
@@ -2175,6 +2334,17 @@ export const solicitacaoReembolsoDespesaController = {
 
       if (!oficio) {
         return res.status(400).json({ error: "Arquivo não informado." });
+      }
+
+      if (!isWindowsRuntime() && isUncPath(oficio)) {
+        const { buffer, fileName } = await readFileFromSmbLinux(oficio);
+        res.setHeader("Content-Type", "application/octet-stream");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${sanitizeFileName(fileName)}"`
+        );
+
+        return res.send(buffer);
       }
 
       const filePath = path.isAbsolute(oficio) || isUncPath(oficio)

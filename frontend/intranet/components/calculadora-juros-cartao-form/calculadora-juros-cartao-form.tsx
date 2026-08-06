@@ -39,7 +39,7 @@ export function CalculadoraJurosCartaoForm() {
     const [hoje, setHoje] = useState(hojeISO());
     const [multaPerc, setMultaPerc] = useState(2);
     const [moraPerc, setMoraPerc] = useState(1);
-    const [taxaMensal, setTaxaMensal] = useState(7.5);
+    const [taxaMensal, setTaxaMensal] = useState(9.79);
     const [dividaConsolidada, setDividaConsolidada] = useState("");
     const [mensagem, setMensagem] = useState<string | null>(null);
     const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -112,7 +112,7 @@ export function CalculadoraJurosCartaoForm() {
         setHoje(hojeISO());
         setMultaPerc(2);
         setMoraPerc(1);
-        setTaxaMensal(7.5);
+        setTaxaMensal(9.79);
         setDividaConsolidada("");
         setMensagem(null);
         setResultado(null);

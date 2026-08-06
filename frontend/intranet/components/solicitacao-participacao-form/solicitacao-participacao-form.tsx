@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { FaCalendarPlus, FaTrash } from "react-icons/fa";
 import {
     cadastrarSolicitacaoParticipacao,
@@ -65,15 +65,16 @@ function formatCpfOuCnpj(value: string) {
 }
 
 const ORACLE_BYTE_BUFFER = 2;
+const ORACLE_NUMBER_SAFE_DIGITS = 20;
 const ORACLE_LIMITS = {
     NM_SOLICITANTE: 100,
     NM_CIDADE: 30,
     NM_FUNCIONARIO: 70,
     DESC_SOLICITACAO: 400,
-    DESC_SERVICOS: 200,
-    DESC_VINCULO: 200,
-    DESC_RETORNO_ULTIMO_EVENTO: 300,
-    DESC_RESUMO_EVENTO: 2000,
+    DESC_SERVICOS: 190,
+    DESC_VINCULO: 190,
+    DESC_RETORNO_ULTIMO_EVENTO: 285,
+    DESC_RESUMO_EVENTO: 1900,
 } as const;
 
 const utf8Encoder = new TextEncoder();
@@ -119,6 +120,20 @@ function normalizarOracleUpper(value: string, limiteBanco: number) {
     );
 }
 
+function limitarMoedaOracle(value: string) {
+    const somenteDigitos = String(value || "")
+        .replace(/\D/g, "")
+        .slice(0, ORACLE_NUMBER_SAFE_DIGITS);
+
+    return monetizarDigitacao(somenteDigitos);
+}
+
+function isPdfFile(file: File | null) {
+    if (!file) return true;
+    const nome = file.name.toLowerCase();
+    return file.type === "application/pdf" || nome.endsWith(".pdf");
+}
+
 export function SolicitacaoParticipacaoForm() {
     const router = useRouter();
 
@@ -132,6 +147,7 @@ export function SolicitacaoParticipacaoForm() {
     const [info, setInfo] = useState("");
     const alertRef = useRef<HTMLDivElement | null>(null);
     const oficioInputRef = useRef<HTMLInputElement | null>(null);
+    const docSemFinsInputRef = useRef<HTMLInputElement | null>(null);
     const subirParaAlerta = () => {
         window.requestAnimationFrame(() => {
             alertRef.current?.scrollIntoView({
@@ -313,6 +329,26 @@ export function SolicitacaoParticipacaoForm() {
         }));
     };
 
+    const selecionarPdf = (
+        file: File | null,
+        setFile: (file: File | null) => void,
+        inputRef?: RefObject<HTMLInputElement | null>
+    ) => {
+        if (!file) {
+            setFile(null);
+            return;
+        }
+
+        if (!isPdfFile(file)) {
+            setFile(null);
+            if (inputRef?.current) inputRef.current.value = "";
+            mostrarErro("Anexe somente arquivos em PDF.");
+            return;
+        }
+
+        setFile(file);
+    };
+
     const getPlataformaString = () => {
         return auditorio.NM_PLATAFORMA.trim();
     };
@@ -423,6 +459,11 @@ export function SolicitacaoParticipacaoForm() {
             return false;
         }
 
+        if (!isPdfFile(docSemFins)) {
+            mostrarErro("O comprovante de Entidade Sem Fins Lucrativos deve estar em PDF.");
+            return false;
+        }
+
         if (!dias.length) {
             mostrarErro("Adicione o(s) dia(s) do evento.");
             return false;
@@ -497,6 +538,11 @@ export function SolicitacaoParticipacaoForm() {
             return false;
         }
 
+        if (!isPdfFile(oficio)) {
+            mostrarErro("O Ofício deve estar em PDF.");
+            return false;
+        }
+
         if (auditorioSede && !validaCamposAuditorio()) {
             return false;
         }
@@ -549,6 +595,9 @@ export function SolicitacaoParticipacaoForm() {
         setOficio(null);
         if (oficioInputRef.current) {
             oficioInputRef.current.value = "";
+        }
+        if (docSemFinsInputRef.current) {
+            docSemFinsInputRef.current.value = "";
         }
         setDiaSolicitacao(hojeISO());
         limparAuditorio();
@@ -866,9 +915,16 @@ export function SolicitacaoParticipacaoForm() {
                                 Declaração de Utilidade Pública
                             </label>
                             <input
+                                ref={docSemFinsInputRef}
                                 type="file"
                                 accept="application/pdf,.pdf"
-                                onChange={(e) => setDocSemFins(e.target.files?.[0] || null)}
+                                onChange={(e) =>
+                                    selecionarPdf(
+                                        e.target.files?.[0] || null,
+                                        setDocSemFins,
+                                        docSemFinsInputRef
+                                    )
+                                }
                                 className={fileInputBase}
                             />
                             <p className="mt-1 text-xs text-slate-500">
@@ -996,7 +1052,7 @@ export function SolicitacaoParticipacaoForm() {
                                 <input
                                     value={valorSolicitado}
                                     onChange={(e) =>
-                                        setValorSolicitado(monetizarDigitacao(e.target.value))
+                                        setValorSolicitado(limitarMoedaOracle(e.target.value))
                                     }
                                     className={`${inputBase} text-right`}
                                     placeholder="R$ 0,00"
@@ -1038,7 +1094,7 @@ export function SolicitacaoParticipacaoForm() {
                                 <input
                                     value={estimativaInsumo}
                                     onChange={(e) =>
-                                        setEstimativaInsumo(monetizarDigitacao(e.target.value))
+                                        setEstimativaInsumo(limitarMoedaOracle(e.target.value))
                                     }
                                     className={`${inputBase} text-right`}
                                     placeholder="R$ 0,00"
@@ -1270,7 +1326,7 @@ export function SolicitacaoParticipacaoForm() {
                                     <input
                                         value={saldoMedio}
                                         onChange={(e) =>
-                                            setSaldoMedio(monetizarDigitacao(e.target.value))
+                                            setSaldoMedio(limitarMoedaOracle(e.target.value))
                                         }
                                         className={`${inputBase} text-right`}
                                     />
@@ -1283,7 +1339,7 @@ export function SolicitacaoParticipacaoForm() {
                                     <input
                                         value={rentMaq}
                                         onChange={(e) =>
-                                            setRentMaq(monetizarDigitacao(e.target.value))
+                                            setRentMaq(limitarMoedaOracle(e.target.value))
                                         }
                                         className={`${inputBase} text-right`}
                                     />
@@ -1358,7 +1414,13 @@ export function SolicitacaoParticipacaoForm() {
                                 ref={oficioInputRef}
                                 type="file"
                                 accept="application/pdf,.pdf"
-                                onChange={(e) => setOficio(e.target.files?.[0] || null)}
+                                onChange={(e) =>
+                                    selecionarPdf(
+                                        e.target.files?.[0] || null,
+                                        setOficio,
+                                        oficioInputRef
+                                    )
+                                }
                                 className={fileInputBase}
                             />
                             <p className="mt-1 text-xs text-slate-500">

@@ -34,7 +34,7 @@ export default function ConsultaContratosPage() {
 
   if (loading) {
     return (
-      <div className="p-6 text-sm text-gray-500">
+      <div className="p-6 text-sm font-medium text-slate-500">
         Carregando...
       </div>
     );
@@ -43,7 +43,7 @@ export default function ConsultaContratosPage() {
   if (!allowed) {
     return (
       <div className="p-6">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700 shadow-sm">
           Você não possui permissão para acessar esta tela.
         </div>
       </div>
@@ -51,25 +51,23 @@ export default function ConsultaContratosPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <BackButton />
+    <div className="p-5 lg:p-8">
+      <BackButton />
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-emerald-700">
-              <FaSearchDollar size={16} />
-            </div>
+      <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#C7D300] text-[#003641] shadow-sm">
+            <FaSearchDollar size={18} />
+          </div>
 
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold text-gray-900">
-                Consulta de Contratos de Empresas
-              </h1>
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-semibold text-slate-950">
+              Consulta de Contratos de Empresas
+            </h1>
 
-              <p className="mt-1 text-sm text-gray-600">
-                Consulte, filtre e abra contratos cadastrados para edição.
-              </p>
-            </div>
+            <p className="mt-1 max-w-3xl text-sm font-medium text-slate-600">
+              Consulte, filtre e abra contratos cadastrados para edição.
+            </p>
           </div>
         </div>
       </div>
@@ -78,7 +76,7 @@ export default function ConsultaContratosPage() {
         <ConsultaContratosForm />
       </div>
 
-      <div className="mt-8 text-xs text-gray-500">
+      <div className="mt-8 text-xs font-medium text-slate-500">
         * Utilize os filtros para localizar contratos específicos e abrir a edição.
       </div>
     </div>

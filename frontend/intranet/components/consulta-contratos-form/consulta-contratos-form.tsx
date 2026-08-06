@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FaAddressBook,
+  FaChevronLeft,
+  FaChevronRight,
   FaDownload,
   FaEdit,
   FaPlus,
@@ -23,10 +25,6 @@ import {
   type ConsultaContratosParams,
 } from "@/services/consulta_contratos.service";
 import { CadastroContratoForm } from "@/components/cadastro-contrato-form/cadastro-contrato-form";
-
-function onlyDigits(value: string) {
-  return String(value || "").replace(/\D/g, "");
-}
 
 function onlyCpfCnpjChars(value: string) {
   return String(value || "")
@@ -191,7 +189,7 @@ function baixarCsv(nomeArquivo: string, linhas: string[][]) {
 }
 
 const inputBase =
-  "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/15";
 
 function Section({
   title,
@@ -201,9 +199,9 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-emerald-200 bg-linear-to-r from-[#79B729] to-[#8ED12F] px-5 py-3">
-        <h3 className="text-sm font-bold text-white">{title}</h3>
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-[#00AE9D]/20 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#79B729] px-5 py-3">
+        <h3 className="text-sm font-black text-white">{title}</h3>
       </div>
       <div className="p-5">{children}</div>
     </section>
@@ -219,7 +217,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-[12px] font-semibold uppercase tracking-[0.03em] text-slate-600">
+      <label className="block text-[12px] font-bold uppercase tracking-[0.04em] text-slate-600">
         {label}
       </label>
       {children}
@@ -230,56 +228,126 @@ function Field({
 function Pagination({
   currentPage,
   totalPages,
+  totalItems,
+  limit,
+  loading,
   onChange,
+  onLimitChange,
 }: {
   currentPage: number;
   totalPages: number;
+  totalItems: number;
+  limit: number;
+  loading: boolean;
   onChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
 }) {
-  if (totalPages <= 1) return null;
-
-  const pages: number[] = [];
-  const start = Math.max(1, currentPage - 2);
-  const end = Math.min(totalPages, currentPage + 2);
-
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
+  const primeiroRegistro = totalItems === 0 ? 0 : (currentPage - 1) * limit + 1;
+  const ultimoRegistro = Math.min(currentPage * limit, totalItems);
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2">
-      <button
-        type="button"
-        onClick={() => onChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage === 1}
-        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Anterior
-      </button>
+    <div className="border-t border-slate-100 bg-white px-4 py-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <p className="text-sm text-slate-500">
+            Mostrando{" "}
+            <span className="font-semibold text-slate-700">
+              {primeiroRegistro}
+            </span>{" "}
+            até{" "}
+            <span className="font-semibold text-slate-700">
+              {ultimoRegistro}
+            </span>{" "}
+            de{" "}
+            <span className="font-semibold text-slate-700">{totalItems}</span>{" "}
+            contrato(s)
+          </p>
 
-      {pages.map((page) => (
-        <button
-          key={page}
-          type="button"
-          onClick={() => onChange(page)}
-          className={`inline-flex h-10 min-w-[40px] items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition ${page === currentPage
-              ? "bg-primary text-white"
-              : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-            }`}
-        >
-          {page}
-        </button>
-      ))}
+          <select
+            value={limit}
+            onChange={(event) => onLimitChange(Number(event.target.value))}
+            disabled={loading}
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <option value={10}>10 por página</option>
+            <option value={20}>20 por página</option>
+            <option value={50}>50 por página</option>
+            <option value={100}>100 por página</option>
+          </select>
+        </div>
 
-      <button
-        type="button"
-        onClick={() => onChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
-        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Próxima
-      </button>
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(currentPage - 1, 1))}
+            disabled={currentPage <= 1 || loading}
+            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+          >
+            <FaChevronLeft size={12} />
+            Anterior
+          </button>
+
+          <span className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+            Página {currentPage} de {totalPages}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => onChange(Math.min(currentPage + 1, totalPages))}
+            disabled={currentPage >= totalPages || loading}
+            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+          >
+            Próxima
+            <FaChevronRight size={12} />
+          </button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  tone = "slate",
+  active = false,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  tone?: "slate" | "emerald" | "red" | "sky" | "amber";
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const styles = {
+    slate: "border-slate-200 bg-white text-slate-900",
+    emerald: "border-[#00AE9D]/25 bg-[#00AE9D]/10 text-[#006f65]",
+    red: "border-red-200 bg-red-50 text-red-700",
+    sky: "border-sky-200 bg-sky-50 text-sky-800",
+    amber: "border-amber-200 bg-amber-50 text-amber-800",
+  };
+
+  const labelStyles = {
+    slate: "text-slate-500",
+    emerald: "text-[#006f65]",
+    red: "text-red-700",
+    sky: "text-sky-700",
+    amber: "text-amber-700",
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`cursor-pointer rounded-3xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+        styles[tone]
+      } ${active ? "ring-2 ring-primary/30" : ""}`}
+    >
+      <p className={`text-xs font-black uppercase tracking-[0.04em] ${labelStyles[tone]}`}>
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-black">{value}</p>
+    </button>
   );
 }
 
@@ -313,6 +381,7 @@ export function ConsultaContratosForm() {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
@@ -332,20 +401,25 @@ export function ConsultaContratosForm() {
     ContatoContratoItem[]
   >([]);
 
-  const limit = 10;
   const totaisContratos = useMemo(
     () => calcularTotaisContratos(contratosResumo),
     [contratosResumo]
   );
 
-  function montarParamsBase(): ConsultaContratosParams {
+  function montarParamsBase(
+    overrides: Partial<{
+      status: string;
+    }> = {}
+  ): ConsultaContratosParams {
+    const statusFiltro = overrides.status ?? status;
+
     return {
       NM_EMPRESA: empresa.trim() || undefined,
       NR_CNPJ: onlyCpfCnpjChars(cnpj) || undefined,
       NM_CIDADE: cidade.trim() || undefined,
       NM_TIPO_CONTRATO: tipoContrato.trim() || undefined,
       NM_SISTEMA_CONSIG: sistema.trim() || undefined,
-      SN_ATIVO: status === "" ? undefined : status === "1" ? 1 : 0,
+      SN_ATIVO: statusFiltro === "" ? undefined : statusFiltro === "1" ? 1 : 0,
     };
   }
 
@@ -367,13 +441,17 @@ export function ConsultaContratosForm() {
     return (response.items || []) as ContratoEmpresaItem[];
   }
 
-  function aplicarPagina(lista: ContratoEmpresaItem[], page = 1) {
+  function aplicarPagina(
+    lista: ContratoEmpresaItem[],
+    page = 1,
+    pageLimit = limit
+  ) {
     const total = lista.length;
-    const totalCalculado = Math.max(Math.ceil(total / limit), 1);
+    const totalCalculado = Math.max(Math.ceil(total / pageLimit), 1);
     const paginaSegura = Math.min(Math.max(page, 1), totalCalculado);
-    const inicio = (paginaSegura - 1) * limit;
+    const inicio = (paginaSegura - 1) * pageLimit;
 
-    setItems(lista.slice(inicio, inicio + limit));
+    setItems(lista.slice(inicio, inicio + pageLimit));
     setTotalItems(total);
     setTotalPages(totalCalculado);
     setCurrentPage(paginaSegura);
@@ -431,6 +509,39 @@ export function ConsultaContratosForm() {
     }
   }
 
+  async function aplicarFiltroResumo(
+    novoStatus: string,
+    novoFiltroVencimento: FiltroVencimento
+  ) {
+    try {
+      setErro("");
+      setInfo("");
+      setStatus(novoStatus);
+      setFiltroVencimento(novoFiltroVencimento);
+      setLoadingBuscar(true);
+
+      const contratos = await carregarTodosContratos(
+        montarParamsBase({ status: novoStatus })
+      );
+      const filtrados = filtrarPorVencimento(contratos, novoFiltroVencimento);
+
+      setContratosFiltrados(filtrados);
+      aplicarPagina(filtrados, 1);
+
+      if (!filtrados.length) {
+        setInfo("Nenhum contrato encontrado para o card selecionado.");
+      }
+    } catch (error: any) {
+      console.error(error);
+      setErro(
+        error?.response?.data?.error ||
+          "Não foi possível aplicar o filtro do resumo."
+      );
+    } finally {
+      setLoadingBuscar(false);
+    }
+  }
+
   function limparFiltros() {
     setEmpresa("");
     setCnpj("");
@@ -457,6 +568,11 @@ export function ConsultaContratosForm() {
 
   function mudarPagina(page: number) {
     aplicarPagina(contratosFiltrados, page);
+  }
+
+  function alterarLimite(novoLimit: number) {
+    setLimit(novoLimit);
+    aplicarPagina(contratosFiltrados, 1, novoLimit);
   }
 
   async function abrirContatos(item: ContratoEmpresaItem) {
@@ -589,21 +705,23 @@ export function ConsultaContratosForm() {
   if (loadingInicial) {
     return (
       <div className="mx-auto w-full max-w-225 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm text-slate-500">Carregando filtros e contratos...</p>
+        <p className="text-sm font-medium text-slate-500">Carregando filtros e contratos...</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="mx-auto w-full min-w-225 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mx-auto w-full min-w-225 space-y-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#79B729]" />
+        <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+        <div className="rounded-3xl border border-slate-200 bg-gradient-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/15 p-5 shadow-sm">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-xl font-bold text-slate-800">
+              <h2 className="text-xl font-black text-slate-950">
                 Filtros da consulta
               </h2>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm font-medium text-slate-600">
                 Use os filtros abaixo para localizar contratos cadastrados.
               </p>
             </div>
@@ -611,7 +729,7 @@ export function ConsultaContratosForm() {
             <button
               type="button"
               onClick={abrirCadastro}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
+              className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-secondary bg-secondary px-5 text-sm font-bold text-white shadow-sm transition hover:border-primary hover:bg-primary"
             >
               <FaPlus />
               Novo Contrato
@@ -621,11 +739,11 @@ export function ConsultaContratosForm() {
           {(erro || info) && (
             <div className="mb-4">
               {erro ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                   {erro}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                <div className="rounded-2xl border border-[#00AE9D]/25 bg-[#00AE9D]/10 px-4 py-3 text-sm font-semibold text-[#006f65]">
                   {info}
                 </div>
               )}
@@ -746,7 +864,7 @@ export function ConsultaContratosForm() {
                   type="button"
                   onClick={() => buscar(1)}
                   disabled={loadingBuscar}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-secondary bg-secondary px-5 text-sm font-bold text-white shadow-sm transition hover:border-primary hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <FaSearch />
                   {loadingBuscar ? "Buscando..." : "Buscar"}
@@ -755,7 +873,7 @@ export function ConsultaContratosForm() {
                 <button
                   type="button"
                   onClick={limparFiltros}
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white cursor-pointer px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  className="inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl border border-[var(--text-darken-placeholder)] bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
                 >
                   Limpar
                 </button>
@@ -764,7 +882,7 @@ export function ConsultaContratosForm() {
                   type="button"
                   onClick={baixarRelatorio}
                   disabled={loadingBuscar || loadingRelatorio}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-5 text-sm font-bold text-primary shadow-sm transition hover:border-primary hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FaDownload />
                   {loadingRelatorio ? "Baixando..." : "Baixar relatório"}
@@ -774,6 +892,43 @@ export function ConsultaContratosForm() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+          <SummaryCard
+            label="Total"
+            value={totaisContratos.total}
+            active={status === "" && filtroVencimento === ""}
+            onClick={() => aplicarFiltroResumo("", "")}
+          />
+          <SummaryCard
+            label="Ativos"
+            value={totaisContratos.ativos}
+            tone="emerald"
+            active={status === "1" && filtroVencimento === ""}
+            onClick={() => aplicarFiltroResumo("1", "")}
+          />
+          <SummaryCard
+            label="Inativos"
+            value={totaisContratos.inativos}
+            tone="red"
+            active={status === "0" && filtroVencimento === ""}
+            onClick={() => aplicarFiltroResumo("0", "")}
+          />
+          <SummaryCard
+            label="Ativos vencidos"
+            value={totaisContratos.vencidos}
+            tone="sky"
+            active={status === "1" && filtroVencimento === "vencidos"}
+            onClick={() => aplicarFiltroResumo("1", "vencidos")}
+          />
+          <SummaryCard
+            label="Próx. 30 dias"
+            value={totaisContratos.proximos}
+            tone="amber"
+            active={status === "1" && filtroVencimento === "1-30"}
+            onClick={() => aplicarFiltroResumo("1", "1-30")}
+          />
+        </div>
+
         <Section title="Contratos encontrados">
           {items.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
@@ -781,25 +936,10 @@ export function ConsultaContratosForm() {
             </div>
           ) : (
             <>
-              <div className="mb-4 flex flex-wrap gap-2 text-xs font-semibold">
-                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
-                  Ativo
-                </span>
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-800">
-                  Próximo do vencimento
-                </span>
-                <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-800">
-                  Ativo vencido
-                </span>
-                <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-red-700">
-                  Inativo
-                </span>
-              </div>
-
-              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+              <div className="overflow-x-auto rounded-3xl border border-slate-200 shadow-sm">
                 <table className="w-full min-w-[1180px] border-separate border-spacing-0 overflow-hidden rounded-2xl text-[13px]">
                   <thead>
-                    <tr className="bg-slate-100 text-left text-[11px] font-bold uppercase tracking-[0.03em] text-slate-600">
+                    <tr className="bg-slate-100 text-left text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
                       <th className="border-b border-slate-200 px-3 py-2.5">Empresa</th>
                       <th className="border-b border-slate-200 px-3 py-2.5 whitespace-nowrap">CPF/CNPJ</th>
                       <th className="border-b border-slate-200 px-3 py-2.5">Cidade</th>
@@ -857,7 +997,7 @@ export function ConsultaContratosForm() {
                               onClick={() => abrirContatos(item)}
                               title="Ver contatos"
                               aria-label="Ver contatos"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-700 shadow-sm transition hover:bg-sky-100"
+                              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 text-primary shadow-sm transition hover:border-primary hover:bg-primary hover:text-white"
                             >
                               <FaAddressBook size={13} />
                             </button>
@@ -866,7 +1006,7 @@ export function ConsultaContratosForm() {
                               onClick={() => abrirEdicao(Number(item.ID_CONTRATOS_EMPRESAS))}
                               title="Editar contrato"
                               aria-label="Editar contrato"
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-white shadow-sm transition hover:bg-third cursor-pointer"
+                              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-secondary bg-secondary text-white shadow-sm transition hover:border-primary hover:bg-primary"
                             >
                               <FaEdit size={13} />
                             </button>
@@ -882,73 +1022,35 @@ export function ConsultaContratosForm() {
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
+                  totalItems={totalItems}
+                  limit={limit}
+                  loading={loadingBuscar || loadingRelatorio}
                   onChange={mudarPagina}
+                  onLimitChange={alterarLimite}
                 />
               </div>
             </>
           )}
         </Section>
-
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.04em] text-slate-500">
-              Total
-            </p>
-            <p className="mt-1 text-2xl font-bold text-slate-800">
-              {totaisContratos.total}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.04em] text-emerald-700">
-              Ativos
-            </p>
-            <p className="mt-1 text-2xl font-bold text-emerald-800">
-              {totaisContratos.ativos}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.04em] text-red-700">
-              Inativos
-            </p>
-            <p className="mt-1 text-2xl font-bold text-red-700">
-              {totaisContratos.inativos}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.04em] text-sky-700">
-              Ativos vencidos
-            </p>
-            <p className="mt-1 text-2xl font-bold text-sky-800">
-              {totaisContratos.vencidos}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.04em] text-amber-700">
-              Próx. 30 dias
-            </p>
-            <p className="mt-1 text-2xl font-bold text-amber-800">
-              {totaisContratos.proximos}
-            </p>
-          </div>
-        </div>
+      </div>
       </div>
 
       {modalEdicaoAberta && contratoEdicaoId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4">
-          <div className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-            <div className="shrink-0 flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="shrink-0 flex items-center justify-between border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
               <div>
-                <h3 className="text-lg font-bold text-slate-800">
+                <h3 className="text-lg font-black text-slate-950">
                   Editar Contrato
                 </h3>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm font-medium text-slate-500">
                   Atualize os dados do contrato sem sair da consulta.
                 </p>
                 {statusEdicaoModal ? (
                   <div
-                    className={`mt-3 rounded-xl border px-3 py-2 text-xs font-semibold ${
+                    className={`mt-3 rounded-2xl border px-3 py-2 text-xs font-bold ${
                       statusEdicaoModal.tipo === "sucesso"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        ? "border-[#00AE9D]/25 bg-[#00AE9D]/10 text-[#006f65]"
                         : "border-red-200 bg-red-50 text-red-700"
                     }`}
                   >
@@ -960,7 +1062,7 @@ export function ConsultaContratosForm() {
               <button
                 type="button"
                 onClick={fecharModalEdicao}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-[var(--text-darken-placeholder)] bg-white text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
               >
                 <FaTimes size={14} />
               </button>
@@ -982,13 +1084,13 @@ export function ConsultaContratosForm() {
 
       {modalContatosAberta && contratoContatos && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4">
-          <div className="relative flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-            <div className="shrink-0 flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4">
+          <div className="relative flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="shrink-0 flex items-start justify-between gap-4 border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
               <div>
-                <h3 className="text-lg font-bold text-slate-800">
+                <h3 className="text-lg font-black text-slate-950">
                   Contatos do Convênio
                 </h3>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm font-medium text-slate-500">
                   {contratoContatos.NM_EMPRESA || "Empresa"} -{" "}
                   {contratoContatos.NM_TIPO_CONTRATO || "Contrato"}
                 </p>
@@ -997,7 +1099,7 @@ export function ConsultaContratosForm() {
               <button
                 type="button"
                 onClick={fecharModalContatos}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-[var(--text-darken-placeholder)] bg-white text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
               >
                 <FaTimes size={14} />
               </button>
@@ -1021,7 +1123,7 @@ export function ConsultaContratosForm() {
                   {contatosContrato.map((contato, index) => (
                     <div
                       key={`${contato.ID_RH_CONTATO || index}`}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                      className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-inner shadow-slate-100"
                     >
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <h4 className="text-sm font-bold text-slate-800">
@@ -1065,7 +1167,7 @@ export function ConsultaContratosForm() {
               <button
                 type="button"
                 onClick={fecharModalContatos}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border border-[var(--text-darken-placeholder)] bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
               >
                 Fechar
               </button>
