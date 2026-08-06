@@ -181,6 +181,8 @@ export const authController = {
     try {
       const authReq = req as any;
 
+      res.set("Cache-Control", "no-store");
+
       return res.json({
         username: authReq.user?.sub || "",
         nome_completo: authReq.user?.nome_completo || "",

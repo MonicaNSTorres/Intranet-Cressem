@@ -93,6 +93,7 @@ import { solicitacaoSubsidioAuditivoController } from "../controllers/solicitaca
 import { solicitacaoSubsidioAuditivoPaginadoController } from "../controllers/solicitacao_subsidio_auditivo_paginado.controller";
 import { cnab240CcoController } from "../controllers/cnab240-cco.controller";
 import { bancoImagensController } from "../controllers/banco-imagens.controller";
+import { assinaturaEmailController } from "../controllers/assinatura-email.controller";
 
 const routes = Router();
 
@@ -100,6 +101,11 @@ routes.get("/", (_req, res) => res.json({ message: "INTRANET-API" }));
 
 routes.post("/v1/login_sem_automatico", authController.loginSemAutomatico);
 routes.get("/v1/me", authMiddleware, authController.me);
+routes.get(
+  "/v1/assinatura-email/dados-usuario",
+  authMiddleware,
+  assinaturaEmailController.dadosUsuario
+);
 routes.post("/v1/logout", authController.logout);
 
 routes.get(

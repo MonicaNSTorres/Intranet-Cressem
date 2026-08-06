@@ -17,6 +17,8 @@ const CERT_OPTIONS: Array<{ value: CertValue; label: string }> = [
 
 const TELEFONE_PADRAO = "(12) 3904-9555";
 const SITE_PADRAO = "sicoobcressem.com.br";
+const POSTO_PADRAO = "Sede";
+const FUNCAO_PADRAO = "Sicoob Cressem";
 
 const FONT_SEMIBOLD = "SicoobSansCndSemiBoldExact";
 const FONT_MEDIUM = "SicoobSansCndMediumExact";
@@ -431,8 +433,12 @@ export function AssinaturaEmailForm() {
   const [gerada, setGerada] = useState(false);
   const [baixando, setBaixando] = useState(false);
   const [office, setOffice] = useState("");
+  const [enderecoCadastro, setEnderecoCadastro] = useState("");
 
-  const ENDERECO_PADRAO = getEnderecoPorPosto(office);
+  const ENDERECO_PADRAO =
+    enderecoCadastro.trim() ||
+    getEnderecoPorPosto(office) ||
+    getEnderecoPorPosto(POSTO_PADRAO);
 
   useEffect(() => {
     async function carregarUsuarioLogado() {
@@ -441,9 +447,10 @@ export function AssinaturaEmailForm() {
 
         const base = process.env.NEXT_PUBLIC_API_URL;
 
-        const response = await fetch(`${base}/v1/me`, {
+        const response = await fetch(`${base}/v1/assinatura-email/dados-usuario`, {
           method: "GET",
           credentials: "include",
+          cache: "no-store",
           headers: {
             "Content-Type": "application/json",
           },
@@ -461,13 +468,20 @@ export function AssinaturaEmailForm() {
           );
         }
 
-        if (data?.physicalDeliveryOfficeName) {
-          setOffice(data.physicalDeliveryOfficeName);
-        }
+        const setorBanco = String(data?.nm_setor || "").trim();
+        const cargoBanco = String(data?.nm_cargo || "").trim();
+        const enderecoBanco = String(data?.endereco_setor || "").trim();
+        const posto = String(
+          data?.physicalDeliveryOfficeName || setorBanco || ""
+        ).trim();
 
-        if (data?.department) {
-          setFuncao(capitalizarFrase(data.department));
-        }
+        setOffice(posto || POSTO_PADRAO);
+        setEnderecoCadastro(enderecoBanco);
+
+        const funcaoUsuario = String(
+          cargoBanco || setorBanco || data?.department || ""
+        ).trim();
+        setFuncao(capitalizarFrase(funcaoUsuario || FUNCAO_PADRAO));
 
         const gruposUsuario = Array.isArray(data?.grupos) ? data.grupos : [];
         setPodePersonalizar(
