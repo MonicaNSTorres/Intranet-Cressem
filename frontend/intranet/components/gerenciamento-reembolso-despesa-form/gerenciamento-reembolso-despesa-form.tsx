@@ -2,10 +2,12 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FaCheck,
+  FaChevronLeft,
+  FaChevronRight,
   FaEdit,
   FaFilePdf,
   FaPlus,
@@ -141,12 +143,40 @@ const totaisInicial: Totais = {
   total: 0,
 };
 
+const fieldClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20";
+
+const readOnlyFieldClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 text-sm text-slate-900 shadow-sm outline-none";
+
+const textareaClass =
+  "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20 disabled:bg-slate-50";
+
+const readOnlyTextareaClass =
+  "w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none";
+
+const labelClass = "mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600";
+
+const primaryButtonClass =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#79B729] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#00AE9D] disabled:cursor-not-allowed disabled:opacity-60";
+
+const secondaryButtonClass =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#00AE9D] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#49479D] disabled:cursor-not-allowed disabled:opacity-60";
+
+const neutralButtonClass =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
+
+const dangerButtonClass =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-bold text-red-700 shadow-sm transition hover:bg-red-100";
+
 export function GerenciamentoReembolsoDespesaForm() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [loadingBusca, setLoadingBusca] = useState(false);
   const [saving, setSaving] = useState(false);
+  const salvarParecerLockRef = useRef(false);
+  const concluirSolicitacaoLockRef = useRef(false);
   const [hasAccess, setHasAccess] = useState(false);
 
   const [pesquisa, setPesquisa] = useState("");
@@ -155,6 +185,7 @@ export function GerenciamentoReembolsoDespesaForm() {
   const [filtroStatus, setFiltroStatus] = useState("");
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const [nomeResponsavel, setNomeResponsavel] = useState("");
   const [nomeResponsavelAD, setNomeResponsavelAD] = useState("");
@@ -382,6 +413,7 @@ export function GerenciamentoReembolsoDespesaForm() {
       setLista(response.items || []);
       setPaginaAtual(pagina);
       setTotalPages(response.total_pages || 1);
+      setTotalItems(Number(response.total || 0));
     } catch (error) {
       console.error(error);
       alert("Solicitações não encontradas.");
@@ -431,6 +463,16 @@ export function GerenciamentoReembolsoDespesaForm() {
       cpf: "",
       cidade: "",
       status: "",
+    });
+  }
+
+  function aplicarFiltroRapidoStatus(status: string) {
+    setFiltroStatus(status);
+
+    buscarDespesas(1, pesquisa, nomeResponsavel, podeVerTodos, {
+      cpf: filtroCpf,
+      cidade: filtroCidade,
+      status,
     });
   }
 
@@ -612,7 +654,10 @@ export function GerenciamentoReembolsoDespesaForm() {
 
   async function salvarParecer() {
     if (!solicitacaoAtual) return;
+    if (saving || salvarParecerLockRef.current) return;
     if (!validarCampos()) return;
+
+    salvarParecerLockRef.current = true;
 
     try {
       setSaving(true);
@@ -669,11 +714,15 @@ export function GerenciamentoReembolsoDespesaForm() {
       alert("Não foi possível atualizar a solicitação.");
     } finally {
       setSaving(false);
+      salvarParecerLockRef.current = false;
     }
   }
 
   async function concluirSolicitacaoAtual() {
     if (!solicitacaoAtual) return;
+    if (saving || concluirSolicitacaoLockRef.current) return;
+
+    concluirSolicitacaoLockRef.current = true;
 
     try {
       setSaving(true);
@@ -693,6 +742,7 @@ export function GerenciamentoReembolsoDespesaForm() {
       alert("Não foi possível concluir a solicitação.");
     } finally {
       setSaving(false);
+      concluirSolicitacaoLockRef.current = false;
     }
   }
 
@@ -773,16 +823,16 @@ export function GerenciamentoReembolsoDespesaForm() {
 
   if (loading) {
     return (
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-        <div className="text-sm text-gray-500">Carregando gerenciamento...</div>
+      <div className="mx-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="text-sm text-slate-500">Carregando gerenciamento...</div>
       </div>
     );
   }
 
   if (!hasAccess) {
     return (
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-        <div className="text-sm text-gray-500">
+      <div className="mx-auto rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
+        <div className="text-sm font-semibold text-red-700">
           Acesso negado. Esta tela é permitida apenas para os grupos do AD
           financeiro e suporte.
         </div>
@@ -807,7 +857,7 @@ export function GerenciamentoReembolsoDespesaForm() {
 
   return (
     <>
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
+      <div className="mx-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -825,51 +875,84 @@ export function GerenciamentoReembolsoDespesaForm() {
               status: filtroStatus,
             });
           }}
-          className="grid grid-cols-1 gap-3"
+          className="p-5"
         >
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr_auto_auto]">
-            <input
-              type="text"
-              value={pesquisa}
-              onChange={(e) => setPesquisa(e.target.value)}
-              placeholder="Digite o nome do funcionário, CPF, andamento ou cidade"
-              className="w-full rounded border px-3 py-2"
-            />
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
+                <h2 className="text-base font-black text-slate-950">Filtros</h2>
+              </div>
+              <p className="mt-1 text-sm text-slate-600">
+                Pesquise e acompanhe o andamento das solicitações de reembolso.
+              </p>
+            </div>
 
-            <input
-              type="text"
-              value={filtroCpf}
-              onChange={(e) => setFiltroCpf(formatCpfView(e.target.value))}
-              placeholder="Filtrar por CPF"
-              className="w-full rounded border px-3 py-2"
-            />
-
-            <input
-              type="text"
-              value={filtroCidade}
-              onChange={(e) => setFiltroCidade(e.target.value)}
-              placeholder="Filtrar por cidade"
-              className="w-full rounded border px-3 py-2"
-            />
-
-            <select
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
-              className="w-full rounded border px-3 py-2"
+            <button
+              type="button"
+              onClick={() => router.push("/auth/cadastro_reembolso_despesa")}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#00AE9D] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#49479D]"
             >
-              <option value="">TODOS OS STATUS</option>
-              <option value="Pendente Funcionario">PENDENTE FUNCIONÁRIO</option>
-              <option value="Pendente Financeiro">PENDENTE FINANCEIRO</option>
-              <option value="Pendente Gerencia">PENDENTE GERÊNCIA</option>
-              <option value="Pendente Gerencia Superior">PENDENTE GERÊNCIA SUPERIOR</option>
-              <option value="Pendente Diretoria">PENDENTE DIRETORIA</option>
-              <option value="Aprovado">APROVADO</option>
-              <option value="Reprovado">REPROVADO</option>
-            </select>
+              <FaPlus size={12} />
+              Nova Solicitação
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr_auto_auto]">
+            <label>
+              <span className={labelClass}>Pesquisa</span>
+              <input
+                type="text"
+                value={pesquisa}
+                onChange={(e) => setPesquisa(e.target.value)}
+                placeholder="Funcionário, CPF, andamento ou cidade"
+                className={fieldClass}
+              />
+            </label>
+
+            <label>
+              <span className={labelClass}>CPF</span>
+              <input
+                type="text"
+                value={filtroCpf}
+                onChange={(e) => setFiltroCpf(formatCpfView(e.target.value))}
+                placeholder="Filtrar por CPF"
+                className={fieldClass}
+              />
+            </label>
+
+            <label>
+              <span className={labelClass}>Cidade</span>
+              <input
+                type="text"
+                value={filtroCidade}
+                onChange={(e) => setFiltroCidade(e.target.value)}
+                placeholder="Filtrar por cidade"
+                className={fieldClass}
+              />
+            </label>
+
+            <label>
+              <span className={labelClass}>Status</span>
+              <select
+                value={filtroStatus}
+                onChange={(e) => setFiltroStatus(e.target.value)}
+                className={fieldClass}
+              >
+                <option value="">Todos os status</option>
+                <option value="Pendente Funcionario">Pendente funcionário</option>
+                <option value="Pendente Financeiro">Pendente financeiro</option>
+                <option value="Pendente Gerencia">Pendente gerência</option>
+                <option value="Pendente Gerencia Superior">Pendente gerência superior</option>
+                <option value="Pendente Diretoria">Pendente diretoria</option>
+                <option value="Aprovado">Aprovado</option>
+                <option value="Reprovado">Reprovado</option>
+              </select>
+            </label>
 
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 rounded border bg-secondary border-secondary px-4 py-2 text-sm font-medium text-white cursor-pointer"
+              className={primaryButtonClass}
             >
               <FaSearch size={12} />
               Buscar
@@ -878,39 +961,58 @@ export function GerenciamentoReembolsoDespesaForm() {
             <button
               type="button"
               onClick={limparBusca}
-              className="inline-flex items-center justify-center gap-2 rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+              className={neutralButtonClass}
             >
               Limpar
             </button>
           </div>
         </form>
 
-        <div className="mt-6 overflow-x-auto">
-          <table className="min-w-full overflow-hidden rounded-lg border border-gray-200">
-            <thead className="bg-gray-50">
+        <div className="grid grid-cols-1 gap-3 border-t border-slate-200 p-5 md:grid-cols-4 xl:grid-cols-8">
+          <ResumoCard label="Total" value={totais.total} variant="slate" active={filtroStatus === ""} onClick={() => aplicarFiltroRapidoStatus("")} />
+          <ResumoCard label="Funcionário" value={totais.funcionario} variant="amber" active={filtroStatus === "Pendente Funcionario"} onClick={() => aplicarFiltroRapidoStatus("Pendente Funcionario")} />
+          <ResumoCard label="Financeiro" value={totais.financeiro} variant="sky" active={filtroStatus === "Pendente Financeiro"} onClick={() => aplicarFiltroRapidoStatus("Pendente Financeiro")} />
+          <ResumoCard label="Gerência" value={totais.gerencia} variant="teal" active={filtroStatus === "Pendente Gerencia"} onClick={() => aplicarFiltroRapidoStatus("Pendente Gerencia")} />
+          <ResumoCard label="Gerência Sup." value={totais.gerenciaSup} variant="indigo" active={filtroStatus === "Pendente Gerencia Superior"} onClick={() => aplicarFiltroRapidoStatus("Pendente Gerencia Superior")} />
+          <ResumoCard label="Diretoria" value={totais.diretoria} variant="violet" active={filtroStatus === "Pendente Diretoria"} onClick={() => aplicarFiltroRapidoStatus("Pendente Diretoria")} />
+          <ResumoCard label="Aprovados" value={totais.aprovados} variant="green" active={filtroStatus === "Aprovado"} onClick={() => aplicarFiltroRapidoStatus("Aprovado")} />
+          <ResumoCard label="Reprovados" value={totais.reprovados} variant="red" active={filtroStatus === "Reprovado"} onClick={() => aplicarFiltroRapidoStatus("Reprovado")} />
+        </div>
+
+        <div className="border-t border-slate-200 p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-black text-slate-950">Solicitações cadastradas</h3>
+              <p className="text-sm text-slate-600">Total localizado: {totais.total}</p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <table className="min-w-full overflow-hidden">
+              <thead className="bg-slate-50">
               <tr>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className="border-b border-slate-200 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
                   Nome
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className="border-b border-slate-200 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
                   CPF
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className="border-b border-slate-200 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
                   Cidade
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className="border-b border-slate-200 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
                   Abertura
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className="border-b border-slate-200 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
                   Ida
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className="border-b border-slate-200 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
                   Volta
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className="border-b border-slate-200 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
                   Status
                 </th>
-                <th className="border-b px-3 py-2 text-center text-xs font-semibold text-gray-600">
+                <th className="border-b border-slate-200 px-4 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
                   Ação
                 </th>
               </tr>
@@ -919,45 +1021,47 @@ export function GerenciamentoReembolsoDespesaForm() {
             <tbody>
               {loadingBusca ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-500">
                     Carregando...
                   </td>
                 </tr>
               ) : lista.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-500">
                     Nenhuma solicitação encontrada.
                   </td>
                 </tr>
               ) : (
                 lista.map((item) => (
-                  <tr key={item.ID_SOLICITACAO_REEMBOLSO_DESPESA} className="hover:bg-gray-50">
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                  <tr key={item.ID_SOLICITACAO_REEMBOLSO_DESPESA} className="hover:bg-slate-50">
+                    <td className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900">
                       {primeiroUltimoNome(capitalizeWords(item.NM_FUNCIONARIO))}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                    <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-700">
                       {formatCpfView(item.NR_CPF_FUNCIONARIO)}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                    <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-700">
                       {capitalizeWords(item.NM_CIDADE)}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                    <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-700">
                       {formatDateBR(item.DT_ABERTURA)}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                    <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-700">
                       {formatDateBR(item.DT_IDA)}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                    <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-700">
                       {formatDateBR(item.DT_VOLTA)}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
-                      {capitalizeWords(item.DESC_ANDAMENTO)}
+                    <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-700">
+                      <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                        {capitalizeWords(item.DESC_ANDAMENTO)}
+                      </span>
                     </td>
-                    <td className="border-b px-3 py-2 text-center">
+                    <td className="border-b border-slate-100 px-4 py-3 text-center">
                       <button
                         type="button"
                         onClick={() => abrirSolicitacao(item)}
-                        className={`rounded px-3 py-1.5 text-xs font-semibold cursor-pointer text-white ${item.SN_FINALIZADO ? "bg-green-600" : "bg-blue-600"
+                        className={`inline-flex h-8 items-center justify-center rounded-xl px-3 text-xs font-bold text-white shadow-sm transition ${item.SN_FINALIZADO ? "bg-[#00AE9D] hover:bg-[#49479D]" : "bg-[#79B729] hover:bg-[#00AE9D]"
                           }`}
                       >
                         {item.SN_FINALIZADO ? "Concluído" : "Informações"}
@@ -967,164 +1071,160 @@ export function GerenciamentoReembolsoDespesaForm() {
                 ))
               )}
             </tbody>
-          </table>
-        </div>
+            </table>
+          </div>
 
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              type="button"
-              onClick={() => buscarDespesas(page)}
-              className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
-                ? "bg-green-600 text-white"
-                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                }`}
-            >
-              {page}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-5">
-          <ResumoCard label="Funcionário" value={totais.funcionario} />
-          <ResumoCard label="Financeiro" value={totais.financeiro} />
-          <ResumoCard label="Gerência" value={totais.gerencia} />
-          <ResumoCard label="Gerência Sup." value={totais.gerenciaSup} />
-          <ResumoCard label="Diretoria" value={totais.diretoria} />
-        </div>
-
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-          <ResumoCard label="Aprovados" value={totais.aprovados} />
-          <ResumoCard label="Reprovados" value={totais.reprovados} />
-          <ResumoCard label="Total" value={totais.total} />
+          <Pagination
+            currentPage={paginaAtual}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            loading={loadingBusca}
+            onChange={(page) =>
+              buscarDespesas(page, pesquisa, nomeResponsavel, podeVerTodos, {
+                cpf: filtroCpf,
+                cidade: filtroCidade,
+                status: filtroStatus,
+              })
+            }
+          />
         </div>
       </div>
 
       {modalOpen && solicitacaoAtual && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[95vh] w-full max-w-6xl overflow-hidden rounded-xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Solicitação #{solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA}
-              </h3>
+          <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#00AE9D]">
+                  Análise de reembolso
+                </p>
+                <h3 className="mt-1 text-xl font-black text-slate-950">
+                  Solicitação #{solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  {capitalizeWords(solicitacaoAtual.DESC_ANDAMENTO || "")}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="rounded p-2 text-gray-500 hover:bg-gray-100"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 shadow-sm transition hover:bg-red-100"
               >
                 <FaTimes />
               </button>
             </div>
 
-            <div className="max-h-[calc(95vh-140px)] overflow-y-auto px-5 py-5">
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
                 <div className="md:col-span-9">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Funcionário</label>
+                  <label className={labelClass}>Funcionário</label>
                   <input
                     value={solicitacaoAtual.NM_FUNCIONARIO || ""}
                     readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                    className={readOnlyFieldClass}
                   />
                 </div>
 
                 <div className="md:col-span-3">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">CPF</label>
+                  <label className={labelClass}>CPF</label>
                   <input
                     value={formatCpfView(solicitacaoAtual.NR_CPF_FUNCIONARIO || "")}
                     readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                    className={readOnlyFieldClass}
                   />
                 </div>
 
                 <div className="md:col-span-3">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Ida</label>
+                  <label className={labelClass}>Ida</label>
                   <input
                     value={formatDateBR(solicitacaoAtual.DT_IDA)}
                     readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                    className={readOnlyFieldClass}
                   />
                 </div>
 
                 <div className="md:col-span-3">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Volta</label>
+                  <label className={labelClass}>Volta</label>
                   <input
                     value={formatDateBR(solicitacaoAtual.DT_VOLTA)}
                     readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                    className={readOnlyFieldClass}
                   />
                 </div>
 
                 <div className="md:col-span-6">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Cidade</label>
+                  <label className={labelClass}>Cidade</label>
                   <input
                     value={solicitacaoAtual.NM_CIDADE || ""}
                     readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                    className={readOnlyFieldClass}
                   />
                 </div>
 
                 <div className="md:col-span-12">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Justificativa</label>
+                  <label className={labelClass}>Justificativa</label>
                   <textarea
                     value={solicitacaoAtual.DESC_JTF_EVENTO || ""}
                     readOnly
                     rows={3}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                    className={readOnlyTextareaClass}
                   />
                 </div>
 
                 <div className="md:col-span-4">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Nº Banco</label>
+                  <label className={labelClass}>Nº Banco</label>
                   <input
                     value={solicitacaoAtual.NR_BANCO || ""}
                     readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                    className={readOnlyFieldClass}
                   />
                 </div>
 
                 <div className="md:col-span-4">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Agência</label>
+                  <label className={labelClass}>Agência</label>
                   <input
                     value={solicitacaoAtual.CD_AGENCIA || ""}
                     readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                    className={readOnlyFieldClass}
                   />
                 </div>
 
                 <div className="md:col-span-4">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Nº Conta</label>
+                  <label className={labelClass}>Nº Conta</label>
                   <input
                     value={solicitacaoAtual.NR_CONTA || ""}
                     readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                    className={readOnlyFieldClass}
                   />
                 </div>
               </div>
 
-              <div className="mt-6 rounded-xl border border-gray-200 p-4">
-                <h4 className="mb-4 text-sm font-semibold text-gray-800">Despesas</h4>
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
+                  <h4 className="text-sm font-black text-slate-950">Despesas</h4>
+                </div>
 
                 <div className="space-y-4">
                   {(solicitacaoAtual.DESPESAS || solicitacaoAtual.despesas || []).map((despesa: any, index: number) => (
-                    <div key={index} className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 md:grid-cols-2">
+                    <div key={index} className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:grid-cols-2">
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                           <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">Tipo</label>
+                            <label className={labelClass}>Tipo</label>
                             <input
                               value={capitalizeWords(despesa.TP_DESPESA || "")}
                               readOnly
-                              className="w-full rounded border bg-gray-50 px-3 py-2"
+                              className={readOnlyFieldClass}
                             />
                           </div>
 
                           <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">Valor</label>
+                            <label className={labelClass}>Valor</label>
                             <input
                               value={fmtBRL(despesa.VALOR || 0)}
                               readOnly
-                              className="w-full rounded border bg-gray-50 px-3 py-2"
+                              className={`${readOnlyFieldClass} text-right font-bold`}
                             />
                           </div>
                         </div>
@@ -1133,7 +1233,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                           type="button"
                           disabled={!despesa.COMPROVANTE}
                           onClick={() => baixarArquivo(despesa.COMPROVANTE)}
-                          className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                          className={secondaryButtonClass}
                         >
                           {despesa.COMPROVANTE
                             ? String(despesa.COMPROVANTE).split(/[/\\]/).pop()
@@ -1142,12 +1242,12 @@ export function GerenciamentoReembolsoDespesaForm() {
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">Descrição</label>
+                        <label className={labelClass}>Descrição</label>
                         <textarea
                           value={despesa.DESC_DESPESA || ""}
                           readOnly
                           rows={4}
-                          className="w-full rounded border bg-gray-50 px-3 py-2"
+                          className={readOnlyTextareaClass}
                         />
                       </div>
                     </div>
@@ -1155,7 +1255,7 @@ export function GerenciamentoReembolsoDespesaForm() {
 
                   <div className="grid grid-cols-1 md:grid-cols-[280px]">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">Total de Despesas</label>
+                      <label className={labelClass}>Total de Despesas</label>
                       <input
                         value={fmtBRL(
                           (solicitacaoAtual.DESPESAS || solicitacaoAtual.despesas || []).reduce(
@@ -1164,7 +1264,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                           )
                         )}
                         readOnly
-                        className="w-full rounded border bg-gray-50 px-3 py-2"
+                        className={`${readOnlyFieldClass} text-right font-bold`}
                       />
                     </div>
                   </div>
@@ -1189,13 +1289,13 @@ export function GerenciamentoReembolsoDespesaForm() {
               ) &&
                 podeAtuarComoFinanceiro() && (
                   <div className="mt-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className={labelClass}>
                       Parecer Financeiro
                     </label>
                     <select
                       value={parecerFinanceiroSelect}
                       onChange={(e) => setParecerFinanceiroSelect(e.target.value)}
-                      className="w-full rounded border px-3 py-2"
+                      className={fieldClass}
                     >
                       <option value="">Selecione</option>
                       <option value="Solicitação Divergente">Solicitação Divergente</option>
@@ -1205,7 +1305,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                 )}
 
               <div className="mt-3">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Parecer Financeiro Escrito
                 </label>
                 <textarea
@@ -1219,7 +1319,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                     podeAtuarComoFinanceiro()
                   )}
                   rows={3}
-                  className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
+                  className={textareaClass}
                 />
               </div>
 
@@ -1229,13 +1329,13 @@ export function GerenciamentoReembolsoDespesaForm() {
               ) &&
                 podeAtuarComoFinanceiro() && (
                   <div className="mt-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className={labelClass}>
                       Financeiro
                     </label>
                     <input
                       value={solicitacaoAtual.NM_FNC_FINANCEIRO || ""}
                       readOnly
-                      className="w-full rounded border bg-gray-50 px-3 py-2"
+                      className={readOnlyFieldClass}
                     />
                   </div>
                 )}
@@ -1243,7 +1343,7 @@ export function GerenciamentoReembolsoDespesaForm() {
               {!!solicitacaoAtual.HAS_GERENCIA && (
                 <>
                   <div className="mt-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className={labelClass}>
                       Parecer Gerência
                     </label>
                     <textarea
@@ -1254,12 +1354,12 @@ export function GerenciamentoReembolsoDespesaForm() {
                         podeAtuarEtapaGerencia
                       )}
                       rows={3}
-                      className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
+                      className={textareaClass}
                     />
                   </div>
 
                   <div className="mt-3">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">Gerência</label>
+                    <label className={labelClass}>Gerência</label>
                     <input
                       value={
                         solicitacaoAtual.APROV_GERENCIA_NOME ||
@@ -1267,7 +1367,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                         ""
                       }
                       readOnly
-                      className="w-full rounded border bg-gray-50 px-3 py-2"
+                      className={readOnlyFieldClass}
                     />
                   </div>
                 </>
@@ -1276,7 +1376,7 @@ export function GerenciamentoReembolsoDespesaForm() {
               {!!solicitacaoAtual.HAS_GERENCIA_SUP && (
                 <>
                   <div className="mt-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className={labelClass}>
                       Parecer Gerência Superior
                     </label>
                     <textarea
@@ -1287,12 +1387,12 @@ export function GerenciamentoReembolsoDespesaForm() {
                         podeAtuarEtapaGerenciaSup
                       )}
                       rows={3}
-                      className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
+                      className={textareaClass}
                     />
                   </div>
 
                   <div className="mt-3">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className={labelClass}>
                       Gerência Superior
                     </label>
                     <input
@@ -1302,14 +1402,14 @@ export function GerenciamentoReembolsoDespesaForm() {
                         ""
                       }
                       readOnly
-                      className="w-full rounded border bg-gray-50 px-3 py-2"
+                      className={readOnlyFieldClass}
                     />
                   </div>
                 </>
               )}
 
               <div className="mt-5">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Parecer Diretoria
                 </label>
                 <textarea
@@ -1320,12 +1420,12 @@ export function GerenciamentoReembolsoDespesaForm() {
                     podeAtuarEtapaDiretoria
                   )}
                   rows={3}
-                  className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
+                  className={textareaClass}
                 />
               </div>
 
               <div className="mt-3">
-                <label className="mb-1 block text-xs font-medium text-gray-600">Diretoria</label>
+                <label className={labelClass}>Diretoria</label>
                 <input
                   value={
                     solicitacaoAtual.NM_FNC_DIRETORIA ||
@@ -1341,7 +1441,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                       : "")
                   }
                   readOnly
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
+                  className={readOnlyFieldClass}
                 />
               </div>
 
@@ -1355,13 +1455,13 @@ export function GerenciamentoReembolsoDespesaForm() {
                 (isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
                   podeAtuarEtapaDiretoria)) && (
                   <div className="mt-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className={labelClass}>
                       Parecer Final
                     </label>
                     <select
                       value={parecerFinal}
                       onChange={(e) => setParecerFinal(e.target.value)}
-                      className="w-full rounded border px-3 py-2"
+                      className={fieldClass}
                     >
                       <option value="">Selecione</option>
                       <option value="Aprovado">Aprovado</option>
@@ -1371,12 +1471,13 @@ export function GerenciamentoReembolsoDespesaForm() {
                 )}
             </div>
 
-            <div className="flex flex-wrap justify-end gap-3 border-t px-5 py-4">
+            <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 px-6 py-5">
               <button
                 type="button"
-                disabled={!podeConcluir() || saving}
+                disabled={!podeConcluir() || saving || concluirSolicitacaoLockRef.current}
+                aria-busy={saving && concluirSolicitacaoLockRef.current}
                 onClick={concluirSolicitacaoAtual}
-                className="inline-flex items-center gap-2 rounded bg-yellow-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 text-sm font-bold text-amber-700 shadow-sm transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <FaCheck size={12} />
                 Concluído
@@ -1386,7 +1487,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                 type="button"
                 disabled={!podeGerarRelatorio()}
                 onClick={imprimirSolicitacao}
-                className="inline-flex items-center gap-2 rounded bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                className={secondaryButtonClass}
               >
                 <FaFilePdf size={12} />
                 Gerar Relatório
@@ -1398,7 +1499,7 @@ export function GerenciamentoReembolsoDespesaForm() {
                 onClick={() =>
                   mudarTelaEditar(solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA)
                 }
-                className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#49479D]/30 bg-[#49479D]/10 px-4 text-sm font-bold text-[#49479D] shadow-sm transition hover:bg-[#49479D] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <FaEdit size={12} />
                 Editar Solicitação
@@ -1406,9 +1507,10 @@ export function GerenciamentoReembolsoDespesaForm() {
 
               <button
                 type="button"
-                disabled={!podeSalvarParecer() || saving}
+                disabled={!podeSalvarParecer() || saving || salvarParecerLockRef.current}
+                aria-busy={saving && salvarParecerLockRef.current}
                 onClick={salvarParecer}
-                className="inline-flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                className={primaryButtonClass}
               >
                 <FaSave size={12} />
                 Salvar
@@ -1417,7 +1519,7 @@ export function GerenciamentoReembolsoDespesaForm() {
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                className={dangerButtonClass}
               >
                 <FaTimes size={12} />
                 Fechar
@@ -1430,11 +1532,99 @@ export function GerenciamentoReembolsoDespesaForm() {
   );
 }
 
-function ResumoCard({ label, value }: { label: string; value: number }) {
+function Pagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  loading = false,
+  onChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  loading?: boolean;
+  onChange: (page: number) => void;
+}) {
+  const limit = 10;
+  const total = Math.max(1, totalPages);
+  const primeiro = totalItems > 0 ? (currentPage - 1) * limit + 1 : 0;
+  const ultimo = totalItems > 0 ? Math.min(currentPage * limit, totalItems) : 0;
+
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <div className="text-xs font-medium text-gray-500">{label}</div>
-      <div className="mt-2 text-xl font-semibold text-gray-900">{value}</div>
+    <div className="border-t border-slate-100 bg-white px-3 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-slate-500">
+          Mostrando{" "}
+          <span className="font-semibold text-slate-700">{primeiro}</span> até{" "}
+          <span className="font-semibold text-slate-700">{ultimo}</span> de{" "}
+          <span className="font-semibold text-slate-700">{totalItems}</span>{" "}
+          solicitação(ões)
+        </p>
+
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(currentPage - 1, 1))}
+            disabled={currentPage <= 1 || loading}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FaChevronLeft />
+            Anterior
+          </button>
+
+          <span className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+            Página {currentPage} de {total}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => onChange(Math.min(currentPage + 1, total))}
+            disabled={currentPage >= total || loading}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Próxima
+            <FaChevronRight />
+          </button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function ResumoCard({
+  label,
+  value,
+  variant = "slate",
+  active = false,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  variant?: "amber" | "sky" | "teal" | "indigo" | "violet" | "green" | "red" | "slate";
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const variants = {
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    sky: "border-sky-200 bg-sky-50 text-sky-700",
+    teal: "border-teal-200 bg-teal-50 text-teal-700",
+    indigo: "border-indigo-200 bg-indigo-50 text-indigo-700",
+    violet: "border-violet-200 bg-violet-50 text-violet-700",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    red: "border-red-200 bg-red-50 text-red-700",
+    slate: "border-slate-200 bg-slate-50 text-slate-700",
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${variants[variant]} ${
+        active ? "ring-2 ring-[#00AE9D]/40" : ""
+      }`}
+    >
+      <div className="text-xs font-bold uppercase tracking-wide opacity-80">{label}</div>
+      <div className="mt-2 text-2xl font-black">{value}</div>
+    </button>
   );
 }

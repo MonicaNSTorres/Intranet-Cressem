@@ -52,22 +52,23 @@ export default function CadastroReembolsoDespesaPage() {
 
   return (
     <div className="p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <BackButton />
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-emerald-700">
-              <FaMoneyBillWave size={16} />
-            </div>
+      <div className="mb-4">
+        <BackButton />
+      </div>
 
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold text-gray-900">
-                Reembolso de Despesas
-              </h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Preencha os dados da solicitação, adicione as despesas e envie para análise.
-              </p>
-            </div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#C7D300] text-[#007E7A] shadow-sm">
+            <FaMoneyBillWave size={18} />
+          </div>
+
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-black text-slate-950">
+              Reembolso de Despesas
+            </h1>
+            <p className="mt-1 text-sm text-slate-600">
+              Preencha os dados da solicitação, adicione as despesas e envie para análise.
+            </p>
           </div>
         </div>
       </div>
@@ -76,7 +77,7 @@ export default function CadastroReembolsoDespesaPage() {
         <CadastroReembolsoDespesaForm />
       </div>
 
-      <div className="mt-8 text-xs text-gray-500">
+      <div className="mt-8 text-xs text-slate-500">
         * Os dados do funcionário, cidades, tipos de despesa e solicitação em edição serão carregados via intranet-api.
       </div>
     </div>

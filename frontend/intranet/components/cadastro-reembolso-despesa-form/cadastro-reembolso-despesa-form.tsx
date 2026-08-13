@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaEdit, FaPlus, FaSave, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
 import {
@@ -153,12 +153,32 @@ async function fileToDataURL(file: File | null) {
   });
 }
 
+const fieldClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-white px-4 text-left text-sm leading-10 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20";
+const readOnlyFieldClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 text-left text-sm leading-10 text-slate-900 shadow-sm outline-none";
+const textareaClass =
+  "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-left text-sm leading-5 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20";
+const labelClass =
+  "mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600";
+const sectionClass =
+  "rounded-2xl border border-slate-200 bg-white shadow-sm";
+const sectionTitleClass =
+  "flex items-center gap-2 px-5 py-4 text-base font-black text-slate-950";
+const primaryButtonClass =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#79B729] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#00AE9D] disabled:cursor-not-allowed disabled:opacity-70";
+const actionButtonClass =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#00AE9D] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#49479D] disabled:cursor-not-allowed disabled:opacity-70";
+const neutralButtonClass =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-bold text-slate-800 shadow-sm transition hover:border-[#00AE9D] hover:text-[#007E7A]";
+
 export function CadastroReembolsoDespesaForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const enviarSolicitacaoLockRef = useRef(false);
 
   const [cidades, setCidades] = useState<string[]>([]);
   const [tiposDespesa, setTiposDespesa] = useState<string[]>([]);
@@ -181,6 +201,8 @@ export function CadastroReembolsoDespesaForm() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
   const [indiceEditando, setIndiceEditando] = useState<number | null>(null);
+  const [salvandoDespesa, setSalvandoDespesa] = useState(false);
+  const salvarDespesaLockRef = useRef(false);
 
   const [tipoDespesa, setTipoDespesa] = useState("");
   const [descricaoDespesa, setDescricaoDespesa] = useState("");
@@ -302,11 +324,15 @@ export function CadastroReembolsoDespesaForm() {
   };
 
   const abrirModalNovaDespesa = () => {
+    salvarDespesaLockRef.current = false;
+    setSalvandoDespesa(false);
     limparModal();
     setModalOpen(true);
   };
 
   const fecharModal = () => {
+    salvarDespesaLockRef.current = false;
+    setSalvandoDespesa(false);
     setModalOpen(false);
     limparModal();
   };
@@ -348,7 +374,11 @@ export function CadastroReembolsoDespesaForm() {
   };
 
   const salvarDespesa = () => {
+    if (salvandoDespesa || salvarDespesaLockRef.current) return;
     if (!validarDespesa()) return;
+
+    salvarDespesaLockRef.current = true;
+    setSalvandoDespesa(true);
 
     const item: DespesaItem = {
       tipo: tipoDespesa,
@@ -366,10 +396,13 @@ export function CadastroReembolsoDespesaForm() {
       setDespesas((prev) => [...prev, item]);
     }
 
-    fecharModal();
+    setModalOpen(false);
+    limparModal();
   };
 
   const editarDespesa = (index: number) => {
+    salvarDespesaLockRef.current = false;
+    setSalvandoDespesa(false);
     const item = despesas[index];
 
     setModoEdicao(true);
@@ -509,7 +542,10 @@ export function CadastroReembolsoDespesaForm() {
   };
 
   const enviarSolicitacao = async () => {
+    if (saving || enviarSolicitacaoLockRef.current) return;
     if (!validarFormulario()) return;
+
+    enviarSolicitacaoLockRef.current = true;
 
     try {
       setSaving(true);
@@ -532,351 +568,292 @@ export function CadastroReembolsoDespesaForm() {
       alert("Falha ao salvar a solicitação.");
     } finally {
       setSaving(false);
+      enviarSolicitacaoLockRef.current = false;
     }
   };
 
   if (loading) {
     return (
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-        <div className="text-sm text-gray-500">Carregando dados...</div>
+      <div className="mx-auto w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="text-sm text-slate-500">Carregando dados...</div>
       </div>
     );
   }
 
   return (
     <>
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <SearchForm onSearch={onBuscarCpf}>
+      <div className="mx-auto w-full space-y-5">
+        <SearchForm
+          onSearch={onBuscarCpf}
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto] md:items-end">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className={labelClass}>
                 CPF do funcionário
               </label>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                <SearchInput
-                  value={formatCpfView(cpf)}
-                  onChange={(e) => setCpf(e.target.value)}
-                  placeholder="CPF"
-                  className="w-full rounded border px-3 py-2"
-                  inputMode="numeric"
-                  maxLength={14}
-                />
-
-                <SearchButton loading={loading} label="Pesquisar" />
-              </div>
+              <SearchInput
+                value={formatCpfView(cpf)}
+                onChange={(e) => setCpf(e.target.value)}
+                placeholder="CPF"
+                className={fieldClass}
+                inputMode="numeric"
+                maxLength={14}
+              />
             </div>
-          </SearchForm>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Nome</label>
-            <input
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              className="
-    w-full
-    h-11
-    rounded-lg
-    border
-    border-gray-300
-    bg-white
-    px-3
-    text-sm
-    text-gray-700
-    shadow-sm
-    outline-none
-    transition
-    focus:border-[#00AE9D]
-    focus:ring-2
-    focus:ring-[#00AE9D]/20
-  "
-            />
+            <SearchButton loading={loading} label="Pesquisar" />
           </div>
+        </SearchForm>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Data de ida</label>
-            <input
-              type="date"
-              value={ida}
-              max={hoje}
-              onChange={(e) => setIda(e.target.value)}
-              className="
-    w-full
-    h-11
-    rounded-lg
-    border
-    border-gray-300
-    bg-white
-    px-3
-    text-sm
-    text-gray-700
-    shadow-sm
-    outline-none
-    transition
-    focus:border-[#00AE9D]
-    focus:ring-2
-    focus:ring-[#00AE9D]/20
-  "
-            />
+        <section className={sectionClass}>
+          <h2 className={sectionTitleClass}>
+            <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
+            Dados da solicitação
+          </h2>
+
+          <div className="grid grid-cols-1 gap-4 border-t border-slate-200 p-5 md:grid-cols-2">
+            <div>
+              <label className={labelClass}>Nome</label>
+              <input
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Cidade</label>
+              <select
+                value={cidade}
+                onChange={(e) => setCidade(e.target.value)}
+                className={fieldClass}
+              >
+                <option value="">Selecione</option>
+                {cidades.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className={labelClass}>Data de ida</label>
+              <input
+                type="date"
+                value={ida}
+                max={hoje}
+                onChange={(e) => setIda(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Data de volta</label>
+              <input
+                type="date"
+                value={volta}
+                max={hoje}
+                onChange={(e) => setVolta(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Número do banco</label>
+              <input
+                value={numeroBanco}
+                onChange={(e) => setNumeroBanco(e.target.value)}
+                className={readOnlyFieldClass}
+                readOnly
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Agência</label>
+              <input
+                value={agencia}
+                onChange={(e) => setAgencia(e.target.value)}
+                className={readOnlyFieldClass}
+                readOnly
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className={labelClass}>Número da conta</label>
+              <input
+                value={numeroConta}
+                onChange={(e) => setNumeroConta(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className={labelClass}>Justificativa</label>
+              <textarea
+                value={justificativa}
+                onChange={(e) => setJustificativa(e.target.value)}
+                className={textareaClass}
+                rows={4}
+                maxLength={400}
+                placeholder="Descreva a justificativa do reembolso"
+              />
+            </div>
           </div>
+        </section>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Data de volta</label>
-            <input
-              type="date"
-              value={volta}
-              max={hoje}
-              onChange={(e) => setVolta(e.target.value)}
-              className="
-    w-full
-    h-11
-    rounded-lg
-    border
-    border-gray-300
-    bg-white
-    px-3
-    text-sm
-    text-gray-700
-    shadow-sm
-    outline-none
-    transition
-    focus:border-[#00AE9D]
-    focus:ring-2
-    focus:ring-[#00AE9D]/20
-  "
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Número do banco</label>
-            <input
-              value={numeroBanco}
-              onChange={(e) => setNumeroBanco(e.target.value)}
-              className="w-full rounded border bg-gray-50 px-3 py-2"
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Agência</label>
-            <input
-              value={agencia}
-              onChange={(e) => setAgencia(e.target.value)}
-              className="w-full rounded border bg-gray-50 px-3 py-2"
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Número da conta</label>
-            <input
-              value={numeroConta}
-              onChange={(e) => setNumeroConta(e.target.value)}
-              className="
-              w-full
-              h-11
-              rounded-lg
-              border
-              border-gray-300
-              bg-white
-              px-3
-              text-sm
-              text-gray-700
-              shadow-sm
-              outline-none
-              transition
-              focus:border-[#00AE9D]
-              focus:ring-2
-              focus:ring-[#00AE9D]/20
-            "
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Cidade</label>
-            <select
-              value={cidade}
-              onChange={(e) => setCidade(e.target.value)}
-              className="
-              w-full
-              h-11
-              rounded-lg
-              border
-              border-gray-300
-              bg-white
-              px-3
-              text-sm
-              text-gray-700
-              shadow-sm
-              outline-none
-              transition
-              focus:border-[#00AE9D]
-              focus:ring-2
-              focus:ring-[#00AE9D]/20
-            "
-            >
-              <option value="">Selecione</option>
-              {cidades.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium text-gray-600">Justificativa</label>
-            <textarea
-              value={justificativa}
-              onChange={(e) => setJustificativa(e.target.value)}
-              className="w-full rounded border border-gray-300 shadow-sm outline-none transition px-3 py-2 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20"
-              rows={4}
-              maxLength={400}
-              placeholder="Descreva a justificativa do reembolso"
-            />
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-xl border border-gray-200 p-4">
-          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-sm font-semibold text-gray-800">Despesas adicionadas</h2>
+        <section className={sectionClass}>
+          <div className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
+            <h2 className={sectionTitleClass.replace("px-5 py-4", "p-0")}>
+              <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
+              Despesas adicionadas
+            </h2>
 
             <button
               type="button"
               onClick={abrirModalNovaDespesa}
-              className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary cursor-pointer"
+              className={actionButtonClass}
             >
               <FaPlus size={12} />
               Adicionar despesa
             </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full overflow-hidden rounded-lg border border-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
-                    Tipo
-                  </th>
-                  <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
-                    Descrição
-                  </th>
-                  <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
-                    Valor
-                  </th>
-                  <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
-                    Arquivo
-                  </th>
-                  <th className="border-b px-3 py-2 text-center text-xs font-semibold text-gray-600">
-                    Editar
-                  </th>
-                  <th className="border-b px-3 py-2 text-center text-xs font-semibold text-gray-600">
-                    Excluir
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {despesas.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-3 py-6 text-center text-sm text-gray-500">
-                      Nenhuma despesa adicionada.
-                    </td>
-                  </tr>
-                ) : (
-                  despesas.map((item, index) => (
-                    <tr key={`${item.tipo}-${index}`} className="hover:bg-gray-50">
-                      <td className="border-b px-3 py-2 text-sm text-gray-700">{item.tipo}</td>
-                      <td className="whitespace-pre-line border-b px-3 py-2 text-sm text-gray-700">
-                        {item.descricao}
-                      </td>
-                      <td className="border-b px-3 py-2 text-sm text-gray-700">{item.valor}</td>
-                      <td className="border-b px-3 py-2 text-sm text-gray-700">
-                        <button
-                          type="button"
-                          onClick={() => baixarComprovante(item)}
-                          className="text-left text-primary hover:underline"
-                        >
-                          {item.comprovanteNome}
-                        </button>
-                      </td>
-                      <td className="border-b px-3 py-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => editarDespesa(index)}
-                          className="inline-flex items-center justify-center rounded bg-sky-500 p-2 text-white hover:opacity-90"
-                        >
-                          <FaEdit size={12} />
-                        </button>
-                      </td>
-                      <td className="border-b px-3 py-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => removerDespesa(index)}
-                          className="inline-flex items-center justify-center rounded bg-red-500 p-2 text-white hover:opacity-90"
-                        >
-                          <FaTrash size={12} />
-                        </button>
-                      </td>
+          <div className="border-t border-slate-200 p-5">
+            <div className="overflow-hidden rounded-2xl border border-slate-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                        Tipo
+                      </th>
+                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                        Descrição
+                      </th>
+                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                        Valor
+                      </th>
+                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                        Arquivo
+                      </th>
+                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
+                        Editar
+                      </th>
+                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
+                        Excluir
+                      </th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  </thead>
+
+                  <tbody>
+                    {despesas.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
+                          Nenhuma despesa adicionada.
+                        </td>
+                      </tr>
+                    ) : (
+                      despesas.map((item, index) => (
+                        <tr key={`${item.tipo}-${index}`} className="transition hover:bg-slate-50">
+                          <td className="h-11 border-b border-slate-100 px-4 py-2 text-sm font-semibold text-slate-800">{item.tipo}</td>
+                          <td className="h-11 whitespace-pre-line border-b border-slate-100 px-4 py-2 text-sm text-slate-700">
+                            {item.descricao}
+                          </td>
+                          <td className="h-11 border-b border-slate-100 px-4 py-2 text-sm font-semibold text-slate-800">{item.valor}</td>
+                          <td className="h-11 border-b border-slate-100 px-4 py-2 text-sm text-slate-700">
+                            <button
+                              type="button"
+                              onClick={() => baixarComprovante(item)}
+                              className="text-left font-semibold text-[#007E7A] hover:underline"
+                            >
+                              {item.comprovanteNome}
+                            </button>
+                          </td>
+                          <td className="h-11 border-b border-slate-100 px-4 py-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => editarDespesa(index)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-700 transition hover:bg-sky-100"
+                            >
+                              <FaEdit size={12} />
+                            </button>
+                          </td>
+                          <td className="h-11 border-b border-slate-100 px-4 py-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => removerDespesa(index)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100"
+                            >
+                              <FaTrash size={12} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-center">
-            <div />
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+          <div className="flex flex-col gap-4 border-t border-slate-200 p-5 md:flex-row md:items-center md:justify-between">
+            <div className="w-full max-w-[260px]">
+              <label className={labelClass}>
                 Total de despesas
               </label>
               <input
                 readOnly
                 value={fmtBRL(totalDespesas)}
-                className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+                className="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-0 text-right text-sm font-bold leading-normal text-slate-900 shadow-sm outline-none"
               />
             </div>
-          </div>
-        </div>
 
-        <div className="mt-6 flex items-center justify-end border-t pt-5">
-          <button
-            onClick={enviarSolicitacao}
-            disabled={saving}
-            className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            <FaSave size={12} />
-            {saving
-              ? "Salvando..."
-              : modoTela === "edicao"
-                ? "Atualizar solicitação"
-                : "Enviar solicitação"}
-          </button>
-        </div>
+            <button
+              onClick={enviarSolicitacao}
+              disabled={saving || enviarSolicitacaoLockRef.current}
+              aria-busy={saving}
+              className={primaryButtonClass}
+            >
+              <FaSave size={12} />
+              {saving
+                ? "Salvando..."
+                : modoTela === "edicao"
+                  ? "Atualizar solicitação"
+                  : "Enviar solicitação"}
+            </button>
+          </div>
+        </section>
       </div>
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-lg font-semibold text-gray-900">Despesa</h3>
+          <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+              <div>
+                <h3 className="text-xl font-black text-slate-950">Despesa</h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Informe os dados e anexe o comprovante da despesa.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={fecharModal}
-                className="rounded p-2 text-gray-500 hover:bg-gray-100"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 shadow-sm transition hover:bg-red-100"
               >
                 <FaTimes />
               </button>
             </div>
 
-            <div className="space-y-4 px-5 py-5">
+            <div className="space-y-4 px-6 py-5">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Tipo</label>
+                <label className={labelClass}>Tipo</label>
                 <select
                   value={tipoDespesa}
                   onChange={(e) => setTipoDespesa(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
+                  className={fieldClass}
                 >
                   <option value="">Selecione</option>
                   {tiposDespesa.map((item) => (
@@ -888,11 +865,11 @@ export function CadastroReembolsoDespesaForm() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Descrição</label>
+                <label className={labelClass}>Descrição</label>
                 <textarea
                   value={descricaoDespesa}
                   onChange={(e) => setDescricaoDespesa(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
+                  className={textareaClass}
                   rows={3}
                   maxLength={200}
                 />
@@ -900,11 +877,11 @@ export function CadastroReembolsoDespesaForm() {
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Valor</label>
+                  <label className={labelClass}>Valor</label>
                   <input
                     value={valorDespesa}
                     onChange={(e) => setValorDespesa(monetizarDigitacao(e.target.value))}
-                    className={`w-full rounded border px-3 py-2 ${isKms ? "bg-gray-50" : ""}`}
+                    className={isKms ? readOnlyFieldClass : fieldClass}
                     readOnly={isKms}
                     placeholder="R$ 0,00"
                   />
@@ -912,21 +889,21 @@ export function CadastroReembolsoDespesaForm() {
 
                 {isKms && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className={labelClass}>
                       Total KMs (x 0,77)
                     </label>
                     <input
                       value={multiplicador}
                       onChange={(e) => setMultiplicador(e.target.value)}
                       onBlur={calcularKms}
-                      className="w-full rounded border px-3 py-2"
+                      className={fieldClass}
                     />
                   </div>
                 )}
               </div>
 
-              <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
-                <p className="mb-2 text-sm font-medium text-gray-700">
+              <div className="rounded-2xl border border-dashed border-[#00AE9D]/30 bg-[#00AE9D]/5 p-4">
+                <p className="mb-2 text-sm font-bold text-slate-800">
                   Adicione somente 1 comprovante por despesa.
                 </p>
 
@@ -937,7 +914,7 @@ export function CadastroReembolsoDespesaForm() {
                 )}
 
                 <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                  <label className="inline-flex cursor-pointer items-center justify-center rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary">
+                  <label className={`${actionButtonClass} cursor-pointer`}>
                     Selecionar comprovante
                     <input
                       type="file"
@@ -966,16 +943,16 @@ export function CadastroReembolsoDespesaForm() {
                     />
                   </label>
 
-                  <span className="text-sm text-gray-600">{comprovanteNome}</span>
+                  <span className="text-sm font-medium text-slate-600">{comprovanteNome}</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t px-5 py-4">
+            <div className="flex justify-end gap-3 border-t border-slate-200 px-6 py-5">
               <button
                 type="button"
                 onClick={fecharModal}
-                className="inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className={neutralButtonClass}
               >
                 <FaTimes size={12} />
                 Fechar
@@ -984,10 +961,12 @@ export function CadastroReembolsoDespesaForm() {
               <button
                 type="button"
                 onClick={salvarDespesa}
-                className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary"
+                disabled={salvandoDespesa || salvarDespesaLockRef.current}
+                aria-busy={salvandoDespesa}
+                className={primaryButtonClass}
               >
                 <FaSave size={12} />
-                Salvar despesa
+                {salvandoDespesa ? "Salvando..." : "Salvar despesa"}
               </button>
             </div>
           </div>
