@@ -2,10 +2,16 @@ import { Request, Response } from "express";
 import oracledb from "oracledb";
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import { getOraclePool } from "../config/oracle.pool";
 import { sendEmail } from "../services/email.service";
 import { setAuditoriaContext } from "../services/oracle.service";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
+
+const execFileAsync = promisify(execFile);
+const SMB_BASE_FOLDER = "CRM/SUBSIDIO_AUDITIVO";
 
 function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
@@ -207,16 +213,159 @@ async function ensureDir(dirPath: string) {
 }
 
 function getBasePath() {
+  const server = String(process.env.SMB_SERVER || "10.0.107.251").trim();
+  const share = String(process.env.SMB_SHARE || "dados$").trim();
+
   return (
     process.env.SUBSIDIO_AUDITIVO_BASE_PATH ||
     process.env.SUBSIDIO_FUNERAL_BASE_PATH ||
-    "\\\\10.0.107.251\\dados$\\CRM\\SUBSIDIO_AUDITIVO"
+    `\\\\${server}\\${share}\\${SMB_BASE_FOLDER.replace(/\//g, "\\")}`
   );
+}
+
+function isWindowsRuntime() {
+  return process.platform === "win32";
+}
+
+function isUncPath(filePath: string | null | undefined) {
+  const caminho = String(filePath || "");
+  return caminho.startsWith("\\\\") || caminho.startsWith("//");
+}
+
+function getSmbConfig() {
+  const server = String(process.env.SMB_SERVER || "10.0.107.251").trim();
+  const share = String(process.env.SMB_SHARE || "dados$").trim();
+  const user = String(process.env.SMB_USER || "").trim();
+  const password = String(process.env.SMB_PASSWORD || "");
+  const domain = String(process.env.SMB_DOMAIN || "").trim();
+
+  if (!server) throw new Error("SMB_SERVER não configurado.");
+  if (!share) throw new Error("SMB_SHARE não configurado.");
+  if (!user) throw new Error("SMB_USER não configurado.");
+  if (!password) throw new Error("SMB_PASSWORD não configurado.");
+
+  return { server, share, user, password, domain };
+}
+
+function getSmbShareRootLinux() {
+  const { server, share } = getSmbConfig();
+  return `//${server}/${share}`;
+}
+
+function getSmbRelativePath(caminhoOriginal: string) {
+  const { server, share } = getSmbConfig();
+  const caminho = String(caminhoOriginal || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+  const prefix = `${server}/${share}/`;
+
+  if (caminho.toLowerCase().startsWith(prefix.toLowerCase())) {
+    return caminho.slice(prefix.length);
+  }
+
+  const marcador = `${SMB_BASE_FOLDER}/`;
+  const posicaoMarcador = caminho.toUpperCase().indexOf(marcador);
+
+  if (posicaoMarcador >= 0) {
+    return caminho.slice(posicaoMarcador);
+  }
+
+  return caminho;
+}
+
+async function execSmbClient(command: string) {
+  const { server, share, user, password, domain } = getSmbConfig();
+  const args = [`//${server}/${share}`];
+
+  if (domain) args.push("-W", domain);
+  args.push("-U", `${user}%${password}`, "-c", command);
+
+  try {
+    return await execFileAsync("smbclient", args);
+  } catch (error: any) {
+    throw new Error(
+      `Falha ao executar smbclient. Comando: ${command}. Detalhes: ${String(
+        error?.stderr || error?.stdout || error?.message || error
+      )}`
+    );
+  }
+}
+
+async function salvarAnexoLinux(
+  parsed: NonNullable<ReturnType<typeof parseBase64File>>,
+  pastaAssociado: string,
+  idSolicitacao: number,
+  finalName: string
+) {
+  const diretorioDestino = `${SMB_BASE_FOLDER}/${pastaAssociado}/SOLICITACAO_${idSolicitacao}`;
+  const pastasParaGarantir = [
+    "CRM",
+    SMB_BASE_FOLDER,
+    `${SMB_BASE_FOLDER}/${pastaAssociado}`,
+    diretorioDestino,
+  ];
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "subsidio-auditivo-smb-"));
+  const tempFilePath = path.join(tempDir, finalName);
+
+  try {
+    for (const pasta of pastasParaGarantir) {
+      try {
+        await execSmbClient(`mkdir "${pasta}"`);
+      } catch {
+        // Se a pasta ja existe, o smbclient retorna erro. Pode seguir.
+      }
+    }
+
+    await fs.writeFile(tempFilePath, parsed.buffer);
+    await execSmbClient(`cd "${diretorioDestino}"; put "${tempFilePath}" "${finalName}"`);
+
+    return `${getSmbShareRootLinux()}/${diretorioDestino}/${finalName}`;
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+async function readFileFromSmbLinux(caminhoOriginal: string) {
+  const caminhoRelativo = getSmbRelativePath(caminhoOriginal);
+  const fileName = path.posix.basename(caminhoRelativo);
+  const pastaRemota = path.posix.dirname(caminhoRelativo);
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "subsidio-auditivo-smb-download-"));
+  const tempFilePath = path.join(tempDir, fileName);
+
+  try {
+    const comando =
+      pastaRemota && pastaRemota !== "."
+        ? `cd "${pastaRemota}"; get "${fileName}" "${tempFilePath}"`
+        : `get "${fileName}" "${tempFilePath}"`;
+
+    await execSmbClient(comando);
+
+    return {
+      arquivoBuffer: await fs.readFile(tempFilePath),
+      nomeArquivo: fileName,
+    };
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
 }
 
 async function removeFileIfExists(filePath: string | null | undefined) {
   if (!filePath) return;
   try {
+    if (!isWindowsRuntime() && isUncPath(filePath)) {
+      const caminhoRelativo = getSmbRelativePath(filePath);
+      const fileName = path.posix.basename(caminhoRelativo);
+      const pastaRemota = path.posix.dirname(caminhoRelativo);
+      const comando =
+        pastaRemota && pastaRemota !== "."
+          ? `cd "${pastaRemota}"; del "${fileName}"`
+          : `del "${fileName}"`;
+
+      await execSmbClient(comando);
+      return;
+    }
+
     await fs.unlink(filePath);
   } catch {
     // ignora
@@ -234,7 +383,18 @@ async function salvarAnexo(
   if (!parsed) return null;
 
   const pastaAssociado = sanitizeFolderName(nomeAssociado || "SEM_ASSOCIADO");
-  const baseDir = path.join(
+  const finalName = sanitizeFileName(
+    `${String(indice + 1).padStart(2, "0")}_${parsed.nomeOriginal}`
+  );
+
+  if (!isWindowsRuntime()) {
+    return {
+      finalPath: await salvarAnexoLinux(parsed, pastaAssociado, idSolicitacao, finalName),
+      mime: parsed.mime,
+    };
+  }
+
+  const baseDir = path.win32.join(
     getBasePath(),
     pastaAssociado,
     `SOLICITACAO_${idSolicitacao}`
@@ -242,10 +402,7 @@ async function salvarAnexo(
 
   await ensureDir(baseDir);
 
-  const finalName = sanitizeFileName(
-    `${String(indice + 1).padStart(2, "0")}_${parsed.nomeOriginal}`
-  );
-  const finalPath = path.join(baseDir, finalName);
+  const finalPath = path.win32.join(baseDir, finalName);
   await fs.writeFile(finalPath, parsed.buffer);
 
   return {
@@ -1772,8 +1929,13 @@ export const solicitacaoSubsidioAuditivoController = {
         return res.status(400).json({ error: "Caminho do arquivo não informado." });
       }
 
-      const arquivoBuffer = await fs.readFile(caminho);
-      const nomeArquivo = path.basename(caminho);
+      const { arquivoBuffer, nomeArquivo } =
+        !isWindowsRuntime() && isUncPath(caminho)
+          ? await readFileFromSmbLinux(caminho)
+          : {
+              arquivoBuffer: await fs.readFile(caminho),
+              nomeArquivo: path.win32.basename(caminho),
+            };
 
       res.setHeader("Content-Disposition", `attachment; filename="${nomeArquivo}"`);
       return res.end(arquivoBuffer);

@@ -359,7 +359,7 @@ export async function gerarPdfSubsidioFuneral(o: PdfSubsidioFuneralOpts) {
     [
       { text: "Declaro que as informacoes apresentadas nesta solicitacao sao verdadeiras e autorizo o encaminhamento interno do pedido de subsidio funeral do(a) associado(a) " },
       { text: o.nomeAssociado, bold: true },
-      { text: " , conforme documentos anexados, para analise da diretoria e posterior pagamento pela cooperativa " },
+      { text: ", conforme documentos anexados, para analise da diretoria e posterior pagamento pela cooperativa " },
       { text: "SICOOB CRESSEM", bold: true },
       { text: "." },
     ],
