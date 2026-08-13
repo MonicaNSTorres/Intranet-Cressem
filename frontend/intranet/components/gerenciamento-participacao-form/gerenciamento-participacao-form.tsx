@@ -143,6 +143,8 @@ export function GerenciamentoParticipacaoForm() {
   const [modalErro, setModalErro] = useState("");
   const [modalInfo, setModalInfo] = useState("");
   const modalScrollRef = useRef<HTMLDivElement | null>(null);
+  const salvarParecerLockRef = useRef(false);
+  const [salvandoParecer, setSalvandoParecer] = useState(false);
 
   const [inputGerencia, setInputGerencia] = useState("");
   const [inputParecerGerenciaEscrito, setInputParecerGerenciaEscrito] = useState("");
@@ -381,9 +383,13 @@ export function GerenciamentoParticipacaoForm() {
 
   async function salvarParecer() {
     if (!selected || !funcionarioTipo) return;
+    if (salvandoParecer || salvarParecerLockRef.current) return;
     if (!validaCampos()) return;
 
+    salvarParecerLockRef.current = true;
+
     try {
+      setSalvandoParecer(true);
       setLoading(true);
       setErro("");
       setInfo("");
@@ -469,6 +475,8 @@ export function GerenciamentoParticipacaoForm() {
       setModalErro(err?.message || "Não foi possível atualizar a solicitação.");
     } finally {
       setLoading(false);
+      setSalvandoParecer(false);
+      salvarParecerLockRef.current = false;
     }
   }
 
@@ -951,10 +959,11 @@ export function GerenciamentoParticipacaoForm() {
                 </button>
                 <button
                   onClick={salvarParecer}
-                  disabled={!podeEditar || loading}
+                  disabled={!podeEditar || loading || salvandoParecer || salvarParecerLockRef.current}
+                  aria-busy={salvandoParecer}
                   className={primaryButtonBase}
                 >
-                  Salvar
+                  {salvandoParecer ? "Salvando..." : "Salvar"}
                 </button>
               </div>
             </div>

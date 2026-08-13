@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   FaCheckCircle,
   FaChevronLeft,
@@ -84,6 +84,10 @@ function removerEspacoInicial(value: string) {
 
 function limparTexto(value: string) {
   return removerEspacoInicial(value).trim();
+}
+
+function limparDocumentoFuncionario(value: string) {
+  return String(value || "").replace(/\D/g, "").slice(0, 12);
 }
 
 function getNomeArquivo(caminho?: string | null) {
@@ -288,6 +292,8 @@ export function GerenciamentoFuncionarioForm() {
   const [statusEnviarAssem, setStatusEnviarAssem] = useState(false);
   const [statusEnviarGremio, setStatusEnviarGremio] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
+  const modalActionRef = useRef(false);
+  const statusActionRef = useRef(false);
   const [statusErro, setStatusErro] = useState("");
 
   const [inputNome, setInputNome] = useState("");
@@ -474,8 +480,8 @@ export function GerenciamentoFuncionarioForm() {
     setFuncionarioSelecionado(funcionario);
 
     setInputNome(removerEspacoInicial(funcionario.NM_FUNCIONARIO || ""));
-    setInputCPF(funcionario.NR_CPF || "");
-    setInputRG(removerEspacoInicial(funcionario.NR_RG || ""));
+    setInputCPF(limparDocumentoFuncionario(funcionario.NR_CPF || ""));
+    setInputRG(limparDocumentoFuncionario(funcionario.NR_RG || ""));
     setInputCelular(removerEspacoInicial(funcionario.NR_CELULAR || ""));
     setInputEmail(removerEspacoInicial(funcionario.EMAIL || ""));
     setInputNascimento(formatarDataInput(funcionario.DT_NASCIMENTO));
@@ -599,7 +605,11 @@ export function GerenciamentoFuncionarioForm() {
   }
 
   async function salvarModal() {
+    if (modalActionRef.current || loading) return;
     if (!validarCampos()) return;
+
+    modalActionRef.current = true;
+    let manterBloqueadoAteFechar = false;
 
     try {
       setLoading(true);
@@ -614,8 +624,8 @@ export function GerenciamentoFuncionarioForm() {
         NR_RAMAL: limparTexto(inputRamal),
         CD_GERENCIA: secGerencia ? Number(secGerencia) : null,
         EMAIL: limparTexto(inputEmail),
-        NR_CPF: inputCPF,
-        NR_RG: limparTexto(inputRG),
+        NR_CPF: limparDocumentoFuncionario(inputCPF),
+        NR_RG: limparDocumentoFuncionario(inputRG),
         NR_CELULAR: limparTexto(inputCelular),
         SEXO: secSexo,
         DT_ADMISSAO: inputAdmissao,
@@ -649,8 +659,11 @@ export function GerenciamentoFuncionarioForm() {
 
       await carregarFuncionarios(modalModo === "editar" ? paginaSegura : 1);
 
+      manterBloqueadoAteFechar = true;
       setTimeout(() => {
         fecharModal();
+        modalActionRef.current = false;
+        setLoading(false);
       }, 600);
     } catch (e: any) {
       console.error(e);
@@ -660,7 +673,10 @@ export function GerenciamentoFuncionarioForm() {
         "Não foi possível salvar o funcionário."
       );
     } finally {
-      setLoading(false);
+      if (!manterBloqueadoAteFechar) {
+        modalActionRef.current = false;
+        setLoading(false);
+      }
     }
   }
 
@@ -699,7 +715,9 @@ export function GerenciamentoFuncionarioForm() {
   }
 
   async function confirmarStatus() {
-    if (!funcionarioStatus) return;
+    if (!funcionarioStatus || statusActionRef.current || statusLoading) return;
+
+    statusActionRef.current = true;
 
     try {
       setErro("");
@@ -762,6 +780,7 @@ export function GerenciamentoFuncionarioForm() {
         "Erro ao alterar o status do funcionário."
       );
     } finally {
+      statusActionRef.current = false;
       setStatusLoading(false);
     }
   }
@@ -1126,8 +1145,11 @@ export function GerenciamentoFuncionarioForm() {
                   </label>
                   <input
                     value={inputCPF}
-                    onChange={(e) => setInputCPF(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                    onChange={(e) => setInputCPF(limparDocumentoFuncionario(e.target.value))}
                     className={INPUT_CLASS}
+                    inputMode="numeric"
+                    maxLength={12}
+                    pattern="[0-9]*"
                     placeholder="Digite o CPF"
                   />
                 </div>
@@ -1138,8 +1160,11 @@ export function GerenciamentoFuncionarioForm() {
                   </label>
                   <input
                     value={inputRG}
-                    onChange={(e) => setInputRG(removerEspacoInicial(e.target.value))}
+                    onChange={(e) => setInputRG(limparDocumentoFuncionario(e.target.value))}
                     className={INPUT_CLASS}
+                    inputMode="numeric"
+                    maxLength={12}
+                    pattern="[0-9]*"
                     placeholder="Digite o RG"
                   />
                 </div>
