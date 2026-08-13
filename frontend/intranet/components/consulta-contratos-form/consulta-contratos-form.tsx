@@ -49,6 +49,25 @@ function formatCpfCnpj(value: string) {
     .replace(/(.{4})(.)$/, "$1-$2");
 }
 
+function formatCpfCnpjTabela(value: string) {
+  const digits = String(value || "").replace(/\D/g, "");
+
+  if (digits.length === 11) {
+    return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  }
+
+  if (digits.length >= 12) {
+    return digits
+      .slice(0, 14)
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  }
+
+  return value || "";
+}
+
 function formatDateBR(value?: string | null) {
   if (!value) return "";
   const raw = String(value).slice(0, 10);
@@ -964,7 +983,7 @@ export function ConsultaContratosForm() {
                           {item.NM_EMPRESA || ""}
                         </td>
                         <td className="border-b border-slate-100 px-3 py-3 align-top whitespace-nowrap">
-                          {formatCpfCnpj(item.NR_CNPJ || "")}
+                          {formatCpfCnpjTabela(item.NR_CNPJ || "")}
                         </td>
                         <td className="border-b border-slate-100 px-3 py-3 align-top">
                           {item.NM_CIDADE || ""}
