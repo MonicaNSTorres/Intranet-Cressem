@@ -97,7 +97,7 @@ function baixarCsv(filename: string, rows: unknown[][]) {
 }
 
 const inputBase =
-  "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 function Field({
   label,
@@ -161,7 +161,7 @@ function Pagination({
             value={limit}
             onChange={(event) => onLimitChange(Number(event.target.value))}
             disabled={loading}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <option value={10}>10 por página</option>
             <option value={20}>20 por página</option>
@@ -175,7 +175,7 @@ function Pagination({
             type="button"
             onClick={() => onChange(Math.max(currentPage - 1, 1))}
             disabled={currentPage <= 1 || loading}
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FaChevronLeft />
             Anterior
@@ -189,7 +189,7 @@ function Pagination({
             type="button"
             onClick={() => onChange(Math.min(currentPage + 1, totalPages))}
             disabled={currentPage >= totalPages || loading}
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Próxima
             <FaChevronRight />
@@ -346,18 +346,18 @@ export function ContatosNaoPertubeForm() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[var(--title)] before:h-2 before:w-2 before:rounded-full before:bg-primary">
               Filtros da consulta
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
               Localize contatos cadastrados na lista de Não Perturbe do Blip.
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          <div className="inline-flex items-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-semibold text-[#006f65]">
             <FaBan />
             {totalItems} contato(s)
           </div>
@@ -455,7 +455,7 @@ export function ContatosNaoPertubeForm() {
           <button
             type="button"
             onClick={limparFiltros}
-            className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10"
           >
             <FaEraser />
             Limpar
@@ -465,7 +465,7 @@ export function ContatosNaoPertubeForm() {
             type="button"
             onClick={() => carregarContatos(1)}
             disabled={loading}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#79B729] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#6AA020] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
             <FaSearch />
             {loading ? "Buscando..." : "Buscar"}
@@ -480,14 +480,14 @@ export function ContatosNaoPertubeForm() {
       )}
 
       {info && !erro && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+        <div className="rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm font-semibold text-[#006f65]">
           {info}
         </div>
       )}
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-emerald-200 bg-gradient-to-r from-[#79B729] to-[#8ED12F] px-5 py-4">
-          <h3 className="text-sm font-bold text-white">
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-primary/20 bg-primary/10 px-5 py-4">
+          <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[#006f65] before:h-2 before:w-2 before:rounded-full before:bg-primary">
             Contatos cadastrados
           </h3>
         </div>
@@ -503,7 +503,7 @@ export function ContatosNaoPertubeForm() {
               type="button"
               onClick={baixarRelatorioCsv}
               disabled={baixandoCsv || loading || totalItems === 0}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400"
+              className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
             >
               <FaDownload size={13} />
               {baixandoCsv ? "Baixando..." : "Baixar CSV"}
@@ -538,7 +538,7 @@ export function ContatosNaoPertubeForm() {
                   items.map((item) => (
                     <tr
                       key={item.ID_CONTATO_BLIP_NAO_PERTUBE}
-                      className="border-b border-slate-100 transition last:border-b-0 hover:bg-emerald-50/50"
+                      className="border-b border-slate-100 transition last:border-b-0 hover:bg-primary/5"
                     >
                       <td className="px-4 py-4 font-semibold text-slate-900">
                         {emptyText(item.NM_CONTATO)}
@@ -550,7 +550,7 @@ export function ContatosNaoPertubeForm() {
                         {formatPhone(item.NR_CONTATO) || "-"}
                       </td>
                       <td className="px-4 py-4">
-                        <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                        <span className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold text-[#006f65]">
                           {emptyText(item.NR_PA)}
                         </span>
                       </td>

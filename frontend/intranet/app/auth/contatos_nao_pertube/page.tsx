@@ -32,13 +32,19 @@ export default function ContatosNaoPertubePage() {
   }, []);
 
   if (loading) {
-    return <div className="p-6 text-sm text-gray-500">Carregando...</div>;
+    return (
+      <div className="w-full p-6 lg:p-8">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">
+          Carregando...
+        </div>
+      </div>
+    );
   }
 
   if (!allowed) {
     return (
-      <div className="p-6">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div className="w-full p-6 lg:p-8">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
           Você não possui permissão para acessar esta tela.
         </div>
       </div>
@@ -46,39 +52,39 @@ export default function ContatosNaoPertubePage() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <main className="w-full p-6 lg:p-8">
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <BackButton />
+          <div className="mb-4">
+            <BackButton />
+          </div>
 
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-third bg-third text-emerald-700 shadow-sm">
-              <FaBan size={17} />
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-third text-primary shadow-sm">
+              <FaBan size={20} />
             </div>
 
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold text-gray-900">
+              <h1 className="truncate text-2xl font-bold text-[var(--title)]">
                 Contatos Não Perturbe
               </h1>
-              <p className="mt-1 max-w-3xl text-sm text-gray-600">
+              <p className="mt-1 max-w-3xl text-sm text-[var(--paragraph)]">
                 Consulte os contatos cadastrados na lista de Não Perturbe do Blip.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-          <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-            <FaShieldAlt className="text-[#00AE9D]" />
+        <div className="rounded-2xl border border-fourth/20 bg-fourth/5 px-4 py-3 shadow-sm">
+          <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-fourth">
+            <FaShieldAlt />
             Acesso
           </div>
-          <p className="text-sm font-semibold text-gray-800">Restrito ao suporte</p>
+          <p className="text-sm font-semibold text-[var(--title)]">Restrito ao suporte</p>
         </div>
       </div>
 
-      <div className="mt-6">
-        <ContatosNaoPertubeForm />
-      </div>
-    </div>
+      <ContatosNaoPertubeForm />
+    </main>
   );
 }
