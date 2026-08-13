@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { FaCalculator} from "react-icons/fa";
+import { FaCalculator } from "react-icons/fa";
 import { RcoForm } from "@/components/rco-form/rco-from";
 import BackButton from "@/components/back-button/back-button";
 
