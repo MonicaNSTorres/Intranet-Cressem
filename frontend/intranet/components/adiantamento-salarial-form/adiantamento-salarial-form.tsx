@@ -8,7 +8,7 @@ import { formatCpfView, hojeBR } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
+import { FileText, Search } from "lucide-react";
 
 function hojeBRComHora() {
   const d = new Date();
@@ -77,117 +77,130 @@ export function AdiantamentoSalarialForm() {
     });
   };
 
+  const labelClass = "mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600";
+  const inputClass =
+    "h-10 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20";
+  const selectClass = `${inputClass} cursor-pointer`;
+
   return (
-    <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <SearchForm onSearch={onBuscar}>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            CPF do empregado(a)
-          </label>
-
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-            <SearchInput
-              value={formatCpfView(cpf)}
-              onChange={(e) => setCpf(e.target.value)}
-              placeholder="CPF (somente números)"
-              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              inputMode="numeric"
-              maxLength={14}
-            />
-
-            <SearchButton loading={loading} label="Pesquisar" />
-          </div>
-
-          {erro && (
-            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-              {erro}
-            </div>
-          )}
-          {info && (
-            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-              {info}
-            </div>
-          )}
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 p-5">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
+          <h2 className="text-base font-bold text-slate-950">Dados do adiantamento</h2>
         </div>
-      </SearchForm>
-
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Nome do empregado(a)
-          </label>
-          <input
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Matrícula
-          </label>
-          <input
-            value={matricula}
-            onChange={(e) => setMatricula(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Ação
-          </label>
-          <select
-            value={acao}
-            onChange={(e) => setAcao(e.target.value as "Ativar" | "Cancelar")}
-            className="w-full border px-3 py-2 rounded"
-          >
-            <option value="Ativar">Ativar</option>
-            <option value="Cancelar">Cancelar</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Percentual
-          </label>
-          <select
-            value={percentual}
-            onChange={(e) => setPercentual(Number(e.target.value) as 20 | 30)}
-            className="w-full border px-3 py-2 rounded"
-          >
-            <option value={20}>20%</option>
-            <option value={30}>30%</option>
-          </select>
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Data e hora (cabeçalho)
-          </label>
-          <input
-            value={dataLocal}
-            onChange={(e) => setDataLocal(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-            placeholder="dd/mm/aaaa hh:mm"
-          />
-        </div>
+        <p className="mt-1 text-sm text-slate-600">
+          Informe o CPF do empregado(a), confira os dados e gere o PDF.
+        </p>
       </div>
 
-      <div className="pt-5 border-t mt-6 flex items-center justify-end">
-        <button
-          type="button"
-          onClick={gerar}
-          disabled={!formularioValido}
-          className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
-    ${formularioValido
-              ? "bg-secondary hover:bg-primary cursor-pointer"
-              : "bg-gray-300 cursor-not-allowed"
+      <div className="space-y-5 p-5">
+        <SearchForm onSearch={onBuscar}>
+          <div>
+            <label className={labelClass}>CPF do empregado(a)</label>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+              <SearchInput
+                value={formatCpfView(cpf)}
+                onChange={(e) => setCpf(e.target.value)}
+                placeholder="CPF (somente números)"
+                className="h-10 rounded-xl border-slate-300 px-4 text-sm shadow-sm focus:border-[#00AE9D] focus:ring-[#00AE9D]/20"
+                inputMode="numeric"
+                maxLength={14}
+              />
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex h-10 min-w-[130px] items-center justify-center gap-2 rounded-xl bg-[#79B729] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00AE9D] hover:shadow-md disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                <Search size={16} />
+                {loading ? "Buscando..." : "Pesquisar"}
+              </button>
+            </div>
+
+            {erro && (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {erro}
+              </div>
+            )}
+            {info && (
+              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                {info}
+              </div>
+            )}
+          </div>
+        </SearchForm>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className={labelClass}>Nome do empregado(a)</label>
+            <input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Matrícula</label>
+            <input
+              value={matricula}
+              onChange={(e) => setMatricula(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Ação</label>
+            <select
+              value={acao}
+              onChange={(e) => setAcao(e.target.value as "Ativar" | "Cancelar")}
+              className={selectClass}
+            >
+              <option value="Ativar">Ativar</option>
+              <option value="Cancelar">Cancelar</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClass}>Percentual</label>
+            <select
+              value={percentual}
+              onChange={(e) => setPercentual(Number(e.target.value) as 20 | 30)}
+              className={selectClass}
+            >
+              <option value={20}>20%</option>
+              <option value={30}>30%</option>
+            </select>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className={labelClass}>Data e hora (cabeçalho)</label>
+            <input
+              value={dataLocal}
+              onChange={(e) => setDataLocal(e.target.value)}
+              className={inputClass}
+              placeholder="dd/mm/aaaa hh:mm"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end border-t border-slate-200 pt-5">
+          <button
+            type="button"
+            onClick={gerar}
+            disabled={!formularioValido}
+            className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition ${
+              formularioValido
+                ? "bg-[#00AE9D] hover:bg-[#49479D] hover:shadow-md"
+                : "cursor-not-allowed bg-slate-300"
             }`}
-        >
-          Gerar PDF
-        </button>
+          >
+            <FileText size={16} />
+            Gerar PDF
+          </button>
+        </div>
       </div>
     </div>
   );
