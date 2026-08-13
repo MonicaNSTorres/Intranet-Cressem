@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -914,12 +914,31 @@ export function ResgateCapitalForm() {
     }
   }
 
+  const labelClass =
+    "mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500";
+  const inputClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
+  const readOnlyClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 shadow-sm outline-none";
+  const moneyInputClass = `${inputClass} text-right`;
+  const readOnlyMoneyClass = `${readOnlyClass} text-right`;
+  const sectionClass =
+    "mx-5 mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
+  const sectionTitleClass =
+    "mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary";
+  const radioClass =
+    "inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/40 hover:bg-primary/5";
+
   return (
-    <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-      <SearchForm onSearch={onBuscar}>
+    <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white pb-5 shadow-sm">
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
+      <SearchForm
+        onSearch={onBuscar}
+        className="border-b border-slate-100 bg-white p-5"
+      >
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               CPF/CNPJ do associado(a)
             </label>
 
@@ -928,7 +947,7 @@ export function ResgateCapitalForm() {
                 value={formatCpfCnpjView(cpf)}
                 onChange={(e) => setCpf(onlyCpfCnpjChars(e.target.value).slice(0, 14))}
                 placeholder="Digite o CPF/CNPJ"
-                className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                className="h-10 rounded-xl border-slate-200 text-sm shadow-sm focus:border-primary focus:ring-primary/10"
                 maxLength={18}
               />
 
@@ -937,7 +956,7 @@ export function ResgateCapitalForm() {
               <button
                 type="button"
                 onClick={limparFormulario}
-                className="inline-flex items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/40 hover:bg-primary/5 cursor-pointer"
               >
                 <FaTimes />
                 Limpar
@@ -950,7 +969,7 @@ export function ResgateCapitalForm() {
               type="button"
               onClick={salvarFormulario}
               disabled={loadingSalvar || loadingTela}
-              className="inline-flex w-full items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto cursor-pointer disabled:opacity-60"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-fourth lg:w-auto cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
             >
               <FaSave />
               {loadingSalvar ? "Salvando..." : "Salvar"}
@@ -961,7 +980,7 @@ export function ResgateCapitalForm() {
                 type="button"
                 onClick={imprimirFormulario}
                 disabled={loadingImprimir || loadingTela}
-                className="inline-flex w-full items-center justify-center gap-2 rounded bg-primary px-5 py-2 font-semibold text-white shadow hover:bg-secondary lg:w-auto cursor-pointer disabled:opacity-60"
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary lg:w-auto cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <FaPrint />
                 {loadingImprimir ? "Gerando..." : "Baixar PDF"}
@@ -973,11 +992,11 @@ export function ResgateCapitalForm() {
         {(erro || info || erroBusca || infoBusca) && (
           <div className="mt-4">
             {erro || erroBusca ? (
-              <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
                 {erro || erroBusca}
               </div>
             ) : (
-              <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
                 {info || infoBusca}
               </div>
             )}
@@ -985,22 +1004,25 @@ export function ResgateCapitalForm() {
         )}
       </SearchForm>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className={sectionClass}>
+        <h2 className={sectionTitleClass}>Dados do associado</h2>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Nome do associado(a)
           </label>
           <input
             value={nome}
             onChange={(e) => setNome(limitText(e.target.value, LIMITS.NM_CLIENTE))}
             maxLength={LIMITS.NM_CLIENTE}
-            className="w-full rounded border px-3 py-2"
+            className={inputClass}
           />
         </div>
 
         {!isCnpj(cpf) && (
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Matrícula
             </label>
             <input
@@ -1009,47 +1031,51 @@ export function ResgateCapitalForm() {
                 setMatricula(limitText(e.target.value, LIMITS.CD_MATRICULA))
               }
               maxLength={LIMITS.CD_MATRICULA}
-              className="w-full rounded border px-3 py-2"
+              className={inputClass}
             />
           </div>
         )}
 
         {!isCnpj(cpf) && (
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Empresa
             </label>
             <input
               value={empresa}
               onChange={(e) => setEmpresa(limitText(e.target.value, LIMITS.NM_EMPRESA))}
               maxLength={LIMITS.NM_EMPRESA}
-              className="w-full rounded border px-3 py-2"
+              className={inputClass}
             />
           </div>
         )}
+        </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className={sectionClass}>
+        <h2 className={sectionTitleClass}>Dados do resgate</h2>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Saldo de capital atual
           </label>
           <input
             value={saldoCapitalAtual}
             onChange={(e) => setSaldoCapitalAtual(monetizarDigitacao(e.target.value))}
-            className="w-full rounded border px-3 py-2 text-right"
+            className={moneyInputClass}
             placeholder="R$ 0,00"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Motivo
           </label>
           <select
             value={secMotivo}
             onChange={(e) => setSecMotivo(e.target.value)}
-            className="w-full rounded border px-3 py-2"
+            className={inputClass}
           >
             <option value=""></option>
             {motivos.map((item) => (
@@ -1061,13 +1087,13 @@ export function ResgateCapitalForm() {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Autorizado por
           </label>
           <select
             value={secAutorizado}
             onChange={(e) => setSecAutorizado(e.target.value)}
-            className="w-full rounded border px-3 py-2"
+            className={inputClass}
           >
             <option value=""></option>
             {autorizacoes.map((item) => (
@@ -1080,15 +1106,16 @@ export function ResgateCapitalForm() {
             ))}
           </select>
         </div>
+        </div>
       </div>
 
-      <div className="mt-6 border-t pt-5">
-        <label className="mb-2 block text-xs font-medium text-gray-600">
+      <div className={sectionClass}>
+        <label className={labelClass}>
           Amortização de empréstimo(s)?
         </label>
 
         <div className="flex gap-6">
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+          <label className={radioClass}>
             <input
               type="radio"
               checked={radioEmprestimo === "Sim"}
@@ -1097,7 +1124,7 @@ export function ResgateCapitalForm() {
             Sim
           </label>
 
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+          <label className={radioClass}>
             <input
               type="radio"
               checked={radioEmprestimo === "Nao"}
@@ -1113,7 +1140,7 @@ export function ResgateCapitalForm() {
               <button
                 type="button"
                 onClick={adicionarEmprestimo}
-                className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 font-semibold text-white hover:bg-primary cursor-pointer"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white cursor-pointer"
               >
                 <FaPlus />
                 Adicionar empréstimo
@@ -1122,16 +1149,16 @@ export function ResgateCapitalForm() {
               <button
                 type="button"
                 onClick={removerEmprestimo}
-                className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 cursor-pointer"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-fourth/30 bg-fourth/10 px-4 text-sm font-semibold text-fourth shadow-sm transition hover:bg-fourth hover:text-white cursor-pointer"
               >
                 <FaTrash />
                 Remover empréstimo
               </button>
             </div>
 
-            <div className="mt-4 overflow-x-auto rounded-xl border">
+            <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
+                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
                     <th className="px-4 py-3 text-left font-semibold text-slate-700">
                       Tipo de empréstimo
@@ -1158,7 +1185,7 @@ export function ResgateCapitalForm() {
                             updateEmprestimo(item.id, "tipo", e.target.value)
                           }
                           maxLength={LIMITS.DESC_TIPO_EMPRESTIMO}
-                          className="w-full rounded border px-3 py-2"
+                          className={inputClass}
                         />
                       </td>
 
@@ -1169,7 +1196,7 @@ export function ResgateCapitalForm() {
                             updateEmprestimo(item.id, "contrato", e.target.value)
                           }
                           maxLength={LIMITS.NR_CONTRATO_EMPRESTIMO}
-                          className="w-full rounded border px-3 py-2"
+                          className={inputClass}
                         />
                       </td>
 
@@ -1183,7 +1210,7 @@ export function ResgateCapitalForm() {
                               monetizarDigitacao(e.target.value)
                             )
                           }
-                          className="w-full rounded border px-3 py-2 text-right"
+                          className={moneyInputClass}
                         />
                       </td>
 
@@ -1197,7 +1224,7 @@ export function ResgateCapitalForm() {
                               monetizarDigitacao(e.target.value)
                             )
                           }
-                          className="w-full rounded border px-3 py-2 text-right"
+                          className={moneyInputClass}
                         />
                       </td>
                     </tr>
@@ -1206,40 +1233,42 @@ export function ResgateCapitalForm() {
               </table>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="mt-4 rounded-2xl border border-[#00AE9D]/15 bg-[#00AE9D]/5 p-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Total do saldo devedor
                 </label>
                 <input
                   readOnly
                   value={fmtBRL(totalSaldoEmprestimo)}
-                  className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+                  className={readOnlyMoneyClass}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Total da amortização de capital
                 </label>
                 <input
                   readOnly
                   value={fmtBRL(totalAmortizacaoEmprestimo)}
-                  className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+                  className={readOnlyMoneyClass}
                 />
+              </div>
               </div>
             </div>
           </>
         )}
       </div>
 
-      <div className="mt-6 border-t pt-5">
-        <label className="mb-2 block text-xs font-medium text-gray-600">
+      <div className={sectionClass}>
+        <label className={labelClass}>
           Amortização de débito(s) em conta?
         </label>
 
         <div className="flex gap-6">
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+          <label className={radioClass}>
             <input
               type="radio"
               checked={radioConta === "Sim"}
@@ -1248,7 +1277,7 @@ export function ResgateCapitalForm() {
             Sim
           </label>
 
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+          <label className={radioClass}>
             <input
               type="radio"
               checked={radioConta === "Nao"}
@@ -1261,7 +1290,7 @@ export function ResgateCapitalForm() {
         {radioConta === "Sim" && (
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className={labelClass}>
                 Nº C. Corrente
               </label>
               <input
@@ -1270,34 +1299,34 @@ export function ResgateCapitalForm() {
                   setNumeroContaCorrente(limitText(e.target.value, LIMITS.NR_CONTA))
                 }
                 maxLength={LIMITS.NR_CONTA}
-                className="w-full rounded border px-3 py-2"
+                className={inputClass}
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className={labelClass}>
                 Saldo devedor
               </label>
               <input
                 value={saldoDevedorConta}
                 onChange={(e) => setSaldoDevedorConta(monetizarDigitacao(e.target.value))}
-                className="w-full rounded border px-3 py-2 text-right"
+                className={moneyInputClass}
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className={labelClass}>
                 Amortização
               </label>
               <input
                 value={amortizacaoConta}
                 onChange={(e) => setAmortizacaoConta(monetizarDigitacao(e.target.value))}
-                className="w-full rounded border px-3 py-2 text-right"
+                className={moneyInputClass}
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className={labelClass}>
                 Cartão de crédito
               </label>
               <input
@@ -1307,39 +1336,39 @@ export function ResgateCapitalForm() {
                 }
                 inputMode="numeric"
                 maxLength={LIMITS.NR_CARTAO}
-                className="w-full rounded border px-3 py-2"
+                className={inputClass}
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className={labelClass}>
                 Saldo devedor
               </label>
               <input
                 value={saldoCartao}
                 onChange={(e) => setSaldoCartao(monetizarDigitacao(e.target.value))}
-                className="w-full rounded border px-3 py-2 text-right"
+                className={moneyInputClass}
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className={labelClass}>
                 Amortização
               </label>
               <input
                 value={amortizacaoCartao}
                 onChange={(e) => setAmortizacaoCartao(monetizarDigitacao(e.target.value))}
-                className="w-full rounded border px-3 py-2 text-right"
+                className={moneyInputClass}
               />
             </div>
           </div>
         )}
       </div>
 
-      <div className="mt-6 border-t pt-5">
+      <div className={sectionClass}>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Saldo a ser creditado em conta
             </label>
             <input
@@ -1348,61 +1377,61 @@ export function ResgateCapitalForm() {
                 setSaldoCreditadoConta(monetizarDigitacao(e.target.value));
                 limparParcelas();
               }}
-              className="w-full rounded border px-3 py-2 text-right"
+              className={moneyInputClass}
               placeholder="R$ 0,00"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Total do resgate parcial de capital
             </label>
             <input
               readOnly
               value={fmtBRL(totalResgateCapital)}
-              className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+              className={readOnlyMoneyClass}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Saldo de capital restante
             </label>
             <input
               readOnly
               value={fmtBRL(capitalRestante)}
-              className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+              className={readOnlyMoneyClass}
             />
           </div>
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Banco nº
             </label>
             <input
               value={banco}
               onChange={(e) => setBanco(limitText(e.target.value, LIMITS.CD_BANCO))}
               maxLength={LIMITS.CD_BANCO}
-              className="w-full rounded border px-3 py-2"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Agência
             </label>
             <input
               value={agencia}
               onChange={(e) => setAgencia(limitText(e.target.value, LIMITS.CD_AGENCIA))}
               maxLength={LIMITS.CD_AGENCIA}
-              className="w-full rounded border px-3 py-2"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Conta corrente
             </label>
             <input
@@ -1411,28 +1440,28 @@ export function ResgateCapitalForm() {
                 setConta(limitText(e.target.value, LIMITS.CD_CONTA_CORRENTE_DEPOSITO))
               }
               maxLength={LIMITS.CD_CONTA_CORRENTE_DEPOSITO}
-              className="w-full rounded border px-3 py-2"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Dígito
             </label>
             <input
               value={digito}
               onChange={(e) => setDigito(limitText(e.target.value, 5))}
               maxLength={5}
-              className="w-full rounded border px-3 py-2"
+              className={inputClass}
             />
           </div>
         </div>
       </div>
 
-      <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <div className="mx-5 mt-4 rounded-2xl border border-[#00AE9D]/15 bg-[#00AE9D]/5 p-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Valor da 1ª parcela
             </label>
             <input
@@ -1441,13 +1470,13 @@ export function ResgateCapitalForm() {
                 setValorPrimeiraParcela(monetizarDigitacao(e.target.value));
                 limparParcelas();
               }}
-              className="w-full border px-3 py-2 rounded text-right bg-white"
+              className={moneyInputClass}
               placeholder="R$ 0,00"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Data da 1ª parcela
             </label>
             <input
@@ -1457,18 +1486,18 @@ export function ResgateCapitalForm() {
                 setDataPrimeiraParcela(e.target.value);
                 limparParcelas();
               }}
-              className="w-full border px-3 py-2 rounded bg-white"
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Total devolução parcelada
             </label>
             <input
               readOnly
               value={fmtBRL(totalParcelado)}
-              className="w-full border px-3 py-2 rounded bg-gray-100 text-right"
+              className={readOnlyMoneyClass}
             />
           </div>
         </div>
@@ -1477,7 +1506,7 @@ export function ResgateCapitalForm() {
           <button
             type="button"
             onClick={adicionarParcela}
-            className="inline-flex items-center gap-2 rounded bg-secondary px-3 py-2 text-sm font-medium text-white hover:bg-primary"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white"
           >
             <FaPlus size={12} />
             Adicionar parcela
@@ -1486,7 +1515,7 @@ export function ResgateCapitalForm() {
           <button
             type="button"
             onClick={removerParcela}
-            className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-fourth/30 bg-fourth/10 px-4 text-sm font-semibold text-fourth shadow-sm transition hover:bg-fourth hover:text-white"
           >
             <FaTrash size={12} />
             Remover parcela
@@ -1494,9 +1523,9 @@ export function ResgateCapitalForm() {
         </div>
 
         {(parcelas.length > 0 || totalParcelado > 0) && (
-          <div className="mt-4 overflow-hidden rounded border border-slate-200 bg-white">
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <table className="w-full text-sm">
-              <thead className="bg-slate-100 text-slate-700">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                 <tr>
                   <th className="px-3 py-2 text-left">Parcela</th>
                   <th className="px-3 py-2 text-left">Data</th>
@@ -1525,15 +1554,18 @@ export function ResgateCapitalForm() {
         )}
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-2">
+      <div className={sectionClass}>
+        <h2 className={sectionTitleClass}>Fechamento do atendimento</h2>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Cidade do atendimento
           </label>
           <select
             value={secCidade}
             onChange={(e) => setSecCidade(e.target.value)}
-            className="w-full rounded border px-3 py-2"
+            className={inputClass}
           >
             <option value=""></option>
             {cidades.map((cidade) => (
@@ -1545,15 +1577,16 @@ export function ResgateCapitalForm() {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Dia do atendimento
           </label>
           <input
             readOnly
             type="date"
             value={diaAtendimento}
-            className="w-full rounded border bg-gray-50 px-3 py-2"
+            className={readOnlyClass}
           />
+        </div>
         </div>
       </div>
     </div>

@@ -7,23 +7,20 @@ import { ResgateCapitalForm } from "@/components/resgate-capital-form/resgate-ca
 export default function ResgateCapitalPage() {
   return (
     <div className="p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <BackButton />
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
-              <FaFileInvoiceDollar size={16} />
-            </div>
+      <BackButton />
 
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                Resgate Parcial de Capital
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Preencha os dados, busque por CPF/CNPJ, calcule os valores e gere a impressão do formulário.
-              </p>
-            </div>
-          </div>
+      <div className="mt-4 flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-third text-primary shadow-sm">
+          <FaFileInvoiceDollar size={16} />
+        </div>
+
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-black text-title">
+            Resgate Parcial de Capital
+          </h1>
+          <p className="mt-1 text-sm font-medium text-paragraph">
+            Preencha os dados, busque por CPF/CNPJ, calcule os valores e gere a impressão do formulário.
+          </p>
         </div>
       </div>
 
@@ -31,7 +28,7 @@ export default function ResgateCapitalPage() {
         <ResgateCapitalForm />
       </div>
 
-      <div className="mt-8 text-xs text-gray-500">
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium text-slate-500 shadow-sm">
         * Os dados do associado(a) são carregados via intranet-api pela consulta de CPF/CNPJ.
       </div>
     </div>
