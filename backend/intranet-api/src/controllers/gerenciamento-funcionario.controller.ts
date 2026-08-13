@@ -6,11 +6,13 @@ import {
 } from "../services/oracle.service";
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { sendEmail, type EmailAttachment } from "../services/email.service";
 
 const execFileAsync = promisify(execFile);
+const SMB_BASE_FOLDER_FUNCIONARIOS = "CRM/FUNCIONARIOS";
 
 function capitalizeWords(value: string) {
     return String(value || "")
@@ -84,6 +86,60 @@ function getSmbConfig() {
 function getShareRoot() {
     const { server, share } = getSmbConfig();
     return `\\\\${server}\\${share}`;
+}
+
+function isWindowsRuntime() {
+    return process.platform === "win32";
+}
+
+function isUncPath(filePath: string | null | undefined) {
+    const caminho = String(filePath || "");
+    return caminho.startsWith("\\\\") || caminho.startsWith("//");
+}
+
+function getShareRootLinux() {
+    const { server, share } = getSmbConfig();
+    return `//${server}/${share}`;
+}
+
+function getSmbRelativePath(caminhoOriginal: string) {
+    const { server, share } = getSmbConfig();
+    const caminho = String(caminhoOriginal || "")
+        .trim()
+        .replace(/\\/g, "/")
+        .replace(/^\/+/, "");
+    const prefix = `${server}/${share}/`;
+
+    if (caminho.toLowerCase().startsWith(prefix.toLowerCase())) {
+        return caminho.slice(prefix.length);
+    }
+
+    const marcador = `${SMB_BASE_FOLDER_FUNCIONARIOS}/`;
+    const posicaoMarcador = caminho.toUpperCase().indexOf(marcador);
+
+    if (posicaoMarcador >= 0) {
+        return caminho.slice(posicaoMarcador);
+    }
+
+    return caminho;
+}
+
+async function execSmbClient(command: string) {
+    const { server, share, user, password, domain } = getSmbConfig();
+    const args = [`//${server}/${share}`];
+
+    if (domain) args.push("-W", domain);
+    args.push("-U", `${user}%${password}`, "-c", command);
+
+    try {
+        return await execFileAsync("smbclient", args);
+    } catch (error: any) {
+        throw new Error(
+            `Falha ao executar smbclient. Comando: ${command}. Detalhes: ${String(
+                error?.stderr || error?.stdout || error?.message || error
+            )}`
+        );
+    }
 }
 
 async function lerArquivoUploadBuffer(arquivo: any) {
@@ -180,6 +236,30 @@ async function salvarArquivoNoServidorSMB(
     const fileName = sanitizeFolderName(arquivo.name || arquivo.filename || "arquivo.pdf");
     const fileData = await lerArquivoUploadBuffer(arquivo);
 
+    if (!isWindowsRuntime()) {
+        const diretorioDestino = `${SMB_BASE_FOLDER_FUNCIONARIOS}/${funcionarioSafe}`;
+        const pastasParaGarantir = ["CRM", SMB_BASE_FOLDER_FUNCIONARIOS, diretorioDestino];
+        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "funcionario-smb-"));
+        const tempFilePath = path.join(tempDir, fileName);
+
+        try {
+            for (const pasta of pastasParaGarantir) {
+                try {
+                    await execSmbClient(`mkdir "${pasta}"`);
+                } catch {
+                    // Se a pasta ja existe, o smbclient retorna erro. Pode seguir.
+                }
+            }
+
+            await fs.writeFile(tempFilePath, fileData);
+            await execSmbClient(`cd "${diretorioDestino}"; put "${tempFilePath}" "${fileName}"`);
+
+            return `${getShareRootLinux()}/${diretorioDestino}/${fileName}`;
+        } finally {
+            await fs.rm(tempDir, { recursive: true, force: true });
+        }
+    }
+
     await conectarShareWindows();
 
     const diretorioDestino = path.win32.join(
@@ -202,6 +282,30 @@ async function salvarArquivoNoServidorSMB(
                 error?.message || error
             )}`
         );
+    }
+}
+
+async function readFileFromSmbLinux(caminhoOriginal: string) {
+    const caminhoRelativo = getSmbRelativePath(caminhoOriginal);
+    const fileName = path.posix.basename(caminhoRelativo);
+    const pastaRemota = path.posix.dirname(caminhoRelativo);
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "funcionario-smb-download-"));
+    const tempFilePath = path.join(tempDir, fileName);
+
+    try {
+        const comando =
+            pastaRemota && pastaRemota !== "."
+                ? `cd "${pastaRemota}"; get "${fileName}" "${tempFilePath}"`
+                : `get "${fileName}" "${tempFilePath}"`;
+
+        await execSmbClient(comando);
+
+        return {
+            bytes: await fs.readFile(tempFilePath),
+            fileName,
+        };
+    } finally {
+        await fs.rm(tempDir, { recursive: true, force: true });
     }
 }
 
@@ -349,15 +453,24 @@ async function montarAnexosEmailFuncionario(
         return attachments;
     }
 
-    await conectarShareWindows();
+    if (isWindowsRuntime()) {
+        await conectarShareWindows();
+    }
 
     for (const caminho of caminhosValidos) {
         try {
-            const bytes = await fs.readFile(caminho);
+            const arquivo =
+                !isWindowsRuntime() && isUncPath(caminho)
+                    ? await readFileFromSmbLinux(caminho)
+                    : {
+                        bytes: await fs.readFile(caminho),
+                        fileName: path.win32.basename(caminho),
+                    };
+
             attachments.push({
-                name: path.win32.basename(caminho),
+                name: arquivo.fileName,
                 contentType: getMimeTypeByFileName(caminho),
-                contentBytes: bytes.toString("base64"),
+                contentBytes: arquivo.bytes.toString("base64"),
             });
         } catch (error) {
             console.warn("Não foi possível anexar arquivo ao e-mail de RH:", caminho, error);
@@ -973,10 +1086,16 @@ export const gerenciamentoFuncionarioController = {
 
             console.log("BAIXAR ARQUIVO CAMINHO:", caminho);
 
-            await conectarShareWindows();
-
-            const arquivoBuffer = await fs.readFile(caminho);
-            const fileName = path.win32.basename(caminho);
+            const { bytes: arquivoBuffer, fileName } =
+                !isWindowsRuntime() && isUncPath(caminho)
+                    ? await readFileFromSmbLinux(caminho)
+                    : await (async () => {
+                        await conectarShareWindows();
+                        return {
+                            bytes: await fs.readFile(caminho),
+                            fileName: path.win32.basename(caminho),
+                        };
+                    })();
 
             let contentType = "application/octet-stream";
             const lower = caminho.toLowerCase();
