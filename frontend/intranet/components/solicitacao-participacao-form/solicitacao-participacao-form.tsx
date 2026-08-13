@@ -1446,7 +1446,8 @@ export function SolicitacaoParticipacaoForm() {
                             <button
                                 type="button"
                                 onClick={cadastrar}
-                                disabled={loading}
+                                disabled={loading || submitLockRef.current}
+                                aria-busy={loading}
                                 className={`${primaryButtonBase} px-6`}
                             >
                                 {loading ? "Cadastrando..." : "Cadastrar"}
