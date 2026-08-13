@@ -353,6 +353,14 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["declaracao", "declaração", "residencia", "residência", "comprovante"],
   },
   {
+    title: "Autorização de Desconto",
+    desc: "Gerar autorização de desconto de taxa de manutenção e integralização.",
+    href: "/auth/autorizacao_desconto_taxa_integralizacao",
+    group: "Formulários de Cadastro",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    keywords: ["autorizacao", "autorização", "desconto", "taxa", "manutencao", "manutenção", "integralizacao", "integralização"],
+  },
+  {
     title: "Procuração Outorgante PF/PJ",
     desc: "Acesso ao formulário de procuração outorgante PF/PJ.",
     href: "/auth/procuracao_outorgante",
