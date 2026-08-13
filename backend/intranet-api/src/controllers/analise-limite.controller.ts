@@ -6,10 +6,12 @@ import {
 } from "../services/oracle.service";
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
+const SMB_BASE_FOLDER_ANALISE = "CRM/ANALISE_LIMITE";
 
 function onlyDigits(v: string) {
     return String(v || "").replace(/\D/g, "");
@@ -110,6 +112,60 @@ function getShareRoot() {
     return `\\\\${server}\\${share}`;
 }
 
+function isWindowsRuntime() {
+    return process.platform === "win32";
+}
+
+function isUncPath(filePath: string | null | undefined) {
+    const caminho = String(filePath || "");
+    return caminho.startsWith("\\\\") || caminho.startsWith("//");
+}
+
+function getShareRootLinux() {
+    const { server, share } = getSmbConfig();
+    return `//${server}/${share}`;
+}
+
+function getSmbRelativePath(caminhoOriginal: string) {
+    const { server, share } = getSmbConfig();
+    const caminho = String(caminhoOriginal || "")
+        .trim()
+        .replace(/\\/g, "/")
+        .replace(/^\/+/, "");
+    const prefix = `${server}/${share}/`;
+
+    if (caminho.toLowerCase().startsWith(prefix.toLowerCase())) {
+        return caminho.slice(prefix.length);
+    }
+
+    const marcador = `${SMB_BASE_FOLDER_ANALISE}/`;
+    const posicaoMarcador = caminho.toUpperCase().indexOf(marcador);
+
+    if (posicaoMarcador >= 0) {
+        return caminho.slice(posicaoMarcador);
+    }
+
+    return caminho;
+}
+
+async function execSmbClient(command: string) {
+    const { server, share, user, password, domain } = getSmbConfig();
+    const args = [`//${server}/${share}`];
+
+    if (domain) args.push("-W", domain);
+    args.push("-U", `${user}%${password}`, "-c", command);
+
+    try {
+        return await execFileAsync("smbclient", args);
+    } catch (error: any) {
+        throw new Error(
+            `Falha ao executar smbclient. Comando: ${command}. Detalhes: ${String(
+                error?.stderr || error?.stdout || error?.message || error
+            )}`
+        );
+    }
+}
+
 async function conectarShareWindows() {
     const { server, share, user, password, domain } = getSmbConfig();
     const remote = `\\\\${server}\\${share}`;
@@ -164,6 +220,30 @@ async function salvarArquivoAnaliseNoServidorSMB(
     );
     const fileData = arquivo.data;
 
+    if (!isWindowsRuntime()) {
+        const diretorioDestino = `${SMB_BASE_FOLDER_ANALISE}/${pastaAssociado}`;
+        const pastasParaGarantir = ["CRM", SMB_BASE_FOLDER_ANALISE, diretorioDestino];
+        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "analise-limite-smb-"));
+        const tempFilePath = path.join(tempDir, fileName);
+
+        try {
+            for (const pasta of pastasParaGarantir) {
+                try {
+                    await execSmbClient(`mkdir "${pasta}"`);
+                } catch {
+                    // Se a pasta ja existe, o smbclient retorna erro. Pode seguir.
+                }
+            }
+
+            await fs.writeFile(tempFilePath, fileData);
+            await execSmbClient(`cd "${diretorioDestino}"; put "${tempFilePath}" "${fileName}"`);
+
+            return `${getShareRootLinux()}/${diretorioDestino}/${fileName}`;
+        } finally {
+            await fs.rm(tempDir, { recursive: true, force: true });
+        }
+    }
+
     await conectarShareWindows();
 
     const diretorioDestino = path.win32.join(
@@ -179,6 +259,30 @@ async function salvarArquivoAnaliseNoServidorSMB(
     await fs.writeFile(caminhoCompleto, fileData);
 
     return caminhoCompleto;
+}
+
+async function readFileFromSmbLinux(caminhoOriginal: string) {
+    const caminhoRelativo = getSmbRelativePath(caminhoOriginal);
+    const fileName = path.posix.basename(caminhoRelativo);
+    const pastaRemota = path.posix.dirname(caminhoRelativo);
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "analise-limite-smb-download-"));
+    const tempFilePath = path.join(tempDir, fileName);
+
+    try {
+        const comando =
+            pastaRemota && pastaRemota !== "."
+                ? `cd "${pastaRemota}"; get "${fileName}" "${tempFilePath}"`
+                : `get "${fileName}" "${tempFilePath}"`;
+
+        await execSmbClient(comando);
+
+        return {
+            arquivoBuffer: await fs.readFile(tempFilePath),
+            fileName,
+        };
+    } finally {
+        await fs.rm(tempDir, { recursive: true, force: true });
+    }
 }
 
 export const analiseLimiteController = {
@@ -675,10 +779,16 @@ export const analiseLimiteController = {
                 });
             }
 
-            await conectarShareWindows();
-
-            const arquivoBuffer = await fs.readFile(oficio);
-            const fileName = path.win32.basename(oficio);
+            const { arquivoBuffer, fileName } =
+                !isWindowsRuntime() && isUncPath(oficio)
+                    ? await readFileFromSmbLinux(oficio)
+                    : await (async () => {
+                        await conectarShareWindows();
+                        return {
+                            arquivoBuffer: await fs.readFile(oficio),
+                            fileName: path.win32.basename(oficio),
+                        };
+                    })();
 
             let contentType = "application/octet-stream";
             const lower = oficio.toLowerCase();
