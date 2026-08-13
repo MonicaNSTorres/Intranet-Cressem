@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
     FaArrowRight,
@@ -84,6 +84,15 @@ function formatDateBR(value?: string | null) {
     return `${d}/${m}/${y}`;
 }
 
+function nomeCompletoUsuario(usuario?: AuthMeResponse | null) {
+    return String(
+        usuario?.nome_completo ||
+        usuario?.nome ||
+        usuario?.username ||
+        ""
+    ).trim();
+}
+
 function formatMoneyBR(value: number) {
     return Number(value || 0).toLocaleString("pt-BR", {
         style: "currency",
@@ -156,16 +165,25 @@ function validaCpfCnpj(valor: string) {
 }
 
 const inputBase =
-    "h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+    "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-left text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 const textareaBase =
-    "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+    "min-h-24 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-left text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 const buttonPrimary =
-    "inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer";
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
 
 const buttonSecondary =
-    "inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 cursor-pointer";
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/40 hover:bg-primary/5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
+
+const buttonAccent =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
+
+const buttonPurple =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#49479D]/30 bg-[#49479D]/10 px-5 text-sm font-semibold text-[#49479D] shadow-sm transition hover:bg-[#49479D] hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
+
+const buttonDanger =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
 
 function Section({
     title,
@@ -178,11 +196,14 @@ function Section({
 }) {
     return (
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-                <h3 className="text-sm font-bold text-slate-800">{title}</h3>
+            <div className="border-t-4 border-primary px-5 py-4">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                    <span className="h-2 w-2 rounded-full bg-primary" />
+                    {title}
+                </h3>
                 {subtitle ? <p className="mt-1 text-xs text-slate-500">{subtitle}</p> : null}
             </div>
-            <div className="p-5">{children}</div>
+            <div className="border-t border-slate-100 p-5">{children}</div>
         </section>
     );
 }
@@ -238,7 +259,7 @@ function ModalShell({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 shadow-sm transition hover:bg-red-100"
                     >
                         <FaTimes size={14} />
                     </button>
@@ -264,6 +285,9 @@ export function CadastroReciboFinanceiroForm() {
     const [loadingInicial, setLoadingInicial] = useState(true);
     const [loadingSalvar, setLoadingSalvar] = useState(false);
     const [loadingBuscaAssociado, setLoadingBuscaAssociado] = useState(false);
+    const salvarReciboLockRef = useRef(false);
+    const salvarParcelaLockRef = useRef(false);
+    const salvarPagamentoLockRef = useRef(false);
 
     const [cpfCnpj, setCpfCnpj] = useState("");
     const [nome, setNome] = useState("");
@@ -344,7 +368,7 @@ export function CadastroReciboFinanceiroForm() {
                 setTiposAtendimento(tiposResp || []);
                 setCategoriasContrato(categoriasResp || []);
                 setFormasPagamento(formasResp || []);
-                setNomeFuncionario(String(usuarioResp?.nome || usuarioResp?.username || "").trim());
+                setNomeFuncionario(nomeCompletoUsuario(usuarioResp));
 
                 if (modoEdicao && reciboId) {
                     const recibo = await buscarReciboFinanceiroPorId(Number(reciboId));
@@ -359,7 +383,7 @@ export function CadastroReciboFinanceiroForm() {
                     setTipoAtendimento(recibo.TP_ATENDIMENTO || "");
                     setNomeFuncionario(
                         recibo.NM_FUNCIONARIO ||
-                        String(usuarioResp?.nome || usuarioResp?.username || "").trim()
+                        nomeCompletoUsuario(usuarioResp)
                     );
 
                     const documento = onlyCpfCnpjChars(recibo.NR_CPF_CNPJ || "");
@@ -471,6 +495,7 @@ export function CadastroReciboFinanceiroForm() {
     }
 
     function limparParcelaModal() {
+        salvarParcelaLockRef.current = false;
         setParcelaModal({
             numeroContrato: "",
             categoria: "",
@@ -483,6 +508,7 @@ export function CadastroReciboFinanceiroForm() {
     }
 
     function limparPagamentoModal() {
+        salvarPagamentoLockRef.current = false;
         setPagamentoModal({
             formaPagamento: "",
             valor: "",
@@ -501,6 +527,8 @@ export function CadastroReciboFinanceiroForm() {
     }
 
     function salvarParcelaModal() {
+        if (salvarParcelaLockRef.current) return;
+
         const msg = validaCamposParcela();
         if (msg) {
             setErro(msg);
@@ -508,6 +536,7 @@ export function CadastroReciboFinanceiroForm() {
         }
 
         setErro("");
+        salvarParcelaLockRef.current = true;
 
         const novaParcela: ParcelaItem = {
             NR_CONTRATO: parcelaModal.numeroContrato.trim(),
@@ -531,6 +560,8 @@ export function CadastroReciboFinanceiroForm() {
     }
 
     function salvarPagamentoModal() {
+        if (salvarPagamentoLockRef.current) return;
+
         const msg = validaCamposPagamento();
         if (msg) {
             setErro(msg);
@@ -538,6 +569,7 @@ export function CadastroReciboFinanceiroForm() {
         }
 
         setErro("");
+        salvarPagamentoLockRef.current = true;
 
         const novoPagamento: PagamentoItem = {
             NM_FORMA_PAGAMENTO: pagamentoModal.formaPagamento.trim(),
@@ -609,6 +641,8 @@ export function CadastroReciboFinanceiroForm() {
     }
 
     async function salvarRecibo() {
+        if (loadingSalvar || salvarReciboLockRef.current) return;
+
         try {
             setErro("");
             setInfo("");
@@ -625,6 +659,7 @@ export function CadastroReciboFinanceiroForm() {
                 return;
             }
 
+            salvarReciboLockRef.current = true;
             setLoadingSalvar(true);
 
             const payload = buildPayload();
@@ -656,6 +691,7 @@ export function CadastroReciboFinanceiroForm() {
             );
         } finally {
             setLoadingSalvar(false);
+            salvarReciboLockRef.current = false;
         }
     }
 
@@ -736,7 +772,7 @@ export function CadastroReciboFinanceiroForm() {
                             <button
                                 type="button"
                                 onClick={abrirConsulta}
-                                className={buttonSecondary}
+                                className={buttonPurple}
                             >
                                 <FaArrowRight />
                                 Consulta de Recibos
@@ -914,7 +950,7 @@ export function CadastroReciboFinanceiroForm() {
                                                 <button
                                                     type="button"
                                                     onClick={() => editarLinhaParcela(index)}
-                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
+                                                    className={`${buttonAccent} px-4 text-xs`}
                                                 >
                                                     <FaEdit size={13} />
                                                     Editar
@@ -924,7 +960,7 @@ export function CadastroReciboFinanceiroForm() {
                                                 <button
                                                     type="button"
                                                     onClick={() => removerParcela(index)}
-                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 cursor-pointer"
+                                                    className={`${buttonDanger} px-4 text-xs`}
                                                 >
                                                     <FaTrash size={13} />
                                                     Remover
@@ -953,7 +989,7 @@ export function CadastroReciboFinanceiroForm() {
                                 <button
                                     type="button"
                                     onClick={abrirModalParcelaNova}
-                                    className={`${buttonPrimary} w-full`}
+                                    className={`${buttonAccent} w-full`}
                                 >
                                     <FaPlus />
                                     Cadastrar Parcelas
@@ -998,7 +1034,7 @@ export function CadastroReciboFinanceiroForm() {
                                                 <button
                                                     type="button"
                                                     onClick={() => editarLinhaPagamento(index)}
-                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                                                    className={`${buttonAccent} px-4 text-xs`}
                                                 >
                                                     <FaEdit size={13} />
                                                     Editar
@@ -1008,7 +1044,7 @@ export function CadastroReciboFinanceiroForm() {
                                                 <button
                                                     type="button"
                                                     onClick={() => removerPagamento(index)}
-                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700"
+                                                    className={`${buttonDanger} px-4 text-xs`}
                                                 >
                                                     <FaTrash size={13} />
                                                     Remover
@@ -1037,7 +1073,7 @@ export function CadastroReciboFinanceiroForm() {
                                 <button
                                     type="button"
                                     onClick={abrirModalPagamentoNovo}
-                                    className={`${buttonPrimary} w-full`}
+                                    className={`${buttonAccent} w-full`}
                                 >
                                     <FaPlus />
                                     Cadastrar Pagamentos
@@ -1050,7 +1086,8 @@ export function CadastroReciboFinanceiroForm() {
                                 <button
                                     type="button"
                                     onClick={salvarRecibo}
-                                    disabled={loadingSalvar}
+                                    disabled={loadingSalvar || salvarReciboLockRef.current}
+                                    aria-busy={loadingSalvar}
                                     className={`${buttonPrimary} disabled:cursor-not-allowed disabled:opacity-60`}
                                 >
                                     <FaSave />
@@ -1065,7 +1102,7 @@ export function CadastroReciboFinanceiroForm() {
                                     <button
                                         type="button"
                                         onClick={baixarRecibo}
-                                        className={buttonSecondary}
+                                        className={buttonPurple}
                                     >
                                         <FaDownload />
                                         Baixar Recibo
@@ -1206,7 +1243,9 @@ export function CadastroReciboFinanceiroForm() {
                             <button
                                 type="button"
                                 onClick={salvarParcelaModal}
-                                className={buttonPrimary}
+                                disabled={salvarParcelaLockRef.current}
+                                aria-busy={salvarParcelaLockRef.current}
+                                className={`${buttonPrimary} disabled:cursor-not-allowed disabled:opacity-60`}
                             >
                                 {indexParcelaEditando !== null ? "Atualizar" : "Listar"}
                             </button>
@@ -1279,7 +1318,9 @@ export function CadastroReciboFinanceiroForm() {
                             <button
                                 type="button"
                                 onClick={salvarPagamentoModal}
-                                className={buttonPrimary}
+                                disabled={salvarPagamentoLockRef.current}
+                                aria-busy={salvarPagamentoLockRef.current}
+                                className={`${buttonPrimary} disabled:cursor-not-allowed disabled:opacity-60`}
                             >
                                 {indexPagamentoEditando !== null ? "Atualizar" : "Listar"}
                             </button>

@@ -22,7 +22,6 @@ import {
 import { gerarPdfReciboFinanceiro } from "@/lib/pdf/gerarPdfReciboFinanceiro";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
 
 function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
@@ -71,28 +70,32 @@ function formatMoneyBR(value: number) {
   });
 }
 
-function primeiroUltimoNome(nome?: string | null) {
-  const partes = String(nome || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (!partes.length) return "";
-  if (partes.length === 1) return partes[0];
-  return `${partes[0]} ${partes[partes.length - 1]}`;
-}
-
 const inputBase =
-  "h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-left text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 const textareaBase =
-  "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-left text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 const buttonPrimary =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer";
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
 
 const buttonSecondary =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 cursor-pointer";
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 cursor-pointer";
+
+const buttonAccent =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white cursor-pointer";
+
+const buttonPurple =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-fourth/30 bg-fourth/10 px-4 text-sm font-semibold text-fourth shadow-sm transition hover:bg-fourth hover:text-white cursor-pointer";
+
+const buttonDanger =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-600 hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-60";
+
+const tableButtonInfo =
+  "inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-700 shadow-sm transition hover:bg-sky-600 hover:text-white cursor-pointer";
+
+const tableButtonPurple =
+  "inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-fourth/25 bg-fourth/10 px-3 text-xs font-semibold text-fourth shadow-sm transition hover:bg-fourth hover:text-white cursor-pointer";
 
 function Section({
   title,
@@ -105,8 +108,11 @@ function Section({
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-        <h3 className="text-sm font-bold text-slate-800">{title}</h3>
+      <div className="border-b border-slate-200 px-5 py-4">
+        <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
+          <span className="h-2 w-2 rounded-full bg-primary" />
+          {title}
+        </h3>
         {subtitle ? <p className="mt-1 text-xs text-slate-500">{subtitle}</p> : null}
       </div>
       <div className="p-5">{children}</div>
@@ -162,7 +168,7 @@ function ModalShell({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-600 shadow-sm transition hover:bg-red-600 hover:text-white"
           >
             ✕
           </button>
@@ -327,15 +333,15 @@ export function ConsultaReciboFinanceiroForm() {
     }
 
     return (
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {paginaAtual > 1 && (
           <>
-            <button onClick={() => buscarRecibos(1)} className={buttonSecondary}>
+            <button onClick={() => buscarRecibos(1)} className={`${buttonSecondary} h-9 px-3`}>
               1
             </button>
             <button
               onClick={() => buscarRecibos(paginaAtual - 1)}
-              className={buttonSecondary}
+              className={`${buttonSecondary} h-9 px-3`}
             >
               Anterior
             </button>
@@ -348,8 +354,8 @@ export function ConsultaReciboFinanceiroForm() {
             onClick={() => buscarRecibos(page)}
             className={
               page === paginaAtual
-                ? `${buttonPrimary} min-w-[44px]`
-                : `${buttonSecondary} min-w-[44px]`
+                ? `${buttonPrimary} h-9 min-w-[38px] px-3`
+                : `${buttonSecondary} h-9 min-w-[38px] px-3`
             }
           >
             {page}
@@ -360,11 +366,11 @@ export function ConsultaReciboFinanceiroForm() {
           <>
             <button
               onClick={() => buscarRecibos(paginaAtual + 1)}
-              className={buttonSecondary}
+              className={`${buttonSecondary} h-9 px-3`}
             >
               Próxima
             </button>
-            <button onClick={() => buscarRecibos(totalPages)} className={buttonSecondary}>
+            <button onClick={() => buscarRecibos(totalPages)} className={`${buttonSecondary} h-9 px-3`}>
               {totalPages}
             </button>
           </>
@@ -375,18 +381,21 @@ export function ConsultaReciboFinanceiroForm() {
 
   return (
     <>
-      <div className="mx-auto w-full min-w-225 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
-        <SearchForm onSearch={buscarRecibos}>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="w-full space-y-5">
+        <SearchForm onSearch={buscarRecibos} className="space-y-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm border-t-4 border-t-primary">
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <h2 className="text-xl font-bold text-slate-800">Consulta Recibos</h2>
+                <h2 className="flex items-center gap-2 text-xl font-bold text-slate-800">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  Consulta de recibos
+                </h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Localize recibos por nome, CPF/CNPJ, funcionário ou data.
                 </p>
               </div>
 
-              <button type="button" onClick={irCadastro} className={buttonSecondary}>
+              <button type="button" onClick={irCadastro} className={buttonAccent}>
                 <FaPlus />
                 Cadastro de Recibos
               </button>
@@ -406,8 +415,8 @@ export function ConsultaReciboFinanceiroForm() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-              <div className="md:col-span-6">
+            <div className="grid grid-cols-1 items-end gap-4 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
+              <div>
                 <Field label="Nome, CPF/CNPJ ou Funcionário">
                   <SearchInput
                     value={busca}
@@ -421,13 +430,13 @@ export function ConsultaReciboFinanceiroForm() {
                       }
                     }}
                     onKeyDown={(e) => e.key === "Enter" && buscarRecibos(1)}
-                    className={inputBase}
+                    className={`${inputBase} !h-10 !rounded-xl !border-slate-300 !py-0`}
                     placeholder="Digite o nome, CPF/CNPJ ou funcionário"
                   />
                 </Field>
               </div>
 
-              <div className="md:col-span-3">
+              <div>
                 <Field label="Dia">
                   <input
                     type="date"
@@ -438,16 +447,15 @@ export function ConsultaReciboFinanceiroForm() {
                 </Field>
               </div>
 
-              <div className="md:col-span-3">
-                <Field label="Ações">
-                  <div className="flex gap-2">
-                    <SearchButton loading={loading} label="Pesquisar" />
+              <div className="flex flex-wrap gap-2 lg:justify-end">
+                <button type="submit" disabled={loading} className={buttonPrimary}>
+                  <FaSearch />
+                  {loading ? "Pesquisando..." : "Pesquisar"}
+                </button>
 
-                    <button type="button" onClick={limparFiltros} className={buttonSecondary}>
-                      Limpar
-                    </button>
-                  </div>
-                </Field>
+                <button type="button" onClick={limparFiltros} className={buttonSecondary}>
+                  Limpar
+                </button>
               </div>
             </div>
           </div>
@@ -456,92 +464,89 @@ export function ConsultaReciboFinanceiroForm() {
             title="Recibos encontrados"
             subtitle="Visualize os detalhes, edite, exclua ou gere novamente o PDF."
           >
-            <div className="overflow-x-auto">
-              <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl">
-                <thead>
-                  <tr className="bg-slate-100 text-left text-xs font-bold uppercase tracking-[0.03em] text-slate-600">
-                    <th className="border-b border-slate-200 px-4 py-3">CPF</th>
-                    <th className="border-b border-slate-200 px-4 py-3">Dia</th>
-                    <th className="border-b border-slate-200 px-4 py-3">Cidade</th>
-                    <th className="border-b border-slate-200 px-4 py-3">Atendimento</th>
-                    <th className="border-b border-slate-200 px-4 py-3">Funcionário</th>
-                    <th className="border-b border-slate-200 px-4 py-3 text-center">Informações</th>
-                    <th className="border-b border-slate-200 px-4 py-3 text-center">PDF</th>
-                  </tr>
-                </thead>
-
-                <tbody className="bg-white text-sm text-slate-700">
-                  {!loading && lista.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="border-b border-slate-100 px-4 py-8 text-center text-slate-400"
-                      >
-                        Nenhum recibo encontrado.
-                      </td>
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div className="overflow-x-auto">
+                <table className="min-w-[980px] w-full">
+                  <thead>
+                    <tr className="bg-slate-50 text-left text-xs font-bold uppercase tracking-[0.03em] text-slate-600">
+                      <th className="border-b border-slate-200 px-4 py-3">CPF</th>
+                      <th className="border-b border-slate-200 px-4 py-3">Dia</th>
+                      <th className="border-b border-slate-200 px-4 py-3">Cidade</th>
+                      <th className="border-b border-slate-200 px-4 py-3">Atendimento</th>
+                      <th className="border-b border-slate-200 px-4 py-3">Funcionário</th>
+                      <th className="border-b border-slate-200 px-4 py-3 text-center">Informações</th>
+                      <th className="border-b border-slate-200 px-4 py-3 text-center">PDF</th>
                     </tr>
-                  ) : (
-                    lista.map((recibo) => (
-                      <tr
-                        key={recibo.ID_RECIBO_CRM}
-                        className="transition hover:bg-slate-50"
-                      >
-                        <td className="border-b border-slate-100 px-4 py-3">
-                          {formatCpfCnpj(recibo.NR_CPF_CNPJ)}
-                        </td>
-                        <td className="border-b border-slate-100 px-4 py-3">
-                          {formatDateBR(recibo.DT_DIA)}
-                        </td>
-                        <td className="border-b border-slate-100 px-4 py-3">{recibo.CIDADE}</td>
-                        <td className="border-b border-slate-100 px-4 py-3">
-                          {recibo.TP_ATENDIMENTO}
-                        </td>
-                        <td className="border-b border-slate-100 px-4 py-3">
-                          {primeiroUltimoNome(recibo.NM_FUNCIONARIO)}
-                        </td>
-                        <td className="border-b border-slate-100 px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => abrirDetalhes(recibo.ID_RECIBO_CRM)}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
-                          >
-                            <FaEye size={13} />
-                            Visualizar
-                          </button>
-                        </td>
-                        <td className="border-b border-slate-100 px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              const detalhe = await buscarReciboFinanceiroPorId(recibo.ID_RECIBO_CRM);
-                              await imprimirRecibo(detalhe);
-                            }}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-third px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-secondary cursor-pointer"
-                          >
-                            <FaPrint size={13} />
-                            Gerar PDF
-                          </button>
+                  </thead>
+
+                  <tbody className="bg-white text-sm text-slate-700">
+                    {!loading && lista.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="px-4 py-12 text-center text-slate-400"
+                        >
+                          Nenhum recibo encontrado.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div>
-                <Field label="Total">
-                  <input
-                    readOnly
-                    value={String(totalItems)}
-                    className={`${inputBase} bg-slate-50`}
-                  />
-                </Field>
+                    ) : (
+                      lista.map((recibo) => (
+                        <tr
+                          key={recibo.ID_RECIBO_CRM}
+                          className="transition hover:bg-slate-50"
+                        >
+                          <td className="border-b border-slate-100 px-4 py-3">
+                            {formatCpfCnpj(recibo.NR_CPF_CNPJ)}
+                          </td>
+                          <td className="border-b border-slate-100 px-4 py-3">
+                            {formatDateBR(recibo.DT_DIA)}
+                          </td>
+                          <td className="border-b border-slate-100 px-4 py-3">{recibo.CIDADE}</td>
+                          <td className="border-b border-slate-100 px-4 py-3">
+                            {recibo.TP_ATENDIMENTO}
+                          </td>
+                          <td className="border-b border-slate-100 px-4 py-3">
+                            {recibo.NM_FUNCIONARIO || "-"}
+                          </td>
+                          <td className="border-b border-slate-100 px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => abrirDetalhes(recibo.ID_RECIBO_CRM)}
+                              className={tableButtonInfo}
+                            >
+                              <FaEye size={13} />
+                              Visualizar
+                            </button>
+                          </td>
+                          <td className="border-b border-slate-100 px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const detalhe = await buscarReciboFinanceiroPorId(recibo.ID_RECIBO_CRM);
+                                await imprimirRecibo(detalhe);
+                              }}
+                              className={tableButtonPurple}
+                            >
+                              <FaPrint size={13} />
+                              Gerar PDF
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            {renderPaginacao()}
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+              <p className="text-sm text-slate-500">
+                Total localizado:{" "}
+                <span className="font-bold text-slate-800">{totalItems}</span>
+              </p>
+
+              {renderPaginacao()}
+            </div>
           </Section>
         </SearchForm>
       </div>
@@ -733,7 +738,7 @@ export function ConsultaReciboFinanceiroForm() {
             </Section>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button type="button" onClick={editarRecibo} className={buttonPrimary}>
+              <button type="button" onClick={editarRecibo} className={buttonAccent}>
                 <FaEdit />
                 Editar Recibo
               </button>
@@ -741,7 +746,7 @@ export function ConsultaReciboFinanceiroForm() {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteOpen(true)}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 cursor-pointer"
+                className={buttonDanger}
               >
                 <FaTrash />
                 Excluir Recibo
@@ -750,7 +755,7 @@ export function ConsultaReciboFinanceiroForm() {
               <button
                 type="button"
                 onClick={() => imprimirRecibo(reciboSelecionado)}
-                className={buttonSecondary}
+                className={buttonPurple}
               >
                 <FaPrint />
                 Gerar PDF
@@ -785,7 +790,7 @@ export function ConsultaReciboFinanceiroForm() {
               type="button"
               onClick={excluirRecibo}
               disabled={loadingExcluir}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className={buttonDanger}
             >
               <FaTrash />
               {loadingExcluir ? "Excluindo..." : "Excluir"}
