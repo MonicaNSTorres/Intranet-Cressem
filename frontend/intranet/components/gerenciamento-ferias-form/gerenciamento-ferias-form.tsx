@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FaEdit, FaPlus, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
 import {
@@ -40,6 +40,21 @@ function formatarDataBrasil(data?: string | null) {
     return `${dia}/${mes}/${ano}`;
 }
 
+const inputClass =
+    "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-left text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10";
+
+const readonlyInputClass =
+    "h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-left text-sm font-semibold text-slate-700 shadow-sm outline-none";
+
+const primaryButtonClass =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
+
+const accentButtonClass =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 text-sm font-semibold text-primary shadow-sm transition hover:border-primary hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
+
+const secondaryButtonClass =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-fourth/40 hover:bg-fourth/10 hover:text-fourth disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
+
 export function GerenciamentoFeriasForm() {
     const router = useRouter();
 
@@ -55,6 +70,7 @@ export function GerenciamentoFeriasForm() {
     const [modalOpen, setModalOpen] = useState(false);
     const [funcionarioSelecionado, setFuncionarioSelecionado] =
         useState<FuncionarioFeriasListItem | null>(null);
+    const excluirActionRef = useRef(false);
 
     async function carregarFuncionarios(page = 1) {
         try {
@@ -93,6 +109,12 @@ export function GerenciamentoFeriasForm() {
         setInfo("");
     }
 
+    function pesquisarComEnter(event: KeyboardEvent<HTMLInputElement>) {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        carregarFuncionarios(1);
+    }
+
     function abrirModalInfo(funcionario: FuncionarioFeriasListItem) {
         setFuncionarioSelecionado(funcionario);
         setErro("");
@@ -120,10 +142,15 @@ export function GerenciamentoFeriasForm() {
         idFuncionario: number,
         snEfetuado: number
     ) {
+        if (excluirActionRef.current) return;
         if (Number(snEfetuado) === 1) return;
 
+        excluirActionRef.current = true;
         const confirmou = window.confirm("Confirma excluir este período de férias?");
-        if (!confirmou) return;
+        if (!confirmou) {
+            excluirActionRef.current = false;
+            return;
+        }
 
         try {
             setErro("");
@@ -164,6 +191,8 @@ export function GerenciamentoFeriasForm() {
                 e?.response?.data?.details ||
                 "Não foi possível excluir as férias."
             );
+        } finally {
+            excluirActionRef.current = false;
         }
     }
 
@@ -181,25 +210,37 @@ export function GerenciamentoFeriasForm() {
 
     return (
         <>
-            <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+            <div className="mx-auto w-full rounded-2xl border border-slate-200 border-t-4 border-t-primary bg-white p-5 shadow-sm">
+                <div className="mb-5 border-b border-slate-100 pb-4">
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Digite o nome do funcionário
-                        </label>
+                        <p className="text-xs font-bold uppercase tracking-wide text-primary">
+                            Filtros
+                        </p>
+                        <h2 className="mt-1 text-lg font-semibold text-title">
+                            Consulta de férias
+                        </h2>
+                        <p className="mt-1 text-sm text-paragraph">
+                            Pesquise colaboradores e acompanhe o histórico de férias.
+                        </p>
 
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
-                            <input
-                                value={busca}
-                                onChange={(e) => setBusca(e.target.value)}
-                                placeholder="Digite o nome do funcionário"
-                                className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                            />
+                        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
+                            <div>
+                                <label className="mb-1 block text-xs font-bold uppercase text-slate-600">
+                                    Funcionário
+                                </label>
+                                <input
+                                    value={busca}
+                                    onChange={(e) => setBusca(e.target.value)}
+                                    onKeyDown={pesquisarComEnter}
+                                    placeholder="Digite o nome do funcionário"
+                                    className={inputClass}
+                                />
+                            </div>
 
                             <button
                                 type="button"
                                 onClick={() => carregarFuncionarios(1)}
-                                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+                                className={primaryButtonClass}
                             >
                                 <FaSearch />
                                 Buscar
@@ -208,34 +249,32 @@ export function GerenciamentoFeriasForm() {
                             <button
                                 type="button"
                                 onClick={limparBusca}
-                                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                                className={secondaryButtonClass}
                             >
                                 <FaTimes />
                                 Limpar
                             </button>
-                        </div>
-                    </div>
 
-                    <div className="flex items-end">
-                        <button
-                            type="button"
-                            onClick={irParaCadastro}
-                            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
-                        >
-                            <FaPlus />
-                            Cadastrar
-                        </button>
+                            <button
+                                type="button"
+                                onClick={irParaCadastro}
+                                className={accentButtonClass}
+                            >
+                                <FaPlus />
+                                Cadastrar
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {(erro || info) && (
                     <div className="mt-4">
                         {erro ? (
-                            <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                                 {erro}
                             </div>
                         ) : (
-                            <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
                                 {info}
                             </div>
                         )}
@@ -244,67 +283,69 @@ export function GerenciamentoFeriasForm() {
 
                 {(funcionarios.length > 0 || loadingTabela) && (
                     <>
-                        <div className="mt-6 overflow-x-auto rounded-xl border">
-                            <table className="min-w-full divide-y divide-slate-200 text-sm">
-                                <thead className="bg-slate-50">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                                            Nome
-                                        </th>
-                                        <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                                            Setor
-                                        </th>
-                                        <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                                            Ação
-                                        </th>
-                                    </tr>
-                                </thead>
+                        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                                    <thead className="bg-slate-100">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
+                                                Nome
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
+                                                Setor
+                                            </th>
+                                            <th className="px-4 py-3 text-center text-xs font-bold uppercase text-slate-700">
+                                                Ação
+                                            </th>
+                                        </tr>
+                                    </thead>
 
-                                <tbody className="divide-y divide-slate-100 bg-white">
-                                    {loadingTabela ? (
-                                        <tr>
-                                            <td
-                                                colSpan={3}
-                                                className="px-4 py-6 text-center text-slate-500"
-                                            >
-                                                Carregando funcionários...
-                                            </td>
-                                        </tr>
-                                    ) : funcionarios.length === 0 ? (
-                                        <tr>
-                                            <td
-                                                colSpan={3}
-                                                className="px-4 py-6 text-center text-slate-500"
-                                            >
-                                                Nenhum funcionário encontrado.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        funcionarios.map((funcionario) => (
-                                            <tr
-                                                key={funcionario.ID_FUNCIONARIO}
-                                                className="hover:bg-slate-50"
-                                            >
-                                                <td className="px-4 py-3">
-                                                    {capitalizeWords(funcionario.NM_FUNCIONARIO)}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {capitalizeWords(funcionario.SETOR?.NM_SETOR || "")}
-                                                </td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => abrirModalInfo(funcionario)}
-                                                        className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                                                    >
-                                                        Informações
-                                                    </button>
+                                    <tbody className="divide-y divide-slate-100 bg-white">
+                                        {loadingTabela ? (
+                                            <tr>
+                                                <td
+                                                    colSpan={3}
+                                                    className="px-4 py-6 text-center text-slate-500"
+                                                >
+                                                    Carregando funcionários...
                                                 </td>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                                        ) : funcionarios.length === 0 ? (
+                                            <tr>
+                                                <td
+                                                    colSpan={3}
+                                                    className="px-4 py-6 text-center text-slate-500"
+                                                >
+                                                    Nenhum funcionário encontrado.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            funcionarios.map((funcionario) => (
+                                                <tr
+                                                    key={funcionario.ID_FUNCIONARIO}
+                                                    className="transition hover:bg-primary/5"
+                                                >
+                                                    <td className="px-4 py-3 font-semibold text-slate-800">
+                                                        {capitalizeWords(funcionario.NM_FUNCIONARIO)}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-slate-700">
+                                                        {capitalizeWords(funcionario.SETOR?.NM_SETOR || "")}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => abrirModalInfo(funcionario)}
+                                                            className="inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary transition hover:bg-primary hover:text-white cursor-pointer"
+                                                        >
+                                                            Informações
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
@@ -313,7 +354,7 @@ export function GerenciamentoFeriasForm() {
                                     <button
                                         type="button"
                                         onClick={() => carregarFuncionarios(1)}
-                                        className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
                                     >
                                         1
                                     </button>
@@ -321,7 +362,7 @@ export function GerenciamentoFeriasForm() {
                                     <button
                                         type="button"
                                         onClick={() => carregarFuncionarios(paginaAtual - 1)}
-                                        className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
                                     >
                                         Anterior
                                     </button>
@@ -333,9 +374,9 @@ export function GerenciamentoFeriasForm() {
                                     key={page}
                                     type="button"
                                     onClick={() => carregarFuncionarios(page)}
-                                    className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
-                                        ? "bg-emerald-600 text-white"
-                                        : "border text-slate-700 hover:bg-slate-50"
+                                    className={`h-9 min-w-9 rounded-xl px-3 text-sm font-semibold shadow-sm transition ${page === paginaAtual
+                                        ? "bg-primary text-white"
+                                        : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
                                         }`}
                                 >
                                     {page}
@@ -347,7 +388,7 @@ export function GerenciamentoFeriasForm() {
                                     <button
                                         type="button"
                                         onClick={() => carregarFuncionarios(paginaAtual + 1)}
-                                        className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
                                     >
                                         Próxima
                                     </button>
@@ -355,7 +396,7 @@ export function GerenciamentoFeriasForm() {
                                     <button
                                         type="button"
                                         onClick={() => carregarFuncionarios(totalPages)}
-                                        className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
                                     >
                                         {totalPages}
                                     </button>
@@ -368,42 +409,47 @@ export function GerenciamentoFeriasForm() {
 
             {modalOpen && funcionarioSelecionado && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                    <div className="w-full max-w-5xl rounded-2xl bg-white shadow-xl">
+                    <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
                         <div className="flex items-center justify-between border-b px-6 py-4">
-                            <h2 className="text-lg font-semibold text-gray-900">
-                                Histórico de Férias
-                            </h2>
+                            <div>
+                                <h2 className="text-lg font-semibold text-title">
+                                    Histórico de férias
+                                </h2>
+                                <p className="mt-1 text-sm text-paragraph">
+                                    Consulte os períodos cadastrados para o colaborador.
+                                </p>
+                            </div>
 
                             <button
                                 type="button"
                                 onClick={fecharModal}
-                                className="rounded p-2 text-slate-500 hover:bg-slate-100"
+                                className="rounded-full p-2 text-red-600 transition hover:bg-red-50"
                             >
                                 <FaTimes />
                             </button>
                         </div>
 
-                        <div className="space-y-5 px-6 py-5">
+                        <div className="space-y-5 overflow-y-auto px-6 py-5">
                             <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr]">
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className="mb-1 block text-xs font-bold uppercase text-slate-600">
                                         CPF
                                     </label>
                                     <input
                                         readOnly
                                         value={formatarCpfView(funcionarioSelecionado.NR_CPF || "")}
-                                        className="w-full rounded border bg-gray-50 px-3 py-2"
+                                        className={readonlyInputClass}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className="mb-1 block text-xs font-bold uppercase text-slate-600">
                                         Nome
                                     </label>
                                     <input
                                         readOnly
                                         value={funcionarioSelecionado.NM_FUNCIONARIO || ""}
-                                        className="w-full rounded border bg-gray-50 px-3 py-2"
+                                        className={readonlyInputClass}
                                     />
                                 </div>
                             </div>
@@ -411,108 +457,118 @@ export function GerenciamentoFeriasForm() {
                             {(erro || info) && (
                                 <div>
                                     {erro ? (
-                                        <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                                             {erro}
                                         </div>
                                     ) : (
-                                        <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
                                             {info}
                                         </div>
                                     )}
                                 </div>
                             )}
 
-                            <div className="overflow-x-auto rounded-xl border">
-                                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                                    <thead className="bg-slate-50">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                                                Início
-                                            </th>
-                                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                                                Fim
-                                            </th>
-                                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                                                Efetuada
-                                            </th>
-                                            <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                                                Editar
-                                            </th>
-                                            <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                                                Excluir
-                                            </th>
-                                        </tr>
-                                    </thead>
-
-                                    <tbody className="divide-y divide-slate-100 bg-white">
-                                        {(funcionarioSelecionado.FERIAS || []).length === 0 ? (
+                            <div className="overflow-hidden rounded-2xl border border-slate-200">
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-slate-200 text-sm">
+                                        <thead className="bg-slate-100">
                                             <tr>
-                                                <td
-                                                    colSpan={5}
-                                                    className="px-4 py-6 text-center text-slate-500"
-                                                >
-                                                    Nenhum período de férias encontrado.
-                                                </td>
+                                                <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
+                                                    Início
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
+                                                    Fim
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
+                                                    Efetuada
+                                                </th>
+                                                <th className="px-4 py-3 text-center text-xs font-bold uppercase text-slate-700">
+                                                    Editar
+                                                </th>
+                                                <th className="px-4 py-3 text-center text-xs font-bold uppercase text-slate-700">
+                                                    Excluir
+                                                </th>
                                             </tr>
-                                        ) : (
-                                            (funcionarioSelecionado.FERIAS || []).map(
-                                                (periodo: PeriodoFeriasListItem) => {
-                                                    const efetuado = Number(periodo.SN_EFETUADO) === 1;
+                                        </thead>
 
-                                                    return (
-                                                        <tr
-                                                            key={periodo.ID_FERIAS_FUNCIONARIOS}
-                                                            className="hover:bg-slate-50"
-                                                        >
-                                                            <td className="px-4 py-3">
-                                                                {formatarDataBrasil(periodo.DT_DIA_INICIO)}
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                {formatarDataBrasil(periodo.DT_DIA_FIM)}
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                {efetuado ? "Sim" : "Não"}
-                                                            </td>
-                                                            <td className="px-4 py-3 text-center">
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={efetuado}
-                                                                    onClick={() =>
-                                                                        irParaEdicao(
-                                                                            funcionarioSelecionado.ID_FUNCIONARIO,
-                                                                            periodo.ID_FERIAS_FUNCIONARIOS
-                                                                        )
-                                                                    }
-                                                                    className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                                                >
-                                                                    <FaEdit />
-                                                                    Editar
-                                                                </button>
-                                                            </td>
-                                                            <td className="px-4 py-3 text-center">
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={efetuado}
-                                                                    onClick={() =>
-                                                                        excluirPeriodo(
-                                                                            periodo.ID_FERIAS_FUNCIONARIOS,
-                                                                            funcionarioSelecionado.ID_FUNCIONARIO,
-                                                                            Number(periodo.SN_EFETUADO)
-                                                                        )
-                                                                    }
-                                                                    className="inline-flex cursor-pointer items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                                                >
-                                                                    <FaTrash />
-                                                                    Excluir
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                }
-                                            )
-                                        )}
-                                    </tbody>
-                                </table>
+                                        <tbody className="divide-y divide-slate-100 bg-white">
+                                            {(funcionarioSelecionado.FERIAS || []).length === 0 ? (
+                                                <tr>
+                                                    <td
+                                                        colSpan={5}
+                                                        className="px-4 py-6 text-center text-slate-500"
+                                                    >
+                                                        Nenhum período de férias encontrado.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                (funcionarioSelecionado.FERIAS || []).map(
+                                                    (periodo: PeriodoFeriasListItem) => {
+                                                        const efetuado = Number(periodo.SN_EFETUADO) === 1;
+
+                                                        return (
+                                                            <tr
+                                                                key={periodo.ID_FERIAS_FUNCIONARIOS}
+                                                                className="transition hover:bg-primary/5"
+                                                            >
+                                                                <td className="px-4 py-3 text-slate-700">
+                                                                    {formatarDataBrasil(periodo.DT_DIA_INICIO)}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-slate-700">
+                                                                    {formatarDataBrasil(periodo.DT_DIA_FIM)}
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <span
+                                                                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                                                                            efetuado
+                                                                                ? "bg-emerald-50 text-emerald-700"
+                                                                                : "bg-amber-50 text-amber-700"
+                                                                        }`}
+                                                                    >
+                                                                        {efetuado ? "Sim" : "Não"}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={efetuado}
+                                                                        onClick={() =>
+                                                                            irParaEdicao(
+                                                                                funcionarioSelecionado.ID_FUNCIONARIO,
+                                                                                periodo.ID_FERIAS_FUNCIONARIOS
+                                                                            )
+                                                                        }
+                                                                        className="inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary transition hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                                                    >
+                                                                        <FaEdit />
+                                                                        Editar
+                                                                    </button>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={efetuado}
+                                                                        onClick={() =>
+                                                                            excluirPeriodo(
+                                                                                periodo.ID_FERIAS_FUNCIONARIOS,
+                                                                                funcionarioSelecionado.ID_FUNCIONARIO,
+                                                                                Number(periodo.SN_EFETUADO)
+                                                                            )
+                                                                        }
+                                                                        className="inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                                                                    >
+                                                                        <FaTrash />
+                                                                        Excluir
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    }
+                                                )
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
 
@@ -520,7 +576,7 @@ export function GerenciamentoFeriasForm() {
                             <button
                                 type="button"
                                 onClick={fecharModal}
-                                className="rounded bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700"
+                                className={secondaryButtonClass}
                             >
                                 Fechar
                             </button>

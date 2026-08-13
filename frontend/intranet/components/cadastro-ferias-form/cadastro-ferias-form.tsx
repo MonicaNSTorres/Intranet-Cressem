@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { FaCalendarPlus, FaEdit, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
 import {
@@ -18,7 +18,6 @@ import {
 } from "@/services/cadastro_ferias.service";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
 
 type LinhaFerias = {
   id?: number | string;
@@ -82,10 +81,37 @@ function diferencaEmDias(inicio: Date | null, fim: Date | null, inclusivo = true
   return inclusivo ? dias + 1 : dias;
 }
 
+const inputClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-left text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10";
+
+const inputReadOnlyClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-left text-sm text-slate-700 shadow-sm outline-none";
+
+const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600";
+
+const primaryButtonClass =
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60";
+
+const accentButtonClass =
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-5 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60";
+
+const secondaryButtonClass =
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-fourth hover:bg-fourth/10 hover:text-fourth";
+
+const dangerButtonClass =
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-600 hover:text-white";
+
+const tableActionButtonClass =
+  "inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-sky-700 transition hover:bg-sky-600 hover:text-white";
+
+const tableDangerButtonClass =
+  "inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-600 hover:text-white";
+
 export function CadastroFeriasForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const idSolicitacao = searchParams.get("id") || "";
+  const salvarActionRef = useRef(false);
 
   const [cpf, setCpf] = useState("");
   const [nome, setNome] = useState("");
@@ -311,6 +337,9 @@ export function CadastroFeriasForm() {
   }
 
   async function salvarSolicitacao() {
+    if (salvarActionRef.current) return;
+    salvarActionRef.current = true;
+
     try {
       setErro("");
       setInfo("");
@@ -345,6 +374,7 @@ export function CadastroFeriasForm() {
       console.error(error);
       setErro("Falha ao salvar a solicitação. Tente novamente.");
     } finally {
+      salvarActionRef.current = false;
       setLoadingSalvar(false);
     }
   }
@@ -408,6 +438,9 @@ export function CadastroFeriasForm() {
   }
 
   async function salvarLoteImportado() {
+    if (salvarActionRef.current) return;
+    salvarActionRef.current = true;
+
     try {
       setErro("");
       setInfo("");
@@ -447,33 +480,37 @@ export function CadastroFeriasForm() {
         );
       }
     } finally {
+      salvarActionRef.current = false;
       setLoadingSalvar(false);
     }
   }
 
   return (
     <>
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
+      <div className="mx-auto rounded-2xl border border-slate-200 border-t-4 border-t-primary bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <button
             type="button"
             onClick={() => router.push("./gerenciamento_ferias")}
-            className="inline-flex cursor-pointer items-center justify-center rounded bg-primary px-5 py-2 font-semibold text-white shadow hover:bg-secondary md:w-auto"
+            className={accentButtonClass}
           >
             Consultar Férias
           </button>
         </div>
 
         {!idSolicitacao && (
-          <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <h6 className="text-sm font-semibold text-slate-700">Modo de Cadastro</h6>
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h6 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Modo de Cadastro
+            </h6>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => setModoCadastro("manual")}
-                className={`rounded px-4 py-2 text-sm font-semibold ${modoCadastro === "manual"
-                  ? "bg-secondary text-white"
-                  : "bg-white text-slate-700 border border-slate-300"
+                className={`${modoCadastro === "manual"
+                  ? primaryButtonClass
+                  : secondaryButtonClass
                   }`}
               >
                 Inserir Manualmente
@@ -481,9 +518,9 @@ export function CadastroFeriasForm() {
               <button
                 type="button"
                 onClick={() => setModoCadastro("lote")}
-                className={`rounded px-4 py-2 text-sm font-semibold ${modoCadastro === "lote"
-                  ? "bg-secondary text-white"
-                  : "bg-white text-slate-700 border border-slate-300"
+                className={`${modoCadastro === "lote"
+                  ? primaryButtonClass
+                  : secondaryButtonClass
                   }`}
               >
                 Importar por Planilha
@@ -494,10 +531,10 @@ export function CadastroFeriasForm() {
 
         {(modoCadastro === "manual" || !!idSolicitacao) && (
           <>
-            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr]">
+            <div className="mt-5 grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_2fr]">
               <SearchForm onSearch={buscarFuncionario}>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label className={labelClass}>
                     CPF
                   </label>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
@@ -505,22 +542,29 @@ export function CadastroFeriasForm() {
                       value={cpf}
                       onChange={(e) => setCpf(formatCpfView(e.target.value))}
                       maxLength={14}
-                      className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      className={inputClass}
                     />
 
-                    <SearchButton loading={loadingBusca} label="Pesquisar" />
+                    <button
+                      type="submit"
+                      disabled={loadingBusca}
+                      className={primaryButtonClass}
+                    >
+                      <FaSearch />
+                      {loadingBusca ? "Pesquisando..." : "Pesquisar"}
+                    </button>
                   </div>
                 </div>
               </SearchForm>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Nome
                 </label>
                 <input
                   value={nome}
                   readOnly
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
+                  className={inputReadOnlyClass}
                 />
               </div>
             </div>
@@ -529,18 +573,22 @@ export function CadastroFeriasForm() {
               <button
                 type="button"
                 onClick={abrirModal}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+                className={accentButtonClass}
               >
                 <FaCalendarPlus />
                 Adicionar Férias
               </button>
             </div>
 
-            <div className="mt-6 overflow-x-auto rounded-xl border">
-              <div className="border-b bg-slate-50 px-4 py-3">
-                <h5 className="font-semibold text-slate-700">Férias</h5>
+            <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                <h5 className="flex items-center gap-2 font-semibold text-slate-900">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  Férias
+                </h5>
               </div>
 
+              <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr>
@@ -578,7 +626,7 @@ export function CadastroFeriasForm() {
                           <button
                             type="button"
                             onClick={() => abrirModalEdicao(index)}
-                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                            className={tableActionButtonClass}
                           >
                             <FaEdit />
                             Editar
@@ -588,7 +636,7 @@ export function CadastroFeriasForm() {
                           <button
                             type="button"
                             onClick={() => removerPeriodo(index)}
-                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                            className={tableDangerButtonClass}
                           >
                             <FaTrash />
                             Remover
@@ -599,17 +647,18 @@ export function CadastroFeriasForm() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_auto]">
+            <div className="mt-5 grid grid-cols-1 items-end gap-4 border-t border-slate-200 pt-5 md:grid-cols-[1fr_auto]">
               <div className="max-w-xs">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Total de Dias
                 </label>
                 <input
                   readOnly
                   value={String(totalDias)}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
+                  className={inputReadOnlyClass}
                 />
               </div>
 
@@ -618,7 +667,7 @@ export function CadastroFeriasForm() {
                   type="button"
                   onClick={salvarSolicitacao}
                   disabled={loadingSalvar}
-                  className="inline-flex w-full cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                  className={`${primaryButtonClass} w-full md:w-auto`}
                 >
                   {loadingSalvar ? "Salvando..." : "Salvar Solicitação"}
                 </button>
@@ -629,8 +678,9 @@ export function CadastroFeriasForm() {
 
         {modoCadastro === "lote" && !idSolicitacao && (
           <>
-            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <h6 className="text-sm font-semibold text-slate-700">
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <h6 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <span className="h-2 w-2 rounded-full bg-primary" />
                 Importação em Lote por Planilha
               </h6>
               <p className="mt-1 text-xs text-slate-600">
@@ -642,14 +692,14 @@ export function CadastroFeriasForm() {
                   type="file"
                   accept=".xlsx,.xls"
                   onChange={(e) => setArquivoImportacao(e.target.files?.[0] || null)}
-                  className="w-full rounded border bg-white px-3 py-2 text-sm"
+                  className={inputClass}
                 />
 
                 <button
                   type="button"
                   onClick={importarPlanilhaFerias}
                   disabled={loadingImportacao}
-                  className="inline-flex cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  className={primaryButtonClass}
                 >
                   {loadingImportacao ? "Carregando..." : "Carregar Planilha"}
                 </button>
@@ -677,11 +727,15 @@ export function CadastroFeriasForm() {
               )}
             </div>
 
-            <div className="mt-6 overflow-x-auto rounded-xl border">
-              <div className="border-b bg-slate-50 px-4 py-3">
-                <h5 className="font-semibold text-slate-700">Prévia do Lote (editável)</h5>
+            <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                <h5 className="flex items-center gap-2 font-semibold text-slate-900">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  Prévia do Lote (editável)
+                </h5>
               </div>
 
+              <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr>
@@ -705,7 +759,7 @@ export function CadastroFeriasForm() {
                           <input
                             value={item.nome}
                             onChange={(e) => atualizarLinhaLote(index, "nome", e.target.value)}
-                            className="w-full rounded border px-2 py-1"
+                            className={inputClass}
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -713,7 +767,7 @@ export function CadastroFeriasForm() {
                             type="date"
                             value={item.dataInicio}
                             onChange={(e) => atualizarLinhaLote(index, "dataInicio", e.target.value)}
-                            className="w-full rounded border px-2 py-1"
+                            className={inputClass}
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -721,14 +775,14 @@ export function CadastroFeriasForm() {
                             type="date"
                             value={item.dataFim}
                             onChange={(e) => atualizarLinhaLote(index, "dataFim", e.target.value)}
-                            className="w-full rounded border px-2 py-1"
+                            className={inputClass}
                           />
                         </td>
                         <td className="px-4 py-3 text-center">
                           <button
                             type="button"
                             onClick={() => removerLinhaLote(index)}
-                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                            className={tableDangerButtonClass}
                           >
                             <FaTrash />
                             Remover
@@ -739,17 +793,18 @@ export function CadastroFeriasForm() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_auto]">
+            <div className="mt-5 grid grid-cols-1 items-end gap-4 border-t border-slate-200 pt-5 md:grid-cols-[1fr_auto]">
               <div className="max-w-xs">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Total de Dias (Lote)
                 </label>
                 <input
                   readOnly
                   value={String(totalDiasLote)}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
+                  className={inputReadOnlyClass}
                 />
               </div>
 
@@ -758,7 +813,7 @@ export function CadastroFeriasForm() {
                   type="button"
                   onClick={salvarLoteImportado}
                   disabled={loadingSalvar}
-                  className="inline-flex w-full cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                  className={`${primaryButtonClass} w-full md:w-auto`}
                 >
                   {loadingSalvar ? "Salvando..." : "Salvar Lote"}
                 </button>
@@ -784,8 +839,8 @@ export function CadastroFeriasForm() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-6 py-4">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <h2 className="text-lg font-semibold text-gray-900">
                 Período de Férias
               </h2>
@@ -798,7 +853,7 @@ export function CadastroFeriasForm() {
                   setIndiceEditando(null);
                   limparCamposModal();
                 }}
-                className="rounded p-2 text-slate-500 hover:bg-slate-100"
+                className="rounded-xl p-2 text-red-600 transition hover:bg-red-50"
               >
                 <FaTimes />
               </button>
@@ -806,31 +861,31 @@ export function CadastroFeriasForm() {
 
             <div className="space-y-4 px-6 py-5">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Data de Início
                 </label>
                 <input
                   type="date"
                   value={inputInicio}
                   onChange={(e) => setInputInicio(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Data de Volta
                 </label>
                 <input
                   type="date"
                   value={inputVolta}
                   onChange={(e) => setInputVolta(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
+                  className={inputClass}
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
+            <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
               <button
                 type="button"
                 onClick={() => {
@@ -839,7 +894,7 @@ export function CadastroFeriasForm() {
                   setIndiceEditando(null);
                   limparCamposModal();
                 }}
-                className="rounded bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700"
+                className={dangerButtonClass}
               >
                 Fechar
               </button>
@@ -847,7 +902,7 @@ export function CadastroFeriasForm() {
               <button
                 type="button"
                 onClick={salvarPeriodoFerias}
-                className="rounded bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700"
+                className={primaryButtonClass}
               >
                 Salvar Férias
               </button>
