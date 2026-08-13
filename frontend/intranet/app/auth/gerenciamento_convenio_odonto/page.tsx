@@ -34,16 +34,18 @@ export default function ConvenioOdontoConsultaPage() {
 
   if (loading) {
     return (
-      <div className="p-6 text-sm text-gray-500">
-        Carregando...
+      <div className="w-full p-6 lg:p-8">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">
+          Carregando...
+        </div>
       </div>
     );
   }
 
   if (!allowed) {
     return (
-      <div className="p-6">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div className="w-full p-6 lg:p-8">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
           Você não possui permissão para acessar esta tela.
         </div>
       </div>
@@ -51,36 +53,34 @@ export default function ConvenioOdontoConsultaPage() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
+    <main className="w-full p-6 lg:p-8">
+      <div className="mb-6">
+        <div className="mb-4">
           <BackButton />
+        </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-emerald-700">
-              <FaTooth size={16} />
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-third text-primary shadow-sm">
+            <FaTooth size={22} />
+          </div>
 
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold text-gray-900">
-                Gerenciamento de Convênio Odontológico
-              </h1>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-[var(--title)]">
+              Gerenciamento de Convênio Odontológico
+            </h1>
 
-              <p className="mt-1 text-sm text-gray-600">
-                Consulte titular, visualize dependentes, custo mensal e exporte o relatório.
-              </p>
-            </div>
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
+              Consulte titular, visualize dependentes, custo mensal e exporte o relatório.
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="mt-6">
-        <ConvenioOdontoConsultaForm />
-      </div>
+      <ConvenioOdontoConsultaForm />
 
-      <div className="mt-8 text-xs text-gray-500">
+      <p className="mt-6 text-xs text-slate-500">
         * A consulta é feita pelo CPF do titular do convênio odontológico.
-      </div>
-    </div>
+      </p>
+    </main>
   );
 }
