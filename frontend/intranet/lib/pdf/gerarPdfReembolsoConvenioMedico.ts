@@ -1,3 +1,5 @@
+import jsPDF from "jspdf";
+
 type ReembolsoConvenioMedicoPdfParams = {
   dataHoje: string;
   nome: string;
@@ -12,16 +14,24 @@ type ReembolsoConvenioMedicoPdfParams = {
   cargoRh: string;
 };
 
-function escapeHtml(value: string) {
-  return String(value || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+type FieldBox = {
+  label: string;
+  value: string;
+  width: number;
+  maxLines?: number;
+};
 
-export function gerarReembolsoConvenioMedicoPdf({
+const COLORS = {
+  green: { r: 121, g: 183, b: 41 },
+  dark: { r: 0, g: 54, b: 65 },
+  light: { r: 242, g: 248, b: 235 },
+  border: { r: 210, g: 220, b: 210 },
+};
+
+const safeText = (value?: string | number, fallback = "-") =>
+  String(value ?? "").trim() || fallback;
+
+export async function gerarReembolsoConvenioMedicoPdf({
   dataHoje,
   nome,
   matricula,
@@ -34,212 +44,398 @@ export function gerarReembolsoConvenioMedicoPdf({
   nomeRh,
   cargoRh,
 }: ReembolsoConvenioMedicoPdfParams) {
-  const printWindow = window.open("", "_blank", "width=900,height=1200");
+  const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
 
-  if (!printWindow) {
-    throw new Error("Não foi possível abrir a janela de impressão.");
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 28;
+  const contentW = pageW - margin * 2;
+  let y = 22;
+
+  const ensureSpace = (height: number) => {
+    if (y + height <= pageH - margin) return;
+    doc.addPage();
+    y = margin;
+  };
+
+  try {
+    const logo = await loadImageDataURL("/sicoob-cressem-logo.png");
+    const maxW = 135;
+    const maxH = 42;
+    const scale = Math.min(maxW / logo.width, maxH / logo.height);
+    const w = logo.width * scale;
+    const h = logo.height * scale;
+
+    doc.addImage(logo.dataUrl, logo.type, margin, y, w, h, undefined, "FAST");
+    y += h + 10;
+  } catch {
+    y += 22;
   }
 
-  const html = `
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-      <head>
-        <meta charset="UTF-8" />
-        <title>Solicitação de Reembolso de Convênio Médico</title>
-        <style>
-          @page {
-            size: A4 portrait;
-            margin: 12mm 10mm;
-          }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0);
+  doc.text("SOLICITAÇÃO DE REEMBOLSO DE CONVÊNIO MÉDICO", pageW / 2, y, {
+    align: "center",
+  });
+  y += 25;
 
-          * {
-            box-sizing: border-box;
-          }
+  drawSectionHeader(doc, "Dados do empregado", margin, y, contentW);
+  y += 16;
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Nome do funcionário", value: safeText(nome).toUpperCase(), width: contentW * 0.58 },
+    { label: "Matrícula", value: safeText(matricula), width: contentW * 0.18 },
+    { label: "Data", value: safeText(dataHoje), width: contentW * 0.24 },
+  ]);
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Setor", value: safeText(setor).toUpperCase(), width: contentW },
+  ]);
 
-          body {
-            font-family: Arial, Helvetica, sans-serif;
-            color: #000;
-            background: #fff;
-            font-size: 11pt;
-            line-height: 1.28;
-            margin: 0;
-            padding: 0;
-          }
+  y += 4;
+  drawSectionHeader(doc, "Dados do convênio", margin, y, contentW);
+  y += 16;
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    {
+      label: "Empresa do convênio",
+      value: safeText(empresaConvenio).toUpperCase(),
+      width: contentW * 0.5,
+      maxLines: 2,
+    },
+    { label: "Mensalidade", value: safeText(mensalidade), width: contentW * 0.25 },
+    { label: "Valor a reembolsar", value: safeText(valorReembolso), width: contentW * 0.25 },
+  ]);
 
-          .page {
-            width: 100%;
-          }
+  y += 4;
+  drawSectionHeader(doc, "Solicitação", margin, y, contentW);
+  y += 16;
+  y = drawParagraphBox(doc, y, margin, contentW, [
+    { text: "Solicito o cadastramento para futuros reembolsos das mensalidades do meu convênio médico " },
+    { text: safeText(empresaConvenio).toUpperCase(), bold: true },
+    { text: ", no valor mensal de " },
+    { text: safeText(mensalidade), bold: true },
+    { text: ", com valor a reembolsar de " },
+    { text: safeText(valorReembolso), bold: true },
+    { text: "." },
+  ]);
 
-          .header {
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            margin-bottom: 10pt;
-          }
+  y += 4;
+  y = drawPagedTextSection(doc, y, margin, contentW, pageH, "Regras e condições do benefício", [
+    "Abaixo, assino a presente, dando autorização para crédito em meu holerite:",
+    "ASSISTÊNCIA MÉDICA HOSPITALAR E ODONTOLÓGICA",
+    'A cooperativa de crédito poderá fornecer um plano de saúde e de assistência odontológica padrão aos empregados, com cobertura médica e hospitalar, arcando com 80% (oitenta por cento) do valor da "mensalidade".',
+    "Parágrafo Primeiro - Caso o empregado tenha, na composição do valor pago de convênio médico, co-participação, taxas, juros de mora e fator moderador, estes não serão reembolsados, sendo os custos por conta do próprio empregado.",
+    "Parágrafo Segundo - O reembolso de que trata esta cláusula está limitado ao valor máximo de R$ 600,00 (seiscentos reais).",
+    "Parágrafo Terceiro - Para os dependentes, considerados de acordo com o artigo 16 da Lei 8.213/91, a cooperativa poderá intermediar uma negociação coletiva para que o custo individual seja menor que o ofertado no mercado comercial, sendo que o custo será inteiramente de responsabilidade do empregado.",
+    "Parágrafo Quarto - Se o empregado optar por fazer um plano de saúde similar ao que a Cooperativa oferece e mantém convênio, poderá se cadastrar particularmente em outro convênio que o atenda e solicitar o reembolso de 80% (oitenta por cento) sobre a mensalidade paga do titular.",
+    "Parágrafo Quinto - Tratando-se de Cooperativa de Crédito que conceda assistência médica hospitalar e odontológica, ao empregado dispensado sem justa causa fica assegurado o direito de continuar usufruindo dessa assistência por um período de 30 (trinta) dias, contados do último dia de trabalho efetivo.",
+    "Parágrafo Sexto - Se o empregado tiver 15 (quinze) ou mais anos de serviço prestado à mesma empresa, o período nesta cláusula fica ampliado para 90 (noventa) dias.",
+    'Parágrafo Sétimo - Todos os meses, antes do dia 15 de cada mês, o funcionário deverá apresentar formulário preenchido e assinado e autorizado pela diretoria no primeiro mês e, nos demais meses: contrato, boleto, comprovante de pagamento e outros. O principal é o documento onde consta o valor exato da "mensalidade" do funcionário titular do convênio médico.',
+    "Parágrafo Oitavo - Caso o funcionário esqueça ou se atrase na entrega destes documentos acima descritos, ficará sem receber o reembolso. Cabe somente à Diretoria Executiva determinar o pagamento da mensalidade fora do prazo e não reembolsada, mediante explanação e justificativas por escrito do funcionário, sempre no próximo holerite.",
+  ]);
 
-          .logo {
-            height: 30px;
-            width: auto;
-            object-fit: contain;
-            margin-bottom: 10px;
-          }
+  ensureSpace(190);
+  y += 52;
+  y = drawSignatureRow(doc, y, margin, contentW, [
+    { label: safeText(nome).toUpperCase(), caption: "Assinatura do funcionário" },
+    { label: safeText(nomeDiretor).toUpperCase(), caption: safeText(cargoDiretor, "Diretoria") },
+  ]);
 
-          .title {
-            flex: 1;
-            text-align: center;
-            margin: 0;
-            font-size: 14pt;
-            letter-spacing: .2px;
-            font-weight: 700;
-          }
+  y += 62;
+  ensureSpace(96);
+  drawSignatureRow(doc, y, margin, contentW, [
+    { label: safeText(nomeRh).toUpperCase(), caption: safeText(cargoRh, "Gestão de Pessoas") },
+    { label: "", caption: "" },
+  ]);
 
-          p {
-            margin: 0 0 6pt;
-          }
+  doc.save(`reembolso_convenio_medico_${sanitizeFileName(nome || "funcionario")}.pdf`);
+}
 
-          .paragrafo {
-            padding-bottom: 18pt;
-          }
+function drawSectionHeader(doc: jsPDF, title: string, x: number, y: number, w: number) {
+  doc.setFillColor(COLORS.light.r, COLORS.light.g, COLORS.light.b);
+  doc.setDrawColor(COLORS.green.r, COLORS.green.g, COLORS.green.b);
+  doc.setLineWidth(0.55);
+  doc.rect(x, y, w, 16, "FD");
 
-          .assinaturas-table {
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: separate;
-            border-spacing: 10mm 0;
-            margin-top: 8mm;
-          }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.8);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.text(title.toUpperCase(), x + 6, y + 11);
+  doc.setTextColor(0, 0, 0);
+}
 
-          .assinaturas-table td {
-            border: 0;
-            text-align: center;
-            vertical-align: bottom;
-            padding-top: 16mm;
-          }
+function drawFieldsRow(doc: jsPDF, y: number, x: number, totalW: number, fields: FieldBox[]) {
+  const h = 24;
+  let cursorX = x;
 
-          .assinatura-line {
-            border-top: 1px solid #000;
-            width: 98%;
-            margin: 0 auto 4mm;
-          }
+  fields.forEach((field, idx) => {
+    const w = idx === fields.length - 1 ? x + totalW - cursorX : field.width;
+    drawFieldBox(doc, {
+      x: cursorX,
+      y,
+      w,
+      h,
+      label: field.label,
+      value: field.value,
+      maxLines: field.maxLines ?? 1,
+    });
+    cursorX += w;
+  });
 
-          .assinatura span {
-            display: block;
-            line-height: 1.25;
-          }
+  return y + h;
+}
 
-          .cargo {
-            min-height: 1.25em;
-            font-size: 9.5pt;
-          }
+function drawFieldBox(
+  doc: jsPDF,
+  opts: { x: number; y: number; w: number; h: number; label: string; value: string; maxLines?: number }
+) {
+  doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+  doc.setFillColor(255, 255, 255);
+  doc.setLineWidth(0.45);
+  doc.rect(opts.x, opts.y, opts.w, opts.h, "FD");
 
-          .vazio {
-            border: 0;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="page">
-          <div class="header">
-            <img src="${window.location.origin}/sicoob-cressem-logo.png" alt="Sicoob" class="logo" />
-            <h3 class="title">Solicitação de Reembolso de Convênio Médico</h3>
-          </div>
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.2);
+  doc.setTextColor(90, 110, 95);
+  doc.text(opts.label.toUpperCase(), opts.x + 4, opts.y + 7.5);
 
-          <div class="paragrafo">
-            <p>Data: <strong>${escapeHtml(dataHoje)}</strong></p>
-            <p>Nome do funcionário: <strong>${escapeHtml(nome)}</strong></p>
-            <p>
-              <span>Matrícula: <strong>${escapeHtml(matricula)}</strong></span>
-              |
-              <span>Setor: <strong>${escapeHtml(setor)}</strong></span>
-            </p>
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.2);
+  doc.setTextColor(15, 23, 42);
+  const lines = doc.splitTextToSize(safeText(opts.value), opts.w - 8).slice(0, opts.maxLines ?? 1);
+  doc.text(lines, opts.x + 4, opts.y + 18, { lineHeightFactor: 1.05 });
+  doc.setTextColor(0, 0, 0);
+}
 
-            <p>
-              Solicito o cadastramento para futuros reembolsos das mensalidades do meu convênio médico, descrito abaixo:
-            </p>
+function drawParagraphBox(
+  doc: jsPDF,
+  y: number,
+  x: number,
+  w: number,
+  parts: Array<{ text: string; bold?: boolean }>
+) {
+  const padding = 6;
+  const lineHeight = 10;
+  const maxLineWidth = w - padding * 2;
 
-            <p>Empresa: <strong>${escapeHtml(empresaConvenio)}</strong></p>
-            <p>
-              Mensalidade: <strong>${escapeHtml(mensalidade)}</strong>
-              |
-              Valor a reembolsar: <strong>${escapeHtml(valorReembolso)}</strong>
-            </p>
+  doc.setFontSize(8.6);
+  const tokens = parts.flatMap((part) => {
+    const pieces = part.text.match(/\S+\s*/g) || [part.text];
+    return pieces.map((piece) => ({ text: piece, bold: part.bold }));
+  });
 
-            <p>Abaixo, assino a presente, dando autorização para crédito em meu holerite:</p>
-            <p><strong>ASSISTÊNCIA MÉDICA HOSPITALAR E ODONTOLÓGICA</strong></p>
+  const lines: Array<Array<{ text: string; bold?: boolean }>> = [];
+  let currentLine: Array<{ text: string; bold?: boolean }> = [];
+  let currentWidth = 0;
 
-            <p>
-              A cooperativa de crédito poderá fornecer um plano de saúde e de assistência odontológica padrão aos empregados,
-              com cobertura médica e hospitalar, arcando com 80% (oitenta por cento) do valor da "mensalidade".<br><br>
+  tokens.forEach((token) => {
+    doc.setFont("helvetica", token.bold ? "bold" : "normal");
+    const tokenWidth = doc.getTextWidth(token.text);
+    if (currentWidth + tokenWidth > maxLineWidth && currentLine.length > 0) {
+      lines.push(currentLine);
+      currentLine = [];
+      currentWidth = 0;
+    }
+    currentLine.push(token);
+    currentWidth += tokenWidth;
+  });
 
-              <strong>- Primeiro.</strong> Caso o empregado tenha, na composição do valor pago de convênio médico,
-              co-participação, taxas, juros de mora e fator moderador, estes não serão reembolsados, sendo os custos por conta do próprio empregado.<br><br>
+  if (currentLine.length > 0) lines.push(currentLine);
 
-              <strong>- Segundo.</strong> O reembolso de que trata esta cláusula, está limitado ao valor máximo de R$ 600,00 (Seiscentos Reais).<br><br>
+  const h = Math.max(34, lines.length * lineHeight + padding * 2);
+  doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+  doc.setFillColor(255, 255, 255);
+  doc.setLineWidth(0.45);
+  doc.rect(x, y, w, h, "FD");
 
-              <strong>- Terceiro.</strong> Para os dependentes, considerados de acordo com o artigo 16 da Lei 8.213/91,
-              a cooperativa poderá intermediar uma negociação coletiva para que o custo individual seja menor que o ofertado no mercado comercial,
-              sendo que o custo será inteiramente de responsabilidade do empregado.<br><br>
+  let textY = y + padding + 7;
+  lines.forEach((line) => {
+    let cursorX = x + padding;
+    line.forEach((token) => {
+      doc.setFont("helvetica", token.bold ? "bold" : "normal");
+      doc.setFontSize(8.6);
+      doc.setTextColor(15, 23, 42);
+      doc.text(token.text, cursorX, textY);
+      cursorX += doc.getTextWidth(token.text);
+    });
+    textY += lineHeight;
+  });
 
-              <strong>- Quarto.</strong> Se o empregado optar por fazer um plano de saúde similar ao que a Cooperativa oferece e mantém convênio,
-              o mesmo poderá se cadastrar particularmente em outro convênio que o atenda e solicitar o reembolso de 80 % (oitenta por cento),
-              sobre a mensalidade paga do titular.<br><br>
+  doc.setTextColor(0, 0, 0);
+  return y + h;
+}
 
-              <strong>- Quinto.</strong> Tratando-se de Cooperativa de Crédito que conceda assistência médica hospitalar e odontológica,
-              ao empregado dispensado sem justa causa fica assegurado o direito de continuar usufruindo dessa assistência,
-              por um período de 30 (trinta) dias, contados do último dia de trabalho efetivo.<br><br>
+function drawSignatureRow(
+  doc: jsPDF,
+  y: number,
+  x: number,
+  totalW: number,
+  signatures: Array<{ label: string; caption: string }>
+) {
+  const gap = 32;
+  const signatureW = (totalW - gap) / 2;
 
-              <strong>- Sexto.</strong> Se o empregado tiver 15 (quinze) ou mais anos de serviço prestado à mesma empresa,
-              o período nesta cláusula fica ampliado para 90 (noventa) dias.<br><br>
+  doc.setDrawColor(30, 41, 59);
+  doc.setLineWidth(0.8);
+  doc.setTextColor(30, 41, 59);
 
-              <strong>- Sétimo.</strong> Todos os meses, antes do dia 15 de cada mês, o funcionário deverá apresentar:
-              formulário preenchido e assinado e autorizado pela diretoria no primeiro mês e nos demais meses: contrato, boleto,
-              comprovante de pagamento e outros. O principal é o documento onde consta o valor exato da "mensalidade"
-              do funcionário titular do convênio médico.<br><br>
+  signatures.forEach((signature, index) => {
+    const signatureX = x + index * (signatureW + gap);
+    const centerX = signatureX + signatureW / 2;
 
-              <strong>- Oitavo.</strong> Caso o funcionário esqueça ou se atrase na entrega destes documentos acima descritos,
-              o mesmo ficará sem receber o reembolso. Cabe, somente a Diretoria Executiva, determinar o pagamento da mensalidade fora do prazo
-              e não reembolsadas, mediante explanação e justificativas por escrito do funcionário, sempre no próximo holerite.
-            </p>
-          </div>
+    if (!signature.label && !signature.caption) return;
 
-          <table class="assinaturas-table">
-            <tr>
-              <td class="assinatura">
-                <div class="assinatura-line"></div>
-                <span>${escapeHtml(nome)}</span>
-                <span class="cargo">&nbsp;</span>
-              </td>
-              <td class="assinatura">
-                <div class="assinatura-line"></div>
-                <span>${escapeHtml(nomeDiretor)}</span>
-                <span class="cargo">${escapeHtml(cargoDiretor)}</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="assinatura">
-                <div class="assinatura-line"></div>
-                <span>${escapeHtml(nomeRh)}</span>
-                <span class="cargo">${escapeHtml(cargoRh)}</span>
-              </td>
-              <td class="vazio"></td>
-            </tr>
-          </table>
-        </div>
+    doc.line(signatureX + 18, y, signatureX + signatureW - 18, y);
 
-        <script>
-          window.onload = function () {
-            window.focus();
-            window.print();
-            window.onafterprint = function () {
-              window.close();
-            };
-          };
-        </script>
-      </body>
-    </html>
-  `;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.8);
+    doc.text(signature.label, centerX, y + 13, { align: "center", maxWidth: signatureW - 12 });
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.2);
+    doc.text(signature.caption, centerX, y + 24, { align: "center", maxWidth: signatureW - 12 });
+  });
+
+  doc.setTextColor(0, 0, 0);
+  return y + 34;
+}
+
+function drawPagedTextSection(
+  doc: jsPDF,
+  y: number,
+  x: number,
+  w: number,
+  pageH: number,
+  title: string,
+  paragraphs: string[]
+) {
+  const marginBottom = 28;
+  const padding = 6;
+  const lineHeight = 9.2;
+  const paragraphGap = 3;
+
+  const addHeader = () => {
+    drawSectionHeader(doc, title, x, y, w);
+    y += 16;
+  };
+
+  const ensureSpace = (height: number) => {
+    if (y + height <= pageH - marginBottom) return;
+    doc.addPage();
+    y = 28;
+    addHeader();
+  };
+
+  addHeader();
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.8);
+  doc.setTextColor(15, 23, 42);
+
+  const getBoldPrefix = (paragraph: string) =>
+    paragraph.match(/^(Parágrafo (Primeiro|Segundo|Terceiro|Quarto|Quinto|Sexto|Sétimo|Oitavo) - |ASSISTÊNCIA MÉDICA HOSPITALAR E ODONTOLÓGICA)/)?.[0] || "";
+
+  const wrappedParagraphs = paragraphs.map((paragraph) => ({
+    lines: doc.splitTextToSize(paragraph, w - padding * 2) as string[],
+    boldPrefix: getBoldPrefix(paragraph),
+  }));
+
+  const getBlockHeight = (block: typeof wrappedParagraphs) => {
+    const textHeight = block.reduce((total, paragraph) => total + paragraph.lines.length * lineHeight, 0);
+    const gapsHeight = Math.max(0, block.length - 1) * paragraphGap;
+    return Math.max(24, textHeight + gapsHeight + padding * 2);
+  };
+
+  const drawParagraphLines = (paragraph: (typeof wrappedParagraphs)[number], textY: number) => {
+    const [firstLine, ...otherLines] = paragraph.lines;
+
+    if (paragraph.boldPrefix && firstLine?.startsWith(paragraph.boldPrefix)) {
+      doc.setFont("helvetica", "bold");
+      doc.text(paragraph.boldPrefix, x + padding, textY);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(firstLine.slice(paragraph.boldPrefix.length), x + padding + doc.getTextWidth(paragraph.boldPrefix), textY);
+
+      if (otherLines.length) {
+        doc.text(otherLines, x + padding, textY + lineHeight, { lineHeightFactor: 1.05 });
+      }
+      return;
+    }
+
+    doc.setFont("helvetica", "normal");
+    doc.text(paragraph.lines, x + padding, textY, { lineHeightFactor: 1.05 });
+  };
+
+  const drawBlock = (block: typeof wrappedParagraphs) => {
+    const h = getBlockHeight(block);
+
+    doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+    doc.setFillColor(255, 255, 255);
+    doc.setLineWidth(0.45);
+    doc.rect(x, y, w, h, "FD");
+
+    let textY = y + padding + 6;
+    block.forEach((paragraph, lineIndex) => {
+      drawParagraphLines(paragraph, textY);
+      textY += paragraph.lines.length * lineHeight + (lineIndex === block.length - 1 ? 0 : paragraphGap);
+    });
+
+    y += h + 3;
+  };
+
+  let block: typeof wrappedParagraphs = [];
+
+  wrappedParagraphs.forEach((paragraph) => {
+    const nextBlock = [...block, paragraph];
+    const nextHeight = getBlockHeight(nextBlock);
+
+    if (block.length > 0 && y + nextHeight > pageH - marginBottom) {
+      drawBlock(block);
+      doc.addPage();
+      y = 28;
+      addHeader();
+      block = [paragraph];
+      return;
+    }
+
+    block = nextBlock;
+  });
+
+  if (block.length) drawBlock(block);
+
+  doc.setTextColor(0, 0, 0);
+  return y;
+}
+
+async function loadImageDataURL(url: string) {
+  const response = await fetch(url);
+  const blob = await response.blob();
+
+  return new Promise<{ dataUrl: string; width: number; height: number; type: "PNG" | "JPEG" }>(
+    (resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const dataUrl = String(reader.result || "");
+          const type = blob.type.includes("jpeg") || blob.type.includes("jpg") ? "JPEG" : "PNG";
+          resolve({ dataUrl, width: img.width, height: img.height, type });
+        };
+        img.onerror = reject;
+        img.src = String(reader.result || "");
+      };
+
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    }
+  );
+}
+
+function sanitizeFileName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_")
+    .replace(/[^\w.-]/g, "")
+    .toLowerCase();
 }
