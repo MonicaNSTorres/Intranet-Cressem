@@ -6,7 +6,6 @@ import { Search } from "lucide-react";
 import BackButton from "@/components/back-button/back-button";
 import { buscarAniversariantesPorMes } from "@/services/aniversariante.service";
 import { MESES_BR } from "@/constants/date";
-import BadgeCampoPendente from "@/components/badge-campo-pendente/badge-campo-pendente";
 
 type Aniversariante = {
     nome: string;
@@ -16,6 +15,20 @@ type Aniversariante = {
     mes?: number;
 };
 
+type AniversarianteRaw = Partial<{
+    nome: string | number;
+    NOME: string | number;
+    setor: string | number;
+    SETOR: string | number;
+    ramal: string | number;
+    RAMAL: string | number;
+    dia: string | number;
+    DIA: string | number;
+    DT_NASCIMENTO_DIA: string | number;
+    mes: string | number;
+    MES: string | number;
+    DT_NASCIMENTO_MES: string | number;
+}>;
 
 function normalizeSearch(value: string) {
     return String(value || "")
@@ -45,7 +58,7 @@ function initialsFromName(nome: string) {
     return (ini || clean[0] || "?").toUpperCase();
 }
 
-function normalizeItem(p: any): Aniversariante {
+function normalizeItem(p: AniversarianteRaw): Aniversariante {
     const nome = (p?.nome ?? p?.NOME ?? "").toString();
     const setor = (p?.setor ?? p?.SETOR ?? "").toString();
     const ramal = (p?.ramal ?? p?.RAMAL ?? "").toString();
@@ -94,7 +107,7 @@ export default function AniversariantesPage() {
                 );
 
             // ordena por dia (se existir), senão por nome
-            normalized.sort((a: any, b: any) => {
+            normalized.sort((a: Aniversariante, b: Aniversariante) => {
                 const ad = a.dia ?? 999;
                 const bd = b.dia ?? 999;
                 if (ad !== bd) return ad - bd;
@@ -102,8 +115,8 @@ export default function AniversariantesPage() {
             });
 
             setItems(normalized);
-        } catch (e: any) {
-            setErro(e?.message || "Erro ao carregar aniversariantes");
+        } catch (e: unknown) {
+            setErro(e instanceof Error ? e.message : "Erro ao carregar aniversariantes");
             setItems([]);
         } finally {
             setLoading(false);
@@ -132,7 +145,7 @@ export default function AniversariantesPage() {
                         !isUsuarioOculto(x.setor)
                 );
 
-            normalized.sort((a: any, b: any) => {
+            normalized.sort((a: Aniversariante, b: Aniversariante) => {
                 const ad = a.dia ?? 999;
                 const bd = b.dia ?? 999;
                 if (ad !== bd) return ad - bd;
@@ -140,8 +153,8 @@ export default function AniversariantesPage() {
             });
 
             setItems(normalized);
-        } catch (e: any) {
-            setErro(e?.message || "Erro ao carregar aniversariantes");
+        } catch (e: unknown) {
+            setErro(e instanceof Error ? e.message : "Erro ao carregar aniversariantes");
             setItems([]);
         } finally {
             setLoading(false);
@@ -156,7 +169,6 @@ export default function AniversariantesPage() {
 
         fetchAniversariantes(mes);
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mes, busca]);
 
     const filtrados = useMemo(() => {
@@ -180,35 +192,38 @@ export default function AniversariantesPage() {
     );
 
     return (
-        <div className="p-6 lg:p-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div className="min-w-0">
+        <div className="p-5 lg:p-8">
+            <div className="mb-6">
+                <div className="mb-4">
                     <BackButton />
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
-                            <FaBirthdayCake size={16} />
-                        </div>
-                        <div className="min-w-0">
-                            <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                                Aniversariantes
-                            </h1>
-                            <p className="text-sm text-gray-600 mt-1">
-                                Consulte os aniversariantes por mês e filtre por nome, setor ou
-                                ramal.
-                            </p>
-                        </div>
-                    </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-4 py-1">
-                        <label className="block text-[11px] font-medium text-gray-500">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-third text-primary shadow-sm">
+                        <FaBirthdayCake size={22} />
+                    </div>
+
+                    <div className="min-w-0">
+                        <h1 className="truncate text-2xl font-bold text-[var(--title)]">
+                            Aniversariantes
+                        </h1>
+                        <p className="mt-1 max-w-3xl text-sm text-[var(--paragraph)]">
+                            Consulte os aniversariantes por mês e filtre por nome, setor ou ramal.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
+                    <div>
+                        <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-[0.04em] text-slate-600">
                             Mês
                         </label>
                         <select
                             value={mes}
                             onChange={(e) => setMes(Number(e.target.value))}
-                            className="mt-1 w-60 max-w-full bg-transparent outline-none text-sm text-gray-900"
+                            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10"
                         >
                             {MESES_BR.map((m) => (
                                 <option key={m.value} value={m.value}>
@@ -218,33 +233,40 @@ export default function AniversariantesPage() {
                         </select>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-4 py-3 flex items-center gap-2">
-                        <Search size={16} className="text-gray-400" />
-                        <input
-                            value={busca}
-                            onChange={(e) => setBusca(e.target.value)}
-                            placeholder="Buscar por nome, setor, ramal..."
-                            className="w-72 max-w-full text-sm outline-none bg-transparent"
-                        />
+                    <div>
+                        <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-[0.04em] text-slate-600">
+                            Pesquisa
+                        </label>
+                        <div className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm transition hover:border-slate-300 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10">
+                            <Search size={16} className="text-primary" />
+                            <input
+                                value={busca}
+                                onChange={(e) => setBusca(e.target.value)}
+                                placeholder="Buscar por nome, setor, ramal..."
+                                className="w-full bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-4">
-                <div className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <FaBirthdayCake className="text-gray-700" />
-                            <h2 className="text-base font-semibold text-gray-900">
-                                Aniversariantes {/*de {mesLabel}*/}
+            <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm xl:col-span-2">
+                    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <FaBirthdayCake />
+                            </div>
+                            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+                                Aniversariantes
                             </h2>
                         </div>
-                        <span className="text-xs text-gray-500">
+                        <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                             {loading ? "Carregando..." : `${filtrados.length} encontrado(s)`}
                         </span>
                     </div>
 
-                    <div className="mt-4">
+                    <div className="p-5">
                         {erro ? (
                             <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
                                 <p className="text-sm font-semibold text-red-700">
@@ -257,17 +279,17 @@ export default function AniversariantesPage() {
                                 {Array.from({ length: 6 }).map((_, i) => (
                                     <div
                                         key={i}
-                                        className="h-16 rounded-xl border border-gray-200 bg-gray-50 animate-pulse"
+                                        className="h-16 animate-pulse rounded-2xl border border-slate-200 bg-slate-50"
                                     />
                                 ))}
                             </div>
                         ) : filtrados.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10 text-center">
-                                <FaBirthdayCake className="text-gray-300 mb-3" size={52} />
-                                <p className="text-lg text-gray-600 font-medium">
+                                <FaBirthdayCake className="mb-3 text-slate-300" size={52} />
+                                <p className="text-lg font-semibold text-slate-600">
                                     Nenhum aniversariante para este mês
                                 </p>
-                                <p className="text-sm text-gray-400 mt-1">
+                                <p className="mt-1 text-sm text-slate-400">
                                     Tente outro mês ou ajuste a busca.
                                 </p>
                             </div>
@@ -282,24 +304,24 @@ export default function AniversariantesPage() {
 
                                         <div
                                             key={`${p.nome}-${p.ramal}-${idx}`}
-                                            className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50/50 p-3">
+                                            className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 shadow-sm">
 
-                                            <div className="h-11 w-11 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-semibold">
+                                            <div className="flex h-11 w-11 items-center justify-center rounded-full border border-primary/20 bg-primary/10 font-bold text-primary">
                                                 {initialsFromName(p.nome)}
                                             </div>
 
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-2">
-                                                    <p className="text-sm font-semibold text-gray-900 truncate">{p.nome}</p>
+                                                    <p className="truncate text-sm font-bold text-slate-950">{p.nome}</p>
 
                                                 </div>
-                                                <p className="text-xs text-gray-600 truncate">
+                                                <p className="truncate text-xs font-medium text-slate-600">
                                                     {p.setor || "—"}
                                                 </p>
                                             </div>
 
-                                            <div className="w-[220px] shrink-0 flex flex-col items-end gap-2">
-                                                <span className="inline-flex w-[100px] justify-center rounded-full bg-secondary px-3 py-1 text-sm font-bold text-white leading-none">
+                                            <div className="flex w-[220px] shrink-0 flex-col items-end gap-2">
+                                                <span className="inline-flex w-[100px] justify-center rounded-full bg-primary px-3 py-1 text-sm font-bold leading-none text-white">
                                                     Data{" "}
                                                     {typeof p.dia === "number" && typeof p.mes === "number"
                                                         ? `${pad2(p.dia)}/${pad2(p.mes)}`
@@ -308,8 +330,8 @@ export default function AniversariantesPage() {
 
                                                 <span
                                                     className={`inline-flex w-[100px] justify-center rounded-full px-3 py-1 text-sm font-semibold leading-none ${semRamal
-                                                        ? "bg-red-50 text-red-500"
-                                                        : "bg-[#EEF7EE] text-[#4D6B4D]"
+                                                        ? "border border-fourth/20 bg-fourth/10 text-fourth"
+                                                        : "border border-secondary/20 bg-secondary/10 text-[#4f7f14]"
                                                         }`}
                                                 >
                                                     {semRamal ? "Sem ramal" : `Ramal ${ramal}`}
@@ -326,9 +348,10 @@ export default function AniversariantesPage() {
                 </div>
 
                 <div className="space-y-4">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-                        <h3 className="text-base font-semibold text-gray-900">Resumo</h3>
-                        <p className="text-sm text-gray-600 mt-1">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div>
+                        <h3 className="mb-1 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">Resumo</h3>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
                             Visão rápida dos aniversariantes no mês selecionado.
                         </p>
 
@@ -339,14 +362,15 @@ export default function AniversariantesPage() {
 
                         <button
                             onClick={() => fetchAniversariantes(mes)}
-                            className="mt-4 w-full px-4 py-2 rounded-xl bg-secondary text-white text-md hover:bg-primary cursor-pointer"
+                            className="mt-4 inline-flex h-10 w-full cursor-pointer items-center justify-center rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
                             disabled={loading}
                         >
                             {loading ? "Atualizando..." : "Atualizar"}
                         </button>
 
-                        <div className="mt-4 text-xs text-gray-500">
+                        <div className="mt-4 text-xs font-medium text-slate-500">
                             * Dados retornados da API.
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -357,9 +381,9 @@ export default function AniversariantesPage() {
 
 function MiniKpi({ title, value }: { title: string; value: string }) {
     return (
-        <div className="rounded-2xl border border-gray-200 bg-gray-50/50 p-3">
-            <p className="text-[11px] font-medium text-gray-500">{title}</p>
-            <p className="mt-1 text-sm font-semibold text-gray-900 truncate">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.04em] text-slate-500">{title}</p>
+            <p className="mt-1 truncate text-sm font-bold text-[var(--title)]">
                 {value}
             </p>
         </div>
