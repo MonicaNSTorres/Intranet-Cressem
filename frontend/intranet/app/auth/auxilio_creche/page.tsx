@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { FaArrowLeft, FaBaby, FaFilePdf } from "react-icons/fa";
+import { FaBaby } from "react-icons/fa";
 import { AuxilioCrecheForm } from "@/components/auxilio-creche-form/auxilio-creche-form";
 import BackButton from "@/components/back-button/back-button";
 import {
@@ -57,7 +56,7 @@ export default function AuxilioCrechePage() {
         <div className="min-w-0">
           <BackButton />
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-[#007A6F] shadow-sm">
               <FaBaby size={16} />
             </div>
             <div className="min-w-0">
