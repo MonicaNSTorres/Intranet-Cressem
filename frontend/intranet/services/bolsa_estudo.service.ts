@@ -4,6 +4,7 @@ export type FuncionarioBolsa = {
   NM_FUNCIONARIO: string;
   DT_ADMISSAO: string;
   CD_GERENCIA: string | number;
+  NM_CIDADE?: string;
 };
 
 export type GerenciaBolsa = {

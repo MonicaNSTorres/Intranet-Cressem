@@ -102,12 +102,22 @@ export function SolicitacaoBolsaForm() {
             }
 
             const funcionario = await buscarFuncionarioPorNome(nomeUsuarioLogado);
+            const cidadeFuncionario = String(funcionario?.NM_CIDADE || "").trim();
 
             setForm((prev) => ({
                 ...prev,
                 nome: funcionario?.NM_FUNCIONARIO || nomeUsuarioLogado,
                 admissao: formatarDataInput(funcionario?.DT_ADMISSAO),
+                cidade: cidadeFuncionario || prev.cidade,
             }));
+
+            if (cidadeFuncionario) {
+                setCidades((prev) =>
+                    prev.some((cidade) => cidade.toUpperCase() === cidadeFuncionario.toUpperCase())
+                        ? prev
+                        : [...prev, cidadeFuncionario].sort((a, b) => a.localeCompare(b, "pt-BR"))
+                );
+            }
 
             if (funcionario?.CD_GERENCIA) {
                 const gerencia = await buscarGerenciaPorCodigo(funcionario.CD_GERENCIA);
@@ -197,35 +207,51 @@ export function SolicitacaoBolsaForm() {
         }
     }
 
+    const labelClass = "mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600";
+    const inputClass =
+        "h-10 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20";
+    const selectClass = `${inputClass} cursor-pointer`;
+
     return (
-        <div className="mx-auto min-w-0 rounded-xl bg-white p-6 shadow">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 p-5">
+                <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
+                    <h2 className="text-base font-bold text-slate-950">Dados da solicitação</h2>
+                </div>
+                <p className="mt-1 text-sm text-slate-600">
+                    Preencha os dados abaixo e gere a impressão da primeira solicitação de bolsa.
+                </p>
+            </div>
+
+            <div className="space-y-5 p-5">
             {erro && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                     {erro}
                 </div>
             )}
 
             {info && !erro && (
-                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
                     {info}
                 </div>
             )}
 
             {loading ? (
-                <div className="py-10 text-center text-sm text-gray-500">
+                <div className="py-10 text-center text-sm text-slate-500">
                     Carregando dados da solicitação...
                 </div>
             ) : (
                 <>
-                    <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
-                        <p className="text-sm font-medium text-gray-700">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+                        <p className="text-sm font-medium text-slate-700">
                             Preencha os dados abaixo e clique em gerar para imprimir a solicitação.
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
                         <div className="md:col-span-9">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelClass}>
                                 Nome do funcionário
                             </label>
                             <input
@@ -233,12 +259,12 @@ export function SolicitacaoBolsaForm() {
                                 name="nome"
                                 value={form.nome}
                                 onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                className={inputClass}
                             />
                         </div>
 
                         <div className="md:col-span-3">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelClass}>
                                 Admissão
                             </label>
                             <input
@@ -246,12 +272,12 @@ export function SolicitacaoBolsaForm() {
                                 name="admissao"
                                 value={form.admissao}
                                 onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                className={inputClass}
                             />
                         </div>
 
                         <div className="md:col-span-6">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelClass}>
                                 Curso
                             </label>
                             <input
@@ -259,12 +285,12 @@ export function SolicitacaoBolsaForm() {
                                 name="curso"
                                 value={form.curso}
                                 onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                className={inputClass}
                             />
                         </div>
 
                         <div className="md:col-span-3">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelClass}>
                                 Trimestre/Semestre
                             </label>
                             <input
@@ -273,12 +299,12 @@ export function SolicitacaoBolsaForm() {
                                 value={form.semestre}
                                 onChange={handleChange}
                                 placeholder="Ex.: 1º semestre"
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                className={inputClass}
                             />
                         </div>
 
                         <div className="md:col-span-3">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelClass}>
                                 Período
                             </label>
                             <input
@@ -287,12 +313,12 @@ export function SolicitacaoBolsaForm() {
                                 value={form.periodo}
                                 onChange={handleChange}
                                 placeholder="Ex.: 3º período"
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                className={inputClass}
                             />
                         </div>
 
                         <div className="md:col-span-6">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelClass}>
                                 Faculdade/Universidade
                             </label>
                             <input
@@ -300,19 +326,19 @@ export function SolicitacaoBolsaForm() {
                                 name="universidade"
                                 value={form.universidade}
                                 onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                className={inputClass}
                             />
                         </div>
 
                         <div className="md:col-span-6">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelClass}>
                                 Cidade
                             </label>
                             <select
                                 name="cidade"
                                 value={form.cidade}
                                 onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                className={selectClass}
                             >
                                 <option value="">Selecione</option>
                                 {cidades.map((cidade) => (
@@ -324,16 +350,16 @@ export function SolicitacaoBolsaForm() {
                         </div>
                     </div>
 
-                    <div className="mt-6 border-t border-gray-200 pt-5">
+                    <div className="border-t border-slate-200 pt-5">
                         <div className="flex items-center justify-end">
                             <button
                                 type="button"
                                 onClick={handleGerarPdf}
                                 disabled={!formularioValido || gerando}
-                                className={`inline-flex items-center gap-2 rounded-lg px-6 py-2 font-semibold text-white shadow transition
+                                className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition
         ${formularioValido && !gerando
-                                        ? "bg-secondary hover:bg-primary cursor-pointer"
-                                        : "bg-gray-300 cursor-not-allowed"
+                                        ? "cursor-pointer bg-[#00AE9D] hover:bg-[#49479D] hover:shadow-md"
+                                        : "cursor-not-allowed bg-slate-300"
                                     }`}
                             >
                                 <FaPrint />
@@ -343,6 +369,7 @@ export function SolicitacaoBolsaForm() {
                     </div>
                 </>
             )}
+            </div>
         </div>
     );
 }

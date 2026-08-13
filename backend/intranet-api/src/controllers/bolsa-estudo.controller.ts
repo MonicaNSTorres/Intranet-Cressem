@@ -22,7 +22,15 @@ export const bolsaEstudoController = {
           f.NM_FUNCIONARIO,
           TO_CHAR(f.DT_ADMISSAO, 'YYYY-MM-DD') AS DT_ADMISSAO,
           f.CD_GERENCIA,
-          f.ID_FUNCIONARIO
+          f.ID_FUNCIONARIO,
+          (
+            SELECT TRIM(a.NM_CIDADE)
+            FROM DBACRESSEM.ASSOCIADO_ANALITICO a
+            WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') =
+                  REGEXP_REPLACE(f.NR_CPF, '[^0-9]', '')
+              AND a.NM_CIDADE IS NOT NULL
+            FETCH FIRST 1 ROWS ONLY
+          ) AS NM_CIDADE
         FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
         WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) LIKE '%' || UPPER(TRIM(:nome)) || '%'
         FETCH FIRST 1 ROWS ONLY
@@ -47,6 +55,7 @@ export const bolsaEstudoController = {
         DT_ADMISSAO: row.DT_ADMISSAO || "",
         CD_GERENCIA: row.CD_GERENCIA || "",
         ID_FUNCIONARIO: row.ID_FUNCIONARIO || "",
+        NM_CIDADE: row.NM_CIDADE || "",
       });
     } catch (error: any) {
       console.error("Erro ao buscar funcionário por nome:", error);
