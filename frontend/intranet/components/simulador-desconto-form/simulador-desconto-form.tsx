@@ -41,7 +41,6 @@ import {
 import { gerarPdfSimuladorDesconto } from "@/lib/pdf/gerarPdfSimuladorDesconto";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
 
 type TipoEmprestimo = "" | "trabalhador" | "consignado" | "pessoal";
 
@@ -200,6 +199,16 @@ function pickPortabilidadeIdFromMeses(
   return String(ordenada.at(-1)?.ID_PORTABILIDADE_SALARIO || "");
 }
 
+const fieldClass = "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
+const moneyFieldClass = `${fieldClass} text-left tabular-nums`;
+const readOnlyFieldClass = "h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 shadow-sm outline-none tabular-nums";
+const readOnlyMoneyFieldClass = `${readOnlyFieldClass} text-left font-semibold`;
+const labelClass = "mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500";
+const sectionClass = "mt-6 rounded-[18px] border border-slate-200 bg-white p-4 shadow-sm";
+const sectionTitleClass = "mb-3 flex items-center gap-2 text-sm font-bold text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-primary";
+const checkboxCardClass = "flex min-h-10 items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition hover:border-primary/40 hover:bg-primary/5";
+const checkboxSimpleClass = "flex min-h-10 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition hover:border-primary/40 hover:bg-primary/5";
+const checkboxInputClass = "h-[14px] w-[14px] min-h-[14px] min-w-[14px] shrink-0 cursor-pointer align-middle accent-primary";
 export function SimuladorDescontoForm() {
   const [cpf, setCpf] = useState("");
   const [nome, setNome] = useState("");
@@ -855,7 +864,7 @@ export function SimuladorDescontoForm() {
       avalista,
       outros: outrosGarantias
         ? outrasGarantiasTexto || "OUTRAS GARANTIAS"
-        : "Sem",
+        : "Não",
       divida: valorDivida,
       capital: valorCapital,
       descontoSolicitacao: descontoPrevioTotal.toFixed(2),
@@ -869,11 +878,11 @@ export function SimuladorDescontoForm() {
   }
 
   return (
-    <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
+    <div className="min-w-225 mx-auto rounded-[22px] border border-slate-200 bg-white p-6 shadow-sm">
       <SearchForm onSearch={onBuscar}>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[280px_1fr_auto_auto]">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               CPF/CNPJ do associado
             </label>
             <SearchInput
@@ -883,14 +892,14 @@ export function SimuladorDescontoForm() {
                 resetResultados();
               }}
               placeholder="CPF/CNPJ"
-              className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className={fieldClass}
               inputMode="numeric"
               maxLength={18}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Nome do associado
             </label>
             <input
@@ -899,22 +908,25 @@ export function SimuladorDescontoForm() {
                 setNome(e.target.value);
                 resetResultados();
               }}
-              className="w-full rounded border px-3 py-2"
+              className={fieldClass}
             />
           </div>
 
           <div className="md:self-end">
-            <SearchButton
-              loading={loading || loadingComplementar}
-              label="Pesquisar"
-            />
+            <button
+              type="submit"
+              disabled={loading || loadingComplementar}
+              className="inline-flex h-10 min-w-[120px] items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading || loadingComplementar ? "Buscando..." : "Pesquisar"}
+            </button>
           </div>
 
           <div className="md:self-end">
             <button
               type="button"
               onClick={limparFormulario}
-              className="inline-flex items-center justify-center gap-2 rounded border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
             >
               <FaTimes />
               Limpar
@@ -924,27 +936,27 @@ export function SimuladorDescontoForm() {
           {(erro || erroLocal) && (
             <div
               ref={alertaRef}
-              className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 md:col-span-4"
+              className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700 md:col-span-4"
             >
               {erroLocal || erro}
             </div>
           )}
 
           {(info || infoLocal) && !(erro || erroLocal) && (
-            <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 md:col-span-4">
+            <div className="mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm font-medium text-primary md:col-span-4">
               {infoLocal || info}
             </div>
           )}
         </div>
       </SearchForm>
 
-      <div className="mt-6 rounded border p-4">
-        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
           Anos de associacao ininterruptos
         </h3>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_130px]">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_170px]">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={`${labelClass} whitespace-nowrap`}>
               Anos de associacao
             </label>
             <select
@@ -953,7 +965,7 @@ export function SimuladorDescontoForm() {
                 setSelectedAnosAssociadoId(e.target.value);
                 resetResultados();
               }}
-              className="w-full rounded border px-3 py-2"
+              className={fieldClass}
             >
               <option value="">Selecione</option>
               {anosAssociadoOptions.map((item) => (
@@ -968,25 +980,25 @@ export function SimuladorDescontoForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Desconto associacao
             </label>
             <input
               readOnly
               value={valorAnosAssociado.toFixed(2)}
-              className="w-full rounded border bg-gray-50 px-3 py-2 text-right font-medium tabular-nums"
+              className={readOnlyMoneyFieldClass}
             />
           </div>
         </div>
       </div>
 
-      <div className="mt-6 rounded border p-4">
-        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
           Correntista Sicoob e outros produtos
         </h3>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_130px]">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_170px]">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Anos de correntista Sicoob
             </label>
             <select
@@ -995,7 +1007,7 @@ export function SimuladorDescontoForm() {
                 setSelectedAnosCorrentistaId(e.target.value);
                 resetResultados();
               }}
-              className="w-full rounded border px-3 py-2"
+              className={fieldClass}
             >
               <option value="">Selecione</option>
               {anosCorrentistaOptions.map((item) => (
@@ -1010,20 +1022,20 @@ export function SimuladorDescontoForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={`${labelClass} whitespace-nowrap`}>
               Desconto correntista
             </label>
             <input
               readOnly
               value={valorAnosCorrentista.toFixed(2)}
-              className="w-full rounded border bg-gray-50 px-3 py-2 text-right font-medium tabular-nums"
+              className={readOnlyMoneyFieldClass}
             />
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[1fr_130px]">
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[1fr_170px]">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={`${labelClass} whitespace-nowrap`}>
               Portabilidade salario
             </label>
             <select
@@ -1032,7 +1044,7 @@ export function SimuladorDescontoForm() {
                 setSelectedPortabilidadeId(e.target.value);
                 resetResultados();
               }}
-              className="w-full rounded border px-3 py-2"
+              className={fieldClass}
             >
               <option value="">Selecione</option>
               {portabilidadeOptions.map((item) => (
@@ -1047,26 +1059,32 @@ export function SimuladorDescontoForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={`${labelClass} whitespace-nowrap`}>
               Desconto portabilidade
             </label>
             <input
               readOnly
               value={valorPortabilidade.toFixed(2)}
-              className="w-full rounded border bg-gray-50 px-3 py-2 text-right font-medium tabular-nums"
+              className={readOnlyMoneyFieldClass}
             />
           </div>
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {correntistaItemsOrdenados.map((item) => (
+          {correntistaItemsOrdenados.map((item, index) => (
             <label
               key={item.id}
-              className="flex items-center justify-between rounded border px-3 py-2 text-sm text-gray-700"
+              className={`${checkboxCardClass} ${
+                correntistaItemsOrdenados.length % 2 === 1 &&
+                index === correntistaItemsOrdenados.length - 1
+                  ? "md:col-span-2"
+                  : ""
+              }`}
             >
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
+                  className={checkboxInputClass}
                   checked={!!checkCorrentista[item.id]}
                   onChange={() => toggleMapValue(item.id, setCheckCorrentista)}
                 />
@@ -1080,19 +1098,20 @@ export function SimuladorDescontoForm() {
         </div>
       </div>
 
-      <div className="mt-6 rounded border p-4">
-        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
           Regime de trabalho
         </h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {tempoRegimeItems.map((item) => (
             <label
               key={item.id}
-              className="flex items-center justify-between rounded border px-3 py-2 text-sm text-gray-700"
+              className={checkboxCardClass}
             >
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
+                  className={checkboxInputClass}
                   checked={!!checkTempo[item.id]}
                   onChange={() => toggleMapValue(item.id, setCheckTempo)}
                 />
@@ -1106,19 +1125,20 @@ export function SimuladorDescontoForm() {
         </div>
       </div>
 
-      <div className="mt-6 rounded border p-4">
-        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
           Outros produtos
         </h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {outrosProdutosItems.map((item) => (
             <label
               key={item.id}
-              className="flex items-center justify-between rounded border px-3 py-2 text-sm text-gray-700"
+              className={checkboxCardClass}
             >
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
+                  className={checkboxInputClass}
                   checked={!!checkProdutos[item.id]}
                   onChange={() => toggleMapValue(item.id, setCheckProdutos)}
                 />
@@ -1132,11 +1152,11 @@ export function SimuladorDescontoForm() {
         </div>
       </div>
 
-      <div className="mt-6 rounded border p-4">
-        <h3 className="mb-3 text-sm font-semibold text-gray-800">Emprestimo</h3>
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>Emprestimo</h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Tipo de emprestimo
             </label>
             <select
@@ -1147,7 +1167,7 @@ export function SimuladorDescontoForm() {
                 setTaxaBrutaInput("");
                 resetResultados();
               }}
-              className="w-full rounded border px-3 py-2"
+              className={fieldClass}
             >
               <option value="">Selecione</option>
               <option value="trabalhador">CREDITO TRABALHADOR</option>
@@ -1157,7 +1177,7 @@ export function SimuladorDescontoForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Valor solicitado
             </label>
             <input
@@ -1166,20 +1186,20 @@ export function SimuladorDescontoForm() {
                 setValorEmprestimo(monetizarDigitacao(e.target.value));
                 resetResultados();
               }}
-              className="w-full rounded border px-3 py-2 text-right"
+              className={moneyFieldClass}
               placeholder="R$ 0,00"
             />
           </div>
         </div>
       </div>
 
-      <div className="mt-6 rounded border p-4">
-        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
           Dados sobre conta
         </h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Divida
             </label>
             <input
@@ -1188,13 +1208,13 @@ export function SimuladorDescontoForm() {
                 setValorDivida(monetizarDigitacao(e.target.value));
                 resetResultados();
               }}
-              className="w-full rounded border px-3 py-2 text-right"
+              className={moneyFieldClass}
               placeholder="R$ 0,00"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Capital
             </label>
             <input
@@ -1203,31 +1223,31 @@ export function SimuladorDescontoForm() {
                 setValorCapital(monetizarDigitacao(e.target.value));
                 resetResultados();
               }}
-              className="w-full rounded border px-3 py-2 text-right"
+              className={moneyFieldClass}
               placeholder="R$ 0,00"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Desconto sobre solicitacao %
             </label>
             <input
               readOnly
               value={descontoPrevioTotal.toFixed(2)}
-              className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+              className={readOnlyMoneyFieldClass}
             />
           </div>
         </div>
       </div>
 
-      <div className="mt-6 rounded border p-4">
-        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
           Classificacao do risco para desconto
         </h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Classificacao do risco
             </label>
             <select
@@ -1236,7 +1256,7 @@ export function SimuladorDescontoForm() {
                 setClassificacaoRisco(e.target.value);
                 resetResultados();
               }}
-              className="w-full rounded border px-3 py-2"
+              className={fieldClass}
             >
               <option value="">Selecione</option>
               {riscoOptions.map((item) => (
@@ -1253,7 +1273,7 @@ export function SimuladorDescontoForm() {
           {tipoEmprestimo !== "pessoal" && (
             <>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Quantidade de parcelas
                 </label>
                 <select
@@ -1262,7 +1282,7 @@ export function SimuladorDescontoForm() {
                     setQuantidadeParcelas(e.target.value);
                     resetResultados();
                   }}
-                  className="w-full rounded border px-3 py-2"
+                  className={fieldClass}
                 >
                   <option value="">Selecione</option>
                   {parcelasComTaxa.map((item) => (
@@ -1274,36 +1294,93 @@ export function SimuladorDescontoForm() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Taxa bruta %
                 </label>
                 <input
+                  readOnly
                   value={taxaBrutaInput}
-                  onChange={(e) => {
-                    setTaxaBrutaInput(e.target.value);
-                    resetResultados();
-                  }}
-                  className="w-full rounded border px-3 py-2 text-right"
-                  placeholder="Ex: 2,49"
+                  className={readOnlyMoneyFieldClass}
+                  placeholder="Selecione as parcelas"
                 />
               </div>
             </>
           )}
         </div>
 
-        <div className="mt-4 rounded border bg-gray-50 p-4 text-sm text-gray-700">
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
           <p>
             <strong>Classificacao aplicada:</strong> {classificacaoDescricao || "-"}
           </p>
         </div>
+
+        {processado && (
+          <div className="mt-4 border-t border-slate-200 pt-4">
+            <h4 className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Resultado das taxas
+            </h4>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {(tipoEmprestimo === "consignado" || tipoEmprestimo === "trabalhador") && (
+                <>
+                  <div>
+                    <label className={labelClass}>
+                      Taxa bruta %
+                    </label>
+                    <input
+                      readOnly
+                      value={taxaBruta ? taxaBruta.toFixed(2) : ""}
+                      className={readOnlyMoneyFieldClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      Desconto total %
+                    </label>
+                    <input
+                      readOnly
+                      value={descontoTotal.toFixed(3)}
+                      className={readOnlyMoneyFieldClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      Taxa final %
+                    </label>
+                    <input
+                      readOnly
+                      value={taxaFinal.toFixed(3)}
+                      className={readOnlyMoneyFieldClass}
+                    />
+                  </div>
+                </>
+              )}
+
+              {tipoEmprestimo === "pessoal" && (
+                <div>
+                  <label className={labelClass}>
+                    Desconto total %
+                  </label>
+                  <input
+                    readOnly
+                    value={descontoTotal.toFixed(3)}
+                    className={readOnlyMoneyFieldClass}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="mt-6 rounded border p-4">
-        <h3 className="mb-3 text-sm font-semibold text-gray-800">Garantias</h3>
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>Garantias</h3>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <label className="flex items-center gap-3 rounded border px-3 py-2 text-sm text-gray-700">
+          <label className={checkboxSimpleClass}>
             <input
               type="checkbox"
+              className={checkboxInputClass}
               checked={seguro}
               onChange={(e) => {
                 setSeguro(e.target.checked);
@@ -1313,9 +1390,10 @@ export function SimuladorDescontoForm() {
             <span className="uppercase">SEGURO</span>
           </label>
 
-          <label className="flex items-center gap-3 rounded border px-3 py-2 text-sm text-gray-700">
+          <label className={checkboxSimpleClass}>
             <input
               type="checkbox"
+              className={checkboxInputClass}
               checked={avalista}
               onChange={(e) => {
                 setAvalista(e.target.checked);
@@ -1325,9 +1403,10 @@ export function SimuladorDescontoForm() {
             <span className="uppercase">AVALISTA</span>
           </label>
 
-          <label className="flex items-center gap-3 rounded border px-3 py-2 text-sm text-gray-700">
+          <label className={checkboxSimpleClass}>
             <input
               type="checkbox"
+              className={checkboxInputClass}
               checked={outrosGarantias}
               onChange={(e) => {
                 setOutrosGarantias(e.target.checked);
@@ -1347,19 +1426,19 @@ export function SimuladorDescontoForm() {
                 resetResultados();
               }}
               placeholder="Outras garantias"
-              className="w-full rounded border px-3 py-2"
+              className={fieldClass}
             />
           </div>
         )}
       </div>
 
-      <div className="mt-6 rounded border p-4">
-        <h3 className="mb-3 text-sm font-semibold text-gray-800">
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
           Dados do atendimento
         </h3>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Cidade do atendimento
             </label>
             <select
@@ -1368,7 +1447,7 @@ export function SimuladorDescontoForm() {
                 setCidadeAtendimento(e.target.value);
                 resetResultados();
               }}
-              className="w-full rounded border px-3 py-2"
+              className={fieldClass}
             >
               <option value="">Selecione</option>
               {cidadesOptions.map((item) => (
@@ -1380,91 +1459,37 @@ export function SimuladorDescontoForm() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               Dia do atendimento
             </label>
             <input
               readOnly
               value={dataAtendimento}
-              className="w-full rounded border bg-gray-50 px-3 py-2"
+              className={readOnlyFieldClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Nome do atendente
+            </label>
+            <input
+              value={atendente}
+              onChange={(e) => {
+                setAtendente(e.target.value);
+                resetResultados();
+              }}
+              className={fieldClass}
             />
           </div>
         </div>
-
-        <div className="mt-3">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Nome do atendente
-          </label>
-          <input
-            value={atendente}
-            onChange={(e) => {
-              setAtendente(e.target.value);
-              resetResultados();
-            }}
-            className="w-full rounded border px-3 py-2"
-          />
-        </div>
       </div>
 
-      {processado && (
-        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-          {(tipoEmprestimo === "consignado" || tipoEmprestimo === "trabalhador") && (
-            <>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Taxa bruta %
-                </label>
-                <input
-                  readOnly
-                  value={taxaBruta ? taxaBruta.toFixed(2) : ""}
-                  className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Desconto total %
-                </label>
-                <input
-                  readOnly
-                  value={descontoTotal.toFixed(3)}
-                  className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Taxa final %
-                </label>
-                <input
-                  readOnly
-                  value={taxaFinal.toFixed(3)}
-                  className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-                />
-              </div>
-            </>
-          )}
-
-          {tipoEmprestimo === "pessoal" && (
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Desconto total %
-              </label>
-              <input
-                readOnly
-                value={descontoTotal.toFixed(3)}
-                className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="mt-6 flex items-center justify-end gap-3 border-t pt-5">
+      <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-200 pt-5">
         <button
           onClick={processar}
           disabled={loadingTabelas}
-          className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           Processar simulação
         </button>
@@ -1472,7 +1497,7 @@ export function SimuladorDescontoForm() {
         <button
           onClick={gerarPdf}
           disabled={!processado}
-          className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-fourth disabled:cursor-not-allowed disabled:opacity-60"
         >
           Gerar PDF
         </button>

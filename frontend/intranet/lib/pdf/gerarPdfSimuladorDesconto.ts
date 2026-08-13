@@ -141,7 +141,7 @@ export async function gerarPdfSimuladorDesconto(
   fieldsRow(doc, cursor, pageH, margin, contentW, [
     { label: "Seguro", value: o.seguro ? "Sim" : "Não", width: contentW / 3 },
     { label: "Avalista", value: o.avalista ? "Sim" : "Não", width: contentW / 3 },
-    { label: "Outros", value: safeText(o.outros, "Sem"), width: contentW / 3 },
+    { label: "Outros", value: safeText(o.outros, "Não"), width: contentW / 3 },
   ]);
 
   sectionHeader(doc, cursor, pageH, margin, contentW, "Dados sobre conta");
@@ -569,4 +569,3 @@ async function printPdf(doc: jsPDF, nomeArquivo: string) {
     document.body.appendChild(iframe);
   });
 }
-

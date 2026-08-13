@@ -1,9 +1,14 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { ReactNode } from "react";
 import { useState } from "react";
+import {
+  VALORES_INTEGRALIZACAO,
+  valorIntegralizacaoComMoeda,
+} from "@/config/integralizacao";
 import { gerarPdfAssociado } from "@/lib/pdf/gerarPdf";
-import { formatCpfView, monetizarDigitacao } from "@/utils/br";
+import { formatCpfView } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { getMeAdUser } from "@/services/auth.service";
 import { SearchForm } from "@/components/ui/search-form";
@@ -16,6 +21,9 @@ type Associado = {
   matricula: string;
   empresa: string;
 };
+
+const fieldClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
 
 export function ConsultaAssociadoForm() {
   const [cpf, setCpf] = useState("");
@@ -74,160 +82,190 @@ export function ConsultaAssociadoForm() {
     valorNovo.trim() !== "";
 
   return (
-    <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <SearchForm onSearch={onBuscar}>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            CPF do associado(a)
-          </label>
+    <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
 
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-            <SearchInput
-              value={formatCpfView(cpf)}
-              onChange={(e) => setCpf(e.target.value)}
-              placeholder="CPF (somente números)"
-              inputMode="numeric"
-              maxLength={14}
-            />
-
-            <SearchButton loading={loading} label="Pesquisar" />
-          </div>
-
-          {erro && (
-            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-              {erro}
-            </div>
-          )}
-
-          {info && (
-            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-              {info}
-            </div>
-          )}
-        </div>
-      </SearchForm>
-
-      {data && (
-        <div className="mt-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="space-y-5 p-5 md:p-6">
+        <SectionCard
+          title="Consulta do associado"
+          description="Digite o CPF para carregar os dados do associado e preencher a alteração."
+        >
+          <SearchForm onSearch={onBuscar}>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Nome completo
-              </label>
-              <input
-                readOnly
-                value={data.nome}
-                className="w-full border px-3 py-2 rounded bg-gray-50"
-              />
-            </div>
+              <FieldLabel>CPF do associado(a)</FieldLabel>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                CPF
-              </label>
-              <input
-                readOnly
-                value={formatCpfView(data.cpf)}
-                className="w-full border px-3 py-2 rounded bg-gray-50"
-              />
-            </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                <SearchInput
+                  value={formatCpfView(cpf)}
+                  onChange={(e) => setCpf(e.target.value)}
+                  placeholder="CPF (somente números)"
+                  className={fieldClass}
+                  inputMode="numeric"
+                  maxLength={14}
+                />
 
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Matrícula
-              </label>
-              <input
-                readOnly
-                value={data.matricula}
-                className="w-full border px-3 py-2 rounded bg-gray-50"
-              />
-            </div>
+                <SearchButton loading={loading} label="Pesquisar" />
+              </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Empresa
-              </label>
-              <input
-                readOnly
-                value={data.empresa}
-                className="w-full border px-3 py-2 rounded bg-gray-50"
-              />
-            </div>
-          </div>
+              {erro && (
+                <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {erro}
+                </div>
+              )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Atendente
-              </label>
-              <input
-                value={atendente}
-                onChange={(e) => setAtendente(e.target.value)}
-                className="w-full border px-3 py-2 rounded"
-                placeholder="Nome do atendente"
-              />
+              {info && (
+                <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  {info}
+                </div>
+              )}
             </div>
+          </SearchForm>
+        </SectionCard>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Data 1º Desconto
-              </label>
-              <input
-                type="date"
-                value={dataPrimeiroDesconto}
-                onChange={(e) => setDataPrimeiroDesconto(e.target.value)}
-                className="w-full border px-3 py-2 rounded"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Valor Anterior
-              </label>
-              <input
-                type="text"
-                value={valorAnterior}
-                onChange={(e) =>
-                  setValorAnterior(monetizarDigitacao(e.target.value))
-                }
-                className="w-full border px-3 py-2 rounded"
-                placeholder="R$ 0,00"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Valor Novo
-              </label>
-              <input
-                type="text"
-                value={valorNovo}
-                onChange={(e) =>
-                  setValorNovo(monetizarDigitacao(e.target.value))
-                }
-                className="w-full border px-3 py-2 rounded"
-                placeholder="R$ 0,00"
-              />
-            </div>
-          </div>
-
-          <div className="pt-4 border-t flex items-center justify-end">
-            <button
-              onClick={onGerarPdf}
-              disabled={!isFormularioValido}
-              className={`
-    inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
-    ${isFormularioValido
-                  ? "bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
-                  : "bg-gray-300 cursor-not-allowed"
-                }
-  `}
+        {data && (
+          <>
+            <SectionCard
+              title="Dados do associado"
+              description="Informações carregadas pela consulta e usadas na impressão."
             >
-              Gerar PDF
-            </button>
-          </div>
-        </div>
-      )}
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <FieldReadOnly label="Nome completo" value={data.nome} />
+                <FieldReadOnly label="CPF" value={formatCpfView(data.cpf)} />
+                <FieldReadOnly label="Matrícula" value={data.matricula} />
+                <FieldReadOnly label="Empresa" value={data.empresa} />
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Dados da alteração"
+              description="Informe o atendente, a data do primeiro desconto e os valores de integralização."
+            >
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <FieldLabel>Atendente</FieldLabel>
+                  <input
+                    value={atendente}
+                    onChange={(e) => setAtendente(e.target.value)}
+                    className={fieldClass}
+                    placeholder="Nome do atendente"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Data 1º Desconto</FieldLabel>
+                  <input
+                    type="date"
+                    value={dataPrimeiroDesconto}
+                    onChange={(e) => setDataPrimeiroDesconto(e.target.value)}
+                    className={fieldClass}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Valor Anterior</FieldLabel>
+                  <select
+                    value={valorAnterior}
+                    onChange={(e) => setValorAnterior(e.target.value)}
+                    className={fieldClass}
+                  >
+                    <option value="">Selecione</option>
+                    {VALORES_INTEGRALIZACAO.map((item) => {
+                      const valor = valorIntegralizacaoComMoeda(item.valor);
+                      return (
+                        <option key={`anterior-${item.nivel}`} value={valor}>
+                          Nível {item.nivel} - {valor}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div>
+                  <FieldLabel>Valor Novo</FieldLabel>
+                  <select
+                    value={valorNovo}
+                    onChange={(e) => setValorNovo(e.target.value)}
+                    className={fieldClass}
+                  >
+                    <option value="">Selecione</option>
+                    {VALORES_INTEGRALIZACAO.map((item) => {
+                      const valor = valorIntegralizacaoComMoeda(item.valor);
+                      return (
+                        <option key={`novo-${item.nivel}`} value={valor}>
+                          Nível {item.nivel} - {valor}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+            </SectionCard>
+
+            <div className="flex justify-end border-t border-slate-200 pt-5">
+              <button
+                onClick={onGerarPdf}
+                disabled={!isFormularioValido}
+                className={`inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition ${isFormularioValido
+                  ? "cursor-pointer bg-secondary hover:bg-primary"
+                  : "cursor-not-allowed bg-slate-300"
+                  }`}
+              >
+                Gerar PDF
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-4">
+        <h2 className="flex items-center gap-2 text-base font-semibold text-title">
+          <span className="h-2 w-2 rounded-full bg-primary" />
+          {title}
+        </h2>
+
+        {description && (
+          <p className="mt-1 text-sm text-paragraph">
+            {description}
+          </p>
+        )}
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+function FieldLabel({ children }: { children: ReactNode }) {
+  return (
+    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500">
+      {children}
+    </label>
+  );
+}
+
+function FieldReadOnly({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <FieldLabel>{label}</FieldLabel>
+      <input
+        readOnly
+        value={value}
+        className={`${fieldClass} bg-slate-50`}
+      />
     </div>
   );
 }
