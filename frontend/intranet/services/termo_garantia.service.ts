@@ -5,6 +5,7 @@ export type AssociadoTermoGarantiaResponse = {
   ID_CLIENTE?: number | null;
   NM_CLIENTE?: string;
   NR_CPF_CNPJ?: string;
+  NM_CIDADE?: string;
 };
 
 export type CidadeOption = {

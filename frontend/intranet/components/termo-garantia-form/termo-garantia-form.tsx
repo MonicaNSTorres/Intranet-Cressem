@@ -76,6 +76,14 @@ function capitalizeWords(str: string) {
     .join(" ");
 }
 
+function normalizarTextoComparacao(str: string) {
+  return String(str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
 function formatarDataBR(data: Date) {
   const dia = String(data.getDate()).padStart(2, "0");
   const mes = String(data.getMonth() + 1).padStart(2, "0");
@@ -150,10 +158,25 @@ export function TermoGarantiaForm() {
     setInfo("");
   }
 
+  function resolverCidadeAtendimento(cidade?: string) {
+    const cidadeNormalizada = normalizarTextoComparacao(cidade || "");
+
+    if (!cidadeNormalizada) {
+      return "";
+    }
+
+    return (
+      cidades.find(
+        (item) => normalizarTextoComparacao(item.NM_CIDADE) === cidadeNormalizada
+      )?.NM_CIDADE || ""
+    );
+  }
+
   async function handleBuscarAssociado() {
     setErro("");
     setInfo("");
     resetResultado();
+    setCidadeAtendimento("");
 
     const cpfLimpo = onlyDigits(cpf);
 
@@ -175,7 +198,18 @@ export function TermoGarantiaForm() {
       if (associado?.NM_CLIENTE) {
         setNome(capitalizeWords(associado.NM_CLIENTE));
         setNomeReadOnly(true);
-        setInfo("Associado encontrado com sucesso.");
+
+        const cidadeEncontrada = resolverCidadeAtendimento(associado.NM_CIDADE);
+
+        if (cidadeEncontrada) {
+          setCidadeAtendimento(cidadeEncontrada);
+        }
+
+        setInfo(
+          cidadeEncontrada
+            ? "Associado encontrado com sucesso. Cidade preenchida automaticamente."
+            : "Associado encontrado com sucesso. Selecione a cidade do atendimento."
+        );
       } else {
         setNome("");
         setNomeReadOnly(false);
@@ -280,22 +314,34 @@ export function TermoGarantiaForm() {
     });
   }
 
+  const fieldClass =
+    "h-10 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20";
+  const readOnlyFieldClass =
+    "h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 text-sm text-slate-900 shadow-sm outline-none";
+  const labelClass =
+    "mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600";
+  const sectionClass =
+    "rounded-2xl border border-slate-200 bg-white shadow-sm";
+  const sectionTitleClass =
+    "flex items-center gap-2 px-5 py-4 text-base font-black text-slate-950";
+
   return (
-    <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-      <SearchForm onSearch={handleBuscarAssociado}>
+    <div className="mx-auto w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <SearchForm onSearch={handleBuscarAssociado} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               CPF do associado
             </label>
             <SearchInput
               value={formatCpfView(cpf)}
               onChange={(e) => {
                 setCpf(e.target.value);
+                setCidadeAtendimento("");
                 resetResultado();
               }}
               placeholder="000.000.000-00"
-              className="w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className={fieldClass}
               inputMode="numeric"
               maxLength={14}
             />
@@ -309,11 +355,11 @@ export function TermoGarantiaForm() {
         {(erro || info) && (
           <div className="mt-4">
             {erro ? (
-              <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
                 {erro}
               </div>
             ) : (
-              <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
                 {info}
               </div>
             )}
@@ -321,9 +367,15 @@ export function TermoGarantiaForm() {
         )}
       </SearchForm>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-12">
+      <section className={`mt-5 ${sectionClass}`}>
+        <h2 className={sectionTitleClass}>
+          <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
+          Dados do associado e contrato
+        </h2>
+
+        <div className="grid grid-cols-1 gap-4 border-t border-slate-200 p-5 md:grid-cols-12">
         <div className="md:col-span-8">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Nome
           </label>
           <input
@@ -333,12 +385,12 @@ export function TermoGarantiaForm() {
               resetResultado();
             }}
             readOnly={nomeReadOnly}
-            className="w-full rounded border px-3 py-2 read-only:bg-gray-50"
+            className={nomeReadOnly ? readOnlyFieldClass : fieldClass}
           />
         </div>
 
         <div className="md:col-span-4">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Estado civil
           </label>
           <select
@@ -347,9 +399,9 @@ export function TermoGarantiaForm() {
               setEstadoCivil(e.target.value as EstadoCivil);
               resetResultado();
             }}
-            className="w-full rounded border px-3 py-2"
+            className={fieldClass}
           >
-            <option value=""></option>
+            <option value="">Selecione</option>
             <option value="CASADO">CASADO</option>
             <option value="DIVORCIADO">DIVORCIADO</option>
             <option value="SEPARADO">SEPARADO</option>
@@ -360,7 +412,7 @@ export function TermoGarantiaForm() {
         </div>
 
         <div className="md:col-span-4">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Documento
           </label>
           <select
@@ -369,9 +421,9 @@ export function TermoGarantiaForm() {
               setTipoDocumento(e.target.value as TipoDocumento);
               resetResultado();
             }}
-            className="w-full rounded border px-3 py-2"
+            className={fieldClass}
           >
-            <option value=""></option>
+            <option value="">Selecione</option>
             <option value="RG">RG</option>
             <option value="CNH">CNH</option>
             <option value="PPD">PPD</option>
@@ -380,7 +432,7 @@ export function TermoGarantiaForm() {
         </div>
 
         <div className="md:col-span-4">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Número
           </label>
           <input
@@ -389,12 +441,12 @@ export function TermoGarantiaForm() {
               setNumeroDocumento(e.target.value);
               resetResultado();
             }}
-            className="w-full rounded border px-3 py-2"
+            className={fieldClass}
           />
         </div>
 
         <div className="md:col-span-4">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Contrato nº
           </label>
           <input
@@ -403,12 +455,12 @@ export function TermoGarantiaForm() {
               setNumeroContrato(e.target.value);
               resetResultado();
             }}
-            className="w-full rounded border px-3 py-2"
+            className={fieldClass}
           />
         </div>
 
         <div className="md:col-span-4">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Data
           </label>
           <input
@@ -418,12 +470,12 @@ export function TermoGarantiaForm() {
               setDataContrato(e.target.value);
               resetResultado();
             }}
-            className="w-full rounded border px-3 py-2"
+            className={fieldClass}
           />
         </div>
 
         <div className="md:col-span-4">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Valor
           </label>
           <input
@@ -433,12 +485,12 @@ export function TermoGarantiaForm() {
               resetResultado();
             }}
             placeholder="R$ 0,00"
-            className="w-full rounded border px-3 py-2 text-right"
+            className={`${fieldClass} text-left`}
           />
         </div>
 
         <div className="md:col-span-4">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Cidade do atendimento
           </label>
           <select
@@ -448,9 +500,9 @@ export function TermoGarantiaForm() {
               resetResultado();
             }}
             disabled={loadingCidades}
-            className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
+            className={`${fieldClass} disabled:bg-slate-50`}
           >
-            <option value=""></option>
+            <option value="">Selecione</option>
             {cidades.map((cidade) => (
               <option key={cidade.ID_CIDADES} value={cidade.NM_CIDADE}>
                 {cidade.NM_CIDADE}
@@ -458,19 +510,26 @@ export function TermoGarantiaForm() {
             ))}
           </select>
         </div>
-      </div>
+        </div>
+      </section>
 
-      <div className="mt-6 overflow-hidden rounded border">
+      <section className={`mt-5 overflow-hidden ${sectionClass}`}>
+        <h2 className={sectionTitleClass}>
+          <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
+          Garantias
+        </h2>
+
+        <div className="border-t border-slate-200">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-100">
-              <th className="border px-4 py-3 text-left text-sm font-semibold text-gray-700">
+            <tr className="bg-slate-50">
+              <th className="border border-slate-200 px-4 py-3 text-left text-sm font-black text-slate-700">
                 GARANTIAS
               </th>
-              <th className="border px-4 py-3 text-center text-sm font-semibold text-gray-700">
+              <th className="border border-slate-200 px-4 py-3 text-center text-sm font-black text-slate-700">
                 SIM
               </th>
-              <th className="border px-4 py-3 text-center text-sm font-semibold text-gray-700">
+              <th className="border border-slate-200 px-4 py-3 text-center text-sm font-black text-slate-700">
                 NÃO
               </th>
             </tr>
@@ -478,13 +537,14 @@ export function TermoGarantiaForm() {
 
           <tbody>
             <tr>
-              <td className="border px-4 py-3 text-sm text-gray-700">
+              <td className="border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
                 Avalista?
               </td>
-              <td className="border px-4 py-3 text-center">
+              <td className="border border-slate-200 px-4 py-3 text-center">
                 <input
                   type="radio"
                   name="avalista"
+                  className="h-4 w-4 accent-[#00AE9D]"
                   checked={avalista === "sim"}
                   onChange={() => {
                     setAvalista("sim");
@@ -492,10 +552,11 @@ export function TermoGarantiaForm() {
                   }}
                 />
               </td>
-              <td className="border px-4 py-3 text-center">
+              <td className="border border-slate-200 px-4 py-3 text-center">
                 <input
                   type="radio"
                   name="avalista"
+                  className="h-4 w-4 accent-[#00AE9D]"
                   checked={avalista === "nao"}
                   onChange={() => {
                     setAvalista("nao");
@@ -506,13 +567,14 @@ export function TermoGarantiaForm() {
             </tr>
 
             <tr>
-              <td className="border px-4 py-3 text-sm text-gray-700">
+              <td className="border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
                 Seguro Prestamista no Sicoob Cressem?
               </td>
-              <td className="border px-4 py-3 text-center">
+              <td className="border border-slate-200 px-4 py-3 text-center">
                 <input
                   type="radio"
                   name="prestamista_sicoob"
+                  className="h-4 w-4 accent-[#00AE9D]"
                   checked={prestamistaSicoob === "sim"}
                   onChange={() => {
                     setPrestamistaSicoob("sim");
@@ -520,10 +582,11 @@ export function TermoGarantiaForm() {
                   }}
                 />
               </td>
-              <td className="border px-4 py-3 text-center">
+              <td className="border border-slate-200 px-4 py-3 text-center">
                 <input
                   type="radio"
                   name="prestamista_sicoob"
+                  className="h-4 w-4 accent-[#00AE9D]"
                   checked={prestamistaSicoob === "nao"}
                   onChange={() => {
                     setPrestamistaSicoob("nao");
@@ -534,13 +597,14 @@ export function TermoGarantiaForm() {
             </tr>
 
             <tr>
-              <td className="border px-4 py-3 text-sm text-gray-700">
+              <td className="border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
                 Seguro Prestamista de Terceiros?
               </td>
-              <td className="border px-4 py-3 text-center">
+              <td className="border border-slate-200 px-4 py-3 text-center">
                 <input
                   type="radio"
                   name="prestamista_terceiros"
+                  className="h-4 w-4 accent-[#00AE9D]"
                   checked={prestamistaTerceiros === "sim"}
                   onChange={() => {
                     setPrestamistaTerceiros("sim");
@@ -548,10 +612,11 @@ export function TermoGarantiaForm() {
                   }}
                 />
               </td>
-              <td className="border px-4 py-3 text-center">
+              <td className="border border-slate-200 px-4 py-3 text-center">
                 <input
                   type="radio"
                   name="prestamista_terceiros"
+                  className="h-4 w-4 accent-[#00AE9D]"
                   checked={prestamistaTerceiros === "nao"}
                   onChange={() => {
                     setPrestamistaTerceiros("nao");
@@ -562,13 +627,14 @@ export function TermoGarantiaForm() {
             </tr>
 
             <tr>
-              <td className="border px-4 py-3 text-sm text-gray-700">
+              <td className="border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
                 Garantia Real?
               </td>
-              <td className="border px-4 py-3 text-center">
+              <td className="border border-slate-200 px-4 py-3 text-center">
                 <input
                   type="radio"
                   name="garantia_real"
+                  className="h-4 w-4 accent-[#00AE9D]"
                   checked={garantiaReal === "sim"}
                   onChange={() => {
                     setGarantiaReal("sim");
@@ -576,10 +642,11 @@ export function TermoGarantiaForm() {
                   }}
                 />
               </td>
-              <td className="border px-4 py-3 text-center">
+              <td className="border border-slate-200 px-4 py-3 text-center">
                 <input
                   type="radio"
                   name="garantia_real"
+                  className="h-4 w-4 accent-[#00AE9D]"
                   checked={garantiaReal === "nao"}
                   onChange={() => {
                     setGarantiaReal("nao");
@@ -590,9 +657,16 @@ export function TermoGarantiaForm() {
             </tr>
           </tbody>
         </table>
-      </div>
+        </div>
+      </section>
 
-      <div className="mt-6 rounded border bg-gray-50 p-4 text-justify text-sm leading-7 text-gray-800">
+      <section className={`mt-5 ${sectionClass}`}>
+        <h2 className={sectionTitleClass}>
+          <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
+          Prévia do texto
+        </h2>
+
+      <div className="border-t border-slate-200 bg-slate-50 p-5 text-justify text-sm leading-7 text-slate-800">
         <p>
           Eu, <strong>{capitalizeWords(nome) || "NOMEASSOCIADO"}</strong>,{" "}
           <strong>{capitalizeWords(estadoCivil) || "RELACIONAMENTO"}</strong>,
@@ -608,16 +682,17 @@ export function TermoGarantiaForm() {
           garantia para qualquer outra opção acima descrita.
         </p>
       </div>
+      </section>
 
       <div className="mt-6 flex items-center justify-end border-t pt-5">
         <button
           type="button"
           onClick={handleGerarPdf}
           disabled={!formularioValido}
-          className={`inline-flex items-center gap-2 rounded px-5 py-2 font-semibold text-white shadow transition
+          className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-sm transition
     ${formularioValido
-              ? "bg-secondary hover:bg-primary cursor-pointer"
-              : "bg-gray-300 cursor-not-allowed"
+              ? "bg-[#79B729] text-white hover:bg-[#00AE9D] cursor-pointer"
+              : "bg-slate-300 text-white cursor-not-allowed"
             }`}
         >
           Gerar PDF
