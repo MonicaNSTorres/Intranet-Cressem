@@ -8,9 +8,16 @@ import { buscarFuncionarioPorCpfTermo } from "@/services/termo_responsabilidade_
 import { gerarPdfTermoResponsabilidadeUso } from "@/lib/pdf/gerarPdfTermoResponsabilidadeUso";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
 
 type EquipamentoTipo = "" | "celular" | "notebook";
+
+const labelClass = "mb-1.5 block text-xs font-black uppercase tracking-wide text-slate-600";
+const fieldClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-left text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
+const searchInputClass =
+    "h-10 rounded-xl border-slate-200 py-0 text-left text-sm font-medium text-slate-700 shadow-sm placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
+const primaryButtonClass =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
 
 function capitalizeWords(str?: string | null) {
     return String(str || "")
@@ -266,11 +273,11 @@ export function TermoResponsabilidadeUsoForm() {
     }
 
     return (
-        <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
+        <div className="mx-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
             <SearchForm onSearch={buscarFuncionario}>
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr]">
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                        <label className={labelClass}>
                             CPF
                         </label>
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
@@ -279,21 +286,28 @@ export function TermoResponsabilidadeUsoForm() {
                                 onChange={(e) => setCpf(formatarCpf(e.target.value))}
                                 placeholder="000.000.000-00"
                                 maxLength={14}
-                                className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                                className={searchInputClass}
                             />
 
-                            <SearchButton loading={loadingBusca} label="Pesquisar" />
+                            <button
+                                type="submit"
+                                disabled={loadingBusca}
+                                className={primaryButtonClass}
+                            >
+                                <FaSearch />
+                                {loadingBusca ? "Pesquisando..." : "Pesquisar"}
+                            </button>
                         </div>
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                        <label className={labelClass}>
                             Nome
                         </label>
                         <input
                             value={nome}
                             onChange={(e) => setNome(e.target.value)}
-                            className="w-full rounded border px-3 py-2"
+                            className={fieldClass}
                             placeholder="Nome do colaborador"
                         />
                     </div>
@@ -302,11 +316,11 @@ export function TermoResponsabilidadeUsoForm() {
                 {(erro || info) && (
                     <div className="mt-4">
                         {erro ? (
-                            <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
                                 {erro}
                             </div>
                         ) : (
-                            <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                            <div className="rounded-xl border border-primary/20 bg-primary/10 p-3 text-sm font-medium text-primary">
                                 {info}
                             </div>
                         )}
@@ -314,93 +328,99 @@ export function TermoResponsabilidadeUsoForm() {
                 )}
             </SearchForm>
 
-            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-12">
-                <div className="lg:col-span-3">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Equipamento
-                    </label>
-                    <select
-                        value={equipamento}
-                        onChange={(e) => aoTrocarEquipamento(e.target.value as EquipamentoTipo)}
-                        className="w-full rounded border px-3 py-2"
-                    >
-                        <option value=""></option>
-                        <option value="celular">Celular</option>
-                        <option value="notebook">Notebook</option>
-                    </select>
-                </div>
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/30 p-4">
+                <h2 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+                    Dados do equipamento
+                </h2>
 
-                <div className="lg:col-span-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Modelo
-                    </label>
-                    <input
-                        value={modelo}
-                        onChange={(e) => setModelo(e.target.value)}
-                        className="w-full rounded border px-3 py-2"
-                    />
-                </div>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                    <div className="lg:col-span-3">
+                        <label className={labelClass}>
+                            Equipamento
+                        </label>
+                        <select
+                            value={equipamento}
+                            onChange={(e) => aoTrocarEquipamento(e.target.value as EquipamentoTipo)}
+                            className={fieldClass}
+                        >
+                            <option value="">Selecione</option>
+                            <option value="celular">Celular</option>
+                            <option value="notebook">Notebook</option>
+                        </select>
+                    </div>
 
-                <div className="lg:col-span-4">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        NR Série
-                    </label>
-                    <input
-                        value={numeroSerie}
-                        onChange={(e) => setNumeroSerie(e.target.value)}
-                        className="w-full rounded border px-3 py-2"
-                    />
-                </div>
-
-                {equipamento === "celular" && (
-                    <div className="lg:col-span-4">
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Número Linha
+                    <div className="lg:col-span-5">
+                        <label className={labelClass}>
+                            Modelo
                         </label>
                         <input
-                            value={linha}
-                            onChange={(e) => setLinha(phoneMask(e.target.value))}
-                            maxLength={15}
-                            className="w-full rounded border px-3 py-2"
+                            value={modelo}
+                            onChange={(e) => setModelo(e.target.value)}
+                            className={fieldClass}
                         />
                     </div>
-                )}
 
-                <div className="lg:col-span-4">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Entrega
-                    </label>
-                    <input
-                        type="date"
-                        value={entrega}
-                        onChange={(e) => setEntrega(e.target.value)}
-                        className="w-full rounded border px-3 py-2"
-                        readOnly
-                    />
-                </div>
+                    <div className="lg:col-span-4">
+                        <label className={labelClass}>
+                            NR Série
+                        </label>
+                        <input
+                            value={numeroSerie}
+                            onChange={(e) => setNumeroSerie(e.target.value)}
+                            className={fieldClass}
+                        />
+                    </div>
 
-                <div className="lg:col-span-8">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Acessórios
-                    </label>
-                    <input
-                        value={acessorios}
-                        onChange={(e) => setAcessorios(e.target.value)}
-                        maxLength={80}
-                        className="w-full rounded border px-3 py-2"
-                    />
+                    {equipamento === "celular" && (
+                        <div className="lg:col-span-4">
+                            <label className={labelClass}>
+                                Número Linha
+                            </label>
+                            <input
+                                value={linha}
+                                onChange={(e) => setLinha(phoneMask(e.target.value))}
+                                maxLength={15}
+                                className={fieldClass}
+                            />
+                        </div>
+                    )}
+
+                    <div className="lg:col-span-4">
+                        <label className={labelClass}>
+                            Entrega
+                        </label>
+                        <input
+                            type="date"
+                            value={entrega}
+                            onChange={(e) => setEntrega(e.target.value)}
+                            className={fieldClass}
+                            readOnly
+                        />
+                    </div>
+
+                    <div className="lg:col-span-8">
+                        <label className={labelClass}>
+                            Acessórios
+                        </label>
+                        <input
+                            value={acessorios}
+                            onChange={(e) => setAcessorios(e.target.value)}
+                            maxLength={80}
+                            className={fieldClass}
+                        />
+                    </div>
                 </div>
             </div>
 
-            <div className="mt-6 border-t pt-5 flex items-center justify-end">
+            <div className="mt-6 flex items-center justify-end border-t border-slate-200 pt-5">
                 <button
                     type="button"
                     onClick={gerarPdf}
                     disabled={!formularioValido || gerando}
-                    className={`inline-flex items-center gap-2 rounded px-5 py-2 font-semibold text-white shadow transition
+                    className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white shadow-sm transition
         ${formularioValido && !gerando
                             ? "bg-secondary hover:bg-primary cursor-pointer"
-                            : "bg-gray-300 cursor-not-allowed"
+                            : "bg-slate-300 cursor-not-allowed opacity-70"
                         }`}
                 >
                     <FaFilePdf />

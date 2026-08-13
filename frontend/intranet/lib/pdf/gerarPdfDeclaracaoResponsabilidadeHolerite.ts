@@ -11,6 +11,22 @@ export type DeclaracaoResponsabilidadeHoleriteOpts = {
   dataDeclaracao: string;
 };
 
+type FieldBox = {
+  label: string;
+  value: string;
+  width: number;
+  maxLines?: number;
+};
+
+const COLORS = {
+  green: { r: 121, g: 183, b: 41 },
+  dark: { r: 0, g: 54, b: 65 },
+  light: { r: 242, g: 248, b: 235 },
+  border: { r: 210, g: 220, b: 210 },
+};
+
+const safeText = (value?: string, fallback = "-") => String(value || "").trim() || fallback;
+
 function toBrFromIso(value: string) {
   if (!value) return "";
   const [ano, mes, dia] = value.split("-");
@@ -35,226 +51,272 @@ function sanitize(value: string) {
     .toLowerCase();
 }
 
-async function loadLogoDataUrl(url: string) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("Falha ao carregar logo");
+export async function gerarPdfDeclaracaoResponsabilidadeHolerite(
+  opts: DeclaracaoResponsabilidadeHoleriteOpts
+) {
+  const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
 
-  const blob = await response.blob();
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 28;
+  const contentW = pageW - margin * 2;
+  let y = 22;
 
-  const dataUrl = await new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.readAsDataURL(blob);
+  try {
+    const logo = await loadImageDataURL("/sicoob-cressem-logo.png");
+    const maxW = 135;
+    const maxH = 42;
+    const scale = Math.min(maxW / logo.width, maxH / logo.height);
+    const w = logo.width * scale;
+    const h = logo.height * scale;
+    doc.addImage(logo.dataUrl, logo.type, margin, y, w, h, undefined, "FAST");
+    y += h + 8;
+  } catch {
+    y += 20;
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
+  doc.text("DECLARAÇÃO DE RESPONSABILIDADE PARA DESCONTO EM HOLERITE", pageW / 2, y, {
+    align: "center",
   });
+  y += 24;
 
-  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = dataUrl;
-  });
+  const nome = safeText(opts.nome).toUpperCase();
+  const mesReferencia = formatarMesReferencia(opts.mesReferencia);
+  const dataDeclaracao = toBrFromIso(opts.dataDeclaracao);
+  const prazoTexto = `${safeText(opts.prazoMeses)} ${
+    Number(opts.prazoMeses) === 1 ? "mês" : "meses"
+  }`;
 
-  return {
-    dataUrl,
-    width: image.width,
-    height: image.height,
-  };
+  drawSectionHeader(doc, "Dados do cooperado", margin, y, contentW);
+  y += 16;
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Nome", value: nome, width: contentW * 0.5 },
+    { label: "CPF", value: safeText(opts.cpf), width: contentW * 0.25 },
+    { label: "RG", value: safeText(opts.rg), width: contentW * 0.25 },
+  ]);
+
+  y += 4;
+  drawSectionHeader(doc, "Dados do desconto", margin, y, contentW);
+  y += 16;
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Mês de referência", value: safeText(mesReferencia), width: contentW / 3 },
+    { label: "Valor", value: safeText(opts.valor), width: contentW / 3 },
+    { label: "Prazo total", value: prazoTexto, width: contentW / 3 },
+  ]);
+
+  y += 4;
+  drawSectionHeader(doc, "Declaração", margin, y, contentW);
+  y += 16;
+  y = drawParagraphBox(doc, y, margin, contentW, [
+    { text: "Eu, " },
+    { text: nome, bold: true },
+    { text: ", portador(a) do CPF " },
+    { text: `${safeText(opts.cpf)} `, bold: true },
+    { text: "e RG " },
+    { text: `${safeText(opts.rg)} `, bold: true },
+    {
+      text:
+        "declaro para os devidos fins que estou ciente e de acordo com a realização do desconto de crédito consignado em meu holerite referente ao mês ",
+    },
+    { text: `${safeText(mesReferencia)} `, bold: true },
+    { text: "no valor de " },
+    { text: `${safeText(opts.valor)} `, bold: true },
+    { text: "no prazo total de " },
+    { text: `${prazoTexto} `, bold: true },
+    { text: "para a Cooperativa " },
+    { text: "SICOOB CRESSEM", bold: true },
+    { text: ", respeitando a margem consignável disponível." },
+    { text: "\n\n" },
+    {
+      text:
+        "Declaro ainda que assumo total responsabilidade pelos valores descontados, incluindo taxa de manutenção, integralização e parcela do empréstimo consignado, estando ciente das condições acordadas, bem como autorizo a efetivação dos referidos descontos em folha de pagamento.",
+    },
+    { text: "\n\n" },
+    {
+      text:
+        "Por fim, afirmo que esta autorização é concedida de livre e espontânea vontade, sem qualquer tipo de coação, estando plenamente de acordo com os termos estabelecidos.",
+    },
+  ]);
+
+  y += 4;
+  drawSectionHeader(doc, "Local e data", margin, y, contentW);
+  y += 16;
+  y = drawFieldsRow(doc, y, margin, contentW, [
+    { label: "Local e data", value: `${safeText(opts.local)}, ${dataDeclaracao}.`, width: contentW },
+  ]);
+
+  y += 44;
+  const assinaturaW = 280;
+  const assinaturaX = (pageW - assinaturaW) / 2;
+  doc.setDrawColor(30, 41, 59);
+  doc.setLineWidth(0.8);
+  doc.line(assinaturaX, y, assinaturaX + assinaturaW, y);
+
+  y += 15;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(30, 41, 59);
+  doc.text(nome, pageW / 2, y, { align: "center" });
+
+  doc.save(`declaracao_responsabilidade_holerite_${sanitize(opts.nome)}.pdf`);
 }
 
-function escreverParagrafo(
-  doc: jsPDF,
-  texto: string,
-  x: number,
-  y: number,
-  largura: number,
-  lineHeight = 18
-) {
-  const linhas = doc.splitTextToSize(texto, largura);
-  linhas.forEach((linha: string) => {
-    doc.text(linha, x, y);
-    y += lineHeight;
-  });
-  return y;
+function drawSectionHeader(doc: jsPDF, title: string, x: number, y: number, w: number) {
+  doc.setFillColor(COLORS.light.r, COLORS.light.g, COLORS.light.b);
+  doc.setDrawColor(COLORS.green.r, COLORS.green.g, COLORS.green.b);
+  doc.setLineWidth(0.55);
+  doc.rect(x, y, w, 16, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.8);
+  doc.setTextColor(COLORS.dark.r, COLORS.dark.g, COLORS.dark.b);
+  doc.text(title.toUpperCase(), x + 6, y + 11);
+  doc.setTextColor(0, 0, 0);
 }
 
-type TextoParte = {
-  text: string;
-  bold?: boolean;
-};
-
-function escreverParagrafoComNegrito(
-  doc: jsPDF,
-  partes: TextoParte[],
-  x: number,
-  y: number,
-  largura: number,
-  lineHeight = 18
-) {
+function drawFieldsRow(doc: jsPDF, y: number, x: number, totalW: number, fields: FieldBox[]) {
+  const h = 22;
   let cursorX = x;
 
-  partes.forEach((parte) => {
-    const tokens = parte.text.split(/(\s+)/);
+  fields.forEach((field, idx) => {
+    const w = idx === fields.length - 1 ? x + totalW - cursorX : field.width;
+    drawFieldBox(doc, {
+      x: cursorX,
+      y,
+      w,
+      h,
+      label: field.label,
+      value: field.value,
+      maxLines: field.maxLines ?? 1,
+    });
+    cursorX += w;
+  });
 
-    tokens.forEach((token) => {
-      if (!token) return;
+  return y + h;
+}
 
-      const isSpace = /^\s+$/.test(token);
-      doc.setFont("helvetica", parte.bold ? "bold" : "normal");
+function drawFieldBox(
+  doc: jsPDF,
+  opts: { x: number; y: number; w: number; h: number; label: string; value: string; maxLines?: number }
+) {
+  doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+  doc.setFillColor(255, 255, 255);
+  doc.setLineWidth(0.45);
+  doc.rect(opts.x, opts.y, opts.w, opts.h, "FD");
 
-      if (isSpace && cursorX === x) return;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.2);
+  doc.setTextColor(90, 110, 95);
+  doc.text(opts.label.toUpperCase(), opts.x + 4, opts.y + 7.5);
 
-      const tokenWidth = doc.getTextWidth(token);
-      if (cursorX + tokenWidth > x + largura && cursorX > x) {
-        y += lineHeight;
-        cursorX = x;
-        if (isSpace) return;
-      }
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.2);
+  doc.setTextColor(15, 23, 42);
+  const lines = doc.splitTextToSize(safeText(opts.value), opts.w - 8).slice(0, opts.maxLines ?? 1);
+  doc.text(lines, opts.x + 4, opts.y + 17.5, { lineHeightFactor: 1.05 });
+  doc.setTextColor(0, 0, 0);
+}
 
-      doc.text(token, cursorX, y);
-      cursorX += tokenWidth;
+function drawParagraphBox(
+  doc: jsPDF,
+  y: number,
+  x: number,
+  w: number,
+  parts: Array<{ text: string; bold?: boolean }>
+) {
+  type ParagraphToken = { text: string; bold?: boolean; lineBreak?: boolean };
+
+  const padding = 6;
+  const lineHeight = 9.3;
+  const maxLineWidth = w - padding * 2;
+
+  doc.setFontSize(8.2);
+  const tokens: ParagraphToken[] = parts.flatMap((part) => {
+    return part.text.split(/(\n+)/).flatMap((segment) => {
+      if (/^\n+$/.test(segment)) return [{ text: "", bold: part.bold, lineBreak: true }];
+
+      const pieces = segment.match(/\S+\s*/g) || [];
+      return pieces.map((piece) => ({ text: piece, bold: part.bold }));
     });
   });
 
-  doc.setFont("helvetica", "normal");
-  return y + lineHeight;
-}
+  const lines: ParagraphToken[][] = [];
+  let currentLine: ParagraphToken[] = [];
+  let currentWidth = 0;
 
-export async function gerarPdfDeclaracaoResponsabilidadeHolerite(
-  o: DeclaracaoResponsabilidadeHoleriteOpts
-) {
-  const doc = new jsPDF({
-    unit: "pt",
-    format: "a4",
-    compress: true,
-    putOnlyUsedFonts: true,
+  tokens.forEach((token) => {
+    if (token.lineBreak) {
+      if (currentLine.length > 0) lines.push(currentLine);
+      lines.push([]);
+      currentLine = [];
+      currentWidth = 0;
+      return;
+    }
+
+    doc.setFont("helvetica", token.bold ? "bold" : "normal");
+    const tokenWidth = doc.getTextWidth(token.text);
+    if (currentWidth + tokenWidth > maxLineWidth && currentLine.length > 0) {
+      lines.push(currentLine);
+      currentLine = [];
+      currentWidth = 0;
+    }
+    currentLine.push(token);
+    currentWidth += tokenWidth;
   });
 
-  const pageW = doc.internal.pageSize.getWidth();
-  const margin = 54;
-  const contentW = pageW - margin * 2;
-  let y = 48;
+  if (currentLine.length > 0) lines.push(currentLine);
 
-  try {
-    const logo = await loadLogoDataUrl("/sicoob-cressem-logo.png");
-    const maxLogoW = 132;
-    const maxLogoH = 54;
-    const scale = Math.min(maxLogoW / logo.width, maxLogoH / logo.height);
-    const logoW = logo.width * scale;
-    const logoH = logo.height * scale;
+  const h = Math.max(34, lines.length * lineHeight + padding * 2);
+  doc.setDrawColor(COLORS.border.r, COLORS.border.g, COLORS.border.b);
+  doc.setFillColor(255, 255, 255);
+  doc.setLineWidth(0.45);
+  doc.rect(x, y, w, h, "FD");
 
-    doc.addImage(
-      logo.dataUrl,
-      "PNG",
-      margin,
-      y,
-      logoW,
-      logoH,
-      undefined,
-      "MEDIUM"
-    );
-  } catch {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("SICOOB CRESSEM", margin, y + 22);
-  }
+  let textY = y + padding + 6;
+  lines.forEach((line) => {
+    if (line.length === 0) {
+      textY += lineHeight * 0.55;
+      return;
+    }
 
-  y += 88;
+    let cursorX = x + padding;
+    line.forEach((token) => {
+      doc.setFont("helvetica", token.bold ? "bold" : "normal");
+      doc.setFontSize(8.2);
+      doc.setTextColor(15, 23, 42);
+      doc.text(token.text, cursorX, textY);
+      cursorX += doc.getTextWidth(token.text);
+    });
+    textY += lineHeight;
+  });
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text(
-    "DECLARAÇÃO DE RESPONSABILIDADE PARA DESCONTO EM HOLERITE",
-    pageW / 2,
-    y,
-    { align: "center" }
+  doc.setTextColor(0, 0, 0);
+  return y + h;
+}
+
+async function loadImageDataURL(url: string) {
+  const response = await fetch(url);
+  const blob = await response.blob();
+
+  return new Promise<{ dataUrl: string; width: number; height: number; type: "PNG" | "JPEG" }>(
+    (resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const dataUrl = String(reader.result || "");
+          const type = dataUrl.includes("image/jpeg") ? "JPEG" : "PNG";
+          resolve({ dataUrl, width: img.width, height: img.height, type });
+        };
+        img.onerror = reject;
+        img.src = String(reader.result || "");
+      };
+
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    }
   );
-  y += 42;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-
-  const mesReferencia = formatarMesReferencia(o.mesReferencia);
-  const dataDeclaracao = toBrFromIso(o.dataDeclaracao);
-  const prazoTexto = `${o.prazoMeses} ${Number(o.prazoMeses) === 1 ? "mês" : "meses"}`;
-
-  y = escreverParagrafoComNegrito(
-    doc,
-    [
-      { text: "Eu, " },
-      { text: o.nome, bold: true },
-      { text: ", portador(a) do CPF " },
-      { text: o.cpf, bold: true },
-      { text: " e RG " },
-      { text: o.rg, bold: true },
-      {
-        text: ", declaro para os devidos fins que estou ciente e de acordo com a realização do desconto de CRÉDITO CONSIGNADO em meu holerite referente ao mês ",
-      },
-      { text: mesReferencia, bold: true },
-      { text: ", no valor de " },
-      { text: o.valor, bold: true },
-      { text: ", no prazo total de " },
-      { text: prazoTexto, bold: true },
-      { text: ", para a Cooperativa " },
-      { text: "SICOOB CRESSEM", bold: true },
-      { text: ", respeitando a margem consignável disponível." },
-    ],
-    margin,
-    y,
-    contentW
-  );
-
-  y += 14;
-
-  y = escreverParagrafo(
-    doc,
-    "Declaro ainda que assumo total responsabilidade pelos valores descontados, incluindo taxa de manutenção, integralização e parcela do empréstimo consignado, estando ciente das condições acordadas, bem como autorizo a efetivação dos referidos descontos em folha de pagamento.",
-    margin,
-    y,
-    contentW
-  );
-
-  y += 14;
-
-  y = escreverParagrafo(
-    doc,
-    "Por fim, afirmo que esta autorização é concedida de livre e espontânea vontade, sem qualquer tipo de coação, estando plenamente de acordo com os termos estabelecidos.",
-    margin,
-    y,
-    contentW
-  );
-
-  y += 48;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.text("LOCAL: ", margin, y);
-  doc.setFont("helvetica", "bold");
-  doc.text(o.local, margin + doc.getTextWidth("LOCAL: "), y);
-  doc.setFont("helvetica", "normal");
-  const dataLabel = "DATA: ";
-  const dataTextoW = doc.getTextWidth(dataLabel) + doc.getTextWidth(dataDeclaracao);
-  const dataX = pageW - margin - dataTextoW;
-  doc.text(dataLabel, dataX, y);
-  doc.setFont("helvetica", "bold");
-  doc.text(dataDeclaracao, dataX + doc.getTextWidth(dataLabel), y);
-
-  y += 70;
-
-  doc.setFont("helvetica", "normal");
-  doc.text("NOME:__________________________________________", margin, y);
-
-  y += 86;
-
-  const assinaturaW = 320;
-  const assinaturaX = (pageW - assinaturaW) / 2;
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(1);
-  doc.line(assinaturaX, y, assinaturaX + assinaturaW, y);
-  y += 14;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text(o.nome, pageW / 2, y, { align: "center" });
-
-  doc.save(`declaracao_responsabilidade_holerite_${sanitize(o.nome)}.pdf`);
 }
