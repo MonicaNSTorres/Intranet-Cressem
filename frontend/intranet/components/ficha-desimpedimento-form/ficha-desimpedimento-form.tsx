@@ -49,6 +49,15 @@ const initialForm: FichaFormData = {
   sequencial: "",
 };
 
+const fieldClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
+const readOnlyFieldClass = `${fieldClass} bg-slate-50 text-slate-600`;
+const textareaClass =
+  "min-h-24 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
+const labelClass = "mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500";
+const addButtonClass =
+  "mt-2 inline-flex h-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-secondary/15 hover:text-secondary";
+
 export function FichaDesimpedimentoForm() {
   const [tipo, setTipo] = useState<TipoFicha>("DEVEDOR");
   const [form, setForm] = useState<FichaFormData>(initialForm);
@@ -449,17 +458,19 @@ export function FichaDesimpedimentoForm() {
   }
 
   return (
-    <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
+    <div className="mx-auto overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
+      <div className="space-y-6 p-5 md:p-6">
       <SearchForm onSearch={handleBuscarCpf}>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">CPF do empregado(a)</label>
+          <label className={labelClass}>CPF do empregado(a)</label>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
             <SearchInput
               name="cpf"
               value={formatCpfView(form.cpf)}
               onChange={handleChange}
               placeholder="CPF (somente números)"
-              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className={fieldClass}
               inputMode="numeric"
               maxLength={14}
             />
@@ -467,27 +478,27 @@ export function FichaDesimpedimentoForm() {
           </div>
 
           {erroCpf && (
-            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
               {erroCpf}
             </div>
           )}
 
           {infoCpf && (
-            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
               {infoCpf}
             </div>
           )}
         </div>
       </SearchForm>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-2 md:p-5">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
+          <label className={labelClass}>Tipo</label>
           <select
             name="tipo"
             value={tipo}
             onChange={(e) => setTipo(e.target.value as TipoFicha)}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
           >
             <option value="DEVEDOR">DEVEDOR</option>
             <option value="CREDOR">CREDOR</option>
@@ -495,240 +506,250 @@ export function FichaDesimpedimentoForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Sequencial</label>
+          <label className={labelClass}>Sequencial</label>
           <input
             readOnly
             value={sequencial ?? "—"}
-            className="w-full border px-3 py-2 rounded bg-gray-50"
+            className={readOnlyFieldClass}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Nome</label>
+          <label className={labelClass}>Nome</label>
           <input
             name="nome"
             value={form.nome}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Prontuário</label>
+          <label className={labelClass}>Prontuário</label>
           <input
             name="prontuario"
             value={form.prontuario}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Empresa</label>
+          <label className={labelClass}>Empresa</label>
           <input
             name="empresa"
             value={form.empresa}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label>
+          <label className={labelClass}>E-mail</label>
           <input
             name="ds_email"
             value={form.ds_email}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
           />
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Endereço</label>
+          <label className={labelClass}>Endereço</label>
           <input
             name="endereco"
             value={form.endereco}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label>
+          <label className={labelClass}>Telefone</label>
           <input
             name="telefone"
             value={form.telefone}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Risco</label>
+          <label className={labelClass}>Risco</label>
           <input
             name="risco"
             value={form.risco}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
             placeholder="Ex: R16"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Tempo de associação</label>
+          <label className={labelClass}>Tempo de associação</label>
           <input
             name="tempo_associado"
             value={form.tempo_associado}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Data da ficha</label>
+          <label className={labelClass}>Data da ficha</label>
           <input
             name="data_ficha"
             type="date"
             value={form.data_ficha}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
           />
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Responsável</label>
+          <label className={labelClass}>Responsável</label>
           <input
             name="responsavel"
             value={form.responsavel}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className={fieldClass}
           />
         </div>
       </div>
 
-      <div className="mt-6">
-        <label className="block text-xs font-medium text-gray-600 mb-1">Observação</label>
+      <div>
+        <label className={labelClass}>Observação</label>
         <textarea
           name="observacao"
           value={form.observacao}
           onChange={handleChange}
-          className="w-full border px-3 py-2 rounded"
+          className={textareaClass}
           rows={3}
           placeholder="Observações da ficha"
         />
       </div>
 
-      <div className="mt-6">
-        <label className="block text-xs font-medium text-gray-600 mb-1">Observações gerais</label>
+      <div>
+        <label className={labelClass}>Observações gerais</label>
         <textarea
           name="observacoes_gerais"
           value={form.observacoes_gerais}
           onChange={handleChange}
-          className="w-full border px-3 py-2 rounded"
+          className={textareaClass}
           rows={3}
           placeholder="Observações complementares"
         />
       </div>
 
-      <div className="mt-6 rounded-lg border bg-gray-50 px-4 py-3 text-center">
-        <p className="text-sm md:text-base font-medium text-gray-700">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center">
+        <p className="text-sm font-medium text-amber-800 md:text-base">
           Preencha todos os campos de valores com vírgula.
           <br />
           Exemplo: 2500,60
         </p>
       </div>
 
-      <div className="mt-6">
-        <h3 className="font-semibold mb-2">Empréstimos</h3>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+        <h3 className="mb-3 text-base font-semibold text-title">Empréstimos</h3>
         {contasDevedoras.map((c, i) => (
-          <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+          <div key={i} className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
             <input
               placeholder="Contrato / Descrição"
               value={c.descricao}
               onChange={(e) => updateConta("devedora", i, "descricao", e.target.value)}
-              className="border px-2 py-2 rounded"
+              className={fieldClass}
             />
             <input
               placeholder="Valor (R$)"
               value={c.valor}
               onChange={(e) => updateConta("devedora", i, "valor", e.target.value)}
-              className="border px-2 py-2 rounded"
+              className={fieldClass}
             />
           </div>
         ))}
         <button
           onClick={() => addConta("devedora")}
-          className="text-secondary text-md font-semibold mt-1 hover:text-primary cursor-pointer"
+          className={addButtonClass}
         >
           + Adicionar conta devedora
         </button>
       </div>
 
-      <div className="mt-6">
-        <h3 className="font-semibold mb-2">Contas Credoras</h3>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+        <h3 className="mb-3 text-base font-semibold text-title">Contas Credoras</h3>
         {contasCredoras.map((c, i) => (
-          <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+          <div key={i} className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
             <input
               placeholder="Tipo / Descrição"
               value={c.descricao}
               onChange={(e) => updateConta("credora", i, "descricao", e.target.value)}
-              className="border px-2 py-2 rounded"
+              className={fieldClass}
             />
             <input
               placeholder="Valor (R$)"
               value={c.valor}
               onChange={(e) => updateConta("credora", i, "valor", e.target.value)}
-              className="border px-2 py-2 rounded"
+              className={fieldClass}
             />
           </div>
         ))}
         <button
           onClick={() => addConta("credora")}
-          className="text-secondary text-md font-semibold mt-1 hover:text-primary cursor-pointer"
+          className={addButtonClass}
         >
           + Adicionar conta credora
         </button>
       </div>
 
-      <div className="mt-6">
-        <h3 className="font-semibold mb-2">Contas Bancárias (a subtrair do capital)</h3>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+        <h3 className="mb-3 text-base font-semibold text-title">Contas Bancárias (a subtrair do capital)</h3>
         {contasBancarias.map((c, i) => (
-          <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+          <div key={i} className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
             <input
               placeholder="Descrição"
               value={c.descricao}
               onChange={(e) => updateConta("bancaria", i, "descricao", e.target.value)}
-              className="border px-2 py-2 rounded"
+              className={fieldClass}
             />
             <input
               placeholder="Valor (R$)"
               value={c.valor}
               onChange={(e) => updateConta("bancaria", i, "valor", e.target.value)}
-              className="border px-2 py-2 rounded"
+              className={fieldClass}
             />
           </div>
         ))}
         <button
           onClick={() => addConta("bancaria")}
-          className="text-secondary text-md font-semibold mt-1 hover:text-primary cursor-pointer"
+          className={addButtonClass}
         >
           + Adicionar conta bancária
         </button>
       </div>
 
-      <div className="mt-6 font-medium space-y-1">
-        <p className="text-lg font-semibold">Total Capital: {totalFormatado(contasCredoras)}</p>
-        <p className="text-lg font-semibold">Contas Bancárias: {totalFormatado(contasBancarias)}</p>
-        <p className="text-lg font-semibold">Total de Débitos: {totalFormatado(contasDevedoras)}</p>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+          <span className={labelClass}>Total Capital</span>
+          <p className="text-xl font-bold text-emerald-800">{totalFormatado(contasCredoras)}</p>
+        </div>
+        <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
+          <span className={labelClass}>Contas Bancárias</span>
+          <p className="text-xl font-bold text-sky-800">{totalFormatado(contasBancarias)}</p>
+        </div>
+        <div className="rounded-2xl border border-red-100 bg-red-50 p-4">
+          <span className={labelClass}>Total de Débitos</span>
+          <p className="text-xl font-bold text-red-800">{totalFormatado(contasDevedoras)}</p>
+        </div>
       </div>
 
-      <div className="pt-5 border-t mt-6 flex items-center justify-end">
+      <div className="flex items-center justify-end border-t border-slate-200 pt-5">
         <button
           onClick={handleSalvar}
-          className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-6 py-2 rounded shadow"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-primary"
         >
           Salvar ficha
         </button>
+      </div>
       </div>
 
       {/*<div className="mt-10">
