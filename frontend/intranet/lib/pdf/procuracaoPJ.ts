@@ -68,7 +68,7 @@ export async function gerarPdfProcuracaoPJ(o: PJOpts) {
         const scale = Math.min(maxW / logo.width, maxH / logo.height);
         const w = logo.width * scale;
         const h = logo.height * scale;
-        doc.addImage(logo.dataUrl, logo.type, pageW - left - w, 32, w, h, undefined, "MEDIUM");
+        doc.addImage(logo.dataUrl, logo.type, left, 32, w, h, undefined, "MEDIUM");
     } catch { }
 
     doc.setFont("helvetica", "bold");

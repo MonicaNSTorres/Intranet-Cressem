@@ -1,6 +1,7 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { gerarPdfProcuracaoPF } from "@/lib/pdf/procuracaoPF";
 import { gerarPdfProcuracaoPJ } from "@/lib/pdf/procuracaoPJ";
@@ -19,6 +20,8 @@ function formatCnpjView(v: string) {
   return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}`;
 }
 
+const fieldClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
 
 type AcaoPF = {
   outorganteNome: string;
@@ -223,17 +226,20 @@ export function ProcuracaoOutorganteForm() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <SearchForm onSearch={onBuscar}>
-        <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-          <h2 className="text-lg font-semibold mb-2">Buscar OUTORGANTE (PF) por CPF</h2>
+        <SectionCard
+          title="Buscar outorgante (PF)"
+          description="Consulte pelo CPF para preencher os dados disponíveis e ajuste manualmente se necessário."
+        >
+          <FieldLabel>CPF do outorgante</FieldLabel>
 
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
             <SearchInput
               value={formatCpfView(cpfBusca)}
               onChange={(e) => setCpfBusca(onlyDigits(e.target.value).slice(0, 11))}
               placeholder="CPF (somente números)"
-              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className={fieldClass}
               inputMode="numeric"
               maxLength={14}
             />
@@ -242,7 +248,7 @@ export function ProcuracaoOutorganteForm() {
 
             <button
               onClick={fillHoje}
-              className="bg-secondary text-white font-semibold px-4 py-2 rounded hover:bg-primary cursor-pointer hover:shadow-md"
+              className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-fourth"
               title="Preencher dia/mês/ano com hoje"
             >
               Usar data de hoje
@@ -250,24 +256,25 @@ export function ProcuracaoOutorganteForm() {
           </div>
 
           {erro && (
-            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {erro}
             </div>
           )}
           {info && (
-            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
               {info}
             </div>
           )}
-        </div>
+        </SectionCard>
       </SearchForm>
 
 
       {/* OUTORGANTE PF */}
-      <section className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-        <h3 className="font-semibold mb-4">OUTORGANTE (PF)</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <SectionCard
+        title="Outorgante (PF)"
+        description="Dados da pessoa física que está concedendo a procuração."
+      >
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <Input label="Nome" value={pf.outorganteNome} onChange={(v) => setPf({ ...pf, outorganteNome: v })} />
           <Input label="Nacionalidade" value={pf.outorganteNacionalidade} onChange={(v) => setPf({ ...pf, outorganteNacionalidade: v })} />
           <Input label="Estado Civil" value={pf.outorganteEstadoCivil} onChange={(v) => setPf({ ...pf, outorganteEstadoCivil: v })} />
@@ -290,13 +297,14 @@ export function ProcuracaoOutorganteForm() {
           <Input label="Cidade" value={pf.outorganteCidade} onChange={(v) => setPf({ ...pf, outorganteCidade: v })} />
           <Input label="UF" value={pf.outorganteUF} onChange={(v) => setPf({ ...pf, outorganteUF: v.toUpperCase().slice(0, 2) })} />
         </div>
-      </section>
+      </SectionCard>
 
       {/* OUTORGADO (PF) */}
-      <section className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-        <h3 className="font-semibold mb-4">OUTORGADO (PF)</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <SectionCard
+        title="Outorgado (PF)"
+        description="Dados da pessoa que receberá os poderes da procuração."
+      >
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <Input label="Nome" value={outorgado.outorgadoNome} onChange={(v) => setOutorgado({ ...outorgado, outorgadoNome: v })} />
           <Input label="Nacionalidade" value={outorgado.outorgadoNacionalidade} onChange={(v) => setOutorgado({ ...outorgado, outorgadoNacionalidade: v })} />
           <Input label="Estado Civil" value={outorgado.outorgadoEstadoCivil} onChange={(v) => setOutorgado({ ...outorgado, outorgadoEstadoCivil: v })} />
@@ -319,13 +327,14 @@ export function ProcuracaoOutorganteForm() {
           <Input label="Cidade" value={outorgado.outorgadoCidade} onChange={(v) => setOutorgado({ ...outorgado, outorgadoCidade: v })} />
           <Input label="UF" value={outorgado.outorgadoUF} onChange={(v) => setOutorgado({ ...outorgado, outorgadoUF: v.toUpperCase().slice(0, 2) })} />
         </div>
-      </section>
+      </SectionCard>
 
       {/* OUTORGANTE PJ */}
-      <section className="min-w-225l mx-auto p-6 bg-white rounded-xl shadow">
-        <h3 className="font-semibold mb-4">OUTORGANTE (PJ)</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <SectionCard
+        title="Outorgante (PJ)"
+        description="Preencha estes campos quando a procuração for de pessoa jurídica."
+      >
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <Input label="Razão Social" value={pj.razaoSocial} onChange={(v) => setPj({ ...pj, razaoSocial: v })} />
           <Input label="CNPJ" value={formatCnpjView(pj.cnpj)} onChange={(v) => setPj({ ...pj, cnpj: onlyDigits(v).slice(0, 14) })} />
 
@@ -336,7 +345,10 @@ export function ProcuracaoOutorganteForm() {
           <Input label="Cidade" value={pj.sedeCidade} onChange={(v) => setPj({ ...pj, sedeCidade: v })} />
           <Input label="UF" value={pj.sedeUF} onChange={(v) => setPj({ ...pj, sedeUF: v.toUpperCase().slice(0, 2) })} />
 
-          <div className="md:col-span-3 mt-2 font-semibold text-sm text-gray-700">Representante</div>
+          <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-title md:col-span-3">
+            <span className="h-2 w-2 rounded-full bg-secondary" />
+            Representante
+          </div>
 
           <Input label="Nome" value={pj.representanteNome} onChange={(v) => setPj({ ...pj, representanteNome: v })} className="md:col-span-2" />
           <Input label="Nacionalidade" value={pj.representanteNacionalidade} onChange={(v) => setPj({ ...pj, representanteNacionalidade: v })} />
@@ -353,13 +365,14 @@ export function ProcuracaoOutorganteForm() {
           <Input label="Cidade" value={pj.representanteCid} onChange={(v) => setPj({ ...pj, representanteCid: v })} />
           <Input label="UF" value={pj.representanteUF} onChange={(v) => setPj({ ...pj, representanteUF: v.toUpperCase().slice(0, 2) })} />
         </div>
-      </section>
+      </SectionCard>
 
       {/* Cláusulas / Data */}
-      <section className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-        <h3 className="font-semibold mb-4">Cláusulas / Data</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <SectionCard
+        title="Cláusulas e data"
+        description="Informações comuns usadas nos modelos de procuração PF e PJ."
+      >
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <Input
             label="Razão social da cooperativa"
             value={comum.razaoCooperativa}
@@ -388,23 +401,63 @@ export function ProcuracaoOutorganteForm() {
           <Input label="Ano" value={comum.ano} onChange={(v) => setComum({ ...comum, ano: v })} />
         </div>
 
-        <div className="pt-5 border-t mt-6 flex items-center justify-end gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 pt-5">
           <button
             onClick={onGerarPF}
-            className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+            className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary"
           >
             Gerar PDF PF
           </button>
 
           <button
             onClick={onGerarPJ}
-            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+            className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-fourth"
           >
             Gerar PDF PJ
           </button>
         </div>
-      </section>
+      </SectionCard>
     </div>
+  );
+}
+
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
+      <div className="p-4 md:p-5">
+        <div className="mb-4">
+          <h2 className="flex items-center gap-2 text-base font-semibold text-title">
+            <span className="h-2 w-2 rounded-full bg-primary" />
+            {title}
+          </h2>
+
+          {description && (
+            <p className="mt-1 text-sm text-paragraph">
+              {description}
+            </p>
+          )}
+        </div>
+
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function FieldLabel({ children }: { children: ReactNode }) {
+  return (
+    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500">
+      {children}
+    </label>
   );
 }
 
@@ -421,11 +474,11 @@ function Input({
 }) {
   return (
     <div className={className}>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <FieldLabel>{label}</FieldLabel>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full border px-3 py-2 rounded"
+        className={fieldClass}
       />
     </div>
   );
