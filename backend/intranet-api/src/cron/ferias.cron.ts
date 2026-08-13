@@ -33,16 +33,36 @@ cron.schedule(
 );
 
 cron.schedule(
-  "0 8 * * *",
+  "30 7 * * *",
   async () => {
     try {
-      console.log("[CRON FÉRIAS] Executando TI...");
+      console.log("[CRON FÉRIAS] Executando TI - retorno hoje...");
 
-      const resultadoTi = await enviarEmailTiFerias();
+      const resultadoTi = await enviarEmailTiFerias({ tipo: "RETORNO_DIA" });
 
-      console.log("[CRON FÉRIAS] TI finalizado:", resultadoTi);
+      console.log("[CRON FÉRIAS] TI retorno hoje finalizado:", resultadoTi);
     } catch (err) {
-      console.error("[CRON FÉRIAS] Erro TI:", err);
+      console.error("[CRON FÉRIAS] Erro TI retorno hoje:", err);
+    }
+  },
+  {
+    timezone: "America/Sao_Paulo",
+  }
+);
+
+cron.schedule(
+  "0 8,16 * * *",
+  async () => {
+    try {
+      console.log("[CRON FÉRIAS] Executando TI - prévia de retorno...");
+
+      const resultadoTi = await enviarEmailTiFerias({
+        tipo: "RETORNO_PREVIA",
+      });
+
+      console.log("[CRON FÉRIAS] TI prévia de retorno finalizada:", resultadoTi);
+    } catch (err) {
+      console.error("[CRON FÉRIAS] Erro TI prévia de retorno:", err);
     }
   },
   {
