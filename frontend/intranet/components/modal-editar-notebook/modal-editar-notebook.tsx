@@ -82,6 +82,7 @@ export default function ModalEditarNotebook({
 
     const debouncedFuncionario = useDebouncedValue(form.NM_FUNCIONARIO, 300);
     const funcionarioBoxRef = useRef<HTMLDivElement | null>(null);
+    const submitLockRef = useRef(false);
 
     useEffect(() => {
         if (!open || !notebook) return;
@@ -179,7 +180,9 @@ export default function ModalEditarNotebook({
         e.preventDefault();
 
         if (!notebook) return;
+        if (loading || submitLockRef.current) return;
 
+        submitLockRef.current = true;
         setLoading(true);
         setSuccess(null);
         setError(null);
@@ -211,6 +214,7 @@ export default function ModalEditarNotebook({
         } catch (e: any) {
             setError(String(e?.message || "Erro ao atualizar notebook."));
         } finally {
+            submitLockRef.current = false;
             setLoading(false);
         }
     }
@@ -418,7 +422,8 @@ export default function ModalEditarNotebook({
 
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || submitLockRef.current}
+                            aria-busy={loading}
                             className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
                         >
                             <FaSave size={14} />

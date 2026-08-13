@@ -58,6 +58,18 @@ const funcionariosTI = [
     "Thiago Moreira Santos",
 ];
 
+const buttonBase =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
+const primaryButtonClass = `${buttonBase} bg-secondary text-white hover:bg-primary`;
+const accentButtonClass = `${buttonBase} border border-primary/30 bg-primary/10 text-primary hover:bg-primary hover:text-white`;
+const inputClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-left text-sm text-title outline-none shadow-sm transition placeholder:text-text-darken-placeholder focus:border-primary focus:ring-2 focus:ring-primary/10";
+const textareaClass =
+    "min-h-28 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm text-title outline-none shadow-sm transition placeholder:text-text-darken-placeholder focus:border-primary focus:ring-2 focus:ring-primary/10";
+const cardClass =
+    "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
+const labelClass = "mb-1 block text-xs font-bold uppercase text-slate-600";
+
 export default function CadastroNotebookPage() {
     const [form, setForm] = useState<NotebookFormData>(initialState);
     const [loading, setLoading] = useState(false);
@@ -70,6 +82,7 @@ export default function CadastroNotebookPage() {
 
     const debouncedFuncionario = useDebouncedValue(form.NM_FUNCIONARIO, 300);
     const funcionarioBoxRef = useRef<HTMLDivElement | null>(null);
+    const submitLockRef = useRef(false);
 
     const [loadingAccess, setLoadingAccess] = useState(true);
     const [allowed, setAllowed] = useState(false);
@@ -155,6 +168,9 @@ export default function CadastroNotebookPage() {
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
+        if (loading || submitLockRef.current) return;
+
+        submitLockRef.current = true;
         setLoading(true);
         setSuccess(null);
         setError(null);
@@ -188,6 +204,7 @@ export default function CadastroNotebookPage() {
         } catch (e: any) {
             setError(String(e?.message || "Erro ao cadastrar notebook."));
         } finally {
+            submitLockRef.current = false;
             setLoading(false);
         }
     }
@@ -218,36 +235,41 @@ export default function CadastroNotebookPage() {
                         <BackButton />
 
                         <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-third bg-third text-primary shadow-sm">
                                 <FaLaptop size={16} />
                             </div>
 
                             <div className="min-w-0">
-                                <h1 className="text-2xl font-semibold text-gray-900 truncate">
+                                <h1 className="truncate text-2xl font-semibold text-title">
                                     Cadastro de Notebook
                                 </h1>
 
-                                <p className="text-sm text-gray-600 mt-1">
+                                <p className="mt-1 text-sm text-paragraph">
                                     Preencha os dados abaixo para cadastrar um novo notebook.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <Link
-                        href="/auth/consulta_notebook"
-                        className="rounded-lg bg-secondary px-6 py-2 text-md font-semibold text-white hover:bg-primary cursor-pointer"
-                    >
-                        Consultar notebooks cadastrados
-                    </Link>
                 </div>
             </div>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-                    <h2 className="text-base font-semibold text-gray-900">
-                        Dados do equipamento
-                    </h2>
+                <div className={`${cardClass} border-t-4 border-t-primary`}>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <h2 className="text-base font-semibold text-title">
+                            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-primary" />
+                            Dados do equipamento
+                        </h2>
+
+                        <Link
+                            href="/auth/consulta_notebook"
+                            className={`${accentButtonClass} w-full sm:w-auto`}
+                        >
+                            <FaList />
+                            Consultar notebooks cadastrados
+                        </Link>
+                    </div>
 
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         <Field
@@ -317,14 +339,15 @@ export default function CadastroNotebookPage() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-                    <h2 className="text-base font-semibold text-gray-900">
+                <div className={cardClass}>
+                    <h2 className="text-base font-semibold text-title">
+                        <span className="mr-2 inline-block h-2 w-2 rounded-full bg-primary" />
                         Responsável / vínculo
                     </h2>
 
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         <div className="relative" ref={funcionarioBoxRef}>
-                            <label className="text-xs font-medium text-gray-600">
+                            <label className={labelClass}>
                                 Funcionário que recebeu
                             </label>
 
@@ -342,14 +365,14 @@ export default function CadastroNotebookPage() {
                                         }
                                     }}
                                     placeholder="Digite o nome do funcionário que recebeu"
-                                    className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none shadow-sm placeholder:text-gray-400"
+                                    className={`${inputClass} pr-10`}
                                 />
 
-                                <FaUser className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 mt-0.5" />
+                                <FaUser className="absolute right-3 top-1/2 -translate-y-1/2 text-text-darken" />
                             </div>
 
                             {showFuncionarios && form.NM_FUNCIONARIO.trim() ? (
-                                <div className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
+                                <div className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-2xl border border-slate-200 bg-white shadow-lg">
                                     {loadingFuncionarios ? (
                                         <div className="px-3 py-3 text-sm text-gray-500">
                                             Buscando funcionários...
@@ -364,12 +387,12 @@ export default function CadastroNotebookPage() {
                                                 key={`${funcionario.ID_FUNCIONARIO}-${funcionario.NM_FUNCIONARIO}`}
                                                 type="button"
                                                 onClick={() => handleSelectFuncionario(funcionario)}
-                                                className="flex w-full flex-col items-start px-3 py-3 text-left hover:bg-gray-50"
+                                                className="flex w-full flex-col items-start px-3 py-3 text-left hover:bg-primary/10"
                                             >
-                                                <span className="text-sm font-medium text-gray-900">
+                                                <span className="text-sm font-medium text-title">
                                                     {funcionario.NM_FUNCIONARIO}
                                                 </span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs text-paragraph">
                                                     ID: {funcionario.ID_FUNCIONARIO ?? "-"}
                                                 </span>
                                             </button>
@@ -380,23 +403,23 @@ export default function CadastroNotebookPage() {
                         </div>
 
                         <div className="relative">
-                            <label className="text-xs font-medium text-gray-600">
+                            <label className={labelClass}>
                                 Funcionário TI que cadastrou
                             </label>
 
                             <button
                                 type="button"
                                 onClick={() => setShowTiOptions((prev) => !prev)}
-                                className="mt-1 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm"
+                                className={`${inputClass} flex items-center justify-between`}
                             >
                                 <span>
                                     {form.NM_FUNCIONARIO_TI || "Selecione o funcionário da TI"}
                                 </span>
-                                <FaUser className="text-gray-400" />
+                                <FaUser className="text-text-darken" />
                             </button>
 
                             {showTiOptions && (
-                                <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
+                                <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
                                     {funcionariosTI.map((nome) => (
                                         <button
                                             key={nome}
@@ -405,7 +428,7 @@ export default function CadastroNotebookPage() {
                                                 handleChange("NM_FUNCIONARIO_TI", nome);
                                                 setShowTiOptions(false);
                                             }}
-                                            className="block w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                            className="block w-full px-4 py-3 text-left text-sm text-title hover:bg-primary/10"
                                         >
                                             {nome}
                                         </button>
@@ -416,19 +439,32 @@ export default function CadastroNotebookPage() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-                    <h2 className="text-base font-semibold text-gray-900">
+                <div className={cardClass}>
+                    <h2 className="text-base font-semibold text-title">
+                        <span className="mr-2 inline-block h-2 w-2 rounded-full bg-primary" />
                         Observações
                     </h2>
 
                     <div className="mt-4">
-                        <label className="text-xs font-medium text-gray-600">Observação</label>
+                        <label className={labelClass}>Observação</label>
                         <textarea
                             value={form.OBS_NOTEBOOKS_SICOOB}
                             onChange={(e) => handleChange("OBS_NOTEBOOKS_SICOOB", e.target.value)}
                             placeholder="Escreva alguma observação sobre o notebook..."
-                            className="mt-1 min-h-30 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none shadow-sm placeholder:text-gray-400"
+                            className={textareaClass}
                         />
+                    </div>
+
+                    <div className="mt-4 flex justify-end">
+                        <button
+                            type="submit"
+                            disabled={loading || submitLockRef.current}
+                            aria-busy={loading}
+                            className={primaryButtonClass}
+                        >
+                            <FaSave size={14} />
+                            {loading ? "Salvando..." : "Salvar notebook"}
+                        </button>
                     </div>
                 </div>
 
@@ -443,17 +479,6 @@ export default function CadastroNotebookPage() {
                         {error}
                     </div>
                 ) : null}
-
-                <div className="flex justify-end">
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
-                    >
-                        <FaSave size={14} />
-                        {loading ? "Salvando..." : "Salvar notebook"}
-                    </button>
-                </div>
             </form>
         </div>
     );
@@ -469,14 +494,14 @@ function Field(props: {
 }) {
     return (
         <div>
-            <label className="text-xs font-medium text-gray-600">{props.label}</label>
+            <label className={labelClass}>{props.label}</label>
             <input
                 value={props.value}
                 onChange={(e) => props.onChange(e.target.value)}
                 placeholder={props.placeholder}
                 type={props.type || "text"}
                 required={props.required}
-                className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none shadow-sm placeholder:text-gray-400"
+                className={inputClass}
             />
         </div>
     );
