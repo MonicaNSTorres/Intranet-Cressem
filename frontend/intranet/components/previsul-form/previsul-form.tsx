@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { formatCpfView, monetizarDigitacao, parseBRL, fmtBRL, hojeBR } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { gerarPdfPrevisul } from "@/lib/pdf/gerarPdfPrevisul";
@@ -108,6 +109,45 @@ function normalizeText(value?: string) {
         .replace(/[\u0300-\u036f]/g, "")
         .trim()
         .toUpperCase();
+}
+
+const fieldClass =
+    "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
+
+const readOnlyFieldClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 shadow-sm outline-none";
+
+const labelClass =
+    "mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500";
+
+function SectionCard({
+    title,
+    description,
+    children,
+}: {
+    title: string;
+    description?: string;
+    children: ReactNode;
+}) {
+    return (
+        <section className="rounded-[18px] border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 px-5 py-4">
+                <h2 className="flex items-center gap-2 text-base font-bold text-slate-950">
+                    <span className="h-2 w-2 rounded-full bg-primary" />
+                    {title}
+                </h2>
+                {description && (
+                    <p className="mt-1 text-sm text-slate-600">{description}</p>
+                )}
+            </div>
+
+            <div className="p-5">{children}</div>
+        </section>
+    );
+}
+
+function FieldLabel({ children }: { children: ReactNode }) {
+    return <label className={labelClass}>{children}</label>;
 }
 
 export function PrevisulForm() {
@@ -386,275 +426,264 @@ export function PrevisulForm() {
     };
 
     return (
-        <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-            <SearchForm onSearch={onBuscar}>
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        CPF do associado
-                    </label>
+        <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+            <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
 
-                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-                        <SearchInput
-                            value={formatCpfView(cpf)}
-                            onChange={(e) => setCpf(e.target.value)}
-                            placeholder="CPF (somente números)"
-                            className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                            inputMode="numeric"
-                            maxLength={14}
-                        />
-                        <SearchButton loading={loading} label="Pesquisar" />
-                    </div>
-
-                    {(erro || erroLocal) && (
-                        <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-                            {erroLocal || erro}
-                        </div>
-                    )}
-
-                    {(info || infoLocal) && !(erro || erroLocal) && (
-                        <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-                            {infoLocal || info}
-                        </div>
-                    )}
-                </div>
-            </SearchForm>
-
-            <div className="mt-6 space-y-3 border rounded p-4 bg-gray-50 text-sm text-gray-700">
-                <p>
-                    <strong>{nome}</strong>, pessoa física, CPF:{" "}
-                    <strong>{cpfTermo === "CPFCLIENTE" ? formatCpfView(cpf) : cpfTermo}</strong>,
-                    {" "}nascido em <strong>{nascimentoBr || "NASCIMENTO"}</strong>,
-                    {" "}<strong>{idadeTexto || "Idade"}</strong>, associado à SICOOB CRESSEM -
-                    COOPERATIVA DE ECONOMIA E CRÉDITO MÚTUO DOS SERVIDORES MUNICIPAIS DA
-                    REGIÃO METROPOLITANA DO VALE DO PARAÍBA E LITORAL NORTE, representado
-                    nos termos de seus atos constitutivos, formaliza pela assinatura do
-                    presente Termo, o interesse em aderir ao Contrato de Seguro Prestamista.
-                </p>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Nome do associado
-                    </label>
-                    <input
-                        value={nome}
-                        onChange={(e) => setNome(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        CPF no termo
-                    </label>
-                    <input
-                        value={cpfTermo === "CPFCLIENTE" ? formatCpfView(cpf) : cpfTermo}
-                        onChange={(e) => setCpfTermo(formatCpfView(e.target.value))}
-                        className="w-full border px-3 py-2 rounded"
-                        maxLength={14}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Data de nascimento
-                    </label>
-                    <input
-                        type="date"
-                        value={nascimento}
-                        onChange={(e) => setNascimento(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
-                    />
-                </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Proposta nº
-                    </label>
-                    <input
-                        value={proposta}
-                        onChange={(e) => setProposta(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Valor do empréstimo
-                    </label>
-                    <input
-                        value={valorEmprestimo}
-                        onChange={(e) => setValorEmprestimo(monetizarDigitacao(e.target.value))}
-                        className="w-full border px-3 py-2 rounded text-right"
-                        placeholder="R$ 0,00"
-                    />
-                </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Total de parcelas
-                    </label>
-                    <input
-                        value={totalParcelas}
-                        onChange={(e) => setTotalParcelas(e.target.value.replace(/\D/g, ""))}
-                        className="w-full border px-3 py-2 rounded"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Data da 1ª parcela do empréstimo
-                    </label>
-                    <input
-                        type="date"
-                        value={dataPrimeiraParcelaEmprestimo}
-                        onChange={(e) => setDataPrimeiraParcelaEmprestimo(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
-                    />
-                </div>
-            </div>
-
-            <div className="pt-5 border-t mt-6 flex items-center justify-end">
-                <button
-                    onClick={processar}
-                    className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+            <div className="space-y-5 p-5 md:p-6">
+                <SectionCard
+                    title="Consulta do associado"
+                    description="Busque o associado por CPF e complete os dados do contrato prestamista."
                 >
-                    Processar
-                </button>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Valor mensal do seguro
-                    </label>
-                    <input
-                        readOnly
-                        value={valorMensalSeguro}
-                        className="w-full border px-3 py-2 rounded bg-gray-50 text-right"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Valor total do seguro
-                    </label>
-                    <input
-                        readOnly
-                        value={valorTotalSeguro}
-                        className="w-full border px-3 py-2 rounded bg-gray-50 text-right"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Taxa de juros sobre o seguro
-                    </label>
-                    <input
-                        readOnly
-                        value={taxaJuros}
-                        className="w-full border px-3 py-2 rounded bg-gray-50"
-                    />
-                </div>
-            </div>
-
-            {mostrarCompetencia && (
-                <>
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <SearchForm onSearch={onBuscar}>
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Data da 1ª parcela do seguro
-                            </label>
-                            <input
-                                type="date"
-                                value={dataPrimeiraParcelaSeguro}
-                                onChange={(e) => setDataPrimeiraParcelaSeguro(e.target.value)}
-                                className="w-full border px-3 py-2 rounded"
-                            />
-                        </div>
+                            <FieldLabel>CPF do associado</FieldLabel>
 
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Data da última parcela do seguro
-                            </label>
-                            <input
-                                type="date"
-                                value={dataUltimaParcelaSeguro}
-                                onChange={(e) => setDataUltimaParcelaSeguro(e.target.value)}
-                                className="w-full border px-3 py-2 rounded"
-                            />
-                        </div>
-                    </div>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                                <SearchInput
+                                    value={formatCpfView(cpf)}
+                                    onChange={(e) => setCpf(e.target.value)}
+                                    placeholder="CPF (somente números)"
+                                    className={fieldClass}
+                                    inputMode="numeric"
+                                    maxLength={14}
+                                />
+                                <SearchButton loading={loading} label="Pesquisar" />
+                            </div>
 
-                    <div className="mt-6 space-y-3 border rounded p-4 bg-gray-50 text-sm text-gray-700">
+                            {(erro || erroLocal) && (
+                                <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                    {erroLocal || erro}
+                                </div>
+                            )}
+
+                            {(info || infoLocal) && !(erro || erroLocal) && (
+                                <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                                    {infoLocal || info}
+                                </div>
+                            )}
+                        </div>
+                    </SearchForm>
+                </SectionCard>
+
+                <SectionCard title="Prévia do termo">
+                    <div className="rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50 via-white to-lime-50 p-4 text-sm leading-relaxed text-slate-700">
                         <p>
-                            O seguro é pago por competência, ou seja, a partir da contratação,
-                            havendo assim a incidência de mais um mês de seguro, pois a primeira
-                            parcela do empréstimo vence no mês subsequente, mas tendo de estar
-                            segura a partir deste mês.
+                            <strong>{nome}</strong>, pessoa física, CPF:{" "}
+                            <strong>{cpfTermo === "CPFCLIENTE" ? formatCpfView(cpf) : cpfTermo}</strong>,
+                            {" "}nascido em <strong>{nascimentoBr || "NASCIMENTO"}</strong>,
+                            {" "}<strong>{idadeTexto || "Idade"}</strong>, associado à SICOOB CRESSEM -
+                            COOPERATIVA DE ECONOMIA E CRÉDITO MÚTUO DOS SERVIDORES MUNICIPAIS DA
+                            REGIÃO METROPOLITANA DO VALE DO PARAÍBA E LITORAL NORTE, representado
+                            nos termos de seus atos constitutivos, formaliza pela assinatura do
+                            presente Termo, o interesse em aderir ao Contrato de Seguro Prestamista.
                         </p>
                     </div>
-                </>
-            )}
+                </SectionCard>
 
-            <div className="mt-6 space-y-3 border rounded p-4 bg-gray-50 text-sm text-gray-700">
-                <p>
-                    A formalização da adesão individual ao seguro será realizada por
-                    intermédio do preenchimento e assinatura, pelo proponente, da Proposta
-                    de Adesão.
-                </p>
-            </div>
+                <SectionCard title="Dados do associado">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div>
+                            <FieldLabel>Nome do associado</FieldLabel>
+                            <input
+                                value={nome}
+                                onChange={(e) => setNome(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Cidade do atendimento
-                    </label>
-                    <select
-                        value={cidadeAtendimento}
-                        onChange={(e) => setCidadeAtendimento(e.target.value)}
-                        className="w-full border px-3 py-2 rounded bg-white"
-                    >
-                        <option value="">Selecione</option>
-                        {cidadesAtendimento.map((cidade) => (
-                            <option key={cidade.value} value={cidade.value}>
-                                {cidade.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                        <div>
+                            <FieldLabel>CPF no termo</FieldLabel>
+                            <input
+                                value={cpfTermo === "CPFCLIENTE" ? formatCpfView(cpf) : cpfTermo}
+                                onChange={(e) => setCpfTermo(formatCpfView(e.target.value))}
+                                className={fieldClass}
+                                maxLength={14}
+                            />
+                        </div>
 
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Data de hoje
-                    </label>
-                    <input
-                        value={dataHoje}
-                        onChange={(e) => setDataHoje(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
-                        placeholder="dd/mm/aaaa"
-                    />
-                </div>
-            </div>
+                        <div>
+                            <FieldLabel>Data de nascimento</FieldLabel>
+                            <input
+                                type="date"
+                                value={nascimento}
+                                onChange={(e) => setNascimento(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+                    </div>
+                </SectionCard>
 
-            <div className="pt-5 border-t mt-6 flex items-center justify-end">
-                <button
-                    type="button"
-                    onClick={gerar}
-                    disabled={!formularioValido}
-                    className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
-        ${formularioValido
-                            ? "bg-secondary hover:bg-primary cursor-pointer"
-                            : "bg-gray-300 cursor-not-allowed"
-                        }`}
+                <SectionCard
+                    title="Dados do empréstimo"
+                    description="Após preencher os campos, clique em Processar para calcular os valores do seguro."
                 >
-                    Gerar PDF
-                </button>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                            <FieldLabel>Proposta nº</FieldLabel>
+                            <input
+                                value={proposta}
+                                onChange={(e) => setProposta(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>Valor do empréstimo</FieldLabel>
+                            <input
+                                value={valorEmprestimo}
+                                onChange={(e) => setValorEmprestimo(monetizarDigitacao(e.target.value))}
+                                className={fieldClass}
+                                placeholder="R$ 0,00"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                            <FieldLabel>Total de parcelas</FieldLabel>
+                            <input
+                                value={totalParcelas}
+                                onChange={(e) => setTotalParcelas(e.target.value.replace(/\D/g, ""))}
+                                className={fieldClass}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>Data da 1ª parcela do empréstimo</FieldLabel>
+                            <input
+                                type="date"
+                                value={dataPrimeiraParcelaEmprestimo}
+                                onChange={(e) => setDataPrimeiraParcelaEmprestimo(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="mt-5 flex items-center justify-end border-t border-slate-200 pt-5">
+                        <button
+                            type="button"
+                            onClick={processar}
+                            className="inline-flex h-10 items-center justify-center rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary"
+                        >
+                            Processar
+                        </button>
+                    </div>
+                </SectionCard>
+
+                <SectionCard title="Resultado do seguro">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div>
+                            <FieldLabel>Valor mensal do seguro</FieldLabel>
+                            <input
+                                readOnly
+                                value={valorMensalSeguro}
+                                className={readOnlyFieldClass}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>Valor total do seguro</FieldLabel>
+                            <input
+                                readOnly
+                                value={valorTotalSeguro}
+                                className={readOnlyFieldClass}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>Taxa de juros sobre o seguro</FieldLabel>
+                            <input
+                                readOnly
+                                value={taxaJuros}
+                                className={readOnlyFieldClass}
+                            />
+                        </div>
+                    </div>
+
+                    {mostrarCompetencia && (
+                        <div className="mt-5 space-y-3">
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <div>
+                                    <FieldLabel>Data da 1ª parcela do seguro</FieldLabel>
+                                    <input
+                                        type="date"
+                                        value={dataPrimeiraParcelaSeguro}
+                                        onChange={(e) => setDataPrimeiraParcelaSeguro(e.target.value)}
+                                        className={fieldClass}
+                                    />
+                                </div>
+
+                                <div>
+                                    <FieldLabel>Data da última parcela do seguro</FieldLabel>
+                                    <input
+                                        type="date"
+                                        value={dataUltimaParcelaSeguro}
+                                        onChange={(e) => setDataUltimaParcelaSeguro(e.target.value)}
+                                        className={fieldClass}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
+                                O seguro é pago por competência, ou seja, a partir da contratação,
+                                havendo assim a incidência de mais um mês de seguro, pois a primeira
+                                parcela do empréstimo vence no mês subsequente, mas tendo de estar
+                                segura a partir deste mês.
+                            </div>
+                        </div>
+                    )}
+                </SectionCard>
+
+                <SectionCard title="Atendimento">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+                        A formalização da adesão individual ao seguro será realizada por
+                        intermédio do preenchimento e assinatura, pelo proponente, da Proposta
+                        de Adesão.
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                            <FieldLabel>Cidade do atendimento</FieldLabel>
+                            <select
+                                value={cidadeAtendimento}
+                                onChange={(e) => setCidadeAtendimento(e.target.value)}
+                                className={fieldClass}
+                            >
+                                <option value="">Selecione</option>
+                                {cidadesAtendimento.map((cidade) => (
+                                    <option key={cidade.value} value={cidade.value}>
+                                        {cidade.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <FieldLabel>Data de hoje</FieldLabel>
+                            <input
+                                value={dataHoje}
+                                onChange={(e) => setDataHoje(e.target.value)}
+                                className={fieldClass}
+                                placeholder="dd/mm/aaaa"
+                            />
+                        </div>
+                    </div>
+                </SectionCard>
+
+                <div className="flex items-center justify-end border-t border-slate-200 pt-5">
+                    <button
+                        type="button"
+                        onClick={gerar}
+                        disabled={!formularioValido}
+                        className={`inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition ${
+                            formularioValido
+                                ? "cursor-pointer bg-primary hover:bg-fourth"
+                                : "cursor-not-allowed bg-slate-300"
+                        }`}
+                    >
+                        Gerar PDF
+                    </button>
+                </div>
             </div>
         </div>
     );
