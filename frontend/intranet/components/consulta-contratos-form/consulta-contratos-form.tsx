@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FaAddressBook,
@@ -376,6 +376,10 @@ export function ConsultaContratosForm() {
   const [loadingInicial, setLoadingInicial] = useState(true);
   const [loadingBuscar, setLoadingBuscar] = useState(false);
   const [loadingRelatorio, setLoadingRelatorio] = useState(false);
+  const buscarLockRef = useRef(false);
+  const relatorioLockRef = useRef(false);
+  const contatosLockRef = useRef(false);
+  const atualizarEdicaoLockRef = useRef(false);
 
   const [empresa, setEmpresa] = useState("");
   const [cnpj, setCnpj] = useState("");
@@ -503,9 +507,12 @@ export function ConsultaContratosForm() {
   }, []);
 
   async function buscar(page = 1) {
+    if (loadingBuscar || buscarLockRef.current) return;
+
     try {
       setErro("");
       setInfo("");
+      buscarLockRef.current = true;
       setLoadingBuscar(true);
 
       const contratos = await carregarTodosContratos(montarParamsBase());
@@ -524,6 +531,7 @@ export function ConsultaContratosForm() {
         "Não foi possível consultar os contratos."
       );
     } finally {
+      buscarLockRef.current = false;
       setLoadingBuscar(false);
     }
   }
@@ -532,11 +540,14 @@ export function ConsultaContratosForm() {
     novoStatus: string,
     novoFiltroVencimento: FiltroVencimento
   ) {
+    if (loadingBuscar || buscarLockRef.current) return;
+
     try {
       setErro("");
       setInfo("");
       setStatus(novoStatus);
       setFiltroVencimento(novoFiltroVencimento);
+      buscarLockRef.current = true;
       setLoadingBuscar(true);
 
       const contratos = await carregarTodosContratos(
@@ -557,6 +568,7 @@ export function ConsultaContratosForm() {
           "Não foi possível aplicar o filtro do resumo."
       );
     } finally {
+      buscarLockRef.current = false;
       setLoadingBuscar(false);
     }
   }
@@ -595,7 +607,10 @@ export function ConsultaContratosForm() {
   }
 
   async function abrirContatos(item: ContratoEmpresaItem) {
+    if (loadingContatos || contatosLockRef.current) return;
+
     try {
+      contatosLockRef.current = true;
       setContratoContatos(item);
       setContatosContrato([]);
       setErroContatos("");
@@ -613,6 +628,7 @@ export function ConsultaContratosForm() {
           "Não foi possível carregar os contatos deste contrato."
       );
     } finally {
+      contatosLockRef.current = false;
       setLoadingContatos(false);
     }
   }
@@ -625,9 +641,12 @@ export function ConsultaContratosForm() {
   }
 
   async function baixarRelatorio() {
+    if (loadingRelatorio || relatorioLockRef.current) return;
+
     try {
       setErro("");
       setInfo("");
+      relatorioLockRef.current = true;
       setLoadingRelatorio(true);
 
       const contratos = await carregarTodosContratos(montarParamsBase());
@@ -680,6 +699,7 @@ export function ConsultaContratosForm() {
           "Não foi possível baixar o relatório de contratos."
       );
     } finally {
+      relatorioLockRef.current = false;
       setLoadingRelatorio(false);
     }
   }
@@ -691,7 +711,10 @@ export function ConsultaContratosForm() {
   }
 
   async function handleSalvouEdicao() {
+    if (atualizarEdicaoLockRef.current) return;
+
     try {
+      atualizarEdicaoLockRef.current = true;
       await buscar(currentPage);
       const resumo = await carregarTodosContratos({});
       setContratosResumo(resumo);
@@ -704,6 +727,8 @@ export function ConsultaContratosForm() {
         tipo: "erro",
         mensagem: "Edição salva, mas não foi possível atualizar a lista agora.",
       });
+    } finally {
+      atualizarEdicaoLockRef.current = false;
     }
   }
 
@@ -882,7 +907,8 @@ export function ConsultaContratosForm() {
                 <button
                   type="button"
                   onClick={() => buscar(1)}
-                  disabled={loadingBuscar}
+                  disabled={loadingBuscar || buscarLockRef.current}
+                  aria-busy={loadingBuscar}
                   className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-secondary bg-secondary px-5 text-sm font-bold text-white shadow-sm transition hover:border-primary hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <FaSearch />
@@ -900,7 +926,8 @@ export function ConsultaContratosForm() {
                 <button
                   type="button"
                   onClick={baixarRelatorio}
-                  disabled={loadingBuscar || loadingRelatorio}
+                  disabled={loadingBuscar || loadingRelatorio || relatorioLockRef.current}
+                  aria-busy={loadingRelatorio}
                   className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-5 text-sm font-bold text-primary shadow-sm transition hover:border-primary hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FaDownload />
@@ -1014,9 +1041,10 @@ export function ConsultaContratosForm() {
                             <button
                               type="button"
                               onClick={() => abrirContatos(item)}
+                              disabled={loadingContatos || contatosLockRef.current}
                               title="Ver contatos"
                               aria-label="Ver contatos"
-                              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 text-primary shadow-sm transition hover:border-primary hover:bg-primary hover:text-white"
+                              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 text-primary shadow-sm transition hover:border-primary hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <FaAddressBook size={13} />
                             </button>

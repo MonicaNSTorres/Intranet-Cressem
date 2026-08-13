@@ -258,6 +258,7 @@ export function CadastroContratoForm({
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
   const alertaRef = useRef<HTMLDivElement | null>(null);
+  const salvarLockRef = useRef(false);
 
   useEffect(() => {
     async function loadInicial() {
@@ -580,6 +581,8 @@ export function CadastroContratoForm({
   }
 
   async function salvar() {
+    if (loadingSalvar || salvarLockRef.current) return;
+
     try {
       setErro("");
       setInfo("");
@@ -591,6 +594,7 @@ export function CadastroContratoForm({
         return;
       }
 
+      salvarLockRef.current = true;
       setLoadingSalvar(true);
 
       if (modoEdicao && contratoId) {
@@ -660,6 +664,7 @@ export function CadastroContratoForm({
       setErro(mensagemErro);
       onResult?.(false, mensagemErro);
     } finally {
+      salvarLockRef.current = false;
       setLoadingSalvar(false);
     }
   }
@@ -1114,7 +1119,7 @@ export function CadastroContratoForm({
 
               <ActionButton
                 onClick={salvar}
-                disabled={loadingSalvar}
+                disabled={loadingSalvar || salvarLockRef.current}
                 variant="success"
               >
                 <FaSave />
