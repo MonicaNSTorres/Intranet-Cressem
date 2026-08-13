@@ -2,6 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import { formatCpfView, hojeBR } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { gerarPdfFormularioDps } from "@/lib/pdf/gerarPdfFormularioDps";
@@ -75,6 +76,42 @@ const initialDoencas: DoencasState = {
   hipertensao: "",
   renal: "",
 };
+
+const fieldClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
+
+const labelClass =
+  "mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500";
+
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-[18px] border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 px-5 py-4">
+        <h2 className="flex items-center gap-2 text-base font-bold text-slate-950">
+          <span className="h-2 w-2 rounded-full bg-primary" />
+          {title}
+        </h2>
+        {description && (
+          <p className="mt-1 text-sm text-slate-600">{description}</p>
+        )}
+      </div>
+
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+
+function FieldLabel({ children }: { children: ReactNode }) {
+  return <label className={labelClass}>{children}</label>;
+}
 
 function formatTelefone(value: string) {
   const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
@@ -273,405 +310,378 @@ export function FormularioDpsForm() {
   };
 
   return (
-    <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <SearchForm onSearch={onBuscar}>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            CPF do associado
-          </label>
+    <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
 
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-            <SearchInput
-              value={formatCpfView(cpf)}
-              onChange={(e) => setCpf(e.target.value)}
-              placeholder="CPF (somente números)"
-              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              inputMode="numeric"
-              maxLength={14}
-            />
-            <SearchButton loading={loading} label="Pesquisar" />
-          </div>
-
-          {erro && (
-            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-              {erro}
-            </div>
-          )}
-
-          {info && (
-            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-              {info}
-            </div>
-          )}
-        </div>
-      </SearchForm>
-
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Nome do associado
-          </label>
-          <input
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Estado civil
-          </label>
-          <select
-            value={estadoCivil}
-            onChange={(e) => setEstadoCivil(e.target.value as EstadoCivil)}
-            className="w-full border px-3 py-2 rounded bg-white"
-          >
-            <option value="">Selecione</option>
-            <option value="CASADO">CASADO</option>
-            <option value="DIVORCIADO">DIVORCIADO</option>
-            <option value="SEPARADO">SEPARADO</option>
-            <option value="SOLTEIRO">SOLTEIRO</option>
-            <option value="UNIAO ESTAVEL">UNIÃO ESTÁVEL</option>
-            <option value="VIUVO">VIÚVO</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Sexo
-          </label>
-
-          <div className="grid grid-cols-2 gap-3 rounded border px-3 py-2">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="sexo"
-                checked={sexo === "feminino"}
-                onChange={() => setSexo("feminino")}
-              />
-              Feminino
-            </label>
-
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="sexo"
-                checked={sexo === "masculino"}
-                onChange={() => setSexo("masculino")}
-              />
-              Masculino
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Nascimento
-          </label>
-          <input
-            type="date"
-            value={nascimento}
-            onChange={(e) => setNascimento(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Celular / telefone
-          </label>
-          <input
-            value={telefone}
-            onChange={(e) => setTelefone(formatTelefone(e.target.value))}
-            className="w-full border px-3 py-2 rounded"
-            placeholder="(00) 00000-0000"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Nº doc. identificação
-          </label>
-          <input
-            value={documento}
-            onChange={(e) => setDocumento(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Órgão expedidor
-          </label>
-          <input
-            value={orgaoExpedidor}
-            onChange={(e) => setOrgaoExpedidor(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Endereço de correspondência
-          </label>
-          <input
-            value={rua}
-            onChange={(e) => setRua(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Bairro
-          </label>
-          <input
-            value={bairro}
-            onChange={(e) => setBairro(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-3">
-        <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Cidade
-          </label>
-          <input
-            value={cidade}
-            onChange={(e) => setCidade(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Estado
-          </label>
-          <input
-            value={estado}
-            onChange={(e) => setEstado(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            CEP
-          </label>
-          <input
-            value={cep}
-            onChange={(e) => setCep(formatCep(e.target.value))}
-            className="w-full border px-3 py-2 rounded"
-            placeholder="00000-000"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          E-mail
-        </label>
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border px-3 py-2 rounded"
-        />
-      </div>
-
-      <div className="mt-6">
-        <div className="border rounded overflow-hidden">
-          <div className="bg-gray-50 border-b px-4 py-3">
-            <h3 className="text-sm font-semibold text-gray-800 text-center">
-              DECLARAÇÃO PESSOAL DE SAÚDE E ATIVIDADES
-            </h3>
-          </div>
-
-          <div className="px-4 py-4 space-y-4">
-            {DOENCAS_CONFIG.map((item) => (
-              <div
-                key={item.key}
-                className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 items-center border-b pb-4 last:border-b-0 last:pb-0"
-              >
-                <div className="text-sm text-gray-800">
-                  {item.label}
-                </div>
-
-                <div className="flex items-center gap-3 text-sm text-gray-700">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name={item.key}
-                      checked={doencas[item.key] === "sim"}
-                      onChange={() => setRespostaDoenca(item.key, "sim")}
-                    />
-                    Sim
-                  </label>
-
-                  {item.key === "diabetes" && doencas.diabetes === "sim" && (
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="tipo_diabetes"
-                          checked={tipoDiabetes === "tipo1"}
-                          onChange={() => setTipoDiabetes("tipo1")}
-                        />
-                        Tipo 1
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="tipo_diabetes"
-                          checked={tipoDiabetes === "tipo2"}
-                          onChange={() => setTipoDiabetes("tipo2")}
-                        />
-                        Tipo 2
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="tipo_diabetes"
-                          checked={tipoDiabetes === "gestacional"}
-                          onChange={() => setTipoDiabetes("gestacional")}
-                        />
-                        Gestacional
-                      </label>
-                    </div>
-                  )}
-
-                  {item.key === "hepatite" && doencas.hepatite === "sim" && (
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="tipo_hepatite"
-                          checked={tipoHepatite === "a"}
-                          onChange={() => setTipoHepatite("a")}
-                        />
-                        A
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="tipo_hepatite"
-                          checked={tipoHepatite === "b"}
-                          onChange={() => setTipoHepatite("b")}
-                        />
-                        B
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="tipo_hepatite"
-                          checked={tipoHepatite === "c"}
-                          onChange={() => setTipoHepatite("c")}
-                        />
-                        C
-                      </label>
-                    </div>
-                  )}
-
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="radio"
-                      name={item.key}
-                      checked={doencas[item.key] === "nao"}
-                      onChange={() => setRespostaDoenca(item.key, "nao")}
-                    />
-                    Não
-                  </label>
-
-                </div>
-
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 space-y-3 text-sm text-gray-700 border rounded p-4 bg-gray-50">
-        <p>
-          Declaro, para os devidos fins e efeitos, estar ciente que, conforme os
-          Artigos 765 e 766 do Código Civil Brasileiro, se estiver omitindo
-          circunstâncias que influam na aceitação da proposta ou na taxa de prêmio,
-          perderei o direito à indenização, além de estar obrigado ao pagamento do
-          prêmio vencido.
-        </p>
-        <p>
-          Declaro, também, que estou fazendo o seguro prestamista para isentar da
-          apresentação de avalista e que, se o quiser poderei fazê-lo em qualquer
-          momento, cessando o pagamento desse seguro.
-        </p>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Cidade do atendimento
-          </label>
-          <select
-            value={cidadeAtendimento}
-            onChange={(e) => setCidadeAtendimento(e.target.value)}
-            className="w-full border px-3 py-2 rounded bg-white"
-          >
-            <option value="">Selecione</option>
-            {cidadesAtendimento.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Dia do atendimento
-          </label>
-          <input
-            value={diaAtendimento}
-            onChange={(e) => setDiaAtendimento(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-            placeholder="dd/mm/aaaa"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 border rounded p-4 bg-white">
-        <div className="space-y-5 text-sm text-gray-700">
-          <div>
-            <div className="border-b border-gray-400 w-full mb-2" />
-            <p className="text-center">{assinaturaAssociado}</p>
-          </div>
-
-          <div>
-            <div className="border-b border-gray-400 w-full mb-2" />
-            <p className="text-center">Validação</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="pt-5 border-t mt-6 flex items-center justify-end">
-        <button
-          type="button"
-          onClick={gerar}
-          disabled={!formularioValido}
-          className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
-    ${formularioValido
-              ? "bg-secondary hover:bg-primary cursor-pointer"
-              : "bg-gray-300 cursor-not-allowed"
-            }`}
+      <div className="space-y-5 p-5 md:p-6">
+        <SectionCard
+          title="Consulta do associado"
+          description="Busque pelo CPF para carregar os dados disponíveis e ajuste manualmente quando necessário."
         >
-          Gerar PDF
-        </button>
+          <SearchForm onSearch={onBuscar}>
+            <div>
+              <FieldLabel>CPF do associado</FieldLabel>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                <SearchInput
+                  value={formatCpfView(cpf)}
+                  onChange={(e) => setCpf(e.target.value)}
+                  placeholder="CPF (somente números)"
+                  className={fieldClass}
+                  inputMode="numeric"
+                  maxLength={14}
+                />
+                <SearchButton loading={loading} label="Pesquisar" />
+              </div>
+
+              {erro && (
+                <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {erro}
+                </div>
+              )}
+
+              {info && (
+                <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  {info}
+                </div>
+              )}
+            </div>
+          </SearchForm>
+        </SectionCard>
+
+        <SectionCard
+          title="Dados pessoais"
+          description="Informações do proponente principal para preenchimento do termo."
+        >
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <FieldLabel>Nome do associado</FieldLabel>
+              <input
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Estado civil</FieldLabel>
+              <select
+                value={estadoCivil}
+                onChange={(e) => setEstadoCivil(e.target.value as EstadoCivil)}
+                className={fieldClass}
+              >
+                <option value="">Selecione</option>
+                <option value="CASADO">CASADO</option>
+                <option value="DIVORCIADO">DIVORCIADO</option>
+                <option value="SEPARADO">SEPARADO</option>
+                <option value="SOLTEIRO">SOLTEIRO</option>
+                <option value="UNIAO ESTAVEL">UNIÃO ESTÁVEL</option>
+                <option value="VIUVO">VIÚVO</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div>
+              <FieldLabel>Sexo</FieldLabel>
+              <div className="grid h-10 grid-cols-2 gap-3 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="sexo"
+                    checked={sexo === "feminino"}
+                    onChange={() => setSexo("feminino")}
+                  />
+                  Feminino
+                </label>
+
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="sexo"
+                    checked={sexo === "masculino"}
+                    onChange={() => setSexo("masculino")}
+                  />
+                  Masculino
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Nascimento</FieldLabel>
+              <input
+                type="date"
+                value={nascimento}
+                onChange={(e) => setNascimento(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Celular / telefone</FieldLabel>
+              <input
+                value={telefone}
+                onChange={(e) => setTelefone(formatTelefone(e.target.value))}
+                className={fieldClass}
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Documento e contato">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <FieldLabel>Nº doc. identificação</FieldLabel>
+              <input
+                value={documento}
+                onChange={(e) => setDocumento(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Órgão expedidor</FieldLabel>
+              <input
+                value={orgaoExpedidor}
+                onChange={(e) => setOrgaoExpedidor(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <FieldLabel>E-mail</FieldLabel>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={fieldClass}
+            />
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Endereço de correspondência">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <FieldLabel>Endereço de correspondência</FieldLabel>
+              <input
+                value={rua}
+                onChange={(e) => setRua(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Bairro</FieldLabel>
+              <input
+                value={bairro}
+                onChange={(e) => setBairro(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
+            <div className="md:col-span-2">
+              <FieldLabel>Cidade</FieldLabel>
+              <input
+                value={cidade}
+                onChange={(e) => setCidade(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>Estado</FieldLabel>
+              <input
+                value={estado}
+                onChange={(e) => setEstado(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+
+            <div>
+              <FieldLabel>CEP</FieldLabel>
+              <input
+                value={cep}
+                onChange={(e) => setCep(formatCep(e.target.value))}
+                className={fieldClass}
+                placeholder="00000-000"
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Declaração pessoal de saúde e atividades"
+          description="Preencha se houver informação do associado. Caso fique em branco, a impressão permanece disponível para preenchimento manual."
+        >
+          <div className="overflow-hidden rounded-2xl border border-slate-200">
+            <div className="bg-slate-50 px-4 py-3">
+              <h3 className="text-center text-sm font-bold text-slate-900">
+                DECLARAÇÃO PESSOAL DE SAÚDE E ATIVIDADES
+              </h3>
+            </div>
+
+            <div className="divide-y divide-slate-200">
+              {DOENCAS_CONFIG.map((item) => (
+                <div
+                  key={item.key}
+                  className="grid grid-cols-1 gap-3 px-4 py-3 md:grid-cols-[1fr_auto]"
+                >
+                  <div className="text-sm font-medium text-slate-800">
+                    {item.label}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-slate-700">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name={item.key}
+                        checked={doencas[item.key] === "sim"}
+                        onChange={() => setRespostaDoenca(item.key, "sim")}
+                      />
+                      Sim
+                    </label>
+
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name={item.key}
+                        checked={doencas[item.key] === "nao"}
+                        onChange={() => setRespostaDoenca(item.key, "nao")}
+                      />
+                      Não
+                    </label>
+
+                    {item.key === "diabetes" && doencas.diabetes === "sim" && (
+                      <div className="flex flex-wrap items-center gap-3 rounded-full bg-slate-50 px-3 py-1">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="tipo_diabetes"
+                            checked={tipoDiabetes === "tipo1"}
+                            onChange={() => setTipoDiabetes("tipo1")}
+                          />
+                          Tipo 1
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="tipo_diabetes"
+                            checked={tipoDiabetes === "tipo2"}
+                            onChange={() => setTipoDiabetes("tipo2")}
+                          />
+                          Tipo 2
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="tipo_diabetes"
+                            checked={tipoDiabetes === "gestacional"}
+                            onChange={() => setTipoDiabetes("gestacional")}
+                          />
+                          Gestacional
+                        </label>
+                      </div>
+                    )}
+
+                    {item.key === "hepatite" && doencas.hepatite === "sim" && (
+                      <div className="flex flex-wrap items-center gap-3 rounded-full bg-slate-50 px-3 py-1">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="tipo_hepatite"
+                            checked={tipoHepatite === "a"}
+                            onChange={() => setTipoHepatite("a")}
+                          />
+                          A
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="tipo_hepatite"
+                            checked={tipoHepatite === "b"}
+                            onChange={() => setTipoHepatite("b")}
+                          />
+                          B
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="tipo_hepatite"
+                            checked={tipoHepatite === "c"}
+                            onChange={() => setTipoHepatite("c")}
+                          />
+                          C
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Declarações e atendimento">
+          <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+            <p>
+              Declaro, para os devidos fins e efeitos, estar ciente que, conforme os
+              Artigos 765 e 766 do Código Civil Brasileiro, se estiver omitindo
+              circunstâncias que influam na aceitação da proposta ou na taxa de prêmio,
+              perderei o direito à indenização, além de estar obrigado ao pagamento do
+              prêmio vencido.
+            </p>
+            <p>
+              Declaro, também, que estou fazendo o seguro prestamista para isentar da
+              apresentação de avalista e que, se o quiser poderei fazê-lo em qualquer
+              momento, cessando o pagamento desse seguro.
+            </p>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <FieldLabel>Cidade do atendimento</FieldLabel>
+              <select
+                value={cidadeAtendimento}
+                onChange={(e) => setCidadeAtendimento(e.target.value)}
+                className={fieldClass}
+              >
+                <option value="">Selecione</option>
+                {cidadesAtendimento.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <FieldLabel>Dia do atendimento</FieldLabel>
+              <input
+                value={diaAtendimento}
+                onChange={(e) => setDiaAtendimento(e.target.value)}
+                className={fieldClass}
+                placeholder="dd/mm/aaaa"
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        <div className="flex items-center justify-end border-t border-slate-200 pt-5">
+          <button
+            type="button"
+            onClick={gerar}
+            disabled={!formularioValido}
+            className={`inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition ${
+              formularioValido
+                ? "cursor-pointer bg-primary hover:bg-fourth"
+                : "cursor-not-allowed bg-slate-300"
+            }`}
+          >
+            Gerar PDF
+          </button>
+        </div>
       </div>
     </div>
   );
