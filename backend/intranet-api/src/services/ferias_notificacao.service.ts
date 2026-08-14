@@ -21,7 +21,12 @@ const EMAIL_TI = [
 const ROTINA = "FERIAS_NOTIFICACAO";
 
 type TipoNotificacaoMensal = "RH_DIRETORIA" | "GERENCIAS" | "PREVIA_DIA17";
-type TipoNotificacaoTiFerias = "RETORNO_PREVIA" | "RETORNO_DIA" | "TODAS";
+type TipoNotificacaoTiFerias =
+  | "SAIDA_PREVIA"
+  | "SAIDA_DIA"
+  | "RETORNO_PREVIA"
+  | "RETORNO_DIA"
+  | "TODAS";
 
 function getAllowedEmailIps() {
   return String(process.env.EMAIL_ALLOWED_IPS || "")
@@ -274,6 +279,20 @@ function addDiasEm(dataBase: Date, dias: number) {
   return data;
 }
 
+function normalizarData(dataBase: Date) {
+  return new Date(
+    dataBase.getFullYear(),
+    dataBase.getMonth(),
+    dataBase.getDate()
+  );
+}
+
+function mesmaData(dataA: any, dataB: any) {
+  const a = normalizarData(dataA instanceof Date ? dataA : new Date(dataA));
+  const b = normalizarData(dataB instanceof Date ? dataB : new Date(dataB));
+  return a.getTime() === b.getTime();
+}
+
 function ehFimDeSemana(data: Date) {
   const diaSemana = data.getDay();
   return diaSemana === 0 || diaSemana === 6;
@@ -512,6 +531,7 @@ async function buscarFeriasPorMesAno(mes: number, ano: number) {
 }*/}
 
 async function buscarRetornoNaData(dataRetorno: Date) {
+  const inicioJanela = addDiasEm(dataRetorno, -7);
   const sql = `
     SELECT
       F.ID_FERIAS_FUNCIONARIOS,
@@ -523,13 +543,40 @@ async function buscarRetornoNaData(dataRetorno: Date) {
     FROM DBACRESSEM.FERIAS_FUNCIONARIOS F
     JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM P
       ON P.ID_FUNCIONARIO = F.ID_FUNCIONARIO
-    WHERE TRUNC(F.DT_DIA_FIM) + 1 = TRUNC(:dataRetorno)
+    WHERE TRUNC(F.DT_DIA_FIM) BETWEEN TRUNC(:inicioJanela) AND TRUNC(:dataRetorno)
     ORDER BY P.NM_FUNCIONARIO
   `;
 
   const result = await oracleExecute(
     sql,
-    { dataRetorno },
+    { inicioJanela, dataRetorno },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  return ((result.rows || []) as any[]).filter((row) =>
+    mesmaData(proximoDiaUtil(new Date(row.DT_DIA_FIM)), dataRetorno)
+  );
+}
+
+async function buscarSaidaNaData(dataSaida: Date) {
+  const sql = `
+    SELECT
+      F.ID_FERIAS_FUNCIONARIOS,
+      F.DT_DIA_INICIO,
+      F.DT_DIA_FIM,
+      F.ID_FUNCIONARIO,
+      P.NM_FUNCIONARIO AS NOME,
+      P.EMAIL
+    FROM DBACRESSEM.FERIAS_FUNCIONARIOS F
+    JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM P
+      ON P.ID_FUNCIONARIO = F.ID_FUNCIONARIO
+    WHERE TRUNC(F.DT_DIA_INICIO) = TRUNC(:dataSaida)
+    ORDER BY P.NM_FUNCIONARIO
+  `;
+
+  const result = await oracleExecute(
+    sql,
+    { dataSaida },
     { outFormat: oracledb.OUT_FORMAT_OBJECT }
   );
 
@@ -689,38 +736,73 @@ export async function enviarEmailTiFerias(options?: {
   }
 
   const hoje = hojeSaoPaulo();
-  const dataProximoRetorno = proximoDiaUtil(hoje);
-  const executarPrevia = tipo === "RETORNO_PREVIA" || tipo === "TODAS";
-  const executarDia = tipo === "RETORNO_DIA" || tipo === "TODAS";
+  const proximoUtil = proximoDiaUtil(hoje);
+  const executarSaidaPrevia = tipo === "SAIDA_PREVIA" || tipo === "TODAS";
+  const executarSaidaDia = tipo === "SAIDA_DIA" || tipo === "TODAS";
+  const executarRetornoPrevia = tipo === "RETORNO_PREVIA" || tipo === "TODAS";
+  const executarRetornoDia = tipo === "RETORNO_DIA" || tipo === "TODAS";
+  const executarPrevia = executarSaidaPrevia || executarRetornoPrevia;
 
   if (executarPrevia && tipo !== "TODAS" && ehFimDeSemana(hoje)) {
     const motivo =
-      "Prévia de retorno não é enviada no fim de semana; sexta-feira cobre o retorno de segunda.";
+      "Prévia de férias não é enviada no fim de semana; sexta-feira cobre eventos de segunda.";
     console.log(`[FÉRIAS][TI] Envio pulado: ${motivo}`);
     return { enviados: 0, pulado: true, motivo, tipo };
   }
 
-  const retornoPrevia =
-    executarPrevia && !ehFimDeSemana(hoje)
-      ? await buscarRetornoNaData(dataProximoRetorno)
+  const saidaPrevia =
+    executarSaidaPrevia && !ehFimDeSemana(hoje)
+      ? await buscarSaidaNaData(proximoUtil)
       : [];
-  const retornoHoje = executarDia ? await buscarRetornoNaData(hoje) : [];
+  const saidaHoje = executarSaidaDia ? await buscarSaidaNaData(hoje) : [];
+  const retornoPrevia =
+    executarRetornoPrevia && !ehFimDeSemana(hoje)
+      ? await buscarRetornoNaData(proximoUtil)
+      : [];
+  const retornoHoje = executarRetornoDia ? await buscarRetornoNaData(hoje) : [];
 
   console.log("[FÉRIAS][TI] Resultado das consultas:", {
     tipo,
     hoje: dataBR(hoje),
+    saidaPrevia: saidaPrevia.length,
+    saidaHoje: saidaHoje.length,
     retornoPrevia: retornoPrevia.length,
-    dataProximoRetorno: dataBR(dataProximoRetorno),
     retornoHoje: retornoHoje.length,
+    proximoUtil: dataBR(proximoUtil),
   });
 
   let enviados = 0;
 
-  if (retornoPrevia.length) {
-    const descricao = descricaoPreviaRetorno(hoje, dataProximoRetorno);
-    const assunto = `[TI] Retorno de férias ${descricao} (${dataBR(dataProximoRetorno)})`;
+  if (saidaPrevia.length) {
+    const descricao = descricaoPreviaRetorno(hoje, proximoUtil);
+    const assunto = `[TI] Saída de férias ${descricao} (${dataBR(proximoUtil)})`;
     const html = montarHtmlEmailFerias({
-      titulo: `TI - Retorno de férias ${descricao} (${dataBR(dataProximoRetorno)})`,
+      titulo: `TI - Saída de férias ${descricao} (${dataBR(proximoUtil)})`,
+      introducao: `Os seguintes colaboradores iniciam férias ${descricao}.`,
+      listaHtml: buildListaHtml(saidaPrevia),
+    });
+
+    await sendEmail(EMAIL_TI, assunto, html);
+    enviados++;
+  }
+
+  if (saidaHoje.length) {
+    const assunto = `[TI] Saída de férias HOJE (${dataBR(hoje)})`;
+    const html = montarHtmlEmailFerias({
+      titulo: `TI - Saída de férias hoje (${dataBR(hoje)})`,
+      introducao: "Os seguintes colaboradores iniciam férias hoje.",
+      listaHtml: buildListaHtml(saidaHoje),
+    });
+
+    await sendEmail(EMAIL_TI, assunto, html);
+    enviados++;
+  }
+
+  if (retornoPrevia.length) {
+    const descricao = descricaoPreviaRetorno(hoje, proximoUtil);
+    const assunto = `[TI] Retorno de férias ${descricao} (${dataBR(proximoUtil)})`;
+    const html = montarHtmlEmailFerias({
+      titulo: `TI - Retorno de férias ${descricao} (${dataBR(proximoUtil)})`,
       introducao: `Os seguintes colaboradores retornam de férias ${descricao}.`,
       listaHtml: buildListaHtml(retornoPrevia),
     });
@@ -745,12 +827,14 @@ export async function enviarEmailTiFerias(options?: {
     enviados,
     tipo,
     encontrados: {
+      saidaPrevia: saidaPrevia.length,
+      saidaHoje: saidaHoje.length,
       retornoPrevia: retornoPrevia.length,
       retornoHoje: retornoHoje.length,
     },
     datas: {
       hoje: dataBR(hoje),
-      proximoDiaUtil: dataBR(dataProximoRetorno),
+      proximoDiaUtil: dataBR(proximoUtil),
     },
   };
 }

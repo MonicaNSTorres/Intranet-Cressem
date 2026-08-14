@@ -2,8 +2,10 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  FaChevronLeft,
+  FaChevronRight,
   FaDownload,
   FaEdit,
   FaPlus,
@@ -47,6 +49,8 @@ export function GerenciamentoSetorForm() {
   const [setores, setSetores] = useState<SetorItem[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(10);
 
   const [loading, setLoading] = useState(false);
   const [loadingTabela, setLoadingTabela] = useState(false);
@@ -87,7 +91,7 @@ export function GerenciamentoSetorForm() {
     }
   }
 
-  async function carregarSetores(page = 1) {
+  async function carregarSetores(page = 1, pageLimit = limit) {
     try {
       setLoadingTabela(true);
       setErro("");
@@ -96,10 +100,11 @@ export function GerenciamentoSetorForm() {
       const response = await buscarSetoresPaginados({
         nome: busca || " ",
         page,
-        limit: 10,
+        limit: pageLimit,
       });
 
       setSetores(response.items || []);
+      setTotalItems(response.total_items || 0);
       setTotalPages(response.total_pages || 1);
       setPaginaAtual(page);
 
@@ -107,6 +112,7 @@ export function GerenciamentoSetorForm() {
     } catch (e) {
       console.error(e);
       setSetores([]);
+      setTotalItems(0);
       setErro("Setor não encontrado ou falha ao carregar a listagem.");
     } finally {
       setLoadingTabela(false);
@@ -122,13 +128,9 @@ export function GerenciamentoSetorForm() {
     setSetores([]);
     setPaginaAtual(1);
     setTotalPages(1);
+    setTotalItems(0);
     setErro("");
     setInfo("");
-    setTotais({
-      total: 0,
-      ativos: 0,
-      inativos: 0,
-    });
   }
 
   function abrirCadastro() {
@@ -291,18 +293,6 @@ export function GerenciamentoSetorForm() {
     }
   }
 
-  const paginasVisiveis = useMemo(() => {
-    const range = 2;
-    const inicio = Math.max(1, paginaAtual - range);
-    const fim = Math.min(totalPages, paginaAtual + range);
-
-    const paginas: number[] = [];
-    for (let i = inicio; i <= fim; i++) {
-      paginas.push(i);
-    }
-    return paginas;
-  }, [paginaAtual, totalPages]);
-
   return (
     <>
       <div className="mx-auto w-full rounded-2xl border border-slate-200 border-t-4 border-t-primary bg-white p-5 shadow-sm">
@@ -329,7 +319,7 @@ export function GerenciamentoSetorForm() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto_auto]">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto_auto_auto]">
           <div>
             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">
               Setor ou endereço
@@ -363,6 +353,17 @@ export function GerenciamentoSetorForm() {
               Limpar
             </button>
           </div>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={baixarCsv}
+              className={`${auxiliaryButtonClass} w-full lg:w-auto`}
+            >
+              <FaDownload />
+              Baixar Relatório
+            </button>
+          </div>
         </div>
 
         {(erro || info) && (
@@ -381,9 +382,48 @@ export function GerenciamentoSetorForm() {
 
         {(setores.length > 0 || loadingTabela) && (
           <>
+            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Total
+                </p>
+                <p className="mt-2 text-2xl font-black text-[var(--title)]">
+                  {totais.total}
+                </p>
+                <p className="mt-1 text-xs text-[var(--paragraph)]">
+                  setores cadastrados
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-secondary">
+                  Ativos
+                </p>
+                <p className="mt-2 text-2xl font-black text-[var(--title)]">
+                  {totais.ativos}
+                </p>
+                <p className="mt-1 text-xs text-[var(--paragraph)]">
+                  setores disponíveis
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-fourth/30 bg-fourth/10 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-fourth">
+                  Inativos
+                </p>
+                <p className="mt-2 text-2xl font-black text-[var(--title)]">
+                  {totais.inativos}
+                </p>
+                <p className="mt-1 text-xs text-[var(--paragraph)]">
+                  setores indisponíveis
+                </p>
+              </div>
+
+            </div>
+
             <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
               <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
@@ -464,100 +504,67 @@ export function GerenciamentoSetorForm() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              {paginaAtual > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => carregarSetores(1)}
-                    className="inline-flex h-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary hover:bg-primary/10"
-                  >
-                    1
-                  </button>
+            <div className="border-t border-slate-100 bg-white px-4 py-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <p className="text-sm text-slate-500">
+                    Mostrando{" "}
+                    <span className="font-semibold text-slate-700">
+                      {totalItems === 0 ? 0 : (paginaAtual - 1) * limit + 1}
+                    </span>{" "}
+                    até{" "}
+                    <span className="font-semibold text-slate-700">
+                      {Math.min(paginaAtual * limit, totalItems)}
+                    </span>{" "}
+                    de{" "}
+                    <span className="font-semibold text-slate-700">{totalItems}</span>{" "}
+                    setor(es)
+                  </p>
 
+                  <select
+                    value={limit}
+                    onChange={(event) => {
+                      const novoLimit = Number(event.target.value);
+                      setLimit(novoLimit);
+                      carregarSetores(1, novoLimit);
+                    }}
+                    disabled={loadingTabela}
+                    className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value={10}>10 por página</option>
+                    <option value={20}>20 por página</option>
+                    <option value={50}>50 por página</option>
+                    <option value={100}>100 por página</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => carregarSetores(paginaAtual - 1)}
-                    className="inline-flex h-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary hover:bg-primary/10"
+                    onClick={() => carregarSetores(Math.max(paginaAtual - 1, 1))}
+                    disabled={paginaAtual <= 1 || loadingTabela}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                   >
+                    <FaChevronLeft size={12} />
                     Anterior
                   </button>
-                </>
-              )}
 
-              {paginasVisiveis.map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => carregarSetores(page)}
-                  className={`inline-flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-xl px-3 text-sm font-semibold shadow-sm transition ${
-                    page === paginaAtual
-                      ? "bg-primary text-white"
-                      : "border border-slate-200 bg-white text-slate-700 hover:border-primary hover:bg-primary/10"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+                  <span className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+                    Página {paginaAtual} de {totalPages}
+                  </span>
 
-              {paginaAtual < totalPages && (
-                <>
                   <button
                     type="button"
-                    onClick={() => carregarSetores(paginaAtual + 1)}
-                    className="inline-flex h-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary hover:bg-primary/10"
+                    onClick={() =>
+                      carregarSetores(Math.min(paginaAtual + 1, totalPages))
+                    }
+                    disabled={paginaAtual >= totalPages || loadingTabela}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                   >
                     Próxima
+                    <FaChevronRight size={12} />
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => carregarSetores(totalPages)}
-                    className="inline-flex h-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary hover:bg-primary/10"
-                  >
-                    {totalPages}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 border-t border-slate-100 pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Total
-                </p>
-                <p className="mt-2 text-2xl font-black text-[var(--title)]">
-                  {totais.total}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-secondary">
-                  Ativos
-                </p>
-                <p className="mt-2 text-2xl font-black text-[var(--title)]">
-                  {totais.ativos}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-fourth/30 bg-fourth/10 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-fourth">
-                  Inativos
-                </p>
-                <p className="mt-2 text-2xl font-black text-[var(--title)]">
-                  {totais.inativos}
-                </p>
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={baixarCsv}
-                  className={`${auxiliaryButtonClass} w-full md:w-auto`}
-                >
-                  <FaDownload />
-                  Baixar Relatório
-                </button>
+                </div>
               </div>
             </div>
           </>

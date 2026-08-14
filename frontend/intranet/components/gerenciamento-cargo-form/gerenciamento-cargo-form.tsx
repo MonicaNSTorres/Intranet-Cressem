@@ -2,8 +2,10 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
+  FaChevronLeft,
+  FaChevronRight,
   FaDownload,
   FaEdit,
   FaPlus,
@@ -35,9 +37,6 @@ const NIVEIS = [
 const inputClass =
   "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-left text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
-const readonlyInputClass =
-  "h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-left text-sm font-semibold text-slate-700 shadow-sm outline-none";
-
 const primaryButtonClass =
   "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
 
@@ -53,6 +52,8 @@ export function GerenciamentoCargoForm() {
   const [posicoes, setPosicoes] = useState<PosicaoCargo[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(10);
 
   const [loading, setLoading] = useState(false);
   const [loadingTabela, setLoadingTabela] = useState(false);
@@ -109,7 +110,7 @@ export function GerenciamentoCargoForm() {
     }
   }
 
-  async function carregarCargos(page = 1) {
+  async function carregarCargos(page = 1, pageLimit = limit) {
     try {
       setLoadingTabela(true);
       setErro("");
@@ -118,17 +119,19 @@ export function GerenciamentoCargoForm() {
       const response = await buscarCargosPaginados({
         nome: busca || " ",
         page,
-        limit: 10,
+        limit: pageLimit,
       });
 
       setCargos(response.items || []);
       setTotalPages(response.total_pages || 1);
+      setTotalItems(response.total ?? response.items?.length ?? 0);
       setPaginaAtual(page);
 
       await carregarTotais();
     } catch (e) {
       console.error(e);
       setCargos([]);
+      setTotalItems(0);
       setErro("Cargo não encontrado ou falha ao carregar a listagem.");
     } finally {
       setLoadingTabela(false);
@@ -144,13 +147,9 @@ export function GerenciamentoCargoForm() {
     setCargos([]);
     setPaginaAtual(1);
     setTotalPages(1);
+    setTotalItems(0);
     setErro("");
     setInfo("");
-    setTotais({
-      total: 0,
-      ativos: 0,
-      inativos: 0,
-    });
   }
 
   function pesquisarComEnter(event: KeyboardEvent<HTMLInputElement>) {
@@ -319,17 +318,9 @@ export function GerenciamentoCargoForm() {
     }
   }
 
-  const paginasVisiveis = useMemo(() => {
-    const range = 2;
-    const inicio = Math.max(1, paginaAtual - range);
-    const fim = Math.min(totalPages, paginaAtual + range);
-
-    const paginas: number[] = [];
-    for (let i = inicio; i <= fim; i++) {
-      paginas.push(i);
-    }
-    return paginas;
-  }, [paginaAtual, totalPages]);
+  const inicioRegistros =
+    totalItems === 0 ? 0 : Math.min((paginaAtual - 1) * limit + 1, totalItems);
+  const fimRegistros = Math.min(paginaAtual * limit, totalItems);
 
   return (
     <>
@@ -357,7 +348,7 @@ export function GerenciamentoCargoForm() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
           <div>
             <label className="mb-1 block text-xs font-bold uppercase text-slate-600">
               Cargo
@@ -388,6 +379,15 @@ export function GerenciamentoCargoForm() {
             <FaTimes />
             Limpar
           </button>
+
+          <button
+            type="button"
+            onClick={baixarCsv}
+            className={accentButtonClass}
+          >
+            <FaDownload />
+            Baixar Relatório
+          </button>
         </div>
 
         {(erro || info) && (
@@ -406,9 +406,34 @@ export function GerenciamentoCargoForm() {
 
         {(cargos.length > 0 || loadingTabela) && (
           <>
+            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase text-slate-500">Total</p>
+                <p className="mt-2 text-2xl font-bold text-title">{totais.total}</p>
+                <p className="mt-1 text-xs text-paragraph">cargos cadastrados</p>
+              </div>
+
+              <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase text-secondary">Ativos</p>
+                <p className="mt-2 text-2xl font-bold text-title">
+                  {totais.ativos}
+                </p>
+                <p className="mt-1 text-xs text-paragraph">cargos disponíveis</p>
+              </div>
+
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase text-red-700">Inativos</p>
+                <p className="mt-2 text-2xl font-bold text-red-800">
+                  {totais.inativos}
+                </p>
+                <p className="mt-1 text-xs text-red-700">cargos indisponíveis</p>
+              </div>
+
+            </div>
+
             <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
               <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-100">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
@@ -500,106 +525,54 @@ export function GerenciamentoCargoForm() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              {paginaAtual > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => carregarCargos(1)}
-                    className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                  >
-                    1
-                  </button>
+            <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-500">
+                Mostrando {inicioRegistros} até {fimRegistros} de {totalItems} cargo(s)
+              </p>
 
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <select
+                  value={limit}
+                  onChange={(event) => {
+                    const novoLimit = Number(event.target.value);
+                    setLimit(novoLimit);
+                    carregarCargos(1, novoLimit);
+                  }}
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                >
+                  <option value={10}>10 por página</option>
+                  <option value={20}>20 por página</option>
+                  <option value={50}>50 por página</option>
+                  <option value={100}>100 por página</option>
+                </select>
+
+                <div className="flex items-center justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => carregarCargos(paginaAtual - 1)}
-                    className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                    onClick={() => carregarCargos(Math.max(paginaAtual - 1, 1))}
+                    disabled={paginaAtual <= 1 || loadingTabela}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                   >
+                    <FaChevronLeft className="text-xs" />
                     Anterior
                   </button>
-                </>
-              )}
 
-              {paginasVisiveis.map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => carregarCargos(page)}
-                  className={`h-9 min-w-9 rounded-xl px-3 text-sm font-semibold shadow-sm transition ${
-                    page === paginaAtual
-                      ? "bg-primary text-white"
-                      : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+                  <span className="rounded-xl bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-600">
+                    Página {paginaAtual} de {totalPages}
+                  </span>
 
-              {paginaAtual < totalPages && (
-                <>
                   <button
                     type="button"
-                    onClick={() => carregarCargos(paginaAtual + 1)}
-                    className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                    onClick={() =>
+                      carregarCargos(Math.min(paginaAtual + 1, totalPages))
+                    }
+                    disabled={paginaAtual >= totalPages || loadingTabela}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                   >
                     Próxima
+                    <FaChevronRight className="text-xs" />
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => carregarCargos(totalPages)}
-                    className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                  >
-                    {totalPages}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 border-t border-slate-100 pt-5 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase text-slate-600">
-                  Total
-                </label>
-                <input
-                  readOnly
-                  value={totais.total}
-                  className={readonlyInputClass}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase text-slate-600">
-                  Ativos
-                </label>
-                <input
-                  readOnly
-                  value={totais.ativos}
-                  className={readonlyInputClass}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase text-slate-600">
-                  Inativos
-                </label>
-                <input
-                  readOnly
-                  value={totais.inativos}
-                  className={readonlyInputClass}
-                />
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={baixarCsv}
-                  className={`${accentButtonClass} w-full md:w-auto`}
-                >
-                  <FaDownload />
-                  Baixar Relatório
-                </button>
+                </div>
               </div>
             </div>
           </>

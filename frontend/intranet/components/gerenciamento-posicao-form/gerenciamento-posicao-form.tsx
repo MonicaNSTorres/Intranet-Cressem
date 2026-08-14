@@ -2,8 +2,10 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
+  FaChevronLeft,
+  FaChevronRight,
   FaDownload,
   FaEdit,
   FaPlus,
@@ -44,6 +46,8 @@ export function GerenciamentoPosicaoForm() {
   const [posicoes, setPosicoes] = useState<PosicaoItem[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(10);
 
   const [loading, setLoading] = useState(false);
   const [loadingTabela, setLoadingTabela] = useState(false);
@@ -85,7 +89,7 @@ export function GerenciamentoPosicaoForm() {
     }
   }
 
-  async function carregarPosicoes(page = 1) {
+  async function carregarPosicoes(page = 1, pageLimit = limit) {
     try {
       setLoadingTabela(true);
       setErro("");
@@ -94,10 +98,11 @@ export function GerenciamentoPosicaoForm() {
       const response = await buscarPosicoesPaginadas({
         nome: busca || " ",
         page,
-        limit: 10,
+        limit: pageLimit,
       });
 
       setPosicoes(response.items || []);
+      setTotalItems(response.total_items || 0);
       setTotalPages(response.total_pages || 1);
       setPaginaAtual(page);
 
@@ -105,6 +110,7 @@ export function GerenciamentoPosicaoForm() {
     } catch (e) {
       console.error(e);
       setPosicoes([]);
+      setTotalItems(0);
       setErro("Posição não encontrada ou falha ao carregar a listagem.");
     } finally {
       setLoadingTabela(false);
@@ -120,13 +126,9 @@ export function GerenciamentoPosicaoForm() {
     setPosicoes([]);
     setPaginaAtual(1);
     setTotalPages(1);
+    setTotalItems(0);
     setErro("");
     setInfo("");
-    setTotais({
-      total: 0,
-      ativos: 0,
-      inativos: 0,
-    });
   }
 
   function pesquisarComEnter(event: KeyboardEvent<HTMLInputElement>) {
@@ -311,18 +313,6 @@ export function GerenciamentoPosicaoForm() {
     }
   }
 
-  const paginasVisiveis = useMemo(() => {
-    const range = 2;
-    const inicio = Math.max(1, paginaAtual - range);
-    const fim = Math.min(totalPages, paginaAtual + range);
-
-    const paginas: number[] = [];
-    for (let i = inicio; i <= fim; i++) {
-      paginas.push(i);
-    }
-    return paginas;
-  }, [paginaAtual, totalPages]);
-
   return (
     <>
       <div className="mx-auto w-full rounded-2xl border border-slate-200 border-t-4 border-t-primary bg-white p-5 shadow-sm">
@@ -407,6 +397,30 @@ export function GerenciamentoPosicaoForm() {
 
         {(posicoes.length > 0 || loadingTabela) && (
           <>
+            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase text-slate-500">Total</p>
+                <p className="mt-2 text-2xl font-bold text-title">{totais.total}</p>
+                <p className="mt-1 text-xs text-paragraph">posições cadastradas</p>
+              </div>
+
+              <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase text-secondary">Ativos</p>
+                <p className="mt-2 text-2xl font-bold text-title">
+                  {totais.ativos}
+                </p>
+                <p className="mt-1 text-xs text-paragraph">posições disponíveis</p>
+              </div>
+
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase text-red-700">Inativos</p>
+                <p className="mt-2 text-2xl font-bold text-red-800">
+                  {totais.inativos}
+                </p>
+                <p className="mt-1 text-xs text-red-700">posições indisponíveis</p>
+              </div>
+            </div>
+
             <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -495,84 +509,67 @@ export function GerenciamentoPosicaoForm() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              {paginaAtual > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => carregarPosicoes(1)}
-                    className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                  >
-                    1
-                  </button>
+            <div className="border-t border-slate-100 bg-white px-4 py-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <p className="text-sm text-slate-500">
+                    Mostrando{" "}
+                    <span className="font-semibold text-slate-700">
+                      {totalItems === 0 ? 0 : (paginaAtual - 1) * limit + 1}
+                    </span>{" "}
+                    até{" "}
+                    <span className="font-semibold text-slate-700">
+                      {Math.min(paginaAtual * limit, totalItems)}
+                    </span>{" "}
+                    de{" "}
+                    <span className="font-semibold text-slate-700">{totalItems}</span>{" "}
+                    posição(ões)
+                  </p>
 
+                  <select
+                    value={limit}
+                    onChange={(event) => {
+                      const novoLimit = Number(event.target.value);
+                      setLimit(novoLimit);
+                      carregarPosicoes(1, novoLimit);
+                    }}
+                    disabled={loadingTabela}
+                    className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value={10}>10 por página</option>
+                    <option value={20}>20 por página</option>
+                    <option value={50}>50 por página</option>
+                    <option value={100}>100 por página</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => carregarPosicoes(paginaAtual - 1)}
-                    className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                    onClick={() => carregarPosicoes(Math.max(paginaAtual - 1, 1))}
+                    disabled={paginaAtual <= 1 || loadingTabela}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                   >
+                    <FaChevronLeft size={12} />
                     Anterior
                   </button>
-                </>
-              )}
 
-              {paginasVisiveis.map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => carregarPosicoes(page)}
-                  className={`h-9 min-w-9 rounded-xl px-3 text-sm font-semibold shadow-sm transition ${
-                    page === paginaAtual
-                      ? "bg-primary text-white"
-                      : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+                  <span className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+                    Página {paginaAtual} de {totalPages}
+                  </span>
 
-              {paginaAtual < totalPages && (
-                <>
                   <button
                     type="button"
-                    onClick={() => carregarPosicoes(paginaAtual + 1)}
-                    className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                    onClick={() =>
+                      carregarPosicoes(Math.min(paginaAtual + 1, totalPages))
+                    }
+                    disabled={paginaAtual >= totalPages || loadingTabela}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                   >
                     Próxima
+                    <FaChevronRight size={12} />
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => carregarPosicoes(totalPages)}
-                    className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                  >
-                    {totalPages}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 border-t border-slate-100 pt-5 md:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase text-slate-500">Total</p>
-                <p className="mt-2 text-2xl font-bold text-title">{totais.total}</p>
-                <p className="mt-1 text-xs text-paragraph">posições cadastradas</p>
-              </div>
-
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <p className="text-xs font-bold uppercase text-emerald-700">Ativos</p>
-                <p className="mt-2 text-2xl font-bold text-emerald-800">
-                  {totais.ativos}
-                </p>
-                <p className="mt-1 text-xs text-emerald-700">posições disponíveis</p>
-              </div>
-
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                <p className="text-xs font-bold uppercase text-red-700">Inativos</p>
-                <p className="mt-2 text-2xl font-bold text-red-800">
-                  {totais.inativos}
-                </p>
-                <p className="mt-1 text-xs text-red-700">posições indisponíveis</p>
+                </div>
               </div>
             </div>
           </>

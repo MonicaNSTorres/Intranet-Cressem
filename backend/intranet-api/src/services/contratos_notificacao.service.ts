@@ -174,6 +174,20 @@ function dataBR(value: any) {
   return date.toLocaleDateString("pt-BR");
 }
 
+function escapeHtml(value: any) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function valorEmail(value: any) {
+  const text = String(value ?? "").trim();
+  return text || "-";
+}
+
 function onlyNumbers(value: any) {
   return String(value || "").replace(/\D/g, "");
 }
@@ -191,28 +205,88 @@ function formatarCnpj(value: any) {
   )}/${cnpj.slice(8, 12)}-${cnpj.slice(12)}`;
 }
 
-function buildContratoInfo(row: any) {
+function montarLinhaEmail(label: string, value: any) {
   return `
-    <div style="margin-bottom: 14px; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
-      <p style="margin: 0 0 6px 0;">
-        <strong>Empresa:</strong> ${row.NM_EMPRESA || "-"}
-      </p>
+    <tr>
+      <td style="width: 190px; padding: 8px 12px; background: #f8fafc; border-bottom: 1px solid #e5e7eb; color: #475467; font-weight: 700;">
+        ${label}
+      </td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb; color: #101828; font-weight: 600;">
+        ${escapeHtml(valorEmail(value))}
+      </td>
+    </tr>
+  `;
+}
 
-      <p style="margin: 0 0 6px 0;">
-        <strong>CNPJ:</strong> ${formatarCnpj(row.CNPJ)}
-      </p>
+function buildContratoInfo(row: any) {
+  const diasRestantes = Number(row.DIAS_RESTANTES);
+  const textoDias = Number.isFinite(diasRestantes)
+    ? `${diasRestantes} dia(s)`
+    : "-";
 
-      <p style="margin: 0 0 6px 0;">
-        <strong>Cidade:</strong> ${row.NM_CIDADE || "-"}
-      </p>
+  return `
+    <div style="margin: 0 0 16px 0; border: 1px solid #d9e2ec; border-radius: 12px; overflow: hidden; background: #ffffff;">
+      <div style="padding: 12px 14px; background: #f0fdf9; border-bottom: 1px solid #d9e2ec; color: #006b5f; font-size: 14px; font-weight: 800;">
+        ${escapeHtml(valorEmail(row.NM_EMPRESA))}
+      </div>
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; font-size: 13px;">
+        ${montarLinhaEmail("Empresa", row.NM_EMPRESA)}
+        ${montarLinhaEmail("CPF/CNPJ", formatarCnpj(row.NR_CNPJ))}
+        ${montarLinhaEmail("Cidade", row.NM_CIDADE)}
+        ${montarLinhaEmail("Data de vencimento", dataBR(row.DT_FIM))}
+        ${montarLinhaEmail("Faltam", textoDias)}
+      </table>
+    </div>
+  `;
+}
 
-      <p style="margin: 0 0 6px 0;">
-        <strong>Data de vencimento:</strong> ${dataBR(row.FIM)}
-      </p>
+function montarEmailContratosProximos(nome: string, contratosHtml: string) {
+  return `
+    <div style="margin: 0; padding: 24px; background: #f3f6f8; font-family: Arial, Helvetica, sans-serif; color: #101828;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+        <tr>
+          <td align="center">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="680" style="max-width: 680px; width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #d9e2ec; border-radius: 14px; overflow: hidden;">
+              <tr>
+                <td style="padding: 18px 24px; background: linear-gradient(90deg, #00AE9D 0%, #79B729 100%); color: #ffffff;">
+                  <div style="font-size: 18px; line-height: 1.3; font-weight: 800;">
+                    Alerta de vencimento de contratos
+                  </div>
+                  <div style="font-size: 13px; line-height: 1.4; margin-top: 4px;">
+                    Sistema de Gerenciamento de Contratos Sicoob Cressem
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 24px;">
+                  <p style="margin: 0 0 12px 0; font-size: 14px; line-height: 1.6;">
+                    Prezado(a) <strong>${escapeHtml(valorEmail(nome))}</strong>,
+                  </p>
+                  <p style="margin: 0 0 18px 0; font-size: 14px; line-height: 1.6; color: #475467;">
+                    Os contratos abaixo estão próximos do vencimento. Acompanhe a renovação para evitar pendências.
+                  </p>
 
-      <p style="margin: 0;">
-        <strong>Faltam:</strong> ${row.DIAS_RESTANTES} dia(s)
-      </p>
+                  ${contratosHtml}
+
+                  <div style="margin-top: 18px; padding: 14px 16px; border: 1px solid #fde68a; border-radius: 12px; background: #fffbeb; color: #92400e; font-size: 13px; line-height: 1.5;">
+                    <strong>Atenção:</strong> não esqueça de iniciar ou acompanhar a renovação dentro do prazo.
+                  </div>
+
+                  <p style="margin: 22px 0 0 0; font-size: 14px; line-height: 1.6;">
+                    Atenciosamente,<br />
+                    <strong>Sistema de Gerenciamento de Contratos Sicoob Cressem</strong>
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 14px 24px; background: #f8fafc; border-top: 1px solid #e5e7eb; color: #667085; font-size: 12px; line-height: 1.5;">
+                  Este e-mail foi enviado automaticamente pela intranet.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
     </div>
   `;
 }
@@ -344,27 +418,7 @@ export async function notificarContratosPorVencimento() {
     const contratoInfo = data.contratos.map(buildContratoInfo).join("");
 
     const subject = "Contratos próximos do vencimento";
-
-    const html = `
-      <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
-        <p>Prezado(a) <strong>${data.nome}</strong>,</p>
-
-        <p>Os seguintes contratos estão próximos do vencimento:</p>
-
-        ${contratoInfo}
-
-        <p>Não esqueça de sua renovação!</p>
-
-        <p>
-          Atenciosamente,<br/>
-          Sistema de Gerenciamento de Contratos Sicoob Cressem
-        </p>
-
-        <p style="margin-top: 20px; color: #666;">
-          Este email foi enviado automaticamente pela intranet.
-        </p>
-      </div>
-    `;
+    const html = montarEmailContratosProximos(data.nome, contratoInfo);
 
     console.log(
       `[CONTRATOS] Enviando para ${data.nome} <${email}> - ${data.contratos.length} contrato(s)`

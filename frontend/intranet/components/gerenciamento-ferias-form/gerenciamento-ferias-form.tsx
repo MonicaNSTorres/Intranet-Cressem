@@ -2,9 +2,9 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { FaEdit, FaPlus, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaEdit, FaPlus, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
 import {
     buscarFeriasPaginado,
     excluirPeriodoFerias,
@@ -55,6 +55,87 @@ const accentButtonClass =
 const secondaryButtonClass =
     "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-fourth/40 hover:bg-fourth/10 hover:text-fourth disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
 
+function Pagination({
+    currentPage,
+    totalPages,
+    totalItems,
+    limit,
+    loading,
+    onChange,
+    onLimitChange,
+}: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    limit: number;
+    loading: boolean;
+    onChange: (page: number) => void;
+    onLimitChange: (limit: number) => void;
+}) {
+    const primeiroRegistro = totalItems === 0 ? 0 : (currentPage - 1) * limit + 1;
+    const ultimoRegistro = Math.min(currentPage * limit, totalItems);
+
+    return (
+        <div className="border-t border-slate-100 bg-white px-4 py-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <p className="text-sm text-slate-500">
+                        Mostrando{" "}
+                        <span className="font-semibold text-slate-700">
+                            {primeiroRegistro}
+                        </span>{" "}
+                        até{" "}
+                        <span className="font-semibold text-slate-700">
+                            {ultimoRegistro}
+                        </span>{" "}
+                        de{" "}
+                        <span className="font-semibold text-slate-700">{totalItems}</span>{" "}
+                        colaborador(es)
+                    </p>
+
+                    <select
+                        value={limit}
+                        onChange={(event) => onLimitChange(Number(event.target.value))}
+                        disabled={loading}
+                        className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        <option value={10}>10 por página</option>
+                        <option value={20}>20 por página</option>
+                        <option value={50}>50 por página</option>
+                        <option value={100}>100 por página</option>
+                    </select>
+                </div>
+
+                <div className="flex items-center justify-end gap-2">
+                    <button
+                        type="button"
+                        onClick={() => onChange(Math.max(currentPage - 1, 1))}
+                        disabled={currentPage <= 1 || loading}
+                        className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                    >
+                        <FaChevronLeft size={12} />
+                        Anterior
+                    </button>
+
+                    <span className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+                        Página {currentPage} de {Math.max(totalPages, 1)}
+                    </span>
+
+                    <button
+                        type="button"
+                        onClick={() => onChange(Math.min(currentPage + 1, totalPages))}
+                        disabled={currentPage >= totalPages || loading}
+                        className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                    >
+                        Próxima
+                        <FaChevronRight size={12} />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export function GerenciamentoFeriasForm() {
     const router = useRouter();
 
@@ -62,6 +143,8 @@ export function GerenciamentoFeriasForm() {
     const [funcionarios, setFuncionarios] = useState<FuncionarioFeriasListItem[]>([]);
     const [paginaAtual, setPaginaAtual] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [totalRegistros, setTotalRegistros] = useState(0);
+    const [limitePagina, setLimitePagina] = useState(10);
 
     const [loadingTabela, setLoadingTabela] = useState(false);
     const [erro, setErro] = useState("");
@@ -72,7 +155,7 @@ export function GerenciamentoFeriasForm() {
         useState<FuncionarioFeriasListItem | null>(null);
     const excluirActionRef = useRef(false);
 
-    async function carregarFuncionarios(page = 1) {
+    async function carregarFuncionarios(page = 1, limit = limitePagina) {
         try {
             setLoadingTabela(true);
             setErro("");
@@ -81,15 +164,17 @@ export function GerenciamentoFeriasForm() {
             const response = await buscarFeriasPaginado({
                 nome: busca || " ",
                 page,
-                limit: 10,
+                limit,
             });
 
             setFuncionarios(response.items || []);
             setTotalPages(response.total_pages || 1);
             setPaginaAtual(response.current_page || page);
+            setTotalRegistros(response.total_items || 0);
         } catch (e: any) {
             console.error(e);
             setFuncionarios([]);
+            setTotalRegistros(0);
             setErro(
                 e?.response?.data?.error ||
                 e?.response?.data?.details ||
@@ -105,6 +190,8 @@ export function GerenciamentoFeriasForm() {
         setFuncionarios([]);
         setPaginaAtual(1);
         setTotalPages(1);
+        setTotalRegistros(0);
+        setLimitePagina(10);
         setErro("");
         setInfo("");
     }
@@ -135,6 +222,11 @@ export function GerenciamentoFeriasForm() {
 
     function irParaEdicao(idFuncionario: number, idPeriodo: number) {
         router.push(`/auth/cadastro_ferias?id=${idFuncionario}&periodoId=${idPeriodo}`);
+    }
+
+    function alterarLimitePagina(novoLimite: number) {
+        setLimitePagina(novoLimite);
+        carregarFuncionarios(1, novoLimite);
     }
 
     async function excluirPeriodo(
@@ -195,18 +287,6 @@ export function GerenciamentoFeriasForm() {
             excluirActionRef.current = false;
         }
     }
-
-    const paginasVisiveis = useMemo(() => {
-        const range = 2;
-        const inicio = Math.max(1, paginaAtual - range);
-        const fim = Math.min(totalPages, paginaAtual + range);
-
-        const paginas: number[] = [];
-        for (let i = inicio; i <= fim; i++) {
-            paginas.push(i);
-        }
-        return paginas;
-    }, [paginaAtual, totalPages]);
 
     return (
         <>
@@ -283,6 +363,32 @@ export function GerenciamentoFeriasForm() {
 
                 {(funcionarios.length > 0 || loadingTabela) && (
                     <>
+                        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                    Total
+                                </p>
+                                <p className="mt-2 text-2xl font-black text-title">
+                                    {totalRegistros}
+                                </p>
+                                <p className="mt-1 text-xs text-paragraph">
+                                    colaboradores localizados
+                                </p>
+                            </div>
+
+                            <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 shadow-sm">
+                                <p className="text-xs font-bold uppercase tracking-wide text-secondary">
+                                    Ativos
+                                </p>
+                                <p className="mt-2 text-2xl font-black text-title">
+                                    {totalRegistros}
+                                </p>
+                                <p className="mt-1 text-xs text-paragraph">
+                                    colaboradores disponíveis para consulta
+                                </p>
+                            </div>
+                        </div>
+
                         <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -348,61 +454,15 @@ export function GerenciamentoFeriasForm() {
                             </div>
                         </div>
 
-                        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                            {paginaAtual > 1 && (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={() => carregarFuncionarios(1)}
-                                        className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                                    >
-                                        1
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => carregarFuncionarios(paginaAtual - 1)}
-                                        className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                                    >
-                                        Anterior
-                                    </button>
-                                </>
-                            )}
-
-                            {paginasVisiveis.map((page) => (
-                                <button
-                                    key={page}
-                                    type="button"
-                                    onClick={() => carregarFuncionarios(page)}
-                                    className={`h-9 min-w-9 rounded-xl px-3 text-sm font-semibold shadow-sm transition ${page === paginaAtual
-                                        ? "bg-primary text-white"
-                                        : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
-                                        }`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
-
-                            {paginaAtual < totalPages && (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={() => carregarFuncionarios(paginaAtual + 1)}
-                                        className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                                    >
-                                        Próxima
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => carregarFuncionarios(totalPages)}
-                                        className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                                    >
-                                        {totalPages}
-                                    </button>
-                                </>
-                            )}
-                        </div>
+                        <Pagination
+                            currentPage={paginaAtual}
+                            totalPages={totalPages}
+                            totalItems={totalRegistros}
+                            limit={limitePagina}
+                            loading={loadingTabela}
+                            onChange={carregarFuncionarios}
+                            onLimitChange={alterarLimitePagina}
+                        />
                     </>
                 )}
             </div>

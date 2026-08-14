@@ -36,13 +36,17 @@ cron.schedule(
   "30 7 * * *",
   async () => {
     try {
-      console.log("[CRON FÉRIAS] Executando TI - retorno hoje...");
+      console.log("[CRON FÉRIAS] Executando TI - saída/retorno hoje...");
 
-      const resultadoTi = await enviarEmailTiFerias({ tipo: "RETORNO_DIA" });
+      const saidaHoje = await enviarEmailTiFerias({ tipo: "SAIDA_DIA" });
+      const retornoHoje = await enviarEmailTiFerias({ tipo: "RETORNO_DIA" });
 
-      console.log("[CRON FÉRIAS] TI retorno hoje finalizado:", resultadoTi);
+      console.log("[CRON FÉRIAS] TI saída/retorno hoje finalizado:", {
+        saidaHoje,
+        retornoHoje,
+      });
     } catch (err) {
-      console.error("[CRON FÉRIAS] Erro TI retorno hoje:", err);
+      console.error("[CRON FÉRIAS] Erro TI saída/retorno hoje:", err);
     }
   },
   {
@@ -54,15 +58,17 @@ cron.schedule(
   "0 8,16 * * *",
   async () => {
     try {
-      console.log("[CRON FÉRIAS] Executando TI - prévia de retorno...");
+      console.log("[CRON FÉRIAS] Executando TI - prévia de saída/retorno...");
 
-      const resultadoTi = await enviarEmailTiFerias({
-        tipo: "RETORNO_PREVIA",
+      const saidaPrevia = await enviarEmailTiFerias({ tipo: "SAIDA_PREVIA" });
+      const retornoPrevia = await enviarEmailTiFerias({ tipo: "RETORNO_PREVIA" });
+
+      console.log("[CRON FÉRIAS] TI prévia de saída/retorno finalizada:", {
+        saidaPrevia,
+        retornoPrevia,
       });
-
-      console.log("[CRON FÉRIAS] TI prévia de retorno finalizada:", resultadoTi);
     } catch (err) {
-      console.error("[CRON FÉRIAS] Erro TI prévia de retorno:", err);
+      console.error("[CRON FÉRIAS] Erro TI prévia de saída/retorno:", err);
     }
   },
   {
