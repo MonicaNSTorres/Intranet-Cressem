@@ -23,6 +23,8 @@ export type GerarPdfDemissaoData = {
   convenioOdontologico?: string;
   totalDebitos: string;
   saldoFinal: string;
+  temValorADevolver?: boolean;
+  temValorAPagar?: boolean;
 
   banco: string;
   agencia: string;
@@ -115,6 +117,15 @@ async function loadImageDataURL(url: string) {
 }
 
 export async function gerarPdfDemissao(data: GerarPdfDemissaoData) {
+  const temValorADevolver =
+    typeof data.temValorADevolver === "boolean"
+      ? data.temValorADevolver
+      : data.tipoFormulario === "CREDOR";
+  const temValorAPagar =
+    typeof data.temValorAPagar === "boolean"
+      ? data.temValorAPagar
+      : data.tipoFormulario === "DEVEDOR";
+
   const doc = new jsPDF({
     unit: "pt",
     format: "a4",
@@ -198,6 +209,8 @@ export async function gerarPdfDemissao(data: GerarPdfDemissaoData) {
     const padding = 6;
     const lineHeight = 9.5;
     const paragraphGap = 3;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.4);
     const linesByParagraph = paragraphs.map((p) =>
       doc.splitTextToSize(p, contentW - padding * 2)
     );
@@ -406,13 +419,17 @@ export async function gerarPdfDemissao(data: GerarPdfDemissaoData) {
   drawFieldsRow([
     { label: "Total de debitos", value: data.totalDebitos, width: contentW / 2 },
     {
-      label: data.tipoFormulario === "CREDOR" ? "Total a devolver" : "Total a pagar",
+      label: temValorADevolver
+        ? "Total a devolver"
+        : temValorAPagar
+          ? "Total a pagar"
+          : "Sem devolucao ou pagamento",
       value: data.saldoFinal,
       width: contentW / 2,
     },
   ]);
 
-  if (data.tipoFormulario === "CREDOR") {
+  if (temValorADevolver) {
     drawSectionHeader("Dados bancarios e devolucao");
     drawFieldsRow([
       { label: "Banco", value: data.banco, width: contentW * 0.2 },
@@ -446,7 +463,7 @@ export async function gerarPdfDemissao(data: GerarPdfDemissaoData) {
       tableWidth: contentW,
     });
     y = getFinalY() + 7;
-  } else {
+  } else if (temValorAPagar) {
     drawSectionHeader("Recibo");
     const docLabel =
       String(data.cpf || "").replace(/\D/g, "").length === 14 ? "CNPJ" : "CPF";
@@ -493,12 +510,16 @@ export async function gerarPdfDemissao(data: GerarPdfDemissaoData) {
     doc.text("Setor Financeiro", margin + 2, y + 8);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.text(
+    const setorFinanceiroLines = doc.splitTextToSize(
       "Referente ao pagamento do saldo devedor da demissao espontanea (desligamento do quadro associativo).",
-      margin + 2,
-      y + 18
+      contentW - 4
     );
-    y += 22;
+    doc.text(setorFinanceiroLines, margin + 2, y + 18);
+    y += 16 + setorFinanceiroLines.length * 9;
+  } else {
+    drawParagraphBox("Acerto financeiro", [
+      "Nao ha valor a devolver ou a pagar nesta demissao. Por esse motivo, os dados bancarios nao sao necessarios.",
+    ]);
   }
 
   drawParagraphBox("Consideracoes finais", [

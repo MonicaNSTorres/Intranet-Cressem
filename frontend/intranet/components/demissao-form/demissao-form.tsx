@@ -237,10 +237,21 @@ export function DemissaoForm() {
     () => reciboTransferenciaNum + reciboPixNum + reciboDebitoContaNum,
     [reciboTransferenciaNum, reciboPixNum, reciboDebitoContaNum]
   );
+  const diferencaReciboPagar = useMemo(
+    () => Math.max(0, Number((Math.abs(saldoFinal) - totalRecibo).toFixed(2))),
+    [saldoFinal, totalRecibo]
+  );
+  const mostrarResumoRecibo = useMemo(
+    () => diferencaReciboPagar > 0,
+    [diferencaReciboPagar]
+  );
+
+  const temValorADevolver = useMemo(() => saldoFinal > 0, [saldoFinal]);
+  const temValorAPagar = useMemo(() => saldoFinal < 0, [saldoFinal]);
 
   const tipoFormulario = useMemo<"CREDOR" | "DEVEDOR">(
-    () => (saldoFinal >= 0 ? "CREDOR" : "DEVEDOR"),
-    [saldoFinal]
+    () => (temValorADevolver ? "CREDOR" : "DEVEDOR"),
+    [temValorADevolver]
   );
 
   function limparParcelas() {
@@ -300,7 +311,7 @@ export function DemissaoForm() {
 
     const totalAjustado = Number(Math.abs(saldoFinal).toFixed(2));
 
-    if (tipoFormulario === "CREDOR") {
+    if (temValorADevolver) {
       if (!banco.trim()) {
         setErro("Número do banco não preenchido.");
         return false;
@@ -350,7 +361,7 @@ export function DemissaoForm() {
       }
     }
 
-    if (tipoFormulario === "DEVEDOR") {
+    if (temValorAPagar) {
       const totalReciboNum = Number(totalRecibo.toFixed(2));
       if (totalReciboNum <= 0) {
         setErro("Preencha os valores do recibo.");
@@ -523,6 +534,56 @@ export function DemissaoForm() {
     }
   };
 
+  const gerarPdfAtual = async () => {
+    await gerarPdfDemissao({
+      tipoFormulario,
+      cpf: formatCpfCnpjView(cpf),
+      nome,
+      matricula,
+      empresa,
+      telefone,
+
+      saldoCapital: fmtBRL(saldoCapitalNum),
+      possuiConvenioOdontologico: possuiConvenio,
+      debitoConta: fmtBRL(debitoContaNum),
+      debitoEmprestimo: fmtBRL(debitoEmprestimoNum),
+      debitoCartao: fmtBRL(debitoCartaoNum),
+      convenioOdontologico: fmtBRL(valorConvenioNum),
+      totalDebitos: fmtBRL(totalDebitos),
+      saldoFinal: fmtBRL(Math.abs(saldoFinal)),
+      temValorADevolver,
+      temValorAPagar,
+
+      banco,
+      agencia,
+      conta,
+      digito,
+
+      primeiraParcelaValor: valorPrimeiraParcela || "",
+      primeiraParcelaData: dataPrimeiraParcela
+        ? formatDateBR(dataPrimeiraParcela)
+        : "",
+      totalDevolucaoParcelada: fmtBRL(totalDevolucaoParcelada),
+      parcelas: parcelas.map((item) => ({
+        numero: item.numero,
+        data: formatDateBR(item.data),
+        valor: item.valor,
+      })),
+
+      motivoDemissao,
+      dataRetorno,
+
+      reciboTransferencia: fmtBRL(reciboTransferenciaNum),
+      reciboPix: fmtBRL(reciboPixNum),
+      reciboDebitoConta: fmtBRL(reciboDebitoContaNum),
+      reciboTotal: fmtBRL(totalRecibo),
+
+      cidadeAtendimento,
+      dataAtendimento: hojeBR(),
+      atendente: nomeAtendente || "Atendente",
+    } as any);
+  };
+
   const gerar = async () => {
     try {
       setErro("");
@@ -547,51 +608,7 @@ export function DemissaoForm() {
         }
       }
 
-      await gerarPdfDemissao({
-        tipoFormulario,
-        cpf: formatCpfCnpjView(cpf),
-        nome,
-        matricula,
-        empresa,
-        telefone,
-
-        saldoCapital: fmtBRL(saldoCapitalNum),
-        possuiConvenioOdontologico: possuiConvenio,
-        debitoConta: fmtBRL(debitoContaNum),
-        debitoEmprestimo: fmtBRL(debitoEmprestimoNum),
-        debitoCartao: fmtBRL(debitoCartaoNum),
-        convenioOdontologico: fmtBRL(valorConvenioNum),
-        totalDebitos: fmtBRL(totalDebitos),
-        saldoFinal: fmtBRL(Math.abs(saldoFinal)),
-
-        banco,
-        agencia,
-        conta,
-        digito,
-
-        primeiraParcelaValor: valorPrimeiraParcela || "",
-        primeiraParcelaData: dataPrimeiraParcela
-          ? formatDateBR(dataPrimeiraParcela)
-          : "",
-        totalDevolucaoParcelada: fmtBRL(totalDevolucaoParcelada),
-        parcelas: parcelas.map((item) => ({
-          numero: item.numero,
-          data: formatDateBR(item.data),
-          valor: item.valor,
-        })),
-
-        motivoDemissao,
-        dataRetorno,
-
-        reciboTransferencia: fmtBRL(reciboTransferenciaNum),
-        reciboPix: fmtBRL(reciboPixNum),
-        reciboDebitoConta: fmtBRL(reciboDebitoContaNum),
-        reciboTotal: fmtBRL(totalRecibo),
-
-        cidadeAtendimento,
-        dataAtendimento: hojeBR(),
-        atendente: nomeAtendente || "Atendente",
-      } as any);
+      await gerarPdfAtual();
 
       if (falhaConvenio) {
         setInfo(`PDF gerado com sucesso. Atenção: ${falhaConvenio}`);
@@ -898,7 +915,11 @@ export function DemissaoForm() {
 
           <div>
             <label className={labelClass}>
-              {tipoFormulario === "CREDOR" ? "Total a devolver" : "Total a pagar"}
+              {temValorADevolver
+                ? "Total a devolver"
+                : temValorAPagar
+                  ? "Total a pagar"
+                  : "Sem devolução ou pagamento"}
             </label>
             <input
               readOnly
@@ -909,7 +930,7 @@ export function DemissaoForm() {
         </div>
       </div>
 
-      {tipoFormulario === "CREDOR" && (
+      {temValorADevolver && (
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Dados para devolução</h2>
 
@@ -1062,7 +1083,7 @@ export function DemissaoForm() {
         </div>
       )}
 
-      {tipoFormulario === "DEVEDOR" && (
+      {temValorAPagar && (
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Recibo do devedor</h2>
 
@@ -1102,29 +1123,37 @@ export function DemissaoForm() {
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>
-                Total do recibo
-              </label>
-              <input
-                readOnly
-                value={fmtBRL(totalRecibo)}
-                className={readOnlyMoneyClass}
-              />
-            </div>
+          {mostrarResumoRecibo && (
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <label className={labelClass}>
+                  Total recebido
+                </label>
+                <input
+                  readOnly
+                  value={fmtBRL(totalRecibo)}
+                  className={readOnlyMoneyClass}
+                />
+              </div>
 
-            <div>
-              <label className={labelClass}>
-                Diferença para total a pagar
-              </label>
-              <input
-                readOnly
-                value={fmtBRL(Number((totalRecibo - Math.abs(saldoFinal)).toFixed(2)))}
-                className={readOnlyMoneyClass}
-              />
+              <div>
+                <label className={labelClass}>
+                  Diferença para total a pagar
+                </label>
+                <input
+                  readOnly
+                  value={fmtBRL(diferencaReciboPagar)}
+                  className={readOnlyMoneyClass}
+                />
+              </div>
             </div>
-          </div>
+          )}
+        </div>
+      )}
+
+      {!temValorADevolver && !temValorAPagar && (
+        <div className="my-4 rounded-2xl border border-[#00AE9D]/30 bg-[#00AE9D]/10 p-4 text-sm font-semibold text-[#006B5F]">
+          Não há valor a devolver ou a pagar. Os dados bancários não são necessários.
         </div>
       )}
 

@@ -98,15 +98,15 @@ export const feriasNotificacaoController = {
 
       return res.json({
         success: true,
-        message: "Prévia de férias (regra dia 17) executada.",
+        message: "Prévia de férias (regra dia 18) executada.",
         result,
       });
     } catch (err: any) {
-      console.error("Erro prévia dia 17 férias:", err);
+      console.error("Erro prévia dia 18 férias:", err);
 
       return res.status(500).json({
         success: false,
-        error: "Falha ao executar prévia de férias do dia 17.",
+        error: "Falha ao executar prévia de férias do dia 18.",
         details: String(err?.message || err),
       });
     }

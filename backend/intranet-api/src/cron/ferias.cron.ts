@@ -4,7 +4,26 @@ import {
   executarNotificacoesMensaisFerias,
   executarNotificacoesPreviaDia17,
   enviarEmailTiFerias,
+  marcarFeriasEfetuadasAutomaticamente,
 } from "../services/ferias_notificacao.service";
+
+cron.schedule(
+  "0 6 * * *",
+  async () => {
+    try {
+      console.log("[CRON FÉRIAS] Marcando férias efetuadas automaticamente...");
+
+      const result = await marcarFeriasEfetuadasAutomaticamente();
+
+      console.log("[CRON FÉRIAS] Férias efetuadas automaticamente:", result);
+    } catch (err) {
+      console.error("[CRON FÉRIAS] Erro ao marcar férias efetuadas:", err);
+    }
+  },
+  {
+    timezone: "America/Sao_Paulo",
+  }
+);
 
 cron.schedule(
   "0 8 * * *",
@@ -22,7 +41,7 @@ cron.schedule(
         origem: "cron",
       });
 
-      console.log("[CRON FÉRIAS] Resultado prévia dia 17:", previa);
+      console.log("[CRON FÉRIAS] Resultado prévia dia 18:", previa);
     } catch (err) {
       console.error("[CRON FÉRIAS] Erro no fluxo mensal:", err);
     }

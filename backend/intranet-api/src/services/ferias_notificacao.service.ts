@@ -20,7 +20,7 @@ const EMAIL_TI = [
 ];
 const ROTINA = "FERIAS_NOTIFICACAO";
 
-type TipoNotificacaoMensal = "RH_DIRETORIA" | "GERENCIAS" | "PREVIA_DIA17";
+type TipoNotificacaoMensal = "RH_DIRETORIA" | "GERENCIAS" | "PREVIA_DIA18";
 type TipoNotificacaoTiFerias =
   | "SAIDA_PREVIA"
   | "SAIDA_DIA"
@@ -210,10 +210,25 @@ function podeExecutarMensalHoje(force = false) {
   return diaDoMes >= 1 && diaDoMes <= 3;
 }
 
-function podeExecutarPreviaDia17Hoje(force = false) {
+function podeExecutarPreviaDia18Hoje(force = false) {
   if (force) return true;
   const { diaDoMes } = dataRefMesSaoPaulo();
-  return diaDoMes === 17;
+  return diaDoMes === 18;
+}
+
+export async function marcarFeriasEfetuadasAutomaticamente() {
+  const result = await oracleExecuteCommit(
+    `
+      UPDATE DBACRESSEM.FERIAS_FUNCIONARIOS
+         SET SN_EFETUADO = 1
+       WHERE NVL(SN_EFETUADO, 0) = 0
+         AND TRUNC(DT_DIA_INICIO) <= TRUNC(SYSDATE)
+    `
+  );
+
+  return {
+    atualizadas: Number(result?.rowsAffected || 0),
+  };
 }
 
 function alvoDoAvisoDia17(date = new Date()) {
@@ -490,6 +505,11 @@ async function buscarFeriasMesAtual() {
 }
 
 async function buscarFeriasPorMesAno(mes: number, ano: number) {
+  const mesFmt = String(mes).padStart(2, "0");
+  const ultimoDia = new Date(ano, mes, 0).getDate();
+  const inicioMes = `${ano}-${mesFmt}-01`;
+  const fimMes = `${ano}-${mesFmt}-${String(ultimoDia).padStart(2, "0")}`;
+
   const sql = `
     SELECT
       F.ID_FERIAS_FUNCIONARIOS,
@@ -507,14 +527,14 @@ async function buscarFeriasPorMesAno(mes: number, ano: number) {
       ON P.ID_FUNCIONARIO = F.ID_FUNCIONARIO
     LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM G
       ON G.ID_FUNCIONARIO = P.CD_GERENCIA
-    WHERE EXTRACT(MONTH FROM F.DT_DIA_INICIO) = :mes
-      AND EXTRACT(YEAR FROM F.DT_DIA_INICIO) = :ano
+    WHERE TRUNC(F.DT_DIA_INICIO) <= TO_DATE(:fimMes, 'YYYY-MM-DD')
+      AND TRUNC(F.DT_DIA_FIM) >= TO_DATE(:inicioMes, 'YYYY-MM-DD')
     ORDER BY F.DT_DIA_INICIO, P.NM_FUNCIONARIO
   `;
 
   const result = await oracleExecute(
     sql,
-    { mes, ano },
+    { inicioMes, fimMes },
     { outFormat: oracledb.OUT_FORMAT_OBJECT }
   );
 
@@ -677,7 +697,7 @@ async function enviarEmailPreviaRhDiretoriaDia17(params: {
   const assunto = `[RH/Diretoria] Prévia de férias ${mesFmt}/${anoAlvo}`;
   const html = montarHtmlEmailFerias({
     titulo: `Prévia de férias ${mesFmt}/${anoAlvo}`,
-    introducao: `Colaboradores que iniciam férias em ${mesFmt}/${anoAlvo}.`,
+    introducao: `Colaboradores com férias cadastradas para ${mesFmt}/${anoAlvo}.`,
     listaHtml: buildListaHtml(rows),
   });
 
@@ -714,8 +734,8 @@ async function enviarEmailPreviaGerenciasDia17(params: {
     const assunto = `[Gerência] Prévia de férias dos liderados ${mesFmt}/${anoAlvo}`;
     const html = montarHtmlEmailFerias({
       titulo: `Prévia de férias dos liderados ${mesFmt}/${anoAlvo}`,
-      introducao: `Olá, ${nomeGerente}. Seguem os liderados com início de férias em ${mesFmt}/${anoAlvo}.`,
-      introducaoHtml: `Olá, <strong>${escapeHtml(nomeGerente)}</strong>. Seguem os liderados com início de férias em ${escapeHtml(`${mesFmt}/${anoAlvo}`)}.`,
+      introducao: `Olá, ${nomeGerente}. Seguem os liderados com férias cadastradas para ${mesFmt}/${anoAlvo}.`,
+      introducaoHtml: `Olá, <strong>${escapeHtml(nomeGerente)}</strong>. Seguem os liderados com férias cadastradas para ${escapeHtml(`${mesFmt}/${anoAlvo}`)}.`,
       listaHtml: buildListaHtml(itens),
     });
     await sendEmail(emailGerente, assunto, html);
@@ -935,7 +955,7 @@ export async function executarNotificacoesPreviaDia17(options?: {
   const gate = validarHostAutorizadoParaEmail();
 
   if (!gate.autorizado) {
-    console.log(`[FÉRIAS][DIA17] Envio pulado: ${gate.motivo}`);
+    console.log(`[FÉRIAS][DIA18] Envio pulado: ${gate.motivo}`);
     return {
       pulado: true,
       motivo: gate.motivo,
@@ -947,10 +967,10 @@ export async function executarNotificacoesPreviaDia17(options?: {
     };
   }
 
-  if (!podeExecutarPreviaDia17Hoje(force)) {
+  if (!podeExecutarPreviaDia18Hoje(force)) {
     return {
       pulado: true,
-      motivo: "Fora do dia 17.",
+      motivo: "Fora do dia 18.",
       refMes,
       refAlvo: alvo.refAlvo,
       origem,
@@ -959,11 +979,11 @@ export async function executarNotificacoesPreviaDia17(options?: {
     };
   }
 
-  const reservado = force ? true : await reservarEnvioNoMes("PREVIA_DIA17", refMes);
+  const reservado = force ? true : await reservarEnvioNoMes("PREVIA_DIA18", refMes);
   if (!reservado && !force) {
     return {
       pulado: true,
-      motivo: "Prévia do dia 17 já enviada neste mês.",
+      motivo: "Prévia do dia 18 já enviada neste mês.",
       refMes,
       refAlvo: alvo.refAlvo,
       origem,
@@ -987,9 +1007,9 @@ export async function executarNotificacoesPreviaDia17(options?: {
       Number(rhDiretoria?.enviados || 0) + Number(gerencias?.enviados || 0);
 
     if (totalEnvios > 0 && !force) {
-      await marcarEnviadoNoMes("PREVIA_DIA17", refMes);
+      await marcarEnviadoNoMes("PREVIA_DIA18", refMes);
     } else if (!force) {
-      await limparReservaNoMes("PREVIA_DIA17", refMes);
+      await limparReservaNoMes("PREVIA_DIA18", refMes);
     }
 
     return {
@@ -1002,7 +1022,7 @@ export async function executarNotificacoesPreviaDia17(options?: {
     };
   } catch (error) {
     if (!force) {
-      await marcarFalhaNoMes("PREVIA_DIA17", refMes, error);
+      await marcarFalhaNoMes("PREVIA_DIA18", refMes, error);
     }
     throw error;
   }

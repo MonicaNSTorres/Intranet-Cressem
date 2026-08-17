@@ -13,11 +13,13 @@ type EquipamentoTipo = "" | "celular" | "notebook";
 
 const labelClass = "mb-1.5 block text-xs font-black uppercase tracking-wide text-slate-600";
 const fieldClass =
-    "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-left text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
+    "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10";
 const searchInputClass =
-    "h-10 rounded-xl border-slate-200 py-0 text-left text-sm font-medium text-slate-700 shadow-sm placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
+    "h-10 rounded-xl border-slate-300 py-0 text-left text-sm font-medium text-slate-700 shadow-sm placeholder:text-slate-400 hover:border-slate-400 focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10";
 const primaryButtonClass =
-    "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
+const pdfButtonClass =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--fourth)] disabled:cursor-not-allowed disabled:opacity-60";
 
 function capitalizeWords(str?: string | null) {
     return String(str || "")
@@ -273,159 +275,183 @@ export function TermoResponsabilidadeUsoForm() {
     }
 
     return (
-        <div className="mx-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
-            <SearchForm onSearch={buscarFuncionario}>
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr]">
-                    <div>
-                        <label className={labelClass}>
-                            CPF
-                        </label>
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                            <SearchInput
-                                value={cpf}
-                                onChange={(e) => setCpf(formatarCpf(e.target.value))}
-                                placeholder="000.000.000-00"
-                                maxLength={14}
-                                className={searchInputClass}
-                            />
+        <div className="mx-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="h-1 bg-gradient-to-r from-[var(--primary)] via-[var(--primary)] to-[var(--third)]" />
 
-                            <button
-                                type="submit"
-                                disabled={loadingBusca}
-                                className={primaryButtonClass}
-                            >
-                                <FaSearch />
-                                {loadingBusca ? "Pesquisando..." : "Pesquisar"}
-                            </button>
-                        </div>
+            <div className="space-y-5 p-5 lg:p-6">
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="border-b border-slate-200 p-4">
+                        <h2 className="flex items-center gap-2 text-base font-bold text-[var(--title)]">
+                            <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
+                            Consulta do colaborador
+                        </h2>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            Pesquise pelo CPF para preencher o nome automaticamente.
+                        </p>
                     </div>
 
-                    <div>
-                        <label className={labelClass}>
-                            Nome
-                        </label>
-                        <input
-                            value={nome}
-                            onChange={(e) => setNome(e.target.value)}
-                            className={fieldClass}
-                            placeholder="Nome do colaborador"
-                        />
-                    </div>
-                </div>
+                    <div className="p-4">
+                        <SearchForm onSearch={buscarFuncionario}>
+                            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr]">
+                                <div>
+                                    <label className={labelClass}>
+                                        CPF
+                                    </label>
+                                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                                        <SearchInput
+                                            value={cpf}
+                                            onChange={(e) => setCpf(formatarCpf(e.target.value))}
+                                            placeholder="000.000.000-00"
+                                            maxLength={14}
+                                            className={searchInputClass}
+                                        />
 
-                {(erro || info) && (
-                    <div className="mt-4">
-                        {erro ? (
-                            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
-                                {erro}
+                                        <button
+                                            type="submit"
+                                            disabled={loadingBusca}
+                                            className={primaryButtonClass}
+                                        >
+                                            <FaSearch />
+                                            {loadingBusca ? "Pesquisando..." : "Pesquisar"}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className={labelClass}>
+                                        Nome
+                                    </label>
+                                    <input
+                                        value={nome}
+                                        onChange={(e) => setNome(e.target.value)}
+                                        className={fieldClass}
+                                        placeholder="Nome do colaborador"
+                                    />
+                                </div>
                             </div>
-                        ) : (
-                            <div className="rounded-xl border border-primary/20 bg-primary/10 p-3 text-sm font-medium text-primary">
-                                {info}
-                            </div>
-                        )}
+
+                            {(erro || info) && (
+                                <div className="mt-4">
+                                    {erro ? (
+                                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+                                            {erro}
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-xl border border-[var(--primary)]/20 bg-[var(--primary)]/10 p-3 text-sm font-medium text-[var(--primary)]">
+                                            {info}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </SearchForm>
                     </div>
-                )}
-            </SearchForm>
+                </section>
 
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/30 p-4">
-                <h2 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
-                    Dados do equipamento
-                </h2>
-
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                    <div className="lg:col-span-3">
-                        <label className={labelClass}>
-                            Equipamento
-                        </label>
-                        <select
-                            value={equipamento}
-                            onChange={(e) => aoTrocarEquipamento(e.target.value as EquipamentoTipo)}
-                            className={fieldClass}
-                        >
-                            <option value="">Selecione</option>
-                            <option value="celular">Celular</option>
-                            <option value="notebook">Notebook</option>
-                        </select>
-                    </div>
-
-                    <div className="lg:col-span-5">
-                        <label className={labelClass}>
-                            Modelo
-                        </label>
-                        <input
-                            value={modelo}
-                            onChange={(e) => setModelo(e.target.value)}
-                            className={fieldClass}
-                        />
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="border-b border-slate-200 p-4">
+                        <h2 className="flex items-center gap-2 text-base font-bold text-[var(--title)]">
+                            <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
+                            Dados do equipamento
+                        </h2>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            Informe o equipamento entregue e os acessórios que constarão no termo.
+                        </p>
                     </div>
 
-                    <div className="lg:col-span-4">
-                        <label className={labelClass}>
-                            NR Série
-                        </label>
-                        <input
-                            value={numeroSerie}
-                            onChange={(e) => setNumeroSerie(e.target.value)}
-                            className={fieldClass}
-                        />
-                    </div>
-
-                    {equipamento === "celular" && (
-                        <div className="lg:col-span-4">
+                    <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-12">
+                        <div className="lg:col-span-3">
                             <label className={labelClass}>
-                                Número Linha
+                                Equipamento
+                            </label>
+                            <select
+                                value={equipamento}
+                                onChange={(e) => aoTrocarEquipamento(e.target.value as EquipamentoTipo)}
+                                className={fieldClass}
+                            >
+                                <option value="">Selecione</option>
+                                <option value="celular">Celular</option>
+                                <option value="notebook">Notebook</option>
+                            </select>
+                        </div>
+
+                        <div className="lg:col-span-5">
+                            <label className={labelClass}>
+                                Modelo
                             </label>
                             <input
-                                value={linha}
-                                onChange={(e) => setLinha(phoneMask(e.target.value))}
-                                maxLength={15}
+                                value={modelo}
+                                onChange={(e) => setModelo(e.target.value)}
                                 className={fieldClass}
                             />
                         </div>
-                    )}
 
-                    <div className="lg:col-span-4">
-                        <label className={labelClass}>
-                            Entrega
-                        </label>
-                        <input
-                            type="date"
-                            value={entrega}
-                            onChange={(e) => setEntrega(e.target.value)}
-                            className={fieldClass}
-                            readOnly
-                        />
-                    </div>
+                        <div className="lg:col-span-4">
+                            <label className={labelClass}>
+                                NR Série
+                            </label>
+                            <input
+                                value={numeroSerie}
+                                onChange={(e) => setNumeroSerie(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
 
-                    <div className="lg:col-span-8">
-                        <label className={labelClass}>
-                            Acessórios
-                        </label>
-                        <input
-                            value={acessorios}
-                            onChange={(e) => setAcessorios(e.target.value)}
-                            maxLength={80}
-                            className={fieldClass}
-                        />
+                        {equipamento === "celular" && (
+                            <div className="lg:col-span-4">
+                                <label className={labelClass}>
+                                    Número Linha
+                                </label>
+                                <input
+                                    value={linha}
+                                    onChange={(e) => setLinha(phoneMask(e.target.value))}
+                                    maxLength={15}
+                                    className={fieldClass}
+                                />
+                            </div>
+                        )}
+
+                        <div className="lg:col-span-4">
+                            <label className={labelClass}>
+                                Entrega
+                            </label>
+                            <input
+                                type="date"
+                                value={entrega}
+                                onChange={(e) => setEntrega(e.target.value)}
+                                className={fieldClass}
+                                readOnly
+                            />
+                        </div>
+
+                        <div className="lg:col-span-8">
+                            <label className={labelClass}>
+                                Acessórios
+                            </label>
+                            <input
+                                value={acessorios}
+                                onChange={(e) => setAcessorios(e.target.value)}
+                                maxLength={80}
+                                className={fieldClass}
+                            />
+                        </div>
                     </div>
+                </section>
+
+                <div className="flex items-center justify-end border-t border-slate-200 pt-5">
+                    <button
+                        type="button"
+                        onClick={gerarPdf}
+                        disabled={!formularioValido || gerando}
+                        className={
+                            formularioValido && !gerando
+                                ? `${pdfButtonClass} cursor-pointer`
+                                : `${pdfButtonClass} bg-slate-300 hover:bg-slate-300`
+                        }
+                    >
+                        <FaFilePdf />
+                        {gerando ? "Gerando PDF..." : "Gerar PDF"}
+                    </button>
                 </div>
-            </div>
-
-            <div className="mt-6 flex items-center justify-end border-t border-slate-200 pt-5">
-                <button
-                    type="button"
-                    onClick={gerarPdf}
-                    disabled={!formularioValido || gerando}
-                    className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white shadow-sm transition
-        ${formularioValido && !gerando
-                            ? "bg-secondary hover:bg-primary cursor-pointer"
-                            : "bg-slate-300 cursor-not-allowed opacity-70"
-                        }`}
-                >
-                    <FaFilePdf />
-                    {gerando ? "Gerando PDF..." : "Gerar PDF"}
-                </button>
             </div>
         </div>
     );
