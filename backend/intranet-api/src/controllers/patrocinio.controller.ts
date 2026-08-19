@@ -505,6 +505,7 @@ async function buscarTipoFuncionarioPorNome(nome: string) {
     const nomesConselho = [
         "JANAINA GABRIELA",
         "ISABELI LOHANA CARVALHO MARTINS",
+        "VITORIA BEATRIZ FONTOURA CAVALHEIRO DOS SANTOS"
     ];
 
     if (nomesConselho.includes(nomeUpper)) {

@@ -60,6 +60,9 @@ const DEBUG_FORCAR_GERENTE_NOME = String(
   process.env.META_FUNC_DEBUG_GESTOR_NOME ||
   ""
 ).trim();
+const ACESSO_EQUIVALENTE_POR_FUNCIONARIO: Record<string, string> = {
+  "AMANDA APARECIDA MEIRELES": "BRUNA ROBERTA OLIVEIRA DOS REIS SILVA",
+};
 
 const SQL_FUNCIONARIO_POR_NOME = `
 SELECT
@@ -100,6 +103,17 @@ function normalizeNomePessoa(value: any) {
   return toUpperTrim(value)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+}
+
+function resolverNomeBaseAcessoMeta(nome: string) {
+  const nomeOriginal = String(nome || "").trim();
+  const nomeNormalizado = normalizeNomePessoa(nomeOriginal);
+
+  return (
+    Object.entries(ACESSO_EQUIVALENTE_POR_FUNCIONARIO).find(
+      ([nomeDelegado]) => normalizeNomePessoa(nomeDelegado) === nomeNormalizado
+    )?.[1] || nomeOriginal
+  );
 }
 
 function hasGroup(grupos: string[], target: string) {
@@ -163,9 +177,11 @@ async function buscarPerfilAcessoMetaPA(user?: AuthenticatedRequest["user"]) {
     };
   }
 
+  const nomeBaseAcesso = resolverNomeBaseAcessoMeta(nomeAd);
+
   const perfilResult = await oracleExecute(
     SQL_FUNCIONARIO_POR_NOME,
-    { nome_funcionario: nomeAd },
+    { nome_funcionario: nomeBaseAcesso },
     { outFormat: oracledb.OUT_FORMAT_OBJECT }
   );
 
@@ -182,7 +198,7 @@ async function buscarPerfilAcessoMetaPA(user?: AuthenticatedRequest["user"]) {
   }
 
   const nomesPermitidos = new Set<string>();
-  if (nomeAd) nomesPermitidos.add(normalizeNomePessoa(nomeAd));
+  if (nomeBaseAcesso) nomesPermitidos.add(normalizeNomePessoa(nomeBaseAcesso));
   if (nomeFuncionario) nomesPermitidos.add(normalizeNomePessoa(nomeFuncionario));
 
   if (idFuncionario) {

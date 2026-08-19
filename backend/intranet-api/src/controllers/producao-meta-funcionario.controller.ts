@@ -48,6 +48,9 @@ const NOMES_AVISO_META_NAO_RETORNADA = [
     "KEZIA YORRANA PEREIRA DA SILVA GUALBERTO",
     "GILMAR APARECIDO CAVALCANTE DO PRADO",
 ];
+const ACESSO_EQUIVALENTE_POR_FUNCIONARIO: Record<string, string> = {
+    "AMANDA APARECIDA MEIRELES": "BRUNA ROBERTA OLIVEIRA DOS REIS SILVA",
+};
 
 const SQL_FUNCIONARIO_POR_NOME = `
 SELECT
@@ -79,6 +82,17 @@ function normalizeNomePessoa(value: any) {
     return toUpperTrim(value)
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
+}
+
+function resolverNomeBaseAcessoMeta(nome: string) {
+    const nomeOriginal = String(nome || "").trim();
+    const nomeNormalizado = normalizeNomePessoa(nomeOriginal);
+
+    return (
+        Object.entries(ACESSO_EQUIVALENTE_POR_FUNCIONARIO).find(
+            ([nomeDelegado]) => normalizeNomePessoa(nomeDelegado) === nomeNormalizado
+        )?.[1] || nomeOriginal
+    );
 }
 
 function hasGroup(grupos: string[], target: string) {
@@ -195,7 +209,7 @@ function completarExcecoesMetaNaoRetornada(params: {
 }
 
 async function buscarNomesPermitidosSomenteGestor(nomeGestor: string) {
-    const nome = String(nomeGestor || "").trim();
+    const nome = resolverNomeBaseAcessoMeta(nomeGestor);
     if (!nome) return new Set<string>();
 
     const funcionarioResult = await oracleExecute(
@@ -243,9 +257,11 @@ async function buscarPerfilAcessoMetaFuncionario(user?: AuthenticatedRequest["us
     let idFuncionario = 0;
     let nmNivel = "";
 
+    const nomeBaseAcesso = resolverNomeBaseAcessoMeta(nomeAd);
+
     const funcionarioResult = await oracleExecute(
         SQL_FUNCIONARIO_POR_NOME,
-        { nome_funcionario: nomeAd },
+        { nome_funcionario: nomeBaseAcesso },
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
@@ -264,7 +280,7 @@ async function buscarPerfilAcessoMetaFuncionario(user?: AuthenticatedRequest["us
     }
 
     const nomesPermitidos = new Set<string>();
-    if (nomeAd) nomesPermitidos.add(normalizeNomePessoa(nomeAd));
+    if (nomeBaseAcesso) nomesPermitidos.add(normalizeNomePessoa(nomeBaseAcesso));
     if (nomeFuncionario) nomesPermitidos.add(normalizeNomePessoa(nomeFuncionario));
 
     if (idFuncionario) {

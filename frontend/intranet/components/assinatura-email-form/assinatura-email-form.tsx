@@ -478,15 +478,17 @@ export function AssinaturaEmailForm() {
         setOffice(posto || POSTO_PADRAO);
         setEnderecoCadastro(enderecoBanco);
 
+        const gruposUsuario = Array.isArray(data?.grupos) ? data.grupos : [];
+        const ehGerenciaOuDiretoria =
+          gruposUsuario.includes(AD_GROUPS.META_PA) || isManagerOrDirector(data);
         const funcaoUsuario = String(
-          cargoBanco || setorBanco || data?.department || ""
+          ehGerenciaOuDiretoria
+            ? cargoBanco || setorBanco || data?.department || ""
+            : setorBanco || data?.department || cargoBanco || ""
         ).trim();
         setFuncao(capitalizarFrase(funcaoUsuario || FUNCAO_PADRAO));
 
-        const gruposUsuario = Array.isArray(data?.grupos) ? data.grupos : [];
-        setPodePersonalizar(
-          gruposUsuario.includes(AD_GROUPS.META_PA) || isManagerOrDirector(data)
-        );
+        setPodePersonalizar(ehGerenciaOuDiretoria);
       } catch (error) {
         console.error("Erro ao buscar usuário logado:", error);
         setPodePersonalizar(false);
