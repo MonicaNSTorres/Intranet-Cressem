@@ -270,13 +270,53 @@ export async function baixarArquivoPatrocinio(caminho: string): Promise<Blob> {
   }
 }
 
-export async function baixarRelatorioPatrocinios(): Promise<Blob> {
+export async function baixarPdfCompletoPatrocinio(
+  formulario: Blob,
+  anexos: string[]
+): Promise<Blob> {
+  const api = ensureApiUrl();
+  const formData = new FormData();
+  formData.append("formulario", formulario, "formulario.pdf");
+  formData.append("anexos", JSON.stringify(anexos.filter(Boolean)));
+
+  const res = await fetch(`${api}/v1/patrocinio/download-completo`, {
+    method: "POST",
+    credentials: "include",
+    headers: getAuditoriaHeaders(),
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error || "Falha ao gerar o PDF completo da solicitação.");
+  }
+
+  return res.blob();
+}
+
+export async function baixarRelatorioPatrocinios(params: {
+  nome: string;
+  pesquisa: string;
+  status?: string;
+  verTodos?: boolean;
+}): Promise<Blob> {
   try {
     const api = ensureApiUrl();
+    const url = new URL(`${api}/v1/download_patrocinios`);
 
-    const res = await fetch(`${api}/v1/download_patrocinios`, {
+    url.searchParams.set("nome", params.nome);
+    url.searchParams.set("pesquisa", params.pesquisa || " ");
+    if (params.status) {
+      url.searchParams.set("status", params.status);
+    }
+    if (params.verTodos) {
+      url.searchParams.set("ver_todos", "1");
+    }
+
+    const res = await fetch(url.toString(), {
       method: "GET",
       credentials: "include",
+      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -290,6 +330,7 @@ export async function baixarRelatorioPatrocinios(): Promise<Blob> {
       {
         endpoint: "/v1/download_patrocinios",
         method: "GET",
+        params,
       },
       "GERENCIAMENTO_PARTICIPACAO_BAIXAR_RELATORIO"
     );

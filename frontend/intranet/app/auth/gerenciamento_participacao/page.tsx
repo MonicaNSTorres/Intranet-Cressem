@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FaClipboardList } from "react-icons/fa";
+
 import BackButton from "@/components/back-button/back-button";
 import { GerenciamentoParticipacaoForm } from "@/components/gerenciamento-participacao-form/gerenciamento-participacao-form";
 import {
@@ -19,7 +20,6 @@ export default function GerenciamentoParticipacaoPage() {
     async function validarAcesso() {
       try {
         const user = (await getMeAdUser()) as AuthUserLike;
-
         setAllowed(canAccess(user, PAGE_ACCESS.gerenciamentoParticipacao));
       } catch (error) {
         console.error(error);
@@ -53,10 +53,12 @@ export default function GerenciamentoParticipacaoPage() {
   return (
     <div className="p-5 lg:p-8">
       <BackButton />
+
       <div className="mt-4 flex items-center gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-[#006f65] shadow-sm">
           <FaClipboardList size={18} />
         </div>
+
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-black text-slate-950">
             Gerenciamento de Participação de Marketing

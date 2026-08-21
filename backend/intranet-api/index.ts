@@ -65,6 +65,7 @@ const fileUploadMiddleware = fileUpload({
 const multerManagedPaths = new Set([
   "/v1/marca_dagua",
   "/v1/converter-arquivos",
+  "/v1/patrocinio/download-completo",
   "/v1/estoque-consumiveis/importar-excel",
   "/v1/ferias_funcionarios/importar-excel",
   "/v1/cnab240/gerar",

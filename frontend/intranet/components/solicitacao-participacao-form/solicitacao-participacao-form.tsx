@@ -147,6 +147,7 @@ export function SolicitacaoParticipacaoForm() {
     const [info, setInfo] = useState("");
     const alertRef = useRef<HTMLDivElement | null>(null);
     const oficioInputRef = useRef<HTMLInputElement | null>(null);
+    const painelSisbrInputRef = useRef<HTMLInputElement | null>(null);
     const docSemFinsInputRef = useRef<HTMLInputElement | null>(null);
     const subirParaAlerta = () => {
         window.requestAnimationFrame(() => {
@@ -201,6 +202,7 @@ export function SolicitacaoParticipacaoForm() {
 
     const [funcionario, setFuncionario] = useState("");
     const [oficio, setOficio] = useState<File | null>(null);
+    const [painelSisbr, setPainelSisbr] = useState<File | null>(null);
     const [diaSolicitacao, setDiaSolicitacao] = useState(hojeISO());
 
     const [openAuditorioModal, setOpenAuditorioModal] = useState(false);
@@ -543,6 +545,16 @@ export function SolicitacaoParticipacaoForm() {
             return false;
         }
 
+        if (!painelSisbr) {
+            mostrarErro("Anexe o Painel SISBR.");
+            return false;
+        }
+
+        if (!isPdfFile(painelSisbr)) {
+            mostrarErro("O Painel SISBR deve estar em PDF.");
+            return false;
+        }
+
         if (auditorioSede && !validaCamposAuditorio()) {
             return false;
         }
@@ -593,8 +605,12 @@ export function SolicitacaoParticipacaoForm() {
         setEventoAnterior("0");
         setRetornoUltimoEvento("");
         setOficio(null);
+        setPainelSisbr(null);
         if (oficioInputRef.current) {
             oficioInputRef.current.value = "";
+        }
+        if (painelSisbrInputRef.current) {
+            painelSisbrInputRef.current.value = "";
         }
         if (docSemFinsInputRef.current) {
             docSemFinsInputRef.current.value = "";
@@ -762,6 +778,10 @@ export function SolicitacaoParticipacaoForm() {
 
             if (oficio) {
                 formData.append("DIR_OFICIO", oficio);
+            }
+
+            if (painelSisbr) {
+                formData.append("DIR_PAINEL_SISBR", painelSisbr);
             }
 
             const response = await cadastrarSolicitacaoParticipacao(formData);
@@ -1394,7 +1414,7 @@ export function SolicitacaoParticipacaoForm() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
+                    <div className="space-y-4">
                         <div>
                             <label className={labelBase}>
                                 Funcionário
@@ -1406,26 +1426,51 @@ export function SolicitacaoParticipacaoForm() {
                             />
                         </div>
 
-                        <div>
-                            <label className={labelBase}>
-                                Adicionar Ofício
-                            </label>
-                            <input
-                                ref={oficioInputRef}
-                                type="file"
-                                accept="application/pdf,.pdf"
-                                onChange={(e) =>
-                                    selecionarPdf(
-                                        e.target.files?.[0] || null,
-                                        setOficio,
-                                        oficioInputRef
-                                    )
-                                }
-                                className={fileInputBase}
-                            />
-                            <p className="mt-1 text-xs text-slate-500">
-                                {oficio ? oficio.name : "Nenhum arquivo selecionado"}
-                            </p>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
+                            <div>
+                                <label className={labelBase}>
+                                    Adicionar Ofício
+                                </label>
+                                <input
+                                    ref={oficioInputRef}
+                                    type="file"
+                                    accept="application/pdf,.pdf"
+                                    onChange={(e) =>
+                                        selecionarPdf(
+                                            e.target.files?.[0] || null,
+                                            setOficio,
+                                            oficioInputRef
+                                        )
+                                    }
+                                    className={fileInputBase}
+                                />
+                                <p className="mt-1 text-xs text-slate-500">
+                                    {oficio ? oficio.name : "Nenhum arquivo selecionado"}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className={labelBase}>
+                                    Painel SISBR <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    ref={painelSisbrInputRef}
+                                    type="file"
+                                    accept="application/pdf,.pdf"
+                                    required
+                                    onChange={(e) =>
+                                        selecionarPdf(
+                                            e.target.files?.[0] || null,
+                                            setPainelSisbr,
+                                            painelSisbrInputRef
+                                        )
+                                    }
+                                    className={fileInputBase}
+                                />
+                                <p className="mt-1 text-xs text-slate-500">
+                                    {painelSisbr ? painelSisbr.name : "Nenhum arquivo selecionado"}
+                                </p>
+                            </div>
                         </div>
                     </div>
 

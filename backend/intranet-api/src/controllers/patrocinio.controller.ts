@@ -13,6 +13,7 @@ import {
     setAuditoriaContext,
 } from "../services/oracle.service";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
+import { PDFDocument } from "pdf-lib";
 
 const execFileAsync = promisify(execFile);
 const AD_GROUP_SUPORTE = "GG_USERS_SUPORTE";
@@ -92,10 +93,16 @@ function sanitizeFolderName(value: string) {
 }
 
 function escapeCsv(value: any) {
-    const text = String(value ?? "");
+    // CSV não carrega largura/quebra de texto. Para evitar conteúdo espalhando
+    // visualmente no Excel, normalizamos espaços, tabs e quebras de linha.
+    const text = String(value ?? "")
+        .replace(/\s+/g, " ")
+        .trim();
+
     if (text.includes(";") || text.includes('"') || text.includes("\n")) {
         return `"${text.replace(/"/g, '""')}"`;
     }
+
     return text;
 }
 
@@ -582,6 +589,7 @@ type ParticipacaoSubmitResponse = {
     ID_PATROCINIO: number;
     NM_ANDAMENTO: string;
     DIR_OFICIO: string;
+    DIR_PAINEL_SISBR: string;
     DIR_DOC_SEM_FINS_LUCRATIVO: string | null;
 };
 type ParticipacaoSubmitEntry = {
@@ -609,10 +617,11 @@ function buildParticipacaoDedupeKey(params: {
     body: any;
     dias: Array<{ DT_DIA: string; HR_INICIO: string; HR_FIM: string }>;
     oficioFile?: UploadedFile;
+    painelSisbrFile?: UploadedFile;
     semFinsFile?: UploadedFile | null;
     auditorio: any;
 }) {
-    const { body, dias, oficioFile, semFinsFile, auditorio } = params;
+    const { body, dias, oficioFile, painelSisbrFile, semFinsFile, auditorio } = params;
 
     const diasKey = [...dias]
         .map(
@@ -660,6 +669,9 @@ function buildParticipacaoDedupeKey(params: {
         `${normalizeDedupeText(oficioFile?.name)}|${String(
             oficioFile?.size || 0
         )}`,
+        `${normalizeDedupeText(painelSisbrFile?.name)}|${String(
+            painelSisbrFile?.size || 0
+        )}`,
         `${normalizeDedupeText(semFinsFile?.name)}|${String(
             semFinsFile?.size || 0
         )}`,
@@ -682,11 +694,13 @@ export const patrocinioController = {
 
             const files = (req.files || {}) as Record<string, any>;
             const oficioFile = getSingleUploadedFile(files.DIR_OFICIO);
+            const painelSisbrFile = getSingleUploadedFile(files.DIR_PAINEL_SISBR);
             const semFinsFile = getSingleUploadedFile(
                 files.DIR_DOC_SEM_FINS_LUCRATIVO
             );
 
             ensurePdf(oficioFile);
+            ensurePdf(painelSisbrFile);
             ensurePdf(semFinsFile);
 
             const dias = parseDias(body.DIAS);
@@ -732,10 +746,15 @@ export const patrocinioController = {
                 return res.status(400).json({ error: "DIR_OFICIO é obrigatório." });
             }
 
+            if (!painelSisbrFile) {
+                return res.status(400).json({ error: "DIR_PAINEL_SISBR é obrigatório." });
+            }
+
             dedupeKey = buildParticipacaoDedupeKey({
                 body,
                 dias,
                 oficioFile,
+                painelSisbrFile,
                 semFinsFile,
                 auditorio,
             });
@@ -770,6 +789,11 @@ export const patrocinioController = {
                 nomePastaSolicitante
             );
 
+            const painelSisbrPath = await salvarArquivoPatrocinioNoServidorSMB(
+                painelSisbrFile,
+                nomePastaSolicitante
+            );
+
             let semFinsPath: string | null = null;
             if (semFinsFile) {
                 semFinsPath = await salvarArquivoPatrocinioNoServidorSMB(
@@ -798,6 +822,7 @@ export const patrocinioController = {
             VL_PATROCINIO,
             NM_FUNCIONARIO,
             DIR_OFICIO,
+            DIR_PAINEL_SISBR,
             NM_CIDADE,
             DT_SOLICITACAO,
             NM_ANDAMENTO,
@@ -825,6 +850,7 @@ export const patrocinioController = {
             :VL_PATROCINIO,
             :NM_FUNCIONARIO,
             :DIR_OFICIO,
+            :DIR_PAINEL_SISBR,
             :NM_CIDADE,
             TO_DATE(:DT_SOLICITACAO, 'YYYY-MM-DD'),
             :NM_ANDAMENTO,
@@ -854,6 +880,7 @@ export const patrocinioController = {
                     VL_PATROCINIO: toNullableNumber(body.VL_PATROCINIO),
                     NM_FUNCIONARIO: toNullableString(body.NM_FUNCIONARIO),
                     DIR_OFICIO: oficioPath,
+                    DIR_PAINEL_SISBR: painelSisbrPath,
                     NM_CIDADE: toNullableString(body.NM_CIDADE),
                     DT_SOLICITACAO: String(body.DT_SOLICITACAO),
                     NM_ANDAMENTO: andamentoInicial,
@@ -992,6 +1019,7 @@ export const patrocinioController = {
                 ID_PATROCINIO: idPatrocinio,
                 NM_ANDAMENTO: andamentoInicial,
                 DIR_OFICIO: oficioPath,
+                DIR_PAINEL_SISBR: painelSisbrPath,
                 DIR_DOC_SEM_FINS_LUCRATIVO: semFinsPath,
             };
 
@@ -1144,6 +1172,7 @@ export const patrocinioController = {
             p.CD_AUDITORIO_CENTRO,
             p.CD_AUDITORIO_SEDE,
             p.DIR_OFICIO,
+            p.DIR_PAINEL_SISBR,
             p.DIR_DOC_SEM_FINS_LUCRATIVO,
             p.NM_GERENCIA,
             p.DESC_PARECER_GERENCIA,
@@ -1211,6 +1240,7 @@ export const patrocinioController = {
             p.VL_PATROCINIO,
             p.NM_FUNCIONARIO,
             p.DIR_OFICIO,
+            p.DIR_PAINEL_SISBR,
             p.NM_CIDADE,
             TO_CHAR(p.DT_SOLICITACAO, 'YYYY-MM-DD') AS DT_SOLICITACAO,
             TO_CHAR(p.DT_FINALIZACAO, 'YYYY-MM-DD') AS DT_FINALIZACAO,
@@ -1369,47 +1399,243 @@ export const patrocinioController = {
         }
     },
 
-    async downloadCsv(req: Request, res: Response) {
+    async downloadPdfCompleto(req: Request, res: Response) {
         try {
+            if (!req.file?.buffer) {
+                return res.status(400).json({ error: "O formulário em PDF é obrigatório." });
+            }
+
+            let anexos: string[] = [];
+            try {
+                const recebido = JSON.parse(String(req.body?.anexos || "[]"));
+                anexos = Array.isArray(recebido)
+                    ? recebido.map((item) => String(item || "").trim()).filter(Boolean)
+                    : [];
+            } catch {
+                return res.status(400).json({ error: "A relação de anexos é inválida." });
+            }
+
+            const destino = await PDFDocument.create();
+
+            async function adicionarPdf(buffer: Buffer, identificacao: string) {
+                try {
+                    const origem = await PDFDocument.load(buffer);
+                    const paginas = await destino.copyPages(origem, origem.getPageIndices());
+                    paginas.forEach((pagina) => destino.addPage(pagina));
+                } catch {
+                    throw new Error(`O arquivo ${identificacao} não é um PDF válido.`);
+                }
+            }
+
+            await adicionarPdf(req.file.buffer, "do formulário");
+
+            for (const caminho of anexos) {
+                const { buffer } = isWindowsRuntime()
+                    ? await (async () => {
+                        await conectarShareWindows();
+                        return await readFileByPossibleUncPaths(caminho);
+                    })()
+                    : await readFileFromSmbLinux(caminho);
+                await adicionarPdf(buffer, path.win32.basename(toWindowsUncPath(caminho)));
+            }
+
+            const pdf = await destino.save();
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader(
+                "Content-Disposition",
+                'attachment; filename="analise_participacao_completa.pdf"'
+            );
+            return res.status(200).send(Buffer.from(pdf));
+        } catch (err: any) {
+            console.error("patrocinioController.downloadPdfCompleto erro:", err);
+            return res.status(500).json({
+                error: "Falha ao gerar o PDF completo da solicitação.",
+                details: String(err?.message || err),
+            });
+        }
+    },
+
+    async downloadCsv(req: AuthenticatedRequest, res: Response) {
+        try {
+            const nome = String(req.query.nome || "").trim();
+            const pesquisa = String(req.query.pesquisa || "").trim().toUpperCase();
+            const status = normalizeFiltroTexto(req.query.status);
+            const grupos = Array.isArray(req.user?.grupos) ? req.user!.grupos! : [];
+            const isSuporte = hasGroup(grupos, AD_GROUP_SUPORTE);
+            const verTodos = isSuporte && ["1", "true", "sim"].includes(
+                String(req.query.ver_todos || "").trim().toLowerCase()
+            );
+
+            if (!nome) {
+                return res.status(400).json({ error: "Nome do usuário é obrigatório." });
+            }
+
+            const funcionario = await buscarTipoFuncionarioPorNome(nome);
+            let wherePerfil = "1 = 1";
+            const binds: Record<string, any> = {
+                pesquisa: `%${pesquisa || ""}%`,
+                status: status || null,
+            };
+
+            if (!verTodos && funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria") {
+                binds.nome = nome;
+            }
+
+            if (verTodos) {
+                wherePerfil = "1 = 1";
+            } else if (funcionario.TIPO === "funcionario") {
+                wherePerfil = "UPPER(p.NM_FUNCIONARIO) = UPPER(:nome)";
+            } else if (funcionario.TIPO === "gerencia") {
+                wherePerfil = `
+                    UPPER(p.NM_FUNCIONARIO) IN (
+                        SELECT UPPER(f.NM_FUNCIONARIO)
+                        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+                        WHERE UPPER(f.NM_FUNCIONARIO) = UPPER(:nome)
+                           OR f.CD_GERENCIA = (
+                               SELECT fg.ID_FUNCIONARIO
+                               FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
+                               WHERE UPPER(fg.NM_FUNCIONARIO) = UPPER(:nome)
+                                 AND ROWNUM = 1
+                           )
+                    )
+                `;
+            }
+
             const result = await oracleExecute(
                 `
           SELECT
-            NM_SOLICITANTE,
-            NR_CPF_CNPJ,
-            NM_CIDADE,
-            NM_FUNCIONARIO,
-            TO_CHAR(DT_SOLICITACAO, 'DD/MM/YYYY') AS DT_SOLICITACAO,
-            NM_ANDAMENTO
-          FROM DBACRESSEM.PATROCINIO
-          ORDER BY ID_PATROCINIO DESC
+            p.ID_PATROCINIO,
+            p.NM_SOLICITANTE,
+            p.NR_CPF_CNPJ,
+            p.VL_PATROCINIO,
+            p.NM_CIDADE,
+            p.NM_FUNCIONARIO,
+            TO_CHAR(p.DT_SOLICITACAO, 'DD/MM/YYYY') AS DT_SOLICITACAO,
+            TO_CHAR(p.DT_FINALIZACAO, 'DD/MM/YYYY') AS DT_FINALIZACAO,
+            p.NM_ANDAMENTO,
+            p.CD_CONTA_COOPERATIVA,
+            p.VL_SALDO_MEDCIOCC,
+            p.DESC_SERVICOS,
+            p.DESC_VINCULO,
+            p.DESC_RETORNO_ULTIMO_EVENTO,
+            p.VL_RENTABILIDADE_MAQUININHA,
+            p.DESC_SOLICITACAO,
+            p.DESC_RESUMO_EVENTO,
+            p.CD_MOTORISTA,
+            p.CD_FUNCIONARIOS,
+            p.VL_MONETARIO,
+            p.VL_ESTIMATIVA,
+            p.QTD_INSUMO,
+            p.CD_AUDITORIO_CENTRO,
+            p.CD_AUDITORIO_SEDE,
+            p.SN_SEM_FINS_LUCATRIVOS,
+            p.DIR_OFICIO,
+            p.DIR_PAINEL_SISBR,
+            p.DIR_DOC_SEM_FINS_LUCRATIVO,
+            p.NM_GERENCIA,
+            p.DESC_PARECER_GERENCIA,
+            p.NM_DIRETORIA,
+            p.DESC_PARECER_DIRETORIA,
+            p.DESC_PARECER_ESCRITO_DIRETORIA,
+            p.NM_PARECER_CONSELHO,
+            p.DESC_PARECER_ESCRITO_CONSELHO,
+            p.NM_GERENTE_EVENTO,
+            p.NM_SUGESTAO_PARTICIPANTES,
+            (
+              SELECT LISTAGG(
+                TO_CHAR(d.DT_DIA, 'DD/MM/YYYY') || ' ' ||
+                NVL(d.HR_INICIO, '-') || ' às ' || NVL(d.HR_FIM, '-'),
+                ' | '
+              ) WITHIN GROUP (ORDER BY d.DT_DIA, d.HR_INICIO)
+              FROM DBACRESSEM.DATA_HORA_PATROCINIO d
+              WHERE d.ID_PATROCINIO = p.ID_PATROCINIO
+            ) AS DIAS_HORARIOS
+          FROM DBACRESSEM.PATROCINIO p
+          WHERE ${wherePerfil}
+            AND (
+              :pesquisa = '%%'
+              OR UPPER(p.NM_SOLICITANTE) LIKE :pesquisa
+              OR REGEXP_REPLACE(UPPER(p.NR_CPF_CNPJ), '[^A-Z0-9]', '') LIKE REGEXP_REPLACE(UPPER(:pesquisa), '[^A-Z0-9]', '')
+              OR UPPER(p.NM_ANDAMENTO) LIKE :pesquisa
+            )
+            AND (
+              :status IS NULL
+              OR TRANSLATE(
+                UPPER(TRIM(p.NM_ANDAMENTO)),
+                'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ',
+                'AAAAAEEEEIIIIOOOOOUUUUC'
+              ) = :status
+            )
+          ORDER BY
+            p.DT_SOLICITACAO DESC,
+            UPPER(TRIM(p.NM_SOLICITANTE)) ASC,
+            p.ID_PATROCINIO DESC
         `,
-                {},
+                binds,
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
 
             const rows = result.rows || [];
 
-            const header = [
-                "Nome Fantasia",
-                "CPF/CNPJ",
-                "Cidade",
-                "FuncionÃ¡rio",
-                "Dia",
-                "Status",
+            // Define as colunas em um único lugar.
+            // Mantemos todas as colunas do relatório, mesmo quando algum campo
+            // estiver vazio nos registros filtrados.
+            const colunasCsv: Array<{
+                header: string;
+                valor: (row: any) => any;
+            }> = [
+                { header: "ID", valor: (row) => row.ID_PATROCINIO ?? "" },
+                { header: "Nome Fantasia", valor: (row) => capitalizeWords(row.NM_SOLICITANTE || "") },
+                { header: "CPF/CNPJ", valor: (row) => formatarCpfOuCnpj(row.NR_CPF_CNPJ || "") },
+                { header: "Valor do Patrocínio", valor: (row) => row.VL_PATROCINIO ?? "" },
+                { header: "Cidade", valor: (row) => capitalizeWords(row.NM_CIDADE || "") },
+                { header: "Funcionário", valor: (row) => capitalizeWords(row.NM_FUNCIONARIO || "") },
+                { header: "Data da Solicitação", valor: (row) => row.DT_SOLICITACAO || "" },
+                { header: "Data da Finalização", valor: (row) => row.DT_FINALIZACAO || "" },
+                { header: "Status", valor: (row) => capitalizeWords(row.NM_ANDAMENTO || "") },
+                { header: "Conta da Cooperativa", valor: (row) => row.CD_CONTA_COOPERATIVA ?? "" },
+                { header: "Saldo Médio em Conta Corrente", valor: (row) => row.VL_SALDO_MEDCIOCC ?? "" },
+                { header: "Serviços", valor: (row) => row.DESC_SERVICOS || "" },
+                { header: "Vínculo", valor: (row) => row.DESC_VINCULO || "" },
+                { header: "Retorno do Último Evento", valor: (row) => row.DESC_RETORNO_ULTIMO_EVENTO || "" },
+                { header: "Rentabilidade da Maquininha", valor: (row) => row.VL_RENTABILIDADE_MAQUININHA ?? "" },
+                { header: "Solicitação", valor: (row) => row.DESC_SOLICITACAO || "" },
+                { header: "Resumo do Evento", valor: (row) => row.DESC_RESUMO_EVENTO || "" },
+                { header: "Motorista", valor: (row) => row.CD_MOTORISTA ?? "" },
+                { header: "Funcionários", valor: (row) => row.CD_FUNCIONARIOS ?? "" },
+                { header: "Valor Monetário", valor: (row) => row.VL_MONETARIO ?? "" },
+                { header: "Valor Estimado", valor: (row) => row.VL_ESTIMATIVA ?? "" },
+                { header: "Quantidade de Insumos", valor: (row) => row.QTD_INSUMO ?? "" },
+                { header: "Auditório Centro", valor: (row) => row.CD_AUDITORIO_CENTRO ?? "" },
+                { header: "Auditório Sede", valor: (row) => row.CD_AUDITORIO_SEDE ?? "" },
+                { header: "Entidade sem Fins Lucrativos", valor: (row) => row.SN_SEM_FINS_LUCATRIVOS === 1 ? "Sim" : "Não" },
+
+                // No relatório, o caminho SMB completo não agrega valor e deixa a célula enorme.
+                { header: "Ofício", valor: (row) => row.DIR_OFICIO ? "Anexado" : "Não anexado" },
+                { header: "Painel SISBR", valor: (row) => row.DIR_PAINEL_SISBR ? "Anexado" : "Não anexado" },
+                { header: "Documento sem Fins Lucrativos", valor: (row) => row.DIR_DOC_SEM_FINS_LUCRATIVO ? "Anexado" : "Não anexado" },
+
+                { header: "Gerência", valor: (row) => row.NM_GERENCIA || "" },
+                { header: "Parecer da Gerência", valor: (row) => row.DESC_PARECER_GERENCIA || "" },
+                { header: "Diretoria", valor: (row) => row.NM_DIRETORIA || "" },
+                { header: "Parecer da Diretoria", valor: (row) => row.DESC_PARECER_DIRETORIA || "" },
+                { header: "Parecer Escrito da Diretoria", valor: (row) => row.DESC_PARECER_ESCRITO_DIRETORIA || "" },
+                { header: "Parecer do Conselho", valor: (row) => row.NM_PARECER_CONSELHO || "" },
+                { header: "Parecer Escrito do Conselho", valor: (row) => row.DESC_PARECER_ESCRITO_CONSELHO || "" },
+                { header: "Responsável pelo Evento", valor: (row) => row.NM_GERENTE_EVENTO || "" },
+                { header: "Sugestão de Participantes", valor: (row) => row.NM_SUGESTAO_PARTICIPANTES || "" },
+                { header: "Dias e Horários", valor: (row) => row.DIAS_HORARIOS || "" },
             ];
 
-            const lines = [header.join(";")];
+            const lines = [
+                colunasCsv.map((coluna) => escapeCsv(coluna.header)).join(";"),
+            ];
 
             rows.forEach((row: any) => {
                 lines.push(
-                    [
-                        escapeCsv(capitalizeWords(row.NM_SOLICITANTE || "")),
-                        escapeCsv(formatarCpfOuCnpj(row.NR_CPF_CNPJ || "")),
-                        escapeCsv(capitalizeWords(row.NM_CIDADE || "")),
-                        escapeCsv(capitalizeWords(row.NM_FUNCIONARIO || "")),
-                        escapeCsv(row.DT_SOLICITACAO || ""),
-                        escapeCsv(capitalizeWords(row.NM_ANDAMENTO || "")),
-                    ].join(";")
+                    colunasCsv
+                        .map((coluna) => escapeCsv(coluna.valor(row)))
+                        .join(";")
                 );
             });
 
@@ -1418,14 +1644,14 @@ export const patrocinioController = {
             res.setHeader("Content-Type", "text/csv; charset=utf-8");
             res.setHeader(
                 "Content-Disposition",
-                'attachment; filename="patrocinios.csv"'
+                'attachment; filename="participacoes_filtradas.csv"'
             );
 
             return res.status(200).send(csv);
         } catch (err: any) {
             console.error("patrocinioController.downloadCsv erro:", err);
             return res.status(500).json({
-                error: "Falha ao gerar relatÃ³rio CSV.",
+                error: "Falha ao gerar relatório CSV.",
                 details: String(err?.message || err),
             });
         }

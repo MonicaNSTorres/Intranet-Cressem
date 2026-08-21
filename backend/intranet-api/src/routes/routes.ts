@@ -635,7 +635,13 @@ routes.get("/v1/funcionarios_sicoob_cressem_patrocinio_paginado", authMiddleware
 routes.get("/v1/patrocinio_cressem/:id", patrocinioController.buscarPorId);
 routes.put("/v1/patrocinio_cressem/:id", authMiddleware, patrocinioController.editar);
 routes.post("/v1/patrocinio/download", patrocinioController.downloadArquivo);
-routes.get("/v1/download_patrocinios", patrocinioController.downloadCsv);
+routes.post(
+  "/v1/patrocinio/download-completo",
+  authMiddleware,
+  upload.single("formulario"),
+  patrocinioController.downloadPdfCompleto
+);
+routes.get("/v1/download_patrocinios", authMiddleware, patrocinioController.downloadCsv);
 
 //funcionario tipo
 routes.get(
