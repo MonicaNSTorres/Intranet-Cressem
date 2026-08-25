@@ -1,4 +1,4 @@
-﻿import { Request, Response } from "express";
+import { Request, Response } from "express";
 import { sendEmail } from "../services/email.service";
 import { oracleExecute } from "../services/oracle.service";
 
@@ -73,6 +73,238 @@ function fmtDate(value: any) {
   return d.toLocaleDateString("pt-BR");
 }
 
+
+function escaparHtml(value: any) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function linhaTabelaEmail(label: string, value: any) {
+  return `
+    <tr>
+      <td
+        width="36%"
+        valign="top"
+        style="
+          padding: 11px 12px;
+          border-bottom: 1px solid #dfe6e2;
+          background-color: #f7f9f8;
+          font-family: Arial, sans-serif;
+          font-size: 13px;
+          line-height: 18px;
+          font-weight: 700;
+          color: #17211d;
+        "
+      >
+        ${escaparHtml(label)}
+      </td>
+      <td
+        width="64%"
+        valign="top"
+        style="
+          padding: 11px 12px;
+          border-bottom: 1px solid #dfe6e2;
+          background-color: #ffffff;
+          font-family: Arial, sans-serif;
+          font-size: 13px;
+          line-height: 18px;
+          color: #17211d;
+          word-break: break-word;
+        "
+      >
+        ${escaparHtml(value)}
+      </td>
+    </tr>
+  `;
+}
+
+function montarEmailParticipacao({
+  titulo,
+  saudacao,
+  introducao,
+  linhas,
+  orientacao,
+}: {
+  titulo: string;
+  saudacao: string;
+  introducao: string;
+  linhas: string;
+  orientacao?: string;
+}) {
+  return `
+    <!doctype html>
+    <html>
+      <body style="margin:0; padding:0; background-color:#f2f6f4;">
+        <table
+          role="presentation"
+          width="100%"
+          cellspacing="0"
+          cellpadding="0"
+          border="0"
+          style="width:100%; background-color:#f2f6f4; margin:0; padding:0;"
+        >
+          <tr>
+            <td align="center" style="padding:24px 12px;">
+              <table
+                role="presentation"
+                width="620"
+                cellspacing="0"
+                cellpadding="0"
+                border="0"
+                style="
+                  width:100%;
+                  max-width:620px;
+                  background-color:#ffffff;
+                  border:1px solid #d7e0db;
+                  border-radius:14px;
+                  overflow:hidden;
+                "
+              >
+                <tr>
+                  <td
+                    style="
+                      padding:20px 22px 18px 22px;
+                      background-color:#007a48;
+                      font-family:Arial, sans-serif;
+                    "
+                  >
+                    <div
+                      style="
+                        margin:0 0 6px 0;
+                        font-size:11px;
+                        line-height:15px;
+                        font-weight:700;
+                        color:#ffffff;
+                        text-transform:uppercase;
+                      "
+                    >
+                      <span
+                        style="
+                          background-color:#fff200;
+                          color:#17211d;
+                          padding:1px 3px;
+                        "
+                      >PARTICIPAÇÃO</span>
+                      <span style="color:#ffffff;"> DE MARKETING</span>
+                    </div>
+
+                    <div
+                      style="
+                        margin:0;
+                        font-size:20px;
+                        line-height:25px;
+                        font-weight:700;
+                        color:#ffffff;
+                      "
+                    >
+                      ${escaparHtml(titulo)}
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:20px 22px 22px 22px;">
+                    <p
+                      style="
+                        margin:0 0 10px 0;
+                        font-family:Arial, sans-serif;
+                        font-size:13px;
+                        line-height:19px;
+                        color:#17211d;
+                      "
+                    >
+                      ${escaparHtml(saudacao)}
+                    </p>
+
+                    <p
+                      style="
+                        margin:0 0 16px 0;
+                        font-family:Arial, sans-serif;
+                        font-size:13px;
+                        line-height:19px;
+                        color:#17211d;
+                      "
+                    >
+                      ${escaparHtml(introducao)}
+                    </p>
+
+                    <table
+                      role="presentation"
+                      width="100%"
+                      cellspacing="0"
+                      cellpadding="0"
+                      border="0"
+                      style="
+                        width:100%;
+                        border-collapse:separate;
+                        border-spacing:0;
+                        border:1px solid #d7e0db;
+                        border-radius:10px;
+                        overflow:hidden;
+                      "
+                    >
+                      ${linhas}
+                    </table>
+
+                    ${
+                      orientacao
+                        ? `
+                          <table
+                            role="presentation"
+                            width="100%"
+                            cellspacing="0"
+                            cellpadding="0"
+                            border="0"
+                            style="width:100%; margin-top:16px;"
+                          >
+                            <tr>
+                              <td
+                                style="
+                                  padding:11px 13px;
+                                  background-color:#eaf5ef;
+                                  border-left:4px solid #00a65a;
+                                  border-radius:7px;
+                                  font-family:Arial, sans-serif;
+                                  font-size:13px;
+                                  line-height:18px;
+                                  color:#17211d;
+                                "
+                              >
+                                <strong>Orientação:</strong>
+                                ${escaparHtml(orientacao)}
+                              </td>
+                            </tr>
+                          </table>
+                        `
+                        : ""
+                    }
+
+                    <p
+                      style="
+                        margin:18px 0 0 0;
+                        font-family:Arial, sans-serif;
+                        font-size:11px;
+                        line-height:16px;
+                        color:#607067;
+                      "
+                    >
+                      Este e-mail foi enviado automaticamente pelo sistema.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+}
+
 export const emailController = {
   async emailGerencia(req: Request, res: Response) {
     try {
@@ -109,62 +341,78 @@ export const emailController = {
       );
 
       const diasHtml = (diasResult.rows || [])
-        .map((row: any) => {
+        .map((row: any, index: number) => {
           const dtDia = String(row?.DT_DIA || "");
           const hrInicio = String(row?.HR_INICIO || "");
           const hrFim = String(row?.HR_FIM || "");
-          return `<li><b>Dia:</b> ${dtDia}, <b>Início:</b> ${hrInicio}, <b>Fim:</b> ${hrFim}</li>`;
+          return linhaTabelaEmail(
+            `Dia do Evento${(diasResult.rows || []).length > 1 ? ` ${index + 1}` : ""}`,
+            `${dtDia} - ${hrInicio} às ${hrFim}`
+          );
         })
         .join("");
 
       const subject = "Nova Solicitação de Participação de Marketing Recebida";
 
-      const body = `
-      <p>Prezado(a) Gestor(a),</p>
-
-      <p>Uma solicitação de participação de marketing está aguardando sua avaliação.</p>
-
-      <ul>
-        <li><b>Empresa:</b> ${empresa}</li>
-        <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || funcionario || "-"}</li>
-        <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
-        <li><b>Funcionário:</b> ${funcionario}</li>
-        ${diasHtml}
-        <li><b>Precisa de Valor Monetário?</b> ${simNao(
-        patrocinio.VL_MONETARIO
-      )}</li>
-        <li><b>Valor Solicitado:</b> R$ ${fmtMoney(
-        patrocinio.VL_PATROCINIO
-      )}</li>
-        <li><b>É insumo?</b> ${simNao(patrocinio.QTD_INSUMO)}</li>
-        <li><b>Estimativa de Valor:</b> R$ ${fmtMoney(
-        patrocinio.VL_ESTIMATIVA
-      )}</li>
-        <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
-        <li><b>Resumo:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
-        <li><b>Precisa de Motorista?</b> ${simNao(
-        patrocinio.CD_MOTORISTA
-      )}</li>
-        <li><b>Precisa de Funcionários?</b> ${simNao(
-        patrocinio.CD_FUNCIONARIOS
-      )}</li>
-        <li><b>Data da Solicitação:</b> ${fmtDate(
-        patrocinio.DT_SOLICITACAO
-      )}</li>
-        <li><b>Cidade:</b> ${patrocinio.NM_CIDADE}</li>
-        <li><b>Reserva Auditório Sede:</b> ${simNao(
-        patrocinio.CD_AUDITORIO_SEDE
-      )}</li>
-        <li><b>Reserva Centro de Convivência:</b> ${simNao(
-        patrocinio.CD_AUDITORIO_CENTRO
-      )}</li>
-        <li><b>Status:</b> ${patrocinio.NM_ANDAMENTO}</li>
-      </ul>
-
-      <p>Por favor, acesse a Intranet para visualizar os detalhes completos da solicitação e registrar seu parecer.</p>
-
-      <p>Atenciosamente<br/>E-mail automático</p>
-      `;
+      const body = montarEmailParticipacao({
+        titulo: "Nova solicitação",
+        saudacao: "Prezado(a) Gestor(a),",
+        introducao:
+          "Uma solicitação de participação de marketing está aguardando sua avaliação.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail("Empresa", empresa),
+          linhaTabelaEmail(
+            "Solicitante",
+            patrocinio.NM_FUNCIONARIO || funcionario || "-"
+          ),
+          linhaTabelaEmail(
+            "CNPJ/CPF",
+            formatarCnpj(patrocinio.NR_CPF_CNPJ)
+          ),
+          linhaTabelaEmail("Funcionário", funcionario),
+          diasHtml,
+          linhaTabelaEmail(
+            "Precisa de Valor Monetário?",
+            simNao(patrocinio.VL_MONETARIO)
+          ),
+          linhaTabelaEmail(
+            "Valor Solicitado",
+            `R$ ${fmtMoney(patrocinio.VL_PATROCINIO)}`
+          ),
+          linhaTabelaEmail("É insumo?", simNao(patrocinio.QTD_INSUMO)),
+          linhaTabelaEmail(
+            "Estimativa de Valor",
+            `R$ ${fmtMoney(patrocinio.VL_ESTIMATIVA)}`
+          ),
+          linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+          linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+          linhaTabelaEmail(
+            "Precisa de Motorista?",
+            simNao(patrocinio.CD_MOTORISTA)
+          ),
+          linhaTabelaEmail(
+            "Precisa de Funcionários?",
+            simNao(patrocinio.CD_FUNCIONARIOS)
+          ),
+          linhaTabelaEmail(
+            "Data da Solicitação",
+            fmtDate(patrocinio.DT_SOLICITACAO)
+          ),
+          linhaTabelaEmail("Cidade", patrocinio.NM_CIDADE || ""),
+          linhaTabelaEmail(
+            "Reserva Auditório Sede",
+            simNao(patrocinio.CD_AUDITORIO_SEDE)
+          ),
+          linhaTabelaEmail(
+            "Reserva Centro de Convivência",
+            simNao(patrocinio.CD_AUDITORIO_CENTRO)
+          ),
+          linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao:
+          "Por favor, acesse a Intranet para visualizar os detalhes completos da solicitação e registrar seu parecer.",
+      });
 
       const funcionarioResult = await oracleExecute(
         `
@@ -248,73 +496,96 @@ export const emailController = {
 
         const microfoneHtml =
           Number(auditorio.SN_USO_MICROFONE || 0) === 1
-            ? `<li><b>Uso de microfone?</b> SIM, <b>Quantidade:</b> ${auditorio.QNTD_MICROFONE || 0
-            }</li>`
-            : `<li><b>Uso de microfone?</b> NÃO</li>`;
+            ? linhaTabelaEmail(
+                "Uso de microfone?",
+                `SIM - Quantidade: ${auditorio.QNTD_MICROFONE || 0}`
+              )
+            : linhaTabelaEmail("Uso de microfone?", "NÃO");
 
         const projetorHtml =
           Number(auditorio.SN_USO_PROJETOR || 0) === 1
-            ? `<li><b>Uso de projeção?</b> SIM, <b>Apresentação via:</b> ${auditorio.NM_APRESENTACAO || "-"
-            }</li>`
-            : `<li><b>Uso de projeção?</b> NÃO</li>`;
+            ? linhaTabelaEmail(
+                "Uso de projeção?",
+                `SIM - Apresentação via: ${auditorio.NM_APRESENTACAO || "-"}`
+              )
+            : linhaTabelaEmail("Uso de projeção?", "NÃO");
 
         const transmissaoHtml =
           Number(auditorio.SN_AO_VIVO || 0) === 1
-            ? `<li><b>Haverá transmissão ao vivo?</b> SIM, <b>Plataforma(s):</b> ${auditorio.NM_PLATAFORMA || "-"
-            }</li>`
-            : `<li><b>Haverá transmissão ao vivo?</b> NÃO</li>`;
+            ? linhaTabelaEmail(
+                "Haverá transmissão ao vivo?",
+                `SIM - Plataforma(s): ${auditorio.NM_PLATAFORMA || "-"}`
+              )
+            : linhaTabelaEmail("Haverá transmissão ao vivo?", "NÃO");
 
         const internetHtml =
           Number(auditorio.SN_INTERNET || 0) === 1
-            ? `<li><b>Uso de Internet dedicada?</b> SIM, <b>Justificativa:</b> ${auditorio.DESC_JUSTIFICATIVA || "-"
-            }</li>`
-            : `<li><b>Uso de Internet dedicada?</b> NÃO</li>`;
+            ? linhaTabelaEmail(
+                "Uso de Internet dedicada?",
+                `SIM - Justificativa: ${auditorio.DESC_JUSTIFICATIVA || "-"}`
+              )
+            : linhaTabelaEmail("Uso de Internet dedicada?", "NÃO");
 
-        const bodyAuditorio = `
-        <p>Prezada Equipe de TI,</p>
-
-        <p>Informamos que uma <b>solicitação de Participação de Marketing Sicoob</b> solicitou a reserva do Auditório Sede.</p>
-
-        <ul>
-          <li><b>Empresa:</b> ${empresa}</li>
-          <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || funcionario || "-"}</li>
-          <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
-          <li><b>Funcionário:</b> ${funcionario}</li>
-          ${diasHtml}
-          <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
-          <li><b>Resumo do Evento:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
-          <li><b>Precisa de Funcionários?</b> ${simNao(
-          patrocinio.CD_FUNCIONARIOS
-        )}</li>
-          <li><b>Data da Solicitação:</b> ${fmtDate(
-          patrocinio.DT_SOLICITACAO
-        )}</li>
-          <li><b>Cidade:</b> ${patrocinio.NM_CIDADE}</li>
-          <li><b>Status:</b> ${patrocinio.NM_ANDAMENTO}</li>
-        </ul>
-
-        <p><b>Informações da reserva do Auditório:</b></p>
-        <ul>
-          <li><b>Estimativa de Convidados:</b> ${auditorio.QTD_ESTIMATIVA_CONVIDADOS || 0
-          }</li>
-          ${microfoneHtml}
-          ${projetorHtml}
-          <li><b>Uso de áudio externo via notebook?</b> ${simNao(
-            auditorio.SN_AUDIO_EXTERNO
-          )}</li>
-          <li><b>Tem operador do som e apresentação?</b> ${simNao(
-            auditorio.SN_OPERADOR
-          )}</li>
-          ${transmissaoHtml}
-          ${internetHtml}
-          <li><b>Observações:</b> ${auditorio.OBS_AUDITORIO_SICOOB_SEDE || "-"
-          }</li>
-        </ul>
-
-        <p>Por favor, acesse a Intranet para acompanhar os detalhes da reserva e tratar as providências necessárias.</p>
-
-        <p>Atenciosamente<br/>E-mail Automático</p>
-        `;
+        const bodyAuditorio = montarEmailParticipacao({
+          titulo: "Reserva do Auditório Sede",
+          saudacao: "Prezada Equipe de TI,",
+          introducao:
+            "Uma solicitação de Participação de Marketing solicitou a reserva do Auditório Sede.",
+          linhas: [
+            linhaTabelaEmail("ID Solicitação", id),
+            linhaTabelaEmail("Empresa", empresa),
+            linhaTabelaEmail(
+              "Solicitante",
+              patrocinio.NM_FUNCIONARIO || funcionario || "-"
+            ),
+            linhaTabelaEmail(
+              "CNPJ/CPF",
+              formatarCnpj(patrocinio.NR_CPF_CNPJ)
+            ),
+            linhaTabelaEmail("Funcionário", funcionario),
+            diasHtml,
+            linhaTabelaEmail(
+              "Solicitação",
+              patrocinio.DESC_SOLICITACAO || ""
+            ),
+            linhaTabelaEmail(
+              "Resumo do Evento",
+              patrocinio.DESC_RESUMO_EVENTO || ""
+            ),
+            linhaTabelaEmail(
+              "Precisa de Funcionários?",
+              simNao(patrocinio.CD_FUNCIONARIOS)
+            ),
+            linhaTabelaEmail(
+              "Data da Solicitação",
+              fmtDate(patrocinio.DT_SOLICITACAO)
+            ),
+            linhaTabelaEmail("Cidade", patrocinio.NM_CIDADE || ""),
+            linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+            linhaTabelaEmail(
+              "Estimativa de Convidados",
+              auditorio.QTD_ESTIMATIVA_CONVIDADOS || 0
+            ),
+            microfoneHtml,
+            projetorHtml,
+            linhaTabelaEmail(
+              "Uso de áudio externo via notebook?",
+              simNao(auditorio.SN_AUDIO_EXTERNO)
+            ),
+            linhaTabelaEmail(
+              "Tem operador do som e apresentação?",
+              simNao(auditorio.SN_OPERADOR)
+            ),
+            transmissaoHtml,
+            internetHtml,
+            linhaTabelaEmail(
+              "Observações",
+              auditorio.OBS_AUDITORIO_SICOOB_SEDE || "-"
+            ),
+          ].join(""),
+          orientacao:
+            "Por favor, acesse a Intranet para acompanhar os detalhes da reserva e tratar as providências necessárias.",
+        });
 
         const subjectAuditorio =
           "Nova Solicitação de Reserva do Auditório Sede Recebida";
@@ -367,25 +638,30 @@ export const emailController = {
 
       const subject = "Nova Solicitação de Participação de Marketing Recebida";
 
-      const body = `
-      <p>Prezado(a) Diretor(a),</p>
-
-      <p>Uma solicitação de participação de marketing está aguardando sua avaliação.</p>
-
-      <ul>
-        <li><b>Empresa:</b> ${empresa}</li>
-        <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || funcionario || "-"}</li>
-        <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
-        <li><b>Funcionário:</b> ${funcionario}</li>
-        <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
-        <li><b>Resumo:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
-        <li><b>Status:</b> ${patrocinio.NM_ANDAMENTO}</li>
-      </ul>
-
-      <p>Por favor, acesse a Intranet para visualizar os detalhes completos e registrar seu parecer.</p>
-
-      <p>Atenciosamente<br/>E-mail automático</p>
-      `;
+      const body = montarEmailParticipacao({
+        titulo: "Atualização de solicitação",
+        saudacao: "Prezado(a) Diretor(a),",
+        introducao:
+          "Uma solicitação de participação de marketing está aguardando sua avaliação.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail("Empresa", empresa),
+          linhaTabelaEmail(
+            "Solicitante",
+            patrocinio.NM_FUNCIONARIO || funcionario || "-"
+          ),
+          linhaTabelaEmail(
+            "CNPJ/CPF",
+            formatarCnpj(patrocinio.NR_CPF_CNPJ)
+          ),
+          linhaTabelaEmail("Funcionário", funcionario),
+          linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+          linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+          linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao:
+          "Por favor, acesse a Intranet para visualizar os detalhes completos e registrar seu parecer.",
+      });
 
       const emails = aplicarParticipacaoDebugDestinatarios([
         "paulo.tarso@sicoob.com.br",
@@ -428,23 +704,25 @@ export const emailController = {
 
       const subject = "Nova Solicitação de Participação de Marketing Recebida";
 
-      const body = `
-      <p>Prezados(as) Conselheiros(as),</p>
-
-      <p>Uma solicitação de participação de marketing está aguardando decisão do conselho.</p>
-
-      <ul>
-        <li><b>Empresa:</b> ${patrocinio.NM_SOLICITANTE}</li>
-        <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
-        <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
-        <li><b>Resumo:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
-        <li><b>Status:</b> ${patrocinio.NM_ANDAMENTO}</li>
-      </ul>
-
-      <p>Por favor, acesse a Intranet para visualizar os detalhes completos e registrar a decisão final.</p>
-
-      <p>Atenciosamente<br/>E-mail automático</p>
-      `;
+      const body = montarEmailParticipacao({
+        titulo: "Atualização de solicitação",
+        saudacao: "Prezados(as) Conselheiros(as),",
+        introducao:
+          "Uma solicitação de participação de marketing está aguardando decisão do conselho.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail("Empresa", patrocinio.NM_SOLICITANTE || ""),
+          linhaTabelaEmail(
+            "CNPJ/CPF",
+            formatarCnpj(patrocinio.NR_CPF_CNPJ)
+          ),
+          linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+          linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+          linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao:
+          "Por favor, acesse a Intranet para visualizar os detalhes completos e registrar a decisão final.",
+      });
 
       const emailsConselho = aplicarParticipacaoDebugDestinatarios([
         "janainag@sicoob.com.br",
@@ -488,23 +766,27 @@ export const emailController = {
 
       const subject = "Solicitação de Participação de Marketing Finalizada";
 
-      const body = `
-      <p>Prezados(as),</p>
-
-      <p>A solicitação abaixo foi finalizada:</p>
-
-      <ul>
-        <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || "-"}</li>
-        <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
-        <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
-        <li><b>Resumo:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
-        <li><b>Status:</b> ${patrocinio.NM_ANDAMENTO}</li>
-      </ul>
-
-      <p>Para histórico e consulta completa, acesse a Intranet.</p>
-
-      <p>Atenciosamente<br/>E-mail automático</p>
-      `;
+      const body = montarEmailParticipacao({
+        titulo: "Solicitação finalizada",
+        saudacao: "Prezados(as),",
+        introducao: "A solicitação abaixo foi finalizada:",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail(
+            "Solicitante",
+            patrocinio.NM_FUNCIONARIO || "-"
+          ),
+          linhaTabelaEmail(
+            "CNPJ/CPF",
+            formatarCnpj(patrocinio.NR_CPF_CNPJ)
+          ),
+          linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+          linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+          linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao:
+          "Para histórico e consulta completa, acesse a Intranet.",
+      });
 
       const destinatarios = new Set<string>();
 

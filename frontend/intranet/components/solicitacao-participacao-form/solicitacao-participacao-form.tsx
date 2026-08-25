@@ -57,11 +57,36 @@ function converterReaisParaNumero(valorFormatado: string) {
     return Number.isNaN(valorNumerico) ? 0 : valorNumerico;
 }
 
-function formatCpfOuCnpj(value: string) {
+function limparCpfCnpj(value: string) {
     return String(value || "")
         .replace(/[^A-Za-z0-9]/g, "")
         .toUpperCase()
         .slice(0, 14);
+}
+
+function formatCpfOuCnpj(value: string) {
+    const raw = limparCpfCnpj(value);
+
+    // CPF: somente números e até 11 dígitos.
+    // Enquanto o usuário digita um CPF, aplica 000.000.000-00.
+    if (!/[A-Z]/.test(raw) && raw.length <= 11) {
+        return raw
+            .replace(/^(\d{3})(\d)/, "$1.$2")
+            .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+            .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d{1,2}).*/, "$1.$2.$3-$4");
+    }
+
+    // CNPJ: aceita o padrão atual de 14 caracteres, inclusive alfanumérico.
+    // Exibição: 00.000.000/0000-00.
+    return raw
+        .replace(/^(.{2})(.)/, "$1.$2")
+        .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+        .replace(/^(.{2})\.(.{3})\.(.{3})(.)/, "$1.$2.$3/$4")
+        .replace(/^(.{2})\.(.{3})\.(.{3})\/(.{4})(.{1,2}).*/, "$1.$2.$3/$4-$5");
+}
+
+function normalizarCpfCnpjParaBanco(value: string) {
+    return limparCpfCnpj(value);
 }
 
 const ORACLE_BYTE_BUFFER = 2;
@@ -444,7 +469,7 @@ export function SolicitacaoParticipacaoForm() {
             return false;
         }
 
-        const documentoCpfCnpj = cpfCnpj.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+        const documentoCpfCnpj = normalizarCpfCnpjParaBanco(cpfCnpj);
 
         if (![11, 14].includes(documentoCpfCnpj.length)) {
             mostrarErro("Preencha CPF com 11 caracteres ou CNPJ com 14 caracteres.");
@@ -697,11 +722,10 @@ export function SolicitacaoParticipacaoForm() {
                 ORACLE_LIMITS.DESC_RESUMO_EVENTO
             );
 
+            const nrCpfCnpjBanco = normalizarCpfCnpjParaBanco(cpfCnpj);
+
             formData.append("NM_SOLICITANTE", nmSolicitanteOracle);
-            formData.append(
-                "NR_CPF_CNPJ",
-                cpfCnpj.replace(/[^A-Za-z0-9]/g, "").toUpperCase()
-            );
+            formData.append("NR_CPF_CNPJ", nrCpfCnpjBanco);
             formData.append("NM_FUNCIONARIO", nmFuncionarioOracle);
             formData.append("NM_CIDADE", nmCidadeOracle);
             formData.append("DT_SOLICITACAO", diaSolicitacao);
@@ -874,6 +898,8 @@ export function SolicitacaoParticipacaoForm() {
                                 onChange={(e) => setCpfCnpj(formatCpfOuCnpj(e.target.value))}
                                 className={inputBase}
                                 maxLength={18}
+                                autoComplete="off"
+                                placeholder="000.000.000-00 ou 00.000.000/0000-00"
                             />
                         </div>
 

@@ -714,6 +714,22 @@ export const patrocinioController = {
                 return res.status(400).json({ error: "NR_CPF_CNPJ é obrigatório." });
             }
 
+            const nrCpfCnpjNormalizado = onlyCpfCnpjChars(
+                String(body.NR_CPF_CNPJ || "")
+            );
+
+            const cpfValido =
+                nrCpfCnpjNormalizado.length === 11 &&
+                /^\d{11}$/.test(nrCpfCnpjNormalizado);
+
+            const cnpjValido = nrCpfCnpjNormalizado.length === 14;
+
+            if (!cpfValido && !cnpjValido) {
+                return res.status(400).json({
+                    error: "NR_CPF_CNPJ deve conter um CPF com 11 dígitos ou CNPJ com 14 caracteres.",
+                });
+            }
+
             if (!toNullableString(body.NM_FUNCIONARIO)) {
                 return res.status(400).json({ error: "NM_FUNCIONARIO é obrigatório." });
             }
@@ -876,7 +892,7 @@ export const patrocinioController = {
                 {
                     ID_PATROCINIO: idPatrocinio,
                     NM_SOLICITANTE: toNullableString(body.NM_SOLICITANTE),
-                    NR_CPF_CNPJ: onlyCpfCnpjChars(body.NR_CPF_CNPJ),
+                    NR_CPF_CNPJ: nrCpfCnpjNormalizado,
                     VL_PATROCINIO: toNullableNumber(body.VL_PATROCINIO),
                     NM_FUNCIONARIO: toNullableString(body.NM_FUNCIONARIO),
                     DIR_OFICIO: oficioPath,

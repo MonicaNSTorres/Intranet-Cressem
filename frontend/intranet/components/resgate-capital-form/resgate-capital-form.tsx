@@ -142,6 +142,7 @@ export function ResgateCapitalForm() {
   const [empresa, setEmpresa] = useState("");
 
   const [saldoCapitalAtual, setSaldoCapitalAtual] = useState("");
+  const [saldoCapitalFonte, setSaldoCapitalFonte] = useState(0);
   const [secMotivo, setSecMotivo] = useState("");
   const [secAutorizado, setSecAutorizado] = useState("");
 
@@ -266,8 +267,8 @@ export function ResgateCapitalForm() {
   }, [totalAmortizacaoEmprestimo, totalAmortizacaoConta, saldoCreditadoConta]);
 
   const capitalRestante = useMemo(() => {
-    return parseBRL(saldoCapitalAtual) - totalResgateCapital;
-  }, [saldoCapitalAtual, totalResgateCapital]);
+    return saldoCapitalFonte - totalResgateCapital;
+  }, [saldoCapitalFonte, totalResgateCapital]);
 
   const totalParcelado = useMemo(() => {
     return parcelas.reduce((acc, item) => acc + parseBRL(item.valor), 0);
@@ -347,6 +348,21 @@ export function ResgateCapitalForm() {
     setAmortizacaoCartao("");
   }
 
+  function desativarEmprestimos() {
+    setRadioEmprestimo("Nao");
+    setEmprestimos([buildEmprestimo()]);
+  }
+
+  function desativarDebitosConta() {
+    setRadioConta("Nao");
+    setNumeroContaCorrente("");
+    setSaldoDevedorConta("");
+    setAmortizacaoConta("");
+    setNumeroCartao("");
+    setSaldoCartao("");
+    setAmortizacaoCartao("");
+  }
+
   async function onBuscar() {
     try {
       setErro("");
@@ -369,6 +385,7 @@ export function ResgateCapitalForm() {
               : parseBRL(String(saldoRaw || ""));
 
         setSaldoCapitalAtual(fmtBRL(saldoNumerico));
+        setSaldoCapitalFonte(saldoNumerico);
         limparBlocosDebito();
 
         const cidadeAssociado = String((r.data as any).cidade || "").trim();
@@ -429,6 +446,7 @@ export function ResgateCapitalForm() {
     setMatricula("");
     setEmpresa("");
     setSaldoCapitalAtual("");
+    setSaldoCapitalFonte(0);
     setSecMotivo("");
     setSecAutorizado("");
 
@@ -628,8 +646,15 @@ export function ResgateCapitalForm() {
       return false;
     }
 
-    if (!saldoCapitalAtual || parseBRL(saldoCapitalAtual) <= 0) {
-      setErro("Preencha o saldo de capital atual.");
+    if (!saldoCapitalAtual || saldoCapitalFonte <= 0) {
+      setErro("Não foi possível validar o saldo de capital do associado. Pesquise novamente.");
+      return false;
+    }
+
+    if (Math.abs(parseBRL(saldoCapitalAtual) - saldoCapitalFonte) > 0.009) {
+      setErro(
+        "O saldo de capital foi alterado após a consulta. Pesquise o associado novamente."
+      );
       return false;
     }
 
@@ -668,20 +693,67 @@ export function ResgateCapitalForm() {
       return false;
     }
 
-    for (const item of emprestimos) {
-      if (item.tipo.trim().length > LIMITS.DESC_TIPO_EMPRESTIMO) {
-        setErro(`Tipo de empréstimo deve ter no máximo ${LIMITS.DESC_TIPO_EMPRESTIMO} caracteres.`);
+    if (radioEmprestimo === "Sim") {
+      for (const item of emprestimos) {
+        if (item.tipo.trim().length > LIMITS.DESC_TIPO_EMPRESTIMO) {
+          setErro(`Tipo de empréstimo deve ter no máximo ${LIMITS.DESC_TIPO_EMPRESTIMO} caracteres.`);
+          return false;
+        }
+
+        if (item.contrato.trim().length > LIMITS.NR_CONTRATO_EMPRESTIMO) {
+          setErro(`Contrato deve ter no máximo ${LIMITS.NR_CONTRATO_EMPRESTIMO} caracteres.`);
+          return false;
+        }
+
+        const saldoDevedor = parseBRL(item.saldoDevedor);
+        const amortizacao = parseBRL(item.amortizacao);
+
+        if (amortizacao < 0 || saldoDevedor < 0) {
+          setErro("Os valores do empréstimo não podem ser negativos.");
+          return false;
+        }
+
+        if (amortizacao > saldoDevedor + 0.009) {
+          setErro(
+            `A amortização do contrato ${item.contrato || "informado"} não pode ser maior que o saldo devedor.`
+          );
+          return false;
+        }
+
+        if (amortizacao > 0 && (!item.tipo.trim() || !item.contrato.trim())) {
+          setErro(
+            "Informe o tipo e o contrato de todo empréstimo que possuir valor de amortização."
+          );
+          return false;
+        }
+      }
+    }
+
+    if (radioConta === "Sim") {
+      const saldoCc = parseBRL(saldoDevedorConta);
+      const amortizacaoCc = parseBRL(amortizacaoConta);
+      const saldoCartaoNum = parseBRL(saldoCartao);
+      const amortizacaoCartaoNum = parseBRL(amortizacaoCartao);
+
+      if (amortizacaoCc > saldoCc + 0.009) {
+        setErro("A amortização da conta corrente não pode ser maior que o saldo devedor.");
         return false;
       }
-      if (item.contrato.trim().length > LIMITS.NR_CONTRATO_EMPRESTIMO) {
-        setErro(`Contrato deve ter no máximo ${LIMITS.NR_CONTRATO_EMPRESTIMO} caracteres.`);
+
+      if (amortizacaoCartaoNum > saldoCartaoNum + 0.009) {
+        setErro("A amortização do cartão não pode ser maior que o saldo devedor.");
         return false;
       }
     }
 
-    if (totalResgateCapital >= parseBRL(saldoCapitalAtual)) {
+    if (totalResgateCapital <= 0) {
+      setErro("Informe ao menos um valor para o resgate de capital.");
+      return false;
+    }
+
+    if (totalResgateCapital >= saldoCapitalFonte - 0.009) {
       setErro(
-        "O total do resgate não pode ser maior ou igual ao saldo da conta capital."
+        `Operação bloqueada: o total utilizado (${fmtBRL(totalResgateCapital)}) deve ser menor que o saldo de capital (${fmtBRL(saldoCapitalFonte)}).`
       );
       return false;
     }
@@ -731,6 +803,16 @@ export function ResgateCapitalForm() {
         setErro("Adicione ao menos uma parcela.");
         return false;
       }
+
+      if (Math.abs(totalParcelado - parseBRL(saldoCreditadoConta)) > 0.01) {
+        setErro(
+          `O total das parcelas (${fmtBRL(totalParcelado)}) deve ser igual ao saldo a ser creditado (${fmtBRL(parseBRL(saldoCreditadoConta))}). Gere as parcelas novamente.`
+        );
+        return false;
+      }
+    } else if (parcelas.length > 0) {
+      setErro("Existem parcelas geradas sem valor a ser creditado. Limpe as parcelas.");
+      return false;
     }
 
     return true;
@@ -756,7 +838,7 @@ export function ResgateCapitalForm() {
         NM_EMPRESA: limitText(empresa, LIMITS.NM_EMPRESA) || null,
         DESC_MOTIVO: limitText(secMotivo, LIMITS.DESC_MOTIVO),
         NM_AUTORIZADO: limitText(secAutorizado, LIMITS.NM_AUTORIZADO),
-        VL_CAPITAL_ATUAL: parseBRL(saldoCapitalAtual),
+        VL_CAPITAL_ATUAL: saldoCapitalFonte,
         VL_CAPITAL_AMORTIZACAO: totalResgateCapital,
         VL_SALDO_RESTANTE: capitalRestante,
         DT_CARENCIA: "2000-01-01",
@@ -867,21 +949,27 @@ export function ResgateCapitalForm() {
           empresa,
           motivo: secMotivo,
           autorizadoPor: secAutorizado,
-          saldoCapitalAtual: parseBRL(saldoCapitalAtual),
+          saldoCapitalAtual: saldoCapitalFonte,
           totalResgateCapital,
           saldoCapitalRestante: capitalRestante,
-          emprestimos: emprestimos.map((item) => ({
-            tipo: item.tipo,
-            contrato: item.contrato,
-            saldoDevedor: parseBRL(item.saldoDevedor),
-            amortizacao: parseBRL(item.amortizacao),
-          })),
-          contaCorrenteNumero: numeroContaCorrente,
-          contaCorrenteSaldo: parseBRL(saldoDevedorConta),
-          contaCorrenteAmortizacao: parseBRL(amortizacaoConta),
-          cartaoNumero: numeroCartao,
-          cartaoSaldo: parseBRL(saldoCartao),
-          cartaoAmortizacao: parseBRL(amortizacaoCartao),
+          emprestimos:
+            radioEmprestimo === "Sim"
+              ? emprestimos.map((item) => ({
+                  tipo: item.tipo,
+                  contrato: item.contrato,
+                  saldoDevedor: parseBRL(item.saldoDevedor),
+                  amortizacao: parseBRL(item.amortizacao),
+                }))
+              : [],
+          contaCorrenteNumero: radioConta === "Sim" ? numeroContaCorrente : "",
+          contaCorrenteSaldo:
+            radioConta === "Sim" ? parseBRL(saldoDevedorConta) : 0,
+          contaCorrenteAmortizacao:
+            radioConta === "Sim" ? parseBRL(amortizacaoConta) : 0,
+          cartaoNumero: radioConta === "Sim" ? numeroCartao : "",
+          cartaoSaldo: radioConta === "Sim" ? parseBRL(saldoCartao) : 0,
+          cartaoAmortizacao:
+            radioConta === "Sim" ? parseBRL(amortizacaoCartao) : 0,
           saldoCreditadoConta: parseBRL(saldoCreditadoConta),
           banco,
           agencia,
@@ -1062,8 +1150,8 @@ export function ResgateCapitalForm() {
           </label>
           <input
             value={saldoCapitalAtual}
-            onChange={(e) => setSaldoCapitalAtual(monetizarDigitacao(e.target.value))}
-            className={moneyInputClass}
+            readOnly
+            className={readOnlyMoneyClass}
             placeholder="R$ 0,00"
           />
         </div>
@@ -1128,7 +1216,7 @@ export function ResgateCapitalForm() {
             <input
               type="radio"
               checked={radioEmprestimo === "Nao"}
-              onChange={() => setRadioEmprestimo("Nao")}
+              onChange={desativarEmprestimos}
             />
             Não
           </label>
@@ -1281,7 +1369,7 @@ export function ResgateCapitalForm() {
             <input
               type="radio"
               checked={radioConta === "Nao"}
-              onChange={() => setRadioConta("Nao")}
+              onChange={desativarDebitosConta}
             />
             Não
           </label>
