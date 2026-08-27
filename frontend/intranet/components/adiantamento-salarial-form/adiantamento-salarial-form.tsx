@@ -2,10 +2,11 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { gerarPdfAdiantamentoSalarial } from "@/lib/pdf/gerarPdfAdiantamentoSalarial";
 import { formatCpfView, hojeBR } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
+import { buscarFuncionarioPorNome } from "@/services/bolsa_estudo.service";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { FileText, Search } from "lucide-react";
@@ -16,6 +17,24 @@ function hojeBRComHora() {
   return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(
     d.getHours()
   )}:${pad2(d.getMinutes())}`;
+}
+
+function getNomeUsuarioLogado() {
+  if (typeof window === "undefined") return "";
+
+  return (
+    localStorage.getItem("NOME_COMPLETO") ||
+    localStorage.getItem("REMOTE_USER_INTRANET") ||
+    localStorage.getItem("nome_completo") ||
+    localStorage.getItem("nome") ||
+    localStorage.getItem("username") ||
+    sessionStorage.getItem("NOME_COMPLETO") ||
+    sessionStorage.getItem("REMOTE_USER_INTRANET") ||
+    sessionStorage.getItem("nome_completo") ||
+    sessionStorage.getItem("nome") ||
+    sessionStorage.getItem("username") ||
+    ""
+  );
 }
 
 export function AdiantamentoSalarialForm() {
@@ -31,6 +50,32 @@ export function AdiantamentoSalarialForm() {
   const [dataLocal, setDataLocal] = useState(hojeBRComHora());
 
   const { loading, erro, info, buscar } = useAssociadoPorCpf();
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function preencherFuncionarioLogado() {
+      const nomeUsuarioLogado = getNomeUsuarioLogado();
+      if (!nomeUsuarioLogado) return;
+
+      try {
+        const funcionario = await buscarFuncionarioPorNome(nomeUsuarioLogado);
+        if (!ativo) return;
+
+        setCpf(String(funcionario?.NR_CPF || "").replace(/\D/g, ""));
+        setNome(funcionario?.NM_FUNCIONARIO || nomeUsuarioLogado);
+        setMatricula(String(funcionario?.NR_MATRICULA || ""));
+      } catch (error) {
+        console.warn("Não foi possível preencher os dados do funcionário logado:", error);
+      }
+    }
+
+    preencherFuncionarioLogado();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const onBuscar = async () => {
     const r = await buscar(cpf);

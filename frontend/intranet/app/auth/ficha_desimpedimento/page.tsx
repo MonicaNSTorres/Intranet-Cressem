@@ -15,6 +15,7 @@ import { getMeAdUser } from "@/services/auth.service";
 export default function FichaDesimpedimentoPage() {
     const [loading, setLoading] = useState(true);
     const [allowed, setAllowed] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         async function validarAcesso() {
@@ -50,8 +51,6 @@ export default function FichaDesimpedimentoPage() {
             </div>
         );
     }
-
-    const router = useRouter();
 
     const handleClick = () => {
         router.push("/auth/consulta_ficha_desimpedimento");

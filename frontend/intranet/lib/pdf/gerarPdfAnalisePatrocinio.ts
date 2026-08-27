@@ -12,6 +12,10 @@ type PareceresAtuais = {
 
   parecerGerencia?: string;
 
+  marketing?: string;
+
+  parecerMarketing?: string;
+
   responsavelEvento?: string;
 
   sugestoesParticipantes?: string;
@@ -902,6 +906,10 @@ async function desenharDocumento(
     [campo("Gerência", p.gerencia || r.NM_GERENCIA)],
 
     [campo("Parecer da gerência", p.parecerGerencia || r.DESC_PARECER_GERENCIA)],
+
+    [campo("Marketing", p.marketing || r.NM_MARKETING)],
+
+    [campo("Parecer do marketing", p.parecerMarketing || r.DESC_PARECER_MARKETING)],
 
     [campo("Diretoria", p.diretoria || r.NM_DIRETORIA)],
 

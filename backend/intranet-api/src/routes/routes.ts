@@ -656,8 +656,19 @@ routes.get(
 );
 
 routes.get(
+  "/v1/email_informativo_participacao_teste/patrocinio/:id",
+  authMiddleware,
+  emailController.emailTesteParticipacao
+);
+
+routes.get(
   "/v1/email_informativo_diretoria/funcionario/:funcionario/empresa/:empresa/patrocinio/:id",
   emailController.emailDiretoria
+);
+
+routes.get(
+  "/v1/email_informativo_marketing/patrocinio/:id",
+  emailController.emailMarketing
 );
 
 routes.get(

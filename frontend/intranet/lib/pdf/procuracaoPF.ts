@@ -1,174 +1,96 @@
-import jsPDF from "jspdf";
+import { gerarPdfProcuracaoPadronizado, type StyledPart } from "./procuracaoLayout";
 
 export type PFOpts = {
-    outorganteNome?: string;
-    outorganteNacionalidade?: string;
-    outorganteEstadoCivil?: string;
-    outorganteProfissao?: string;
-    outorganteDocTipo?: string;
-    outorganteDocNumero?: string;
-    outorganteCpf?: string;
-    outorganteEndereco?: string;
-    outorganteNumero?: string;
-    outorganteBairro?: string;
-    outorganteCep?: string;
-    outorganteCidade?: string;
-    outorganteUF?: string;
-
-    outorgadoNome?: string;
-    outorgadoNacionalidade?: string;
-    outorgadoEstadoCivil?: string;
-    outorgadoProfissao?: string;
-    outorgadoDocTipo?: string;
-    outorgadoDocNumero?: string;
-    outorgadoCpf?: string;
-    outorgadoEndereco?: string;
-    outorgadoNumero?: string;
-    outorgadoBairro?: string;
-    outorgadoCep?: string;
-    outorgadoCidade?: string;
-    outorgadoUF?: string;
-
-    razaoCooperativa?: string;
-    substabelecimento?: string;
-    prazoValidade?: string;
-    cidadeData?: string;
-    dia?: string;
-    mes?: string;
-    ano?: string;
+  outorganteNome?: string;
+  outorganteNacionalidade?: string;
+  outorganteEstadoCivil?: string;
+  outorganteProfissao?: string;
+  outorganteDocTipo?: string;
+  outorganteDocNumero?: string;
+  outorganteCpf?: string;
+  outorganteEndereco?: string;
+  outorganteNumero?: string;
+  outorganteBairro?: string;
+  outorganteCep?: string;
+  outorganteCidade?: string;
+  outorganteUF?: string;
+  outorgadoNome?: string;
+  outorgadoNacionalidade?: string;
+  outorgadoEstadoCivil?: string;
+  outorgadoProfissao?: string;
+  outorgadoDocTipo?: string;
+  outorgadoDocNumero?: string;
+  outorgadoCpf?: string;
+  outorgadoEndereco?: string;
+  outorgadoNumero?: string;
+  outorgadoBairro?: string;
+  outorgadoCep?: string;
+  outorgadoCidade?: string;
+  outorgadoUF?: string;
+  razaoCooperativa?: string;
+  substabelecimento?: string;
+  prazoValidade?: string;
+  cidadeData?: string;
+  dia?: string;
+  mes?: string;
+  ano?: string;
 };
 
 export async function gerarPdfProcuracaoPF(o: PFOpts) {
-    const left = 60;
-    const doc = new jsPDF({
-        unit: "pt",
-        format: "a4",
-        compress: true,
-        putOnlyUsedFonts: true,
-    });
-    const pageW = doc.internal.pageSize.getWidth();
-    let y = 80;
+  const get = (value?: string, placeholder = "________________") =>
+    (value && String(value).trim()) || placeholder;
+  const nomeOutorgante = get(o.outorganteNome);
+  const cpfOutorgante = maskCpf(get(o.outorganteCpf, "______________"));
 
-    const get = (v?: string, ph: string = "________________") =>
-        (v && String(v).trim()) || ph;
+  const outorgante: StyledPart[] = [
+    { text: "OUTORGANTE: " },
+    { text: nomeOutorgante, bold: true },
+    { text: `; ${get(o.outorganteNacionalidade)}, ${get(o.outorganteEstadoCivil)}, ${get(o.outorganteProfissao)}, ${get(o.outorganteDocTipo)} nº ` },
+    { text: get(o.outorganteDocNumero), bold: true },
+    { text: ", CPF nº " },
+    { text: cpfOutorgante, bold: true },
+    { text: `, residente e domiciliado na ${get(o.outorganteEndereco)}` },
+    { text: o.outorganteNumero?.trim() ? `, nº ${get(o.outorganteNumero)}` : "" },
+    { text: `, bairro ${get(o.outorganteBairro)}, CEP ${maskCep(get(o.outorganteCep, "________"))}, ${get(o.outorganteCidade)} - ${get(o.outorganteUF)}.` },
+  ];
 
-    try {
-        const logoUrl = "/sicoob-cressem-logo.png?v=2";
-        const logo = await toDataURL(logoUrl);
-        const maxW = 120;
-        const maxH = 34;
-        const scale = Math.min(maxW / logo.width, maxH / logo.height);
-        const w = logo.width * scale;
-        const h = logo.height * scale;
-        doc.addImage(logo.dataUrl, logo.type, left, 32, w, h, undefined, "MEDIUM");
-    } catch { }
+  const cpfOutorgado = maskCpf(get(o.outorgadoCpf, "______________"));
+  const outorgado: StyledPart[] = [
+    { text: "OUTORGADO: " },
+    { text: get(o.outorgadoNome), bold: true },
+    { text: `; ${get(o.outorgadoNacionalidade)}, ${get(o.outorgadoEstadoCivil)}, ${get(o.outorgadoProfissao)}, ${get(o.outorgadoDocTipo)} nº ` },
+    { text: get(o.outorgadoDocNumero), bold: true },
+    { text: ", CPF nº " },
+    { text: cpfOutorgado, bold: true },
+    { text: `, residente e domiciliado na ${get(o.outorgadoEndereco)}` },
+    { text: o.outorgadoNumero?.trim() ? `, nº ${get(o.outorgadoNumero)}` : "" },
+    { text: `, bairro ${get(o.outorgadoBairro)}, CEP ${maskCep(get(o.outorgadoCep, "________"))}, ${get(o.outorgadoCidade)} - ${get(o.outorgadoUF)}.` },
+  ];
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("PROCURAÇÃO", pageW / 2, y, { align: "center" });
-    y += 28;
+  const poderes = [
+    `Pelo presente instrumento de mandato, o OUTORGANTE nomeia e constitui o OUTORGADO seu bastante procurador, a quem confere amplos poderes para representá-lo perante a ${get(o.razaoCooperativa, "Razão social da cooperativa")} e ao Banco Cooperativo Sicoob S/A – Banco Sicoob, a fim de associar-se e demitir-se; abrir, movimentar e encerrar contas correntes de depósito à vista e de poupança; retirar cartões eletrônicos, cadastrar e alterar senhas eletrônicas; requisitar, emitir e endossar cheques; fazer saques e retiradas mediante recibos; autorizar débitos, transferências e pagamentos, inclusive por meio de cartas; solicitar saldos e extratos;`,
+    "fazer transferências e pagamentos para qualquer parte do País, ou mesmo para o Exterior; realizar aplicações e retiradas financeiras; solicitar operações de crédito; assinar propostas de operações de crédito; emitir, endossar e avalizar contratos e títulos de crédito; penhorar, alienar fiduciariamente ou hipotecar bens de propriedade do OUTORGANTE; utilizar os limites de crédito abertos nas formas e condições propostas; autorizar débitos em conta corrente e/ou de poupança relativos às operações de crédito;",
+    `assinar contratos de câmbio e seus respectivos aditivos; proposta de abertura de cartas de crédito; autorizações de débitos em conta corrente e/ou poupança relativas a operações de câmbio; autorização para fornecimento de moeda estrangeira; carta vinculatória e carta de compromisso; contratar seguros; bem como assinar todos os demais contratos de prestação de serviços e atos necessários ao fiel cumprimento deste mandato, respondendo o OUTORGANTE pelas declarações do OUTORGADO, nos limites do presente, sendo o substabelecimento ${get(o.substabelecimento, "____________")}.`,
+  ];
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    const write = (t: string, lineHeight = 20) => {
-        const linhas = doc.splitTextToSize(t, pageW - 2 * left);
-        linhas.forEach((linha: string) => {
-            doc.text(linha, left, y, { maxWidth: pageW - 2 * left });
-            y += lineHeight;
-        });
-    };
-
-    write(
-        `OUTORGANTE: ${get(o.outorganteNome)}; ${get(o.outorganteNacionalidade)}, ${get(o.outorganteEstadoCivil)}, ${get(o.outorganteProfissao)}, ` +
-        `${get(o.outorganteDocTipo)} nº ${get(o.outorganteDocNumero)}, CPF nº ${maskCpf(get(o.outorganteCpf, "______________"))}, residente e domiciliado na ${get(o.outorganteEndereco)}` +
-        (o.outorganteNumero?.trim() ? `, nº ${get(o.outorganteNumero)}` : "") +
-        `, bairro ${get(o.outorganteBairro)}, CEP ${maskCep(get(o.outorganteCep, "________"))}, ${get(o.outorganteCidade)} - ${get(o.outorganteUF)}.`
-    );
-
-    write(
-        `OUTORGADO: ${get(o.outorgadoNome)}; ${get(o.outorgadoNacionalidade)}, ${get(o.outorgadoEstadoCivil)}, ${get(o.outorgadoProfissao)}, ` +
-        `${get(o.outorgadoDocTipo)} nº ${get(o.outorgadoDocNumero)}, CPF nº ${maskCpf(get(o.outorgadoCpf, "______________"))}, residente e domiciliado na ${get(o.outorgadoEndereco)}` +
-        (o.outorgadoNumero?.trim() ? `, nº ${get(o.outorgadoNumero)}` : "") +
-        `, bairro ${get(o.outorgadoBairro)}, CEP ${maskCep(get(o.outorgadoCep, "________"))}, ${get(o.outorgadoCidade)} - ${get(o.outorgadoUF)}.`
-    );
-
-    const blocos = [
-        `Pelo presente instrumento de mandato, o OUTORGANTE nomeia e constitui o OUTORGADO seu bastante procurador, a quem confere amplos poderes para representá-lo perante a ${get(o.razaoCooperativa, "Razão social da cooperativa")} e ao Banco Cooperativo Sicoob S/A – Banco Sicoob, a fim de associar-se e demitir-se; abrir, movimentar e encerrar contas correntes de depósito à vista e de poupança; retirar cartões eletrônicos, cadastrar e alterar senhas eletrônicas; requisitar, emitir e endossar cheques; fazer saques e retiradas mediante recibos; autorizar débitos, transferências e pagamentos, inclusive por meio de cartas; solicitar saldos e extratos;`,
-        `fazer transferências e pagamentos para qualquer parte do País, ou mesmo para o Exterior; realizar aplicações e retiradas financeiras; solicitar operações de crédito; assinar propostas de operações de crédito; emitir, endossar e avalizar contratos e títulos de crédito; penhorar, alienar fiduciariamente ou hipotecar bens de propriedade do OUTORGANTE; utilizar os limites de crédito abertos nas formas e condições propostas; autorizar débitos em conta corrente e/ou de poupança relativos às operações de crédito;`,
-        `assinar contratos de câmbio e seus respectivos aditivos; proposta de abertura de cartas de crédito; autorizações de débitos em conta corrente e/ou poupança relativas a operações de câmbio; autorização para fornecimento de moeda estrangeira; carta vinculatória e carta de compromisso; contratar seguros; bem como assinar todos os demais contratos de prestação de serviços e atos necessários ao fiel cumprimento deste mandato, respondendo o OUTORGANTE pelas declarações do OUTORGADO, nos limites do presente, sendo o substabelecimento ${get(o.substabelecimento, "____________")}.`,
-        `O presente mandato tem validade de ${get(o.prazoValidade, "________________")} (máximo 2 anos), devendo a sua revogação antecipada ser imediatamente e expressamente comunicada às instituições financeiras supra.`
-    ];
-    blocos.forEach(b => write(b, 20));
-
-    y += 8;
-    write(`${get(o.cidadeData, "Cidade - UF")}, ${get(o.dia, "__")} de ${get(o.mes, "________")} de ${get(o.ano, "____")}.`);
-
-    y += 30;
-    const sigW = 340;
-    doc.line((pageW - sigW) / 2, y, (pageW + sigW) / 2, y);
-    doc.text(get(o.outorganteNome), pageW / 2, y + 16, { align: "center" });
-    doc.text(`CPF ${maskCpf(get(o.outorganteCpf, "______________"))}`, pageW / 2, y + 32, { align: "center" });
-
-    doc.save(`procuracao_pf_${(get(o.outorganteNome) || "outorgante").replace(/\s+/g, "_")}.pdf`);
+  await gerarPdfProcuracaoPadronizado({
+    outorgante,
+    outorgado,
+    poderes,
+    validade: `O presente mandato tem validade de ${get(o.prazoValidade, "________________")} (máximo 2 anos), devendo a sua revogação antecipada ser imediatamente e expressamente comunicada às instituições financeiras supra.`,
+    localData: `${get(o.cidadeData, "Cidade - UF")}, ${get(o.dia, "__")} de ${get(o.mes, "________")} de ${get(o.ano, "____")}.`,
+    assinaturaNome: nomeOutorgante,
+    assinaturaDocumento: `CPF ${cpfOutorgante}`,
+    nomeArquivo: `procuracao_pf_${nomeOutorgante.replace(/\s+/g, "_")}.pdf`,
+  });
 }
 
-function maskCpf(v: string) { const s = v.replace(/\D/g, ""); return s.length === 11 ? `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9)}` : v; }
-function maskCnpj(v: string) { const s = v.replace(/\D/g, ""); return s.length === 14 ? `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}` : v; }
-function maskCep(v: string) { const s = v.replace(/\D/g, ""); return s.length >= 8 ? `${s.slice(0, 5)}-${s.slice(5, 8)}` : v; }
+function maskCpf(value: string) {
+  const digits = value.replace(/\D/g, "");
+  return digits.length === 11 ? `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}` : value;
+}
 
-
-async function toDataURL(url: string): Promise<{
-    dataUrl: string;
-    type: "JPEG" | "PNG";
-    width: number;
-    height: number;
-}> {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error("Logo não encontrada");
-
-    const b = await r.blob();
-
-    const originalDataUrl = await new Promise<string>((res, rej) => {
-        const fr = new FileReader();
-        fr.onloadend = () => res(fr.result as string);
-        fr.onerror = rej;
-        fr.readAsDataURL(b);
-    });
-
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = reject;
-        image.src = originalDataUrl;
-    });
-
-    const maxWidth = 420;
-    const maxHeight = 126;
-    const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
-
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(img.width * scale);
-    canvas.height = Math.round(img.height * scale);
-
-    const ctx = canvas.getContext("2d");
-
-    if (!ctx) {
-        return {
-            dataUrl: originalDataUrl,
-            type: "PNG",
-            width: img.width,
-            height: img.height,
-        };
-    }
-
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-    return {
-        dataUrl: canvas.toDataURL("image/png"),
-        type: "PNG",
-        width: canvas.width,
-        height: canvas.height,
-    };
+function maskCep(value: string) {
+  const digits = value.replace(/\D/g, "");
+  return digits.length >= 8 ? `${digits.slice(0, 5)}-${digits.slice(5, 8)}` : value;
 }

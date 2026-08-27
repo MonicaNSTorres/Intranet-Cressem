@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FaEdit, FaPlus, FaSave, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
 import {
   baixarComprovanteReembolso,
+  buscarFuncionarioPorNome,
   buscarFuncionarioReembolsoPorCpf,
   buscarSolicitacaoReembolsoPorId,
   cadastrarSolicitacaoReembolso,
@@ -153,6 +154,24 @@ async function fileToDataURL(file: File | null) {
   });
 }
 
+function getNomeUsuarioLogado() {
+  if (typeof window === "undefined") return "";
+
+  return (
+    localStorage.getItem("NOME_COMPLETO") ||
+    localStorage.getItem("REMOTE_USER_INTRANET") ||
+    localStorage.getItem("nome_completo") ||
+    localStorage.getItem("nome") ||
+    localStorage.getItem("username") ||
+    sessionStorage.getItem("NOME_COMPLETO") ||
+    sessionStorage.getItem("REMOTE_USER_INTRANET") ||
+    sessionStorage.getItem("nome_completo") ||
+    sessionStorage.getItem("nome") ||
+    sessionStorage.getItem("username") ||
+    ""
+  );
+}
+
 const fieldClass =
   "h-10 w-full rounded-xl border border-slate-300 bg-white px-4 text-left text-sm leading-10 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20";
 const readOnlyFieldClass =
@@ -242,7 +261,10 @@ export function CadastroReembolsoDespesaForm() {
       if (id) {
         const solicitacao = await buscarSolicitacaoReembolsoPorId(id);
         preencherTelaEdicao(solicitacao);
+        return;
       }
+
+      await preencherDadosFuncionarioLogado();
     } catch (error) {
       console.error(error);
       alert("Não foi possível carregar os dados da tela.");
@@ -328,6 +350,47 @@ export function CadastroReembolsoDespesaForm() {
     setSalvandoDespesa(false);
     limparModal();
     setModalOpen(true);
+  };
+
+  const preencherDadosFuncionarioLogado = async () => {
+    const nomeUsuarioLogado = getNomeUsuarioLogado();
+    if (!nomeUsuarioLogado) return;
+
+    try {
+      const funcionario = await buscarFuncionarioPorNome(nomeUsuarioLogado);
+      const cpfFuncionario = onlyDigits(funcionario?.NR_CPF || "");
+      const cidadeFuncionario = String(funcionario?.NM_CIDADE || "").trim();
+
+      setNome(funcionario?.NM_FUNCIONARIO || nomeUsuarioLogado);
+      setCpf(cpfFuncionario);
+      setCidade(cidadeFuncionario);
+
+      if (cidadeFuncionario) {
+        setCidades((prev) =>
+          prev.some(
+            (item) => item.toLocaleUpperCase("pt-BR") === cidadeFuncionario.toLocaleUpperCase("pt-BR")
+          )
+            ? prev
+            : [...prev, cidadeFuncionario].sort((a, b) => a.localeCompare(b, "pt-BR"))
+        );
+      }
+
+      if (cpfFuncionario.length === 11) {
+        const dadosBancarios = await buscarFuncionarioReembolsoPorCpf(cpfFuncionario);
+
+        if (dadosBancarios.found) {
+          setNumeroConta(
+            String(
+              dadosBancarios.conta_corrente ||
+                dadosBancarios.nr_conta_corrente ||
+                ""
+            ).trim()
+          );
+        }
+      }
+    } catch (error) {
+      console.warn("Não foi possível preencher os dados do funcionário logado:", error);
+    }
   };
 
   const fecharModal = () => {

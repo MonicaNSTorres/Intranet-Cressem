@@ -16,7 +16,7 @@ export default function ProcuracaoOutorgantePage() {
             </div>
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                Procuração — Outorgante
+                Procuração do Outorgante
               </h1>
               <p className="text-sm text-gray-600 mt-1">
                 Busque o outorgante (PF) por CPF, preencha os dados e gere o PDF (PF ou PJ).

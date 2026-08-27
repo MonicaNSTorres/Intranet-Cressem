@@ -873,6 +873,18 @@ export const gerenciamentoFuncionarioController = {
                 return res.status(400).json({ error: "Nome não informado." });
             }
 
+            const nomesMarketing = [
+                "JULIA DE ALMEIDA COUTINHO",
+                "LUIZ RODOLFO GERHARD",
+            ];
+
+            if (nomesMarketing.includes(nome.toUpperCase())) {
+                return res.json({
+                    NM_FUNCIONARIO: nome,
+                    TIPO: "marketing",
+                });
+            }
+
             const result = await oracleExecute(
                 `
         SELECT
@@ -907,7 +919,6 @@ export const gerenciamentoFuncionarioController = {
                 "ISABELI LOHANA CARVALHO MARTINS",
                 "VITORIA BEATRIZ FONTOURA CAVALHEIRO DOS SANTOS"
             ];
-
             if (nomesConselho.includes(nomeUpper)) {
                 tipo = "conselho";
             } else if (nivelUpper === "DIRETORIA") {

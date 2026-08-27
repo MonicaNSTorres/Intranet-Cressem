@@ -61,7 +61,7 @@ export default function ConsultaAssociadoPage() {
             </div>
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                Consulta de Associado
+                Alteração de Integralização
               </h1>
               <p className="text-sm text-gray-600 mt-1">
                 Digite o CPF para carregar Nome, Matrícula e Empresa e gerar o PDF.

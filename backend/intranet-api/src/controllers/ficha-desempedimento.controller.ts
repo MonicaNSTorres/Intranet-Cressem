@@ -55,7 +55,13 @@ export const fichaDesimpedimentoController = {
           a.NM_CIDADE AS NM_CIDADE,
           a.NR_CEP AS NR_CEP,
           a.NR_TELEFONE AS TELEFONE,
-          a.DS_EMAIL AS DS_EMAIL
+          a.DS_EMAIL AS DS_EMAIL,
+          (
+            SELECT TO_CHAR(MIN(TRUNC(cc.DT_MATRICULA)), 'YYYY-MM-DD')
+            FROM DBACRESSEM.CONTA_CAPITAL_DIARIO_NOVO_NORMALIZADO cc
+            WHERE TRIM(cc.NR_CONTA_CAPITAL) = TRIM(a.NR_CONTA_CAPITAL)
+              AND cc.DT_MATRICULA IS NOT NULL
+          ) AS DT_MATRICULA_ASSOCIACAO
         FROM DBACRESSEM.ASSOCIADO_ANALITICO a
         WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') = :cpf
         FETCH FIRST 1 ROWS ONLY
@@ -84,6 +90,7 @@ export const fichaDesimpedimentoController = {
         nr_cep: row.NR_CEP || "",
         telefone: row.TELEFONE || "",
         ds_email: row.DS_EMAIL || "",
+        dt_matricula_associacao: row.DT_MATRICULA_ASSOCIACAO || "",
       });
     } catch (error: any) {
       console.error("Erro ao buscar associado por CPF:", error);

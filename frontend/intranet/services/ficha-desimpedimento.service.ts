@@ -68,6 +68,7 @@ export interface AssociadoResponse {
   nr_cep: string;
   telefone: string;
   ds_email: string;
+  dt_matricula_associacao: string;
 }
 
 export interface SalvarFichaPayload {

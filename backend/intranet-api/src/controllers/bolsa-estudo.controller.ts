@@ -20,6 +20,8 @@ export const bolsaEstudoController = {
       const sql = `
         SELECT
           f.NM_FUNCIONARIO,
+          f.NR_CPF,
+          f.NR_MATRICULA,
           TO_CHAR(f.DT_ADMISSAO, 'YYYY-MM-DD') AS DT_ADMISSAO,
           f.CD_GERENCIA,
           f.ID_FUNCIONARIO,
@@ -52,6 +54,8 @@ export const bolsaEstudoController = {
 
       return res.json({
         NM_FUNCIONARIO: row.NM_FUNCIONARIO || "",
+        NR_CPF: row.NR_CPF || "",
+        NR_MATRICULA: row.NR_MATRICULA || "",
         DT_ADMISSAO: row.DT_ADMISSAO || "",
         CD_GERENCIA: row.CD_GERENCIA || "",
         ID_FUNCIONARIO: row.ID_FUNCIONARIO || "",

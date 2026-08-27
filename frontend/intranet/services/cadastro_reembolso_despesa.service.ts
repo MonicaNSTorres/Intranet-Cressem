@@ -52,8 +52,9 @@ export type SolicitacaoReembolsoResponse = {
 
 export type FuncionarioReembolso = {
   NM_FUNCIONARIO: string;
-  NR_CPF: string;
-  NR_CONTA_CORRENTE: string;
+  NR_CPF?: string;
+  NR_CONTA_CORRENTE?: string;
+  NM_CIDADE?: string;
 };
 
 export type TipoDespesaItem = {

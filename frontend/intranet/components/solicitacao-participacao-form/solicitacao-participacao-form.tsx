@@ -812,7 +812,12 @@ export function SolicitacaoParticipacaoForm() {
             const idPatrocinio = response?.ID_PATROCINIO;
             const duplicidadeIgnorada = Boolean(response?.DUPLICIDADE_IGNORADA);
 
-            if (idPatrocinio && !duplicidadeIgnorada) {
+            const modoTesteParticipacao =
+                process.env.NODE_ENV === "development" &&
+                process.env.NEXT_PUBLIC_PARTICIPACAO_TEST_MODE === "true";
+            const solicitacaoTeste = nmSolicitanteOracle.toUpperCase().includes("TESTE");
+
+            if (idPatrocinio && !duplicidadeIgnorada && !(modoTesteParticipacao && solicitacaoTeste)) {
                 await dispararEmailGerencia({
                     funcionario,
                     empresa: nmSolicitanteOracle,

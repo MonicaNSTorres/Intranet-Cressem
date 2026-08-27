@@ -16,6 +16,8 @@ export type PatrocinioItem = {
   NM_CIDADE: string;
   NM_FUNCIONARIO: string;
   DT_SOLICITACAO: string;
+  DT_EVENTO_INICIO?: string;
+  DT_EVENTO_FIM?: string;
   NM_ANDAMENTO: string;
   CD_CONTA_COOPERATIVA: number;
   VL_SALDO_MEDCIOCC: number;
@@ -37,6 +39,8 @@ export type PatrocinioItem = {
   DIR_DOC_SEM_FINS_LUCRATIVO: string;
   NM_GERENCIA: string;
   DESC_PARECER_GERENCIA: string;
+  NM_MARKETING: string;
+  DESC_PARECER_MARKETING: string;
   NM_DIRETORIA: string;
   DESC_PARECER_ESCRITO_DIRETORIA: string;
   NM_PARECER_CONSELHO: string;
@@ -56,8 +60,16 @@ export type PatrocinioPaginadoResponse = {
 
 export type FuncionarioTipoResponse = {
   NM_FUNCIONARIO: string;
-  TIPO: "funcionario" | "gerencia" | "diretoria" | "conselho";
+  TIPO: "funcionario" | "gerencia" | "marketing" | "diretoria" | "conselho";
 };
+
+export type PerfilTesteParticipacao = "" | "gerencia" | "marketing" | "diretoria" | "conselho";
+
+function headersPerfilTeste(perfilTeste?: PerfilTesteParticipacao): Record<string, string> {
+  return perfilTeste
+    ? { "X-Participacao-Teste-Perfil": perfilTeste }
+    : {};
+}
 
 function ensureApiUrl() {
   if (!API_URL) {
@@ -88,6 +100,7 @@ export async function buscarPatrociniosPaginado(params: {
   page?: number;
   limit?: number;
   verTodos?: boolean;
+  perfilTeste?: PerfilTesteParticipacao;
 }): Promise<PatrocinioPaginadoResponse> {
   try {
     const api = ensureApiUrl();
@@ -108,6 +121,7 @@ export async function buscarPatrociniosPaginado(params: {
       method: "GET",
       credentials: "include",
       cache: "no-store",
+      headers: headersPerfilTeste(params.perfilTeste),
     });
 
     const json = await res.json().catch(() => ({}));
@@ -199,7 +213,7 @@ export async function buscarPatrocinioPorId(id: number): Promise<PatrocinioItem>
   }
 }
 
-export async function atualizarPatrocinio(id: number, payload: Record<string, any>) {
+export async function atualizarPatrocinio(id: number, payload: Record<string, any>, perfilTeste?: PerfilTesteParticipacao) {
   try {
     const api = ensureApiUrl();
 
@@ -208,6 +222,7 @@ export async function atualizarPatrocinio(id: number, payload: Record<string, an
       credentials: "include",
       headers: {
         ...getAuditoriaHeaders(),
+        ...headersPerfilTeste(perfilTeste),
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
@@ -233,6 +248,34 @@ export async function atualizarPatrocinio(id: number, payload: Record<string, an
       "GERENCIAMENTO_PARTICIPACAO_ATUALIZAR"
     );
 
+    throw error;
+  }
+}
+
+export async function enviarEmailTesteParticipacao(id: number) {
+  try {
+    const api = ensureApiUrl();
+    const res = await fetch(`${api}/v1/email_informativo_participacao_teste/patrocinio/${id}`, {
+      method: "GET",
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(json?.error || "Falha ao enviar e-mail de teste.");
+    }
+
+    return json;
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: `/v1/email_informativo_participacao_teste/patrocinio/${id}`,
+        method: "GET",
+        id,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_EMAIL_TESTE"
+    );
     throw error;
   }
 }
@@ -299,6 +342,7 @@ export async function baixarRelatorioPatrocinios(params: {
   pesquisa: string;
   status?: string;
   verTodos?: boolean;
+  perfilTeste?: PerfilTesteParticipacao;
 }): Promise<Blob> {
   try {
     const api = ensureApiUrl();
@@ -317,6 +361,7 @@ export async function baixarRelatorioPatrocinios(params: {
       method: "GET",
       credentials: "include",
       cache: "no-store",
+      headers: headersPerfilTeste(params.perfilTeste),
     });
 
     if (!res.ok) {
@@ -391,6 +436,30 @@ export async function enviarEmailDiretoria(funcionario: string, empresa: string,
         id,
       },
       "GERENCIAMENTO_PARTICIPACAO_EMAIL_DIRETORIA"
+    );
+
+    throw error;
+  }
+}
+
+export async function enviarEmailMarketing(id: number) {
+  try {
+    const api = ensureApiUrl();
+    const res = await fetch(`${api}/v1/email_informativo_marketing/patrocinio/${id}`, {
+      method: "GET",
+      credentials: "include",
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error || "Falha ao enviar email para marketing.");
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: `/v1/email_informativo_marketing/patrocinio/${id}`,
+        method: "GET",
+        id,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_EMAIL_MARKETING"
     );
 
     throw error;

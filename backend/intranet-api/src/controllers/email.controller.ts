@@ -1,6 +1,14 @@
 import { Request, Response } from "express";
 import { sendEmail } from "../services/email.service";
 import { oracleExecute } from "../services/oracle.service";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
+
+function modoTesteParticipacaoAtivo() {
+  return (
+    process.env.NODE_ENV === "development" &&
+    String(process.env.PARTICIPACAO_TEST_MODE || "").trim().toLowerCase() === "true"
+  );
+}
 
 function formatarCnpj(cnpj: string) {
   if (!cnpj) return "";
@@ -306,6 +314,67 @@ function montarEmailParticipacao({
 }
 
 export const emailController = {
+  async emailTesteParticipacao(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!modoTesteParticipacaoAtivo()) {
+        return res.status(404).json({ error: "Modo de teste não está ativo." });
+      }
+
+      const id = getParamAsNumber(req.params.id);
+      const emailUsuario = String(req.user?.email || "").trim();
+
+      if (id === null) {
+        return res.status(400).json({ error: "ID inválido." });
+      }
+
+      if (!emailUsuario) {
+        return res.status(400).json({ error: "Usuário autenticado sem e-mail." });
+      }
+
+      const patrocinioResult = await oracleExecute(
+        `SELECT * FROM DBACRESSEM.PATROCINIO WHERE ID_PATROCINIO = :id`,
+        { id }
+      );
+      const patrocinio: any = patrocinioResult.rows?.[0];
+
+      if (!patrocinio) {
+        return res.status(404).json({ error: "Patrocínio não encontrado." });
+      }
+
+      if (!String(patrocinio.NM_SOLICITANTE || "").toUpperCase().includes("TESTE")) {
+        return res.status(403).json({
+          error: "O e-mail de teste só pode ser enviado para solicitações identificadas como TESTE.",
+        });
+      }
+
+      const body = montarEmailParticipacao({
+        titulo: "Teste de fluxo de participação",
+        saudacao: "Olá,",
+        introducao: "Este é um e-mail de teste enviado pelo modo local de simulação.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail("Empresa", patrocinio.NM_SOLICITANTE || ""),
+          linhaTabelaEmail("Status atual", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao: "Nenhuma pessoa do fluxo real foi notificada por este teste.",
+      });
+
+      await sendEmail(
+        emailUsuario,
+        `[TESTE] Participação ${id} atualizada`,
+        body
+      );
+
+      return res.json({ message: "E-mail de teste enviado ao usuário logado." });
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({
+        error: "Erro ao enviar e-mail de teste",
+        details: error.message,
+      });
+    }
+  },
+
   async emailGerencia(req: Request, res: Response) {
     try {
       const funcionario = getParamAsString(req.params.funcionario);
@@ -610,6 +679,63 @@ export const emailController = {
 
       return res.status(500).json({
         error: "Erro ao enviar email gerência",
+        details: error.message,
+      });
+    }
+  },
+
+  async emailMarketing(req: Request, res: Response) {
+    try {
+      const id = getParamAsNumber(req.params.id);
+
+      if (id === null) {
+        return res.status(400).json({ error: "ID inválido." });
+      }
+
+      const patrocinioResult = await oracleExecute(
+        `SELECT * FROM DBACRESSEM.PATROCINIO WHERE ID_PATROCINIO = :id`,
+        { id }
+      );
+      const patrocinio: any = patrocinioResult.rows?.[0];
+
+      if (!patrocinio) {
+        return res.status(404).json({ error: "Patrocínio não encontrado." });
+      }
+
+      const body = montarEmailParticipacao({
+        titulo: "Parecer de Marketing solicitado",
+        saudacao: "Prezados(as),",
+        introducao:
+          "A Gerência registrou o parecer e a solicitação de participação de marketing aguarda a opinião do setor de Marketing.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail("Empresa", patrocinio.NM_SOLICITANTE || ""),
+          linhaTabelaEmail("Solicitante", patrocinio.NM_FUNCIONARIO || ""),
+          linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+          linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+          linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao:
+          "Por favor, acessem a Intranet para consultar os detalhes e registrar o parecer de Marketing.",
+      });
+
+      await sendEmail(
+        aplicarParticipacaoDebugDestinatarios([
+          "julia.a.coutinho@sicoob.com.br",
+          "luiz.gerhard@sicoob.com.br",
+        ]),
+        "Parecer de Marketing solicitado - Participação",
+        body
+      );
+
+      return res.json({
+        message: "Email enviado para marketing",
+        debug_email_ativo: getParticipacaoDebugEmail().length > 0,
+      });
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({
+        error: "Erro ao enviar email para marketing",
         details: error.message,
       });
     }

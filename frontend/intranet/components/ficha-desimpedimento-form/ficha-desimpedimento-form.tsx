@@ -24,8 +24,16 @@ import {
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
+import { getMeAdUser } from "@/services/auth.service";
 
-const initialForm: FichaFormData = {
+function hojeIso() {
+  const agora = new Date();
+  const local = new Date(agora.getTime() - agora.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+}
+
+function criarFormInicial(responsavel = ""): FichaFormData {
+  return {
   nome: "",
   cpf: "",
   tipo: "",
@@ -39,15 +47,86 @@ const initialForm: FichaFormData = {
   observacao: "",
   risco: "",
   tempo_associado: "",
-  data_ficha: "",
+  data_ficha: hojeIso(),
   observacoes_gerais: "",
-  responsavel: "",
+  responsavel,
   total_debitos: "",
   total_creditos: "",
   liquido_devedor: "",
   ds_email: "",
   sequencial: "",
-};
+  };
+}
+
+function formatarTempoAssociacao(dataMatricula?: string) {
+  const partes = String(dataMatricula || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!partes) return "";
+
+  const ano = Number(partes[1]);
+  const mes = Number(partes[2]);
+  const dia = Number(partes[3]);
+  const hoje = new Date();
+  const hojeUtc = new Date(
+    Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
+  );
+  const criarDataAjustada = (anoBase: number, mesBase: number, diaBase: number) => {
+    const ultimoDiaDoMes = new Date(
+      Date.UTC(anoBase, mesBase + 1, 0)
+    ).getUTCDate();
+
+    return new Date(Date.UTC(anoBase, mesBase, Math.min(diaBase, ultimoDiaDoMes)));
+  };
+  const inicio = criarDataAjustada(ano, mes - 1, dia);
+
+  if (
+    inicio.getUTCFullYear() !== ano ||
+    inicio.getUTCMonth() !== mes - 1 ||
+    inicio.getUTCDate() !== dia ||
+    inicio > hojeUtc
+  ) {
+    return "";
+  }
+
+  let anos = hojeUtc.getUTCFullYear() - ano;
+  let marcoAnual = criarDataAjustada(ano + anos, mes - 1, dia);
+
+  if (marcoAnual > hojeUtc) {
+    anos -= 1;
+    marcoAnual = criarDataAjustada(ano + anos, mes - 1, dia);
+  }
+
+  let meses =
+    (hojeUtc.getUTCFullYear() - marcoAnual.getUTCFullYear()) * 12 +
+    hojeUtc.getUTCMonth() -
+    marcoAnual.getUTCMonth();
+  let marcoMensal = criarDataAjustada(
+    marcoAnual.getUTCFullYear(),
+    marcoAnual.getUTCMonth() + meses,
+    marcoAnual.getUTCDate()
+  );
+
+  if (marcoMensal > hojeUtc) {
+    meses -= 1;
+    marcoMensal = criarDataAjustada(
+      marcoAnual.getUTCFullYear(),
+      marcoAnual.getUTCMonth() + meses,
+      marcoAnual.getUTCDate()
+    );
+  }
+
+  const dias = Math.round(
+    (hojeUtc.getTime() - marcoMensal.getTime()) / (24 * 60 * 60 * 1000)
+  );
+
+  const unidade = (valor: number, singular: string, plural: string) =>
+    `${valor} ${valor === 1 ? singular : plural}`;
+
+  return [
+    unidade(anos, "ano", "anos"),
+    unidade(meses, "mês", "meses"),
+    unidade(dias, "dia", "dias"),
+  ].join(", ");
+}
 
 const fieldClass =
   "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
@@ -60,7 +139,8 @@ const addButtonClass =
 
 export function FichaDesimpedimentoForm() {
   const [tipo, setTipo] = useState<TipoFicha>("DEVEDOR");
-  const [form, setForm] = useState<FichaFormData>(initialForm);
+  const [form, setForm] = useState<FichaFormData>(() => criarFormInicial());
+  const [responsavelAtual, setResponsavelAtual] = useState("");
   const [contasCredoras, setContasCredoras] = useState<Conta[]>([]);
   const [contasDevedoras, setContasDevedoras] = useState<Conta[]>([]);
   const [contasBancarias, setContasBancarias] = useState<Conta[]>([]);
@@ -74,6 +154,27 @@ export function FichaDesimpedimentoForm() {
 
   useEffect(() => {
     carregarFichas();
+  }, []);
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarResponsavel() {
+      try {
+        const usuario = await getMeAdUser();
+        const nome = String(usuario?.nome_completo || usuario?.username || "").trim();
+        if (!ativo || !nome) return;
+        setResponsavelAtual(nome);
+        setForm((prev) => ({ ...prev, responsavel: nome }));
+      } catch (error) {
+        console.error("Erro ao carregar usuário responsável:", error);
+      }
+    }
+
+    carregarResponsavel();
+    return () => {
+      ativo = false;
+    };
   }, []);
 
   async function carregarFichas() {
@@ -201,6 +302,7 @@ export function FichaDesimpedimentoForm() {
       setLoadingCpf(true);
 
       const data = await buscarAssociadoPorCpf(cpfLimpo);
+      const tempoAssociado = formatarTempoAssociacao(data.dt_matricula_associacao);
 
       setForm((prev) => ({
         ...prev,
@@ -214,6 +316,7 @@ export function FichaDesimpedimentoForm() {
         nr_cep: data.nr_cep || "",
         telefone: data.telefone || "",
         ds_email: data.ds_email || "",
+        tempo_associado: tempoAssociado,
       }));
 
       setInfoCpf("Dados carregados com sucesso.");
@@ -241,7 +344,7 @@ export function FichaDesimpedimentoForm() {
       });
 
       alert("Ficha salva com sucesso!");
-      setForm(initialForm);
+      setForm(criarFormInicial(responsavelAtual));
       setTipo("DEVEDOR");
       setContasDevedoras([]);
       setContasCredoras([]);
@@ -590,8 +693,8 @@ export function FichaDesimpedimentoForm() {
           <input
             name="tempo_associado"
             value={form.tempo_associado}
-            onChange={handleChange}
-            className={fieldClass}
+            readOnly
+            className={readOnlyFieldClass}
           />
         </div>
 
@@ -601,8 +704,8 @@ export function FichaDesimpedimentoForm() {
             name="data_ficha"
             type="date"
             value={form.data_ficha}
-            onChange={handleChange}
-            className={fieldClass}
+            readOnly
+            className={readOnlyFieldClass}
           />
         </div>
 
@@ -611,8 +714,8 @@ export function FichaDesimpedimentoForm() {
           <input
             name="responsavel"
             value={form.responsavel}
-            onChange={handleChange}
-            className={fieldClass}
+            readOnly
+            className={readOnlyFieldClass}
           />
         </div>
       </div>

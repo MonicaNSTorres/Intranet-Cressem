@@ -17,6 +17,46 @@ import { PDFDocument } from "pdf-lib";
 
 const execFileAsync = promisify(execFile);
 const AD_GROUP_SUPORTE = "GG_USERS_SUPORTE";
+const NOMES_MARKETING = [
+    "JULIA DE ALMEIDA COUTINHO",
+    "LUIZ RODOLFO GERHARD",
+];
+const PERFIS_TESTE_PARTICIPACAO = ["gerencia", "marketing", "diretoria", "conselho"] as const;
+
+function modoTesteParticipacaoAtivo() {
+    return (
+        process.env.NODE_ENV === "development" &&
+        String(process.env.PARTICIPACAO_TEST_MODE || "").trim().toLowerCase() === "true"
+    );
+}
+
+function obterPerfilTesteParticipacao(req: Request) {
+    if (!modoTesteParticipacaoAtivo()) return null;
+
+    const perfil = String(req.headers["x-participacao-teste-perfil"] || "")
+        .trim()
+        .toLowerCase();
+
+    return PERFIS_TESTE_PARTICIPACAO.includes(
+        perfil as (typeof PERFIS_TESTE_PARTICIPACAO)[number]
+    )
+        ? perfil
+        : null;
+}
+
+function funcionarioDoPerfilTeste(perfil: string) {
+    const nomes: Record<string, string> = {
+        gerencia: "GERÊNCIA DE TESTE",
+        marketing: "MARKETING DE TESTE",
+        diretoria: "DIRETORIA DE TESTE",
+        conselho: "CONSELHO DE TESTE",
+    };
+
+    return {
+        NM_FUNCIONARIO: nomes[perfil] || "PERFIL DE TESTE",
+        TIPO: perfil,
+    };
+}
 
 function onlyDigits(value: string) {
     return String(value || "").replace(/\D/g, "");
@@ -480,6 +520,15 @@ function getSingleUploadedFile(
 }
 
 async function buscarTipoFuncionarioPorNome(nome: string) {
+    const nomeInformadoUpper = String(nome || "").trim().toUpperCase();
+
+    if (NOMES_MARKETING.includes(nomeInformadoUpper)) {
+        return {
+            NM_FUNCIONARIO: String(nome || "").trim(),
+            TIPO: "marketing",
+        };
+    }
+
     const result = await oracleExecute(
         `
       SELECT
@@ -1087,7 +1136,10 @@ export const patrocinioController = {
             const isSuporte = hasGroup(grupos, AD_GROUP_SUPORTE);
             const verTodos = isSuporte && ["1", "true", "sim"].includes(String(req.query.ver_todos || "").trim().toLowerCase());
 
-            const funcionario = await buscarTipoFuncionarioPorNome(nome);
+            const perfilTeste = obterPerfilTesteParticipacao(req);
+            const funcionario = perfilTeste
+                ? funcionarioDoPerfilTeste(perfilTeste)
+                : await buscarTipoFuncionarioPorNome(nome);
 
             let wherePerfil = "1 = 1";
             const bindsBase: Record<string, any> = {
@@ -1095,11 +1147,11 @@ export const patrocinioController = {
                 status: status || null,
             };
 
-            if (!verTodos && funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria") {
+            if (!perfilTeste && !verTodos && funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria" && funcionario.TIPO !== "marketing") {
                 bindsBase.nome = nome;
             }
 
-            if (verTodos) {
+            if (perfilTeste || verTodos) {
                 wherePerfil = "1 = 1";
             } else if (funcionario.TIPO === "funcionario") {
                 wherePerfil = "UPPER(p.NM_FUNCIONARIO) = UPPER(:nome)";
@@ -1122,6 +1174,8 @@ export const patrocinioController = {
             } else if (funcionario.TIPO === "diretoria") {
                 wherePerfil = "1 = 1";
             } else if (funcionario.TIPO === "conselho") {
+                wherePerfil = "1 = 1";
+            } else if (funcionario.TIPO === "marketing") {
                 wherePerfil = "1 = 1";
             }
 
@@ -1170,6 +1224,16 @@ export const patrocinioController = {
             p.NM_CIDADE,
             p.NM_FUNCIONARIO,
             TO_CHAR(p.DT_SOLICITACAO, 'YYYY-MM-DD') AS DT_SOLICITACAO,
+            (
+              SELECT TO_CHAR(MIN(d.DT_DIA), 'YYYY-MM-DD')
+              FROM DBACRESSEM.DATA_HORA_PATROCINIO d
+              WHERE d.ID_PATROCINIO = p.ID_PATROCINIO
+            ) AS DT_EVENTO_INICIO,
+            (
+              SELECT TO_CHAR(MAX(d.DT_DIA), 'YYYY-MM-DD')
+              FROM DBACRESSEM.DATA_HORA_PATROCINIO d
+              WHERE d.ID_PATROCINIO = p.ID_PATROCINIO
+            ) AS DT_EVENTO_FIM,
             p.NM_ANDAMENTO,
             p.CD_CONTA_COOPERATIVA,
             p.VL_SALDO_MEDCIOCC,
@@ -1192,6 +1256,8 @@ export const patrocinioController = {
             p.DIR_DOC_SEM_FINS_LUCRATIVO,
             p.NM_GERENCIA,
             p.DESC_PARECER_GERENCIA,
+            p.NM_MARKETING,
+            p.DESC_PARECER_MARKETING,
             p.NM_DIRETORIA,
             p.DESC_PARECER_ESCRITO_DIRETORIA,
             p.NM_PARECER_CONSELHO,
@@ -1282,6 +1348,8 @@ export const patrocinioController = {
             p.CD_AUDITORIO_SEDE,
             p.DESC_PARECER_GERENCIA,
             p.NM_GERENCIA,
+            p.NM_MARKETING,
+            p.DESC_PARECER_MARKETING,
             p.DESC_PARECER_DIRETORIA,
             p.DESC_PARECER_ESCRITO_DIRETORIA,
             p.NM_DIRETORIA,
@@ -1312,7 +1380,7 @@ export const patrocinioController = {
         }
     },
 
-    async editar(req: Request, res: Response) {
+    async editar(req: AuthenticatedRequest, res: Response) {
         try {
             const id = Number(req.params.id || 0);
 
@@ -1322,12 +1390,111 @@ export const patrocinioController = {
 
             const body = req.body || {};
 
+            const nomeUsuario = String(req.user?.nome_completo || "").trim();
+            if (!nomeUsuario) {
+                return res.status(401).json({ error: "Usuário autenticado sem nome completo." });
+            }
+
+            const perfilTeste = obterPerfilTesteParticipacao(req);
+            const tipoUsuario = perfilTeste
+                ? funcionarioDoPerfilTeste(perfilTeste)
+                : await buscarTipoFuncionarioPorNome(nomeUsuario);
+            const atualResult = await oracleExecute(
+                `
+                  SELECT
+                    NM_SOLICITANTE,
+                    NM_ANDAMENTO,
+                    DESC_PARECER_GERENCIA,
+                    DESC_PARECER_MARKETING,
+                    DESC_PARECER_ESCRITO_DIRETORIA,
+                    DESC_PARECER_ESCRITO_CONSELHO
+                  FROM DBACRESSEM.PATROCINIO
+                  WHERE ID_PATROCINIO = :id
+                `,
+                { id },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+            const atual: any = atualResult.rows?.[0];
+
+            if (!atual) {
+                return res.status(404).json({ error: "Solicitação não encontrada." });
+            }
+
+            if (
+                perfilTeste &&
+                !normalizeFiltroTexto(atual.NM_SOLICITANTE).includes("TESTE")
+            ) {
+                return res.status(403).json({
+                    error: "O modo de teste local só pode alterar solicitações identificadas com TESTE.",
+                });
+            }
+
+            const statusAtual = normalizeFiltroTexto(atual.NM_ANDAMENTO);
+            const statusSolicitado = normalizeFiltroTexto(body.NM_ANDAMENTO);
+            const regrasFluxo: Record<string, {
+                statusAtual: string;
+                proximoStatus: string;
+                campoParecer: string;
+            }> = {
+                gerencia: {
+                    statusAtual: "PENDENTE GERENCIA",
+                    proximoStatus: "PENDENTE MARKETING",
+                    campoParecer: "DESC_PARECER_GERENCIA",
+                },
+                marketing: {
+                    statusAtual: "PENDENTE MARKETING",
+                    proximoStatus: "PENDENTE DIRETORIA",
+                    campoParecer: "DESC_PARECER_MARKETING",
+                },
+                diretoria: {
+                    statusAtual: "PENDENTE DIRETORIA",
+                    proximoStatus: "PENDENTE CONSELHO",
+                    campoParecer: "DESC_PARECER_ESCRITO_DIRETORIA",
+                },
+                conselho: {
+                    statusAtual: "PENDENTE CONSELHO",
+                    proximoStatus: "",
+                    campoParecer: "DESC_PARECER_ESCRITO_CONSELHO",
+                },
+            };
+            const regra = regrasFluxo[tipoUsuario.TIPO];
+
+            if (!regra || statusAtual !== regra.statusAtual) {
+                return res.status(403).json({ error: "Você não pode registrar parecer nesta etapa." });
+            }
+
+            if (atual[regra.campoParecer]) {
+                return res.status(409).json({ error: "O parecer desta etapa já foi registrado e não pode ser editado." });
+            }
+
+            const parecerPorTipo: Record<string, string> = {
+                gerencia: String(body.DESC_PARECER_GERENCIA || "").trim(),
+                marketing: String(body.DESC_PARECER_MARKETING || "").trim(),
+                diretoria: String(body.DESC_PARECER_ESCRITO_DIRETORIA || "").trim(),
+                conselho: String(body.DESC_PARECER_ESCRITO_CONSELHO || "").trim(),
+            };
+
+            if (!parecerPorTipo[tipoUsuario.TIPO]) {
+                return res.status(400).json({ error: "O parecer da sua etapa é obrigatório." });
+            }
+
+            if (tipoUsuario.TIPO === "conselho") {
+                const decisao = normalizeFiltroTexto(body.NM_PARECER_CONSELHO);
+                if (decisao !== "APROVADO" && decisao !== "REPROVADO") {
+                    return res.status(400).json({ error: "A decisão final deve ser Aprovado ou Reprovado." });
+                }
+            } else if (statusSolicitado !== regra.proximoStatus) {
+                return res.status(400).json({ error: "Transição de etapa inválida." });
+            }
+
             const sql = `
         UPDATE DBACRESSEM.PATROCINIO
         SET
           NM_ANDAMENTO = COALESCE(:NM_ANDAMENTO, NM_ANDAMENTO),
           DESC_PARECER_GERENCIA = COALESCE(:DESC_PARECER_GERENCIA, DESC_PARECER_GERENCIA),
           NM_GERENCIA = COALESCE(:NM_GERENCIA, NM_GERENCIA),
+          DESC_PARECER_MARKETING = COALESCE(:DESC_PARECER_MARKETING, DESC_PARECER_MARKETING),
+          NM_MARKETING = COALESCE(:NM_MARKETING, NM_MARKETING),
           DESC_PARECER_ESCRITO_DIRETORIA = COALESCE(:DESC_PARECER_ESCRITO_DIRETORIA, DESC_PARECER_ESCRITO_DIRETORIA),
           NM_DIRETORIA = COALESCE(:NM_DIRETORIA, NM_DIRETORIA),
           NM_PARECER_CONSELHO = COALESCE(:NM_PARECER_CONSELHO, NM_PARECER_CONSELHO),
@@ -1348,11 +1515,13 @@ export const patrocinioController = {
                     ID_PATROCINIO: id,
                     NM_ANDAMENTO: toNullableString(body.NM_ANDAMENTO),
                     DESC_PARECER_GERENCIA: toNullableString(body.DESC_PARECER_GERENCIA),
-                    NM_GERENCIA: toNullableString(body.NM_GERENCIA),
+                    NM_GERENCIA: tipoUsuario.TIPO === "gerencia" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_GERENCIA),
+                    DESC_PARECER_MARKETING: toNullableString(body.DESC_PARECER_MARKETING),
+                    NM_MARKETING: tipoUsuario.TIPO === "marketing" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_MARKETING),
                     DESC_PARECER_ESCRITO_DIRETORIA: toNullableString(
                         body.DESC_PARECER_ESCRITO_DIRETORIA
                     ),
-                    NM_DIRETORIA: toNullableString(body.NM_DIRETORIA),
+                    NM_DIRETORIA: tipoUsuario.TIPO === "diretoria" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_DIRETORIA),
                     NM_PARECER_CONSELHO: toNullableString(body.NM_PARECER_CONSELHO),
                     DESC_PARECER_ESCRITO_CONSELHO: toNullableString(
                         body.DESC_PARECER_ESCRITO_CONSELHO
@@ -1493,7 +1662,7 @@ export const patrocinioController = {
                 status: status || null,
             };
 
-            if (!verTodos && funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria") {
+            if (!verTodos && funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria" && funcionario.TIPO !== "marketing") {
                 binds.nome = nome;
             }
 
@@ -1515,6 +1684,8 @@ export const patrocinioController = {
                            )
                     )
                 `;
+            } else if (funcionario.TIPO === "marketing") {
+                wherePerfil = "1 = 1";
             }
 
             const result = await oracleExecute(
@@ -1550,6 +1721,8 @@ export const patrocinioController = {
             p.DIR_DOC_SEM_FINS_LUCRATIVO,
             p.NM_GERENCIA,
             p.DESC_PARECER_GERENCIA,
+            p.NM_MARKETING,
+            p.DESC_PARECER_MARKETING,
             p.NM_DIRETORIA,
             p.DESC_PARECER_DIRETORIA,
             p.DESC_PARECER_ESCRITO_DIRETORIA,
@@ -1633,6 +1806,8 @@ export const patrocinioController = {
 
                 { header: "Gerência", valor: (row) => row.NM_GERENCIA || "" },
                 { header: "Parecer da Gerência", valor: (row) => row.DESC_PARECER_GERENCIA || "" },
+                { header: "Marketing", valor: (row) => row.NM_MARKETING || "" },
+                { header: "Parecer do Marketing", valor: (row) => row.DESC_PARECER_MARKETING || "" },
                 { header: "Diretoria", valor: (row) => row.NM_DIRETORIA || "" },
                 { header: "Parecer da Diretoria", valor: (row) => row.DESC_PARECER_DIRETORIA || "" },
                 { header: "Parecer Escrito da Diretoria", valor: (row) => row.DESC_PARECER_ESCRITO_DIRETORIA || "" },
@@ -1673,4 +1848,3 @@ export const patrocinioController = {
         }
     },
 };
-

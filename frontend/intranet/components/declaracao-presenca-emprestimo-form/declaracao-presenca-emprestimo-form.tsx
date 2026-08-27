@@ -88,6 +88,7 @@ export function DeclaracaoPresencaEmprestimoForm() {
 
     setNome(result.data.nome || "");
     setMatrícula(result.data.matricula || "");
+    setCidade(result.data.cidade || "");
     setModoManual(false);
   };
 
@@ -261,6 +262,12 @@ export function DeclaracaoPresencaEmprestimoForm() {
               <label className={labelClass}>Cidade</label>
               <select value={cidade} onChange={(e) => setCidade(e.target.value)} className={inputClass}>
                 <option value="">Selecione</option>
+                {cidade &&
+                  !cidades.some(
+                    (item) =>
+                      item.NM_CIDADE.trim().toLocaleUpperCase("pt-BR") ===
+                      cidade.trim().toLocaleUpperCase("pt-BR")
+                  ) && <option value={cidade}>{cidade}</option>}
                 {cidades.map((item) => (
                   <option key={item.ID_CIDADES} value={item.NM_CIDADE}>
                     {item.NM_CIDADE}

@@ -42,9 +42,15 @@ import {
 
   enviarEmailDiretoria,
 
+  enviarEmailMarketing,
+
+  enviarEmailTesteParticipacao,
+
   enviarEmailParecerFinal,
 
   type FuncionarioTipoResponse,
+
+  type PerfilTesteParticipacao,
 
   type PatrocinioItem,
 
@@ -154,6 +160,74 @@ function formatarDataBR(dataIso?: string) {
 
 }
 
+type SituacaoEvento = "A realizar" | "Em andamento" | "Encerrado" | "Sem data";
+
+function hojeISO() {
+
+  const hoje = new Date();
+
+  const ano = hoje.getFullYear();
+
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+
+  const dia = String(hoje.getDate()).padStart(2, "0");
+
+  return `${ano}-${mes}-${dia}`;
+
+}
+
+function datasDoEvento(patrocinio: PatrocinioItem) {
+
+  const dias = Array.isArray(patrocinio.DIAS)
+
+    ? patrocinio.DIAS
+
+      .map((dia) => String(dia.DT_DIA || "").slice(0, 10))
+
+      .filter(Boolean)
+
+    : [];
+
+  const ordenadas = [...new Set(dias)].sort();
+
+  return {
+
+    inicio: ordenadas[0] || patrocinio.DT_EVENTO_INICIO || "",
+
+    fim: ordenadas[ordenadas.length - 1] || patrocinio.DT_EVENTO_FIM || "",
+
+  };
+
+}
+
+function periodoEvento(patrocinio: PatrocinioItem) {
+
+  const { inicio, fim } = datasDoEvento(patrocinio);
+
+  if (!inicio) return "Não informado";
+
+  if (!fim || fim === inicio) return formatarDataBR(inicio);
+
+  return `${formatarDataBR(inicio)} a ${formatarDataBR(fim)}`;
+
+}
+
+function situacaoDoEvento(patrocinio: PatrocinioItem): SituacaoEvento {
+
+  const { inicio, fim } = datasDoEvento(patrocinio);
+
+  if (!inicio) return "Sem data";
+
+  const hoje = hojeISO();
+
+  if (hoje < inicio) return "A realizar";
+
+  if (hoje > (fim || inicio)) return "Encerrado";
+
+  return "Em andamento";
+
+}
+
 function fmtBRL(valor: number | null | undefined) {
 
   return Number(valor || 0).toLocaleString("pt-BR", {
@@ -180,6 +254,8 @@ type Totais = {
 
   gerencia: number;
 
+  marketing: number;
+
   diretoria: number;
 
   conselho: number;
@@ -195,6 +271,8 @@ const totaisIniciais: Totais = {
   total: 0,
 
   gerencia: 0,
+
+  marketing: 0,
 
   diretoria: 0,
 
@@ -221,6 +299,24 @@ const secondaryButtonBase =
 const neutralButtonBase =
 
   "inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-[#49479D]/40 hover:bg-[#49479D]/10 hover:text-[#49479D] disabled:cursor-not-allowed disabled:opacity-60";
+
+const MODO_TESTE_LOCAL =
+
+  process.env.NODE_ENV === "development" &&
+
+  process.env.NEXT_PUBLIC_PARTICIPACAO_TEST_MODE === "true";
+
+const PERFIS_TESTE: Record<Exclude<PerfilTesteParticipacao, "">, FuncionarioTipoResponse> = {
+
+  gerencia: { TIPO: "gerencia", NM_FUNCIONARIO: "GERÊNCIA DE TESTE" },
+
+  marketing: { TIPO: "marketing", NM_FUNCIONARIO: "MARKETING DE TESTE" },
+
+  diretoria: { TIPO: "diretoria", NM_FUNCIONARIO: "DIRETORIA DE TESTE" },
+
+  conselho: { TIPO: "conselho", NM_FUNCIONARIO: "CONSELHO DE TESTE" },
+
+};
 
 async function mapComConcorrencia<T, R>(
 
@@ -304,7 +400,17 @@ export function GerenciamentoParticipacaoForm() {
 
   const [totais, setTotais] = useState<Totais>(totaisIniciais);
 
-  const [funcionarioTipo, setFuncionarioTipo] = useState<FuncionarioTipoResponse | null>(null);
+  const [funcionarioTipoReal, setFuncionarioTipoReal] = useState<FuncionarioTipoResponse | null>(null);
+
+  const [perfilTeste, setPerfilTeste] = useState<PerfilTesteParticipacao>("");
+
+  const funcionarioTipo = useMemo(
+
+    () => perfilTeste ? PERFIS_TESTE[perfilTeste] : funcionarioTipoReal,
+
+    [perfilTeste, funcionarioTipoReal]
+
+  );
 
   const [isSuporte, setIsSuporte] = useState(false);
 
@@ -329,6 +435,10 @@ export function GerenciamentoParticipacaoForm() {
   const [inputResponsavelEvento, setInputResponsavelEvento] = useState("");
 
   const [inputSugestao, setInputSugestao] = useState("");
+
+  const [inputMarketing, setInputMarketing] = useState("");
+
+  const [inputParecerMarketing, setInputParecerMarketing] = useState("");
 
   const [inputDiretoria, setInputDiretoria] = useState("");
 
@@ -386,9 +496,11 @@ export function GerenciamentoParticipacaoForm() {
 
           const tipo = await buscarFuncionarioTipo(nome);
 
-          setFuncionarioTipo(tipo);
+          setFuncionarioTipoReal(tipo);
 
           setInputGerencia(tipo.TIPO === "gerencia" ? tipo.NM_FUNCIONARIO : "");
+
+          setInputMarketing(tipo.TIPO === "marketing" ? tipo.NM_FUNCIONARIO : "");
 
           setInputDiretoria(tipo.TIPO === "diretoria" ? tipo.NM_FUNCIONARIO : "");
 
@@ -414,7 +526,7 @@ export function GerenciamentoParticipacaoForm() {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
 
-  }, [nomeResponsavel, isSuporte]);
+  }, [nomeResponsavel, isSuporte, perfilTeste]);
 
   async function buscarTotais() {
 
@@ -434,6 +546,8 @@ export function GerenciamentoParticipacaoForm() {
 
         verTodos: isSuporte,
 
+        perfilTeste,
+
       });
 
       const calc = { ...totaisIniciais };
@@ -445,6 +559,8 @@ export function GerenciamentoParticipacaoForm() {
         calc.total += 1;
 
         if (status === "PENDENTE GERENCIA") calc.gerencia += 1;
+
+        else if (status === "PENDENTE MARKETING") calc.marketing += 1;
 
         else if (status === "PENDENTE DIRETORIA") calc.diretoria += 1;
 
@@ -499,6 +615,8 @@ export function GerenciamentoParticipacaoForm() {
         limit: pageLimit,
 
         verTodos: isSuporte,
+
+        perfilTeste,
 
       });
 
@@ -624,6 +742,16 @@ export function GerenciamentoParticipacaoForm() {
 
       setInputParecerGerenciaEscrito(completo.DESC_PARECER_GERENCIA || "");
 
+      setInputMarketing(
+
+        completo.NM_MARKETING ||
+
+        (funcionarioTipo?.TIPO === "marketing" ? funcionarioTipo.NM_FUNCIONARIO : "")
+
+      );
+
+      setInputParecerMarketing(completo.DESC_PARECER_MARKETING || "");
+
       setInputResponsavelEvento(completo.NM_GERENTE_EVENTO || "");
 
       setInputSugestao(completo.NM_SUGESTAO_PARTICIPANTES || "");
@@ -718,6 +846,18 @@ export function GerenciamentoParticipacaoForm() {
 
     }
 
+    if (funcionarioTipo?.TIPO === "marketing") {
+
+      if (!inputParecerMarketing.trim()) {
+
+        setModalErro("Preencha o campo Parecer Marketing.");
+
+        return false;
+
+      }
+
+    }
+
     if (funcionarioTipo?.TIPO === "conselho") {
 
       if (!inputConselho.trim()) {
@@ -776,7 +916,9 @@ export function GerenciamentoParticipacaoForm() {
 
       let status1 = "";
 
-      if (funcionarioTipo.TIPO === "gerencia") status1 = "Pendente Diretoria";
+      if (funcionarioTipo.TIPO === "gerencia") status1 = "Pendente Marketing";
+
+      if (funcionarioTipo.TIPO === "marketing") status1 = "Pendente Diretoria";
 
       if (funcionarioTipo.TIPO === "diretoria") status1 = "Pendente Conselho";
 
@@ -789,6 +931,10 @@ export function GerenciamentoParticipacaoForm() {
         DESC_PARECER_GERENCIA: existente.DESC_PARECER_GERENCIA,
 
         NM_GERENCIA: existente.NM_GERENCIA,
+
+        DESC_PARECER_MARKETING: existente.DESC_PARECER_MARKETING,
+
+        NM_MARKETING: existente.NM_MARKETING,
 
         DESC_PARECER_ESCRITO_DIRETORIA: existente.DESC_PARECER_ESCRITO_DIRETORIA,
 
@@ -817,6 +963,18 @@ export function GerenciamentoParticipacaoForm() {
             NM_GERENTE_EVENTO: inputResponsavelEvento,
 
             NM_SUGESTAO_PARTICIPANTES: inputSugestao,
+
+          });
+
+          break;
+
+        case "marketing":
+
+          Object.assign(data, {
+
+            DESC_PARECER_MARKETING: inputParecerMarketing,
+
+            NM_MARKETING: funcionarioTipo.NM_FUNCIONARIO,
 
           });
 
@@ -858,9 +1016,17 @@ export function GerenciamentoParticipacaoForm() {
 
       }
 
-      await atualizarPatrocinio(selected.ID_PATROCINIO, data);
+      await atualizarPatrocinio(selected.ID_PATROCINIO, data, perfilTeste);
 
-      if (status1 === "Pendente Diretoria") {
+      if (perfilTeste) {
+
+        await enviarEmailTesteParticipacao(selected.ID_PATROCINIO);
+
+      } else if (status1 === "Pendente Marketing") {
+
+        await enviarEmailMarketing(selected.ID_PATROCINIO);
+
+      } else if (status1 === "Pendente Diretoria") {
 
         await enviarEmailDiretoria(
 
@@ -956,6 +1122,8 @@ export function GerenciamentoParticipacaoForm() {
 
         status: statusAplicado,
 
+        perfilTeste,
+
         verTodos: isSuporte,
 
       });
@@ -1017,6 +1185,8 @@ export function GerenciamentoParticipacaoForm() {
           limit: 100,
 
           verTodos: isSuporte,
+
+          perfilTeste,
 
         });
 
@@ -1144,6 +1314,10 @@ export function GerenciamentoParticipacaoForm() {
 
         parecerGerencia: inputParecerGerenciaEscrito,
 
+        marketing: inputMarketing,
+
+        parecerMarketing: inputParecerMarketing,
+
         responsavelEvento: inputResponsavelEvento,
 
         sugestoesParticipantes: inputSugestao,
@@ -1225,6 +1399,8 @@ export function GerenciamentoParticipacaoForm() {
     if (!funcionarioTipo) return "";
 
     if (funcionarioTipo.TIPO === "gerencia") return "PENDENTE GERENCIA";
+
+    if (funcionarioTipo.TIPO === "marketing") return "PENDENTE MARKETING";
 
     if (funcionarioTipo.TIPO === "diretoria") return "PENDENTE DIRETORIA";
 
@@ -1338,6 +1514,52 @@ export function GerenciamentoParticipacaoForm() {
 
             </p>
 
+            {MODO_TESTE_LOCAL && (
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs">
+
+                <span className="font-black uppercase tracking-wide text-violet-700">Modo de teste local</span>
+
+                <label className="font-semibold text-violet-800" htmlFor="perfil-teste-participacao">
+
+                  Simular como
+
+                </label>
+
+                <select
+
+                  id="perfil-teste-participacao"
+
+                  value={perfilTeste}
+
+                  onChange={(event) => setPerfilTeste(event.target.value as PerfilTesteParticipacao)}
+
+                  className="rounded-lg border border-violet-200 bg-white px-2 py-1 font-bold text-violet-800 outline-none focus:border-violet-400"
+
+                >
+
+                  <option value="">Meu perfil real</option>
+
+                  <option value="gerencia">Gerência</option>
+
+                  <option value="marketing">Marketing</option>
+
+                  <option value="diretoria">Diretoria</option>
+
+                  <option value="conselho">Conselho</option>
+
+                </select>
+
+                {perfilTeste && (
+
+                  <span className="text-violet-700">O e-mail de teste será enviado somente para você.</span>
+
+                )}
+
+              </div>
+
+            )}
+
           </div>
 
           <button
@@ -1450,9 +1672,9 @@ export function GerenciamentoParticipacaoForm() {
 
                 podeBaixarPdfConselho && filtroConselhoAplicado
 
-                  ? "lg:grid-cols-8"
+                  ? "lg:grid-cols-9"
 
-                  : "lg:grid-cols-7"
+                  : "lg:grid-cols-8"
 
               }`}
 
@@ -1481,6 +1703,20 @@ export function GerenciamentoParticipacaoForm() {
                 active={normalizeText(statusFiltro) === "PENDENTE GERENCIA"}
 
                 onClick={() => filtrarPorResumo("Pendente Gerencia")}
+
+              />
+
+              <ResumoCard
+
+                label="P. Marketing"
+
+                value={totais.marketing}
+
+                tone="violet"
+
+                active={normalizeText(statusFiltro) === "PENDENTE MARKETING"}
+
+                onClick={() => filtrarPorResumo("Pendente Marketing")}
 
               />
 
@@ -1584,7 +1820,27 @@ export function GerenciamentoParticipacaoForm() {
 
               <div className="overflow-x-auto">
 
-              <table className="w-full min-w-[1100px] border-separate border-spacing-0">
+              <table className="w-full min-w-[1120px] table-fixed border-separate border-spacing-0">
+
+                <colgroup>
+
+                  <col className="w-[20%]" />
+
+                  <col className="w-[12%]" />
+
+                  <col className="w-[10%]" />
+
+                  <col className="w-[10%]" />
+
+                  <col className="w-[13%]" />
+
+                  <col className="w-[11%]" />
+
+                  <col className="w-[15%]" />
+
+                  <col className="w-[9%]" />
+
+                </colgroup>
 
                 <thead>
 
@@ -1616,7 +1872,13 @@ export function GerenciamentoParticipacaoForm() {
 
                     <th className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
 
-                      Dia
+                      Período do evento
+
+                    </th>
+
+                    <th className="border-b border-slate-200 bg-slate-100 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
+
+                      Situação do evento
 
                     </th>
 
@@ -1654,7 +1916,7 @@ export function GerenciamentoParticipacaoForm() {
 
                       </td>
 
-                      <td className="border-b border-slate-100 px-3 py-2 text-sm text-slate-700">
+                      <td className="border-b border-slate-100 px-3 py-2 text-xs text-slate-700 whitespace-nowrap">
 
                         {formatarCPFouCNPJ(patrocinio.NR_CPF_CNPJ)}
 
@@ -1678,21 +1940,23 @@ export function GerenciamentoParticipacaoForm() {
 
                       <td className="border-b border-slate-100 px-3 py-2 text-sm text-slate-700">
 
-                        {formatarDataBR(patrocinio.DT_SOLICITACAO)}
+                        {periodoEvento(patrocinio)}
 
                       </td>
 
                       <td className="border-b border-slate-100 px-3 py-2 text-sm text-slate-700">
 
-                        <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-black uppercase text-amber-700">
-
-                          {String(patrocinio.NM_ANDAMENTO || "").toUpperCase()}
-
-                        </span>
+                        <SituacaoEventoBadge situacao={situacaoDoEvento(patrocinio)} />
 
                       </td>
 
-                      <td className="border-b border-slate-100 px-3 py-2 text-center">
+                      <td className="border-b border-slate-100 px-2 py-2 text-sm text-slate-700">
+
+                        <StatusFluxoBadge status={patrocinio.NM_ANDAMENTO} />
+
+                      </td>
+
+                      <td className="border-b border-slate-100 px-2 py-2 text-center">
 
                         <button
 
@@ -1700,11 +1964,11 @@ export function GerenciamentoParticipacaoForm() {
 
                           onClick={() => abrirAndamento(patrocinio)}
 
-                          className="rounded-xl border border-[#00AE9D]/35 bg-[#00AE9D]/10 px-3 py-2 text-xs font-black text-[#006f65] shadow-sm transition hover:bg-[#00AE9D] hover:text-white hover:shadow-md"
+                          className="whitespace-nowrap rounded-xl border border-[#00AE9D]/35 bg-[#00AE9D]/10 px-2 py-2 text-xs font-black text-[#006f65] shadow-sm transition hover:bg-[#00AE9D] hover:text-white hover:shadow-md"
 
                         >
 
-                          Andamento
+                          Informações
 
                         </button>
 
@@ -1760,13 +2024,41 @@ export function GerenciamentoParticipacaoForm() {
 
           >
 
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4">
 
-              <h2 className="text-lg font-black text-slate-950">
+              <div className="min-w-0">
 
-                Análise de Patrocínio - {capitalizeWords(selected.NM_SOLICITANTE)}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
 
-              </h2>
+                  <h2 className="text-lg font-black text-slate-950">
+
+                    Análise de Patrocínio
+
+                  </h2>
+
+                  <span className="hidden h-5 w-px bg-slate-200 sm:block" aria-hidden="true" />
+
+                  <span className="text-sm font-bold text-slate-700">
+
+                    {capitalizeWords(selected.NM_SOLICITANTE)}
+
+                  </span>
+
+                </div>
+
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-500">
+
+                  <span className="font-black uppercase tracking-[0.08em] text-[#006f65]">Evento</span>
+
+                  <span>{periodoEvento(selected)}</span>
+
+                  <span className="text-slate-300" aria-hidden="true">•</span>
+
+                  <span className="font-bold text-[#006f65]">{situacaoDoEvento(selected)}</span>
+
+                </div>
+
+              </div>
 
               <button
 
@@ -1988,6 +2280,22 @@ export function GerenciamentoParticipacaoForm() {
 
               />
 
+              <CampoInput label="Nome Marketing" value={inputMarketing} readOnly />
+
+              <CampoTextarea
+
+                label="Parecer Marketing"
+
+                value={inputParecerMarketing}
+
+                onChange={setInputParecerMarketing}
+
+                readOnly={!(funcionarioTipo?.TIPO === "marketing" && podeEditar)}
+
+                maxLength={570}
+
+              />
+
               <CampoInput label="Nome Diretoria" value={inputDiretoria} readOnly />
 
               <CampoTextarea
@@ -2168,7 +2476,65 @@ export function GerenciamentoParticipacaoForm() {
 
 }
 
-type ResumoTone = "slate" | "amber" | "sky" | "teal" | "emerald" | "red";
+function SituacaoEventoBadge({ situacao }: { situacao: SituacaoEvento }) {
+
+  const estilos: Record<SituacaoEvento, string> = {
+
+    "A realizar": "border-sky-200 bg-sky-50 text-sky-700",
+
+    "Em andamento": "border-amber-200 bg-amber-50 text-amber-700",
+
+    Encerrado: "border-emerald-200 bg-emerald-50 text-emerald-700",
+
+    "Sem data": "border-slate-200 bg-slate-50 text-slate-600",
+
+  };
+
+  return (
+
+    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-black uppercase ${estilos[situacao]}`}>
+
+      {situacao}
+
+    </span>
+
+  );
+
+}
+
+function StatusFluxoBadge({ status }: { status?: string }) {
+
+  const statusNormalizado = normalizeText(status || "");
+
+  const estilos: Record<string, string> = {
+
+    "PENDENTE GERENCIA": "border-amber-300 bg-amber-100 text-amber-800",
+
+    "PENDENTE MARKETING": "border-violet-300 bg-violet-100 text-violet-800",
+
+    "PENDENTE DIRETORIA": "border-sky-300 bg-sky-100 text-sky-800",
+
+    "PENDENTE CONSELHO": "border-teal-300 bg-teal-100 text-teal-800",
+
+    APROVADO: "border-emerald-300 bg-emerald-100 text-emerald-800",
+
+    REPROVADO: "border-red-300 bg-red-100 text-red-800",
+
+  };
+
+  return (
+
+    <span className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-black uppercase ${estilos[statusNormalizado] || "border-slate-200 bg-slate-50 text-slate-600"}`}>
+
+      {status || "Não informado"}
+
+    </span>
+
+  );
+
+}
+
+type ResumoTone = "slate" | "amber" | "violet" | "sky" | "teal" | "emerald" | "red";
 
 function ResumoCard({
 
@@ -2201,6 +2567,8 @@ function ResumoCard({
     slate: "border-slate-200 bg-slate-50 text-slate-700",
 
     amber: "border-amber-200 bg-amber-50 text-amber-700",
+
+    violet: "border-violet-200 bg-violet-50 text-violet-700",
 
     sky: "border-sky-200 bg-sky-50 text-sky-700",
 

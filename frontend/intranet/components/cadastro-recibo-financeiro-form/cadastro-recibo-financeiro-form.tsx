@@ -84,6 +84,13 @@ function formatDateBR(value?: string | null) {
     return `${d}/${m}/${y}`;
 }
 
+function hojeInputDate() {
+    const agora = new Date();
+    const local = new Date(agora.getTime() - agora.getTimezoneOffset() * 60_000);
+
+    return local.toISOString().slice(0, 10);
+}
+
 function nomeCompletoUsuario(usuario?: AuthMeResponse | null) {
     return String(
         usuario?.nome_completo ||
@@ -391,6 +398,8 @@ export function CadastroReciboFinanceiroForm() {
 
                     setParcelas(recibo.PARCELAS || []);
                     setPagamentos(recibo.PAGAMENTOS || []);
+                } else {
+                    setDataRecibo(hojeInputDate());
                 }
             } catch (error: any) {
                 console.error(error);

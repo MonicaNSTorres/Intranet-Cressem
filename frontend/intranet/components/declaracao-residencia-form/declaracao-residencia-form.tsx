@@ -155,7 +155,7 @@ export function DeclaracaoResidenciaForm() {
       };
 
       setData(assoc);
-      setCidadeRodape(CIDADE_PADRAO);
+      setCidadeRodape(assoc.cidade || CIDADE_PADRAO);
     } else {
       const cpf = onlyDigits(cpfBusca);
       setData({ ...emptyAssoc, cpf, rg: cpf });
@@ -412,6 +412,12 @@ export function DeclaracaoResidenciaForm() {
                 className={inputClass}
               >
                 <option value="">Selecione</option>
+                {cidadeRodape &&
+                  !cidades.some(
+                    (item) =>
+                      item.NM_CIDADE.trim().toLocaleUpperCase("pt-BR") ===
+                      cidadeRodape.trim().toLocaleUpperCase("pt-BR")
+                  ) && <option value={cidadeRodape}>{cidadeRodape}</option>}
                 {cidades.map((item) => (
                   <option key={item.ID_CIDADES} value={item.NM_CIDADE}>
                     {item.NM_CIDADE}

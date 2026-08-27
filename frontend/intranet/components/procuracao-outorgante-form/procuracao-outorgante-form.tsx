@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { gerarPdfProcuracaoPF } from "@/lib/pdf/procuracaoPF";
 import { gerarPdfProcuracaoPJ } from "@/lib/pdf/procuracaoPJ";
 import { formatCpfView, onlyDigits } from "@/utils/br";
@@ -10,6 +10,7 @@ import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
+import { buscarCidadesResgate } from "@/services/resgate_capital.service";
 
 function formatCnpjView(v: string) {
   const s = onlyDigits(v).slice(0, 14);
@@ -19,6 +20,20 @@ function formatCnpjView(v: string) {
   if (s.length <= 12) return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8)}`;
   return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}`;
 }
+
+function formatCep(value: string) {
+  const digits = onlyDigits(value).slice(0, 8);
+  return digits.replace(/^(\d{5})(\d)/, "$1-$2");
+}
+
+const ESTADOS_CIVIS = [
+  { value: "CASADO", label: "CASADO" },
+  { value: "DIVORCIADO", label: "DIVORCIADO" },
+  { value: "SEPARADO", label: "SEPARADO" },
+  { value: "SOLTEIRO", label: "SOLTEIRO" },
+  { value: "UNIAO ESTAVEL", label: "UNIÃO ESTÁVEL" },
+  { value: "VIUVO", label: "VIÚVO" },
+] as const;
 
 const fieldClass =
   "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
@@ -104,11 +119,12 @@ export function ProcuracaoOutorganteForm() {
 
   // Hook padrão do projeto
   const { loading, erro, info, buscar } = useAssociadoPorCpf();
+  const [cidadesAgencia, setCidadesAgencia] = useState<string[]>([]);
 
   // OUTORGANTE PF (busca preenche; editável)
   const [pf, setPf] = useState<AcaoPF>({
     outorganteNome: "",
-    outorganteNacionalidade: "",
+    outorganteNacionalidade: "Brasileiro",
     outorganteEstadoCivil: "",
     outorganteProfissao: "",
     outorganteDocTipo: "RG",
@@ -125,7 +141,7 @@ export function ProcuracaoOutorganteForm() {
   // OUTORGADO (PF) – manual
   const [outorgado, setOutorgado] = useState<OutorgadoPF>({
     outorgadoNome: "",
-    outorgadoNacionalidade: "",
+    outorgadoNacionalidade: "Brasileiro",
     outorgadoEstadoCivil: "",
     outorgadoProfissao: "",
     outorgadoDocTipo: "RG",
@@ -162,7 +178,7 @@ export function ProcuracaoOutorganteForm() {
     sedeCidade: "",
     sedeUF: "",
     representanteNome: "",
-    representanteNacionalidade: "",
+    representanteNacionalidade: "Brasileiro",
     representanteEstadoCivil: "",
     representanteProfissao: "",
     representanteDocTipo: "RG",
@@ -198,11 +214,32 @@ export function ProcuracaoOutorganteForm() {
       outorganteEndereco: r.data.rua || r.data.endereco || "",
       outorganteNumero: r.data.numero || "",
       outorganteBairro: r.data.bairro || "",
-      outorganteCep: r.data.cep || "",
+      outorganteCep: formatCep(r.data.cep || ""),
       outorganteCidade: r.data.cidade || "",
       outorganteUF: (r.data.uf || "").toUpperCase(),
     }));
   };
+
+  useEffect(() => {
+    async function carregarCidadesAgencia() {
+      try {
+        const cidades = await buscarCidadesResgate();
+        const opcoes = Array.from(
+          new Set(
+            cidades
+              .map((cidade) => String(cidade.NM_CIDADE || "").trim())
+              .filter(Boolean)
+          )
+        ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+        setCidadesAgencia(opcoes);
+      } catch (error) {
+        console.error("Erro ao carregar cidades de agência:", error);
+        setCidadesAgencia([]);
+      }
+    }
+
+    carregarCidadesAgencia();
+  }, []);
 
   const fillHoje = () => {
     const { dia, mes, ano } = hojeParts();
@@ -277,7 +314,7 @@ export function ProcuracaoOutorganteForm() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <Input label="Nome" value={pf.outorganteNome} onChange={(v) => setPf({ ...pf, outorganteNome: v })} />
           <Input label="Nacionalidade" value={pf.outorganteNacionalidade} onChange={(v) => setPf({ ...pf, outorganteNacionalidade: v })} />
-          <Input label="Estado Civil" value={pf.outorganteEstadoCivil} onChange={(v) => setPf({ ...pf, outorganteEstadoCivil: v })} />
+          <EstadoCivilSelect value={pf.outorganteEstadoCivil} onChange={(v) => setPf({ ...pf, outorganteEstadoCivil: v })} />
           <Input label="Profissão" value={pf.outorganteProfissao} onChange={(v) => setPf({ ...pf, outorganteProfissao: v })} />
 
           <Input label="Tipo Doc (RG/CNH)" value={pf.outorganteDocTipo} onChange={(v) => setPf({ ...pf, outorganteDocTipo: v })} />
@@ -293,8 +330,8 @@ export function ProcuracaoOutorganteForm() {
           <Input label="Número" value={pf.outorganteNumero} onChange={(v) => setPf({ ...pf, outorganteNumero: v })} />
 
           <Input label="Bairro" value={pf.outorganteBairro} onChange={(v) => setPf({ ...pf, outorganteBairro: v })} />
-          <Input label="CEP" value={pf.outorganteCep} onChange={(v) => setPf({ ...pf, outorganteCep: v })} />
-          <Input label="Cidade" value={pf.outorganteCidade} onChange={(v) => setPf({ ...pf, outorganteCidade: v })} />
+          <Input label="CEP" value={formatCep(pf.outorganteCep)} onChange={(v) => setPf({ ...pf, outorganteCep: formatCep(v) })} />
+          <CidadeSelect value={pf.outorganteCidade} cidades={cidadesAgencia} onChange={(v) => setPf({ ...pf, outorganteCidade: v })} />
           <Input label="UF" value={pf.outorganteUF} onChange={(v) => setPf({ ...pf, outorganteUF: v.toUpperCase().slice(0, 2) })} />
         </div>
       </SectionCard>
@@ -307,7 +344,7 @@ export function ProcuracaoOutorganteForm() {
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <Input label="Nome" value={outorgado.outorgadoNome} onChange={(v) => setOutorgado({ ...outorgado, outorgadoNome: v })} />
           <Input label="Nacionalidade" value={outorgado.outorgadoNacionalidade} onChange={(v) => setOutorgado({ ...outorgado, outorgadoNacionalidade: v })} />
-          <Input label="Estado Civil" value={outorgado.outorgadoEstadoCivil} onChange={(v) => setOutorgado({ ...outorgado, outorgadoEstadoCivil: v })} />
+          <EstadoCivilSelect value={outorgado.outorgadoEstadoCivil} onChange={(v) => setOutorgado({ ...outorgado, outorgadoEstadoCivil: v })} />
           <Input label="Profissão" value={outorgado.outorgadoProfissao} onChange={(v) => setOutorgado({ ...outorgado, outorgadoProfissao: v })} />
 
           <Input label="Tipo Doc (RG/CNH)" value={outorgado.outorgadoDocTipo} onChange={(v) => setOutorgado({ ...outorgado, outorgadoDocTipo: v })} />
@@ -323,8 +360,8 @@ export function ProcuracaoOutorganteForm() {
           <Input label="Número" value={outorgado.outorgadoNumero} onChange={(v) => setOutorgado({ ...outorgado, outorgadoNumero: v })} />
 
           <Input label="Bairro" value={outorgado.outorgadoBairro} onChange={(v) => setOutorgado({ ...outorgado, outorgadoBairro: v })} />
-          <Input label="CEP" value={outorgado.outorgadoCep} onChange={(v) => setOutorgado({ ...outorgado, outorgadoCep: v })} />
-          <Input label="Cidade" value={outorgado.outorgadoCidade} onChange={(v) => setOutorgado({ ...outorgado, outorgadoCidade: v })} />
+          <Input label="CEP" value={formatCep(outorgado.outorgadoCep)} onChange={(v) => setOutorgado({ ...outorgado, outorgadoCep: formatCep(v) })} />
+          <CidadeSelect value={outorgado.outorgadoCidade} cidades={cidadesAgencia} onChange={(v) => setOutorgado({ ...outorgado, outorgadoCidade: v })} />
           <Input label="UF" value={outorgado.outorgadoUF} onChange={(v) => setOutorgado({ ...outorgado, outorgadoUF: v.toUpperCase().slice(0, 2) })} />
         </div>
       </SectionCard>
@@ -341,8 +378,8 @@ export function ProcuracaoOutorganteForm() {
           <Input label="Endereço (sede)" value={pj.sedeEndereco} onChange={(v) => setPj({ ...pj, sedeEndereco: v })} className="md:col-span-2" />
           <Input label="Número" value={pj.sedeNumero} onChange={(v) => setPj({ ...pj, sedeNumero: v })} />
           <Input label="Bairro" value={pj.sedeBairro} onChange={(v) => setPj({ ...pj, sedeBairro: v })} />
-          <Input label="CEP" value={pj.sedeCep} onChange={(v) => setPj({ ...pj, sedeCep: v })} />
-          <Input label="Cidade" value={pj.sedeCidade} onChange={(v) => setPj({ ...pj, sedeCidade: v })} />
+          <Input label="CEP" value={formatCep(pj.sedeCep)} onChange={(v) => setPj({ ...pj, sedeCep: formatCep(v) })} />
+          <CidadeSelect value={pj.sedeCidade} cidades={cidadesAgencia} onChange={(v) => setPj({ ...pj, sedeCidade: v })} />
           <Input label="UF" value={pj.sedeUF} onChange={(v) => setPj({ ...pj, sedeUF: v.toUpperCase().slice(0, 2) })} />
 
           <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-title md:col-span-3">
@@ -352,7 +389,7 @@ export function ProcuracaoOutorganteForm() {
 
           <Input label="Nome" value={pj.representanteNome} onChange={(v) => setPj({ ...pj, representanteNome: v })} className="md:col-span-2" />
           <Input label="Nacionalidade" value={pj.representanteNacionalidade} onChange={(v) => setPj({ ...pj, representanteNacionalidade: v })} />
-          <Input label="Estado Civil" value={pj.representanteEstadoCivil} onChange={(v) => setPj({ ...pj, representanteEstadoCivil: v })} />
+          <EstadoCivilSelect value={pj.representanteEstadoCivil} onChange={(v) => setPj({ ...pj, representanteEstadoCivil: v })} />
           <Input label="Profissão" value={pj.representanteProfissao} onChange={(v) => setPj({ ...pj, representanteProfissao: v })} />
           <Input label="Tipo Doc" value={pj.representanteDocTipo} onChange={(v) => setPj({ ...pj, representanteDocTipo: v })} />
           <Input label="Nº Doc" value={pj.representanteDocNumero} onChange={(v) => setPj({ ...pj, representanteDocNumero: v })} />
@@ -361,8 +398,8 @@ export function ProcuracaoOutorganteForm() {
           <Input label="Endereço (rep.)" value={pj.representanteEnd} onChange={(v) => setPj({ ...pj, representanteEnd: v })} className="md:col-span-2" />
           <Input label="Número" value={pj.representanteNum} onChange={(v) => setPj({ ...pj, representanteNum: v })} />
           <Input label="Bairro" value={pj.representanteBairro} onChange={(v) => setPj({ ...pj, representanteBairro: v })} />
-          <Input label="CEP" value={pj.representanteCep} onChange={(v) => setPj({ ...pj, representanteCep: v })} />
-          <Input label="Cidade" value={pj.representanteCid} onChange={(v) => setPj({ ...pj, representanteCid: v })} />
+          <Input label="CEP" value={formatCep(pj.representanteCep)} onChange={(v) => setPj({ ...pj, representanteCep: formatCep(v) })} />
+          <CidadeSelect value={pj.representanteCid} cidades={cidadesAgencia} onChange={(v) => setPj({ ...pj, representanteCid: v })} />
           <Input label="UF" value={pj.representanteUF} onChange={(v) => setPj({ ...pj, representanteUF: v.toUpperCase().slice(0, 2) })} />
         </div>
       </SectionCard>
@@ -480,6 +517,75 @@ function Input({
         onChange={(e) => onChange(e.target.value)}
         className={fieldClass}
       />
+    </div>
+  );
+}
+
+function EstadoCivilSelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <div>
+      <FieldLabel>Estado Civil</FieldLabel>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={fieldClass}>
+        <option value="">Selecione</option>
+        {ESTADOS_CIVIS.map((estadoCivil) => (
+          <option key={estadoCivil.value} value={estadoCivil.value}>
+            {estadoCivil.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function CidadeSelect({
+  value,
+  cidades,
+  onChange,
+}: {
+  value: string;
+  cidades: string[];
+  onChange: (value: string) => void;
+}) {
+  const [outraCidade, setOutraCidade] = useState(false);
+
+  useEffect(() => {
+    if (value && cidades.length > 0) {
+      setOutraCidade(!cidades.includes(value));
+    }
+  }, [cidades, value]);
+
+  const selectValue = outraCidade ? "OUTRA" : value;
+
+  return (
+    <div>
+      <FieldLabel>Cidade</FieldLabel>
+      <select
+        value={selectValue}
+        onChange={(e) => {
+          const proximaCidade = e.target.value;
+          const manual = proximaCidade === "OUTRA";
+          setOutraCidade(manual);
+          onChange(manual ? "" : proximaCidade);
+        }}
+        className={fieldClass}
+      >
+        <option value="">Selecione</option>
+        {cidades.map((cidade) => (
+          <option key={cidade} value={cidade}>
+            {cidade}
+          </option>
+        ))}
+        <option value="OUTRA">Outra cidade</option>
+      </select>
+
+      {outraCidade && (
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={`${fieldClass} mt-2`}
+          placeholder="Digite a cidade"
+        />
+      )}
     </div>
   );
 }

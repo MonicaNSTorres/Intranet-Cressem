@@ -183,20 +183,43 @@ function pickPortabilidadeIdFromMeses(
       Number(a.ID_PORTABILIDADE_SALARIO) - Number(b.ID_PORTABILIDADE_SALARIO)
   );
 
-  if (!meses || meses <= 0) {
-    const semPortabilidade = ordenada.find((item) =>
-      normalizeLabel(item.DESC_PORTABILIDADE_SALARIO)
-        .toUpperCase()
-        .includes("SEM PORTABILIDADE")
+  const descricao = (item: PortabilidadeSalarioOption) =>
+    normalizeLabel(item.DESC_PORTABILIDADE_SALARIO).toUpperCase();
+  const semPortabilidade = ordenada.find((item) =>
+    descricao(item).includes("SEM PORTABILIDADE")
+  );
+  const opcoesComPortabilidade = ordenada.filter(
+    (item) => !descricao(item).includes("SEM PORTABILIDADE")
+  );
+  const portabilidadeMaisDeSeisMeses = opcoesComPortabilidade.find((item) => {
+    const texto = descricao(item);
+    return (
+      texto.includes("MAIS DE 6") ||
+      texto.includes("6 MESES OU MAIS") ||
+      texto.includes("ACIMA DE 6")
     );
+  });
+  const portabilidadeAteCincoMeses = opcoesComPortabilidade.find(
+    (item) => item !== portabilidadeMaisDeSeisMeses
+  );
+
+  if (!meses || meses <= 0) {
     return String(semPortabilidade?.ID_PORTABILIDADE_SALARIO || "");
   }
 
-  if (meses <= 6) {
-    return String(ordenada[0]?.ID_PORTABILIDADE_SALARIO || "");
+  if (meses >= 6) {
+    return String(
+      portabilidadeMaisDeSeisMeses?.ID_PORTABILIDADE_SALARIO ||
+        opcoesComPortabilidade.at(-1)?.ID_PORTABILIDADE_SALARIO ||
+        ""
+    );
   }
 
-  return String(ordenada.at(-1)?.ID_PORTABILIDADE_SALARIO || "");
+  return String(
+    portabilidadeAteCincoMeses?.ID_PORTABILIDADE_SALARIO ||
+      opcoesComPortabilidade[0]?.ID_PORTABILIDADE_SALARIO ||
+      ""
+  );
 }
 
 const fieldClass = "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";

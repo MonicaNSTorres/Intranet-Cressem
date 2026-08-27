@@ -4,6 +4,8 @@ export type FuncionarioBolsa = {
   NM_FUNCIONARIO: string;
   DT_ADMISSAO: string;
   CD_GERENCIA: string | number;
+  NR_CPF?: string;
+  NR_MATRICULA?: string;
   NM_CIDADE?: string;
 };
 

@@ -2,15 +2,34 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { gerarPdfAuxilioCreche } from "@/lib/pdf/gerarPdfAuxilioCreche";
 import { AUXILIO_CRECHE_TETO } from "@/config/auxilio-creche";
 import { fmtBRL, formatCpfView, hojeBR, monetizarDigitacao, parseBRL } from "@/utils/br";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
+import { buscarFuncionarioPorNome } from "@/services/bolsa_estudo.service";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
 import { SearchButton } from "@/components/ui/search-button";
 import { FaFilePdf } from "react-icons/fa";
+
+function getNomeUsuarioLogado() {
+  if (typeof window === "undefined") return "";
+
+  return (
+    localStorage.getItem("NOME_COMPLETO") ||
+    localStorage.getItem("REMOTE_USER_INTRANET") ||
+    localStorage.getItem("nome_completo") ||
+    localStorage.getItem("nome") ||
+    localStorage.getItem("username") ||
+    sessionStorage.getItem("NOME_COMPLETO") ||
+    sessionStorage.getItem("REMOTE_USER_INTRANET") ||
+    sessionStorage.getItem("nome_completo") ||
+    sessionStorage.getItem("nome") ||
+    sessionStorage.getItem("username") ||
+    ""
+  );
+}
 
 export function AuxilioCrecheForm() {
   const [cpf, setCpf] = useState("");
@@ -28,6 +47,32 @@ export function AuxilioCrecheForm() {
     return valorPagoNum <= AUXILIO_CRECHE_TETO ? valorPagoNum : AUXILIO_CRECHE_TETO;
   }, [valorPago]);
   const { loading, erro, info, buscar } = useAssociadoPorCpf();
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function preencherFuncionarioLogado() {
+      const nomeUsuarioLogado = getNomeUsuarioLogado();
+      if (!nomeUsuarioLogado) return;
+
+      try {
+        const funcionario = await buscarFuncionarioPorNome(nomeUsuarioLogado);
+        if (!ativo) return;
+
+        setCpf(String(funcionario?.NR_CPF || "").replace(/\D/g, ""));
+        setNome(funcionario?.NM_FUNCIONARIO || nomeUsuarioLogado);
+        setMatricula(String(funcionario?.NR_MATRICULA || ""));
+      } catch (error) {
+        console.warn("Não foi possível preencher os dados do funcionário logado:", error);
+      }
+    }
+
+    preencherFuncionarioLogado();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const onBuscar = async () => {
     const r = await buscar(cpf);
