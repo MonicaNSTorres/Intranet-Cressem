@@ -24,6 +24,8 @@ type PareceresAtuais = {
 
   parecerDiretoria?: string;
 
+  conselho?: string;
+
   parecerConselho?: string;
 
   parecerConselhoFinal?: string;
@@ -914,6 +916,8 @@ async function desenharDocumento(
     [campo("Diretoria", p.diretoria || r.NM_DIRETORIA)],
 
     [campo("Parecer da diretoria", p.parecerDiretoria || r.DESC_PARECER_ESCRITO_DIRETORIA)],
+
+    [campo("Conselho", p.conselho || r.NM_CONSELHO)],
 
     [campo("Parecer do conselho", p.parecerConselho || r.DESC_PARECER_ESCRITO_CONSELHO)],
 

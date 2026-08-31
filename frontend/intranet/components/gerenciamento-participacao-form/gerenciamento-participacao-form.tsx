@@ -444,6 +444,8 @@ export function GerenciamentoParticipacaoForm() {
 
   const [inputParecerDiretoria, setInputParecerDiretoria] = useState("");
 
+  const [inputNomeConselho, setInputNomeConselho] = useState("");
+
   const [inputConselho, setInputConselho] = useState("");
 
   const [inputConselhoFinal, setInputConselhoFinal] = useState("");
@@ -766,6 +768,14 @@ export function GerenciamentoParticipacaoForm() {
 
       setInputParecerDiretoria(completo.DESC_PARECER_ESCRITO_DIRETORIA || "");
 
+      setInputNomeConselho(
+
+        completo.NM_CONSELHO ||
+
+        (funcionarioTipo?.TIPO === "conselho" ? funcionarioTipo.NM_FUNCIONARIO : "")
+
+      );
+
       setInputConselho(completo.DESC_PARECER_ESCRITO_CONSELHO || "");
 
       setInputConselhoFinal(completo.NM_PARECER_CONSELHO || "");
@@ -940,6 +950,8 @@ export function GerenciamentoParticipacaoForm() {
 
         NM_DIRETORIA: existente.NM_DIRETORIA,
 
+        NM_CONSELHO: existente.NM_CONSELHO,
+
         NM_PARECER_CONSELHO: existente.NM_PARECER_CONSELHO,
 
         DESC_PARECER_ESCRITO_CONSELHO: existente.DESC_PARECER_ESCRITO_CONSELHO,
@@ -1005,6 +1017,8 @@ export function GerenciamentoParticipacaoForm() {
             NM_SUGESTAO_PARTICIPANTES: inputSugestao,
 
             NM_PARECER_CONSELHO: inputConselhoFinal,
+
+            NM_CONSELHO: funcionarioTipo.NM_FUNCIONARIO,
 
             DESC_PARECER_ESCRITO_CONSELHO: inputConselho,
 
@@ -1325,6 +1339,8 @@ export function GerenciamentoParticipacaoForm() {
         diretoria: inputDiretoria,
 
         parecerDiretoria: inputParecerDiretoria,
+
+        conselho: inputNomeConselho,
 
         parecerConselho: inputConselho,
 
@@ -2311,6 +2327,8 @@ export function GerenciamentoParticipacaoForm() {
                 maxLength={285}
 
               />
+
+              <CampoInput label="Nome Conselho" value={inputNomeConselho} readOnly />
 
               <CampoTextarea
 

@@ -1260,6 +1260,7 @@ export const patrocinioController = {
             p.DESC_PARECER_MARKETING,
             p.NM_DIRETORIA,
             p.DESC_PARECER_ESCRITO_DIRETORIA,
+            p.NM_CONSELHO,
             p.NM_PARECER_CONSELHO,
             p.DESC_PARECER_ESCRITO_CONSELHO,
             p.NM_GERENTE_EVENTO,
@@ -1353,6 +1354,7 @@ export const patrocinioController = {
             p.DESC_PARECER_DIRETORIA,
             p.DESC_PARECER_ESCRITO_DIRETORIA,
             p.NM_DIRETORIA,
+            p.NM_CONSELHO,
             p.NM_PARECER_CONSELHO,
             p.DESC_PARECER_ESCRITO_CONSELHO
           FROM DBACRESSEM.PATROCINIO p
@@ -1497,6 +1499,7 @@ export const patrocinioController = {
           NM_MARKETING = COALESCE(:NM_MARKETING, NM_MARKETING),
           DESC_PARECER_ESCRITO_DIRETORIA = COALESCE(:DESC_PARECER_ESCRITO_DIRETORIA, DESC_PARECER_ESCRITO_DIRETORIA),
           NM_DIRETORIA = COALESCE(:NM_DIRETORIA, NM_DIRETORIA),
+          NM_CONSELHO = COALESCE(:NM_CONSELHO, NM_CONSELHO),
           NM_PARECER_CONSELHO = COALESCE(:NM_PARECER_CONSELHO, NM_PARECER_CONSELHO),
           DESC_PARECER_ESCRITO_CONSELHO = COALESCE(:DESC_PARECER_ESCRITO_CONSELHO, DESC_PARECER_ESCRITO_CONSELHO),
           NM_GERENTE_EVENTO = COALESCE(:NM_GERENTE_EVENTO, NM_GERENTE_EVENTO),
@@ -1522,6 +1525,7 @@ export const patrocinioController = {
                         body.DESC_PARECER_ESCRITO_DIRETORIA
                     ),
                     NM_DIRETORIA: tipoUsuario.TIPO === "diretoria" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_DIRETORIA),
+                    NM_CONSELHO: tipoUsuario.TIPO === "conselho" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_CONSELHO),
                     NM_PARECER_CONSELHO: toNullableString(body.NM_PARECER_CONSELHO),
                     DESC_PARECER_ESCRITO_CONSELHO: toNullableString(
                         body.DESC_PARECER_ESCRITO_CONSELHO
@@ -1726,6 +1730,7 @@ export const patrocinioController = {
             p.NM_DIRETORIA,
             p.DESC_PARECER_DIRETORIA,
             p.DESC_PARECER_ESCRITO_DIRETORIA,
+            p.NM_CONSELHO,
             p.NM_PARECER_CONSELHO,
             p.DESC_PARECER_ESCRITO_CONSELHO,
             p.NM_GERENTE_EVENTO,
@@ -1811,6 +1816,7 @@ export const patrocinioController = {
                 { header: "Diretoria", valor: (row) => row.NM_DIRETORIA || "" },
                 { header: "Parecer da Diretoria", valor: (row) => row.DESC_PARECER_DIRETORIA || "" },
                 { header: "Parecer Escrito da Diretoria", valor: (row) => row.DESC_PARECER_ESCRITO_DIRETORIA || "" },
+                { header: "Conselheiro(a)", valor: (row) => row.NM_CONSELHO || "" },
                 { header: "Parecer do Conselho", valor: (row) => row.NM_PARECER_CONSELHO || "" },
                 { header: "Parecer Escrito do Conselho", valor: (row) => row.DESC_PARECER_ESCRITO_CONSELHO || "" },
                 { header: "Responsável pelo Evento", valor: (row) => row.NM_GERENTE_EVENTO || "" },

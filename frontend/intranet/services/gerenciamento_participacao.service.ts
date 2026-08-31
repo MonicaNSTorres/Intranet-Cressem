@@ -43,6 +43,7 @@ export type PatrocinioItem = {
   DESC_PARECER_MARKETING: string;
   NM_DIRETORIA: string;
   DESC_PARECER_ESCRITO_DIRETORIA: string;
+  NM_CONSELHO: string;
   NM_PARECER_CONSELHO: string;
   DESC_PARECER_ESCRITO_CONSELHO: string;
   NM_GERENTE_EVENTO: string;
