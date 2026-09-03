@@ -194,14 +194,14 @@ export default function AniversariantesPage() {
     return (
         <div className="p-5 lg:p-8">
             <div className="mb-6">
-                <div className="mb-4">
+                <div>
                     <BackButton />
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-third text-primary shadow-sm">
-                        <FaBirthdayCake size={22} />
-                    </div>
+                    <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700">
+                            <FaBirthdayCake size={16} />
+                        </div>
 
                     <div className="min-w-0">
                         <h1 className="truncate text-2xl font-bold text-[var(--title)]">

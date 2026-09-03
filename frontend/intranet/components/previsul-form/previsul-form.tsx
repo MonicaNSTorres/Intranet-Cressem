@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { formatCpfView, monetizarDigitacao, parseBRL, fmtBRL, hojeBR } from "@/utils/br";
@@ -688,4 +688,3 @@ export function PrevisulForm() {
         </div>
     );
 }
-

@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 
 import { useState, useMemo } from "react";
 import { formatCpfView } from "@/utils/br";
@@ -272,4 +272,3 @@ export function AdendoContratualForm() {
     </div>
   );
 }
-

@@ -1680,4 +1680,3 @@ export function ResgateCapitalForm() {
     </div>
   );
 }
-
