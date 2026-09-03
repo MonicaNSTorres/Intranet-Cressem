@@ -281,7 +281,7 @@ export function GerenciamentoSubsidioAuditivoForm() {
     [gruposUsuario, isTesteFinanceiro]
   );
   const isDiretoria = useMemo(
-    () => isTesteDiretoria || gruposUsuario.includes(AD_GROUPS.GERENCIA_DIRETORIA),
+    () => isTesteDiretoria || gruposUsuario.includes(AD_GROUPS.DIRETORIA),
     [gruposUsuario, isTesteDiretoria]
   );
   const isSolicitanteAtual = useMemo(() => {
@@ -859,6 +859,3 @@ export function GerenciamentoSubsidioAuditivoForm() {
     </div>
   );
 }
-
-
-

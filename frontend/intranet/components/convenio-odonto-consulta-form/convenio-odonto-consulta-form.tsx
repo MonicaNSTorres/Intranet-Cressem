@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useMemo, useState } from "react";
-import { FaDownload, FaEdit, FaInfoCircle, FaPlus, FaSave, FaSearch } from "react-icons/fa";
+import { FaDownload, FaEdit, FaInfoCircle, FaPlus, FaSave, FaSearch, FaTimes } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import {
   buscarConvenioPorCpfTitular,
@@ -73,7 +73,22 @@ function todayISO() {
 }
 
 const inputBase =
-  "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
+
+const buttonPrimary =
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60";
+
+const buttonSecondary =
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60";
+
+const buttonAuxiliary =
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60";
+
+const buttonInfoCompact =
+  "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-sm transition hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60";
+
+const buttonEditCompact =
+  "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-secondary/30 bg-secondary/10 text-secondary shadow-sm transition hover:bg-secondary hover:text-white disabled:cursor-not-allowed disabled:opacity-60";
 
 function Field({
   label,
@@ -100,11 +115,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-emerald-200 bg-linear-to-r from-[#79B729] to-[#8ED12F] px-5 py-3">
-        <h3 className="text-sm font-bold text-white">{title}</h3>
-      </div>
-      <div className="p-5">{children}</div>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+        {title}
+      </h3>
+      {children}
     </section>
   );
 }
@@ -122,19 +137,23 @@ function InfoModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h3 className="text-lg font-semibold text-slate-800">Outras Informações</h3>
+      <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 px-5 py-4">
+          <div>
+            <h3 className="text-lg font-bold text-[var(--title)]">Outras Informações</h3>
+            <p className="mt-1 text-sm text-slate-500">Dados complementares do conveniado.</p>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-3 py-1 text-sm font-medium text-slate-500 hover:bg-slate-100"
+            aria-label="Fechar modal"
+            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-[var(--text-darken-placeholder)] bg-white text-slate-600 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
           >
-            Fechar
+            <FaTimes size={14} />
           </button>
         </div>
 
-        <div className="space-y-4 p-5">
+        <div className="space-y-4 overflow-y-auto p-5">
           <Field label="Nascimento">
             <input
               readOnly
@@ -331,22 +350,24 @@ function EditModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h3 className="text-lg font-semibold text-slate-800">
-            Editar Conveniado
-          </h3>
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50/70 px-5 py-4">
+          <div>
+            <h3 className="text-lg font-bold text-[var(--title)]">Editar Conveniado</h3>
+            <p className="mt-1 text-sm text-slate-500">Atualize os dados do conveniado selecionado.</p>
+          </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-3 py-1 text-sm font-medium text-slate-500 hover:bg-slate-100"
+            aria-label="Fechar modal"
+            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-[var(--text-darken-placeholder)] bg-white text-slate-600 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
           >
-            Fechar
+            <FaTimes size={14} />
           </button>
         </div>
 
-        <div className="space-y-4 p-5">
+        <div className="space-y-4 overflow-y-auto p-5">
           {erro && (
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
               {erro}
@@ -371,9 +392,9 @@ function EditModal({
                 <button
                   type="button"
                   onClick={() => setAtivo((old) => !old)}
-                  className={`inline-flex h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition ${ativo
-                    ? "bg-emerald-600 text-white"
-                    : "border border-slate-300 bg-white text-slate-700"
+                  className={`inline-flex h-10 w-full cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold shadow-sm transition ${ativo
+                    ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary hover:text-white"
+                    : "border-fourth/30 bg-fourth/10 text-fourth hover:bg-fourth hover:text-white"
                     }`}
                 >
                   {ativo ? "Ativo" : "Inativo"}
@@ -447,7 +468,7 @@ function EditModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+              className={buttonSecondary}
             >
               Cancelar
             </button>
@@ -456,7 +477,7 @@ function EditModal({
               type="button"
               onClick={salvarEdicao}
               disabled={loadingSalvar}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className={buttonPrimary}
             >
               <FaSave />
               {loadingSalvar ? "Salvando..." : "Salvar Alterações"}
@@ -602,8 +623,15 @@ export function ConvenioOdontoConsultaForm() {
 
   return (
     <>
-      <div className="mx-auto w-full min-w-225 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
+      <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#79B729]" />
+        <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-[var(--title)]">Consulta do titular</h2>
+            <p className="mt-1 text-sm text-[var(--paragraph)]">Informe o CPF e escolha o filtro de visualização para consultar os conveniados.</p>
+          </div>
+
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_260px_220px]">
             <Field label="CPF do titular">
               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_150px]">
@@ -615,7 +643,10 @@ export function ConvenioOdontoConsultaForm() {
                   inputMode="numeric"
                   maxLength={14}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") onBuscar();
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void onBuscar();
+                    }
                   }}
                 />
 
@@ -623,7 +654,7 @@ export function ConvenioOdontoConsultaForm() {
                   type="button"
                   onClick={onBuscar}
                   disabled={loadingBuscar}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={buttonPrimary}
                 >
                   <FaSearch />
                   {loadingBuscar ? "Buscando..." : "Buscar"}
@@ -643,7 +674,7 @@ export function ConvenioOdontoConsultaForm() {
               <button
                 type="button"
                 onClick={irParaCadastroDependente}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-5 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100"
+                className={`${buttonAuxiliary} w-full`}
               >
                 <FaPlus />
                 Cadastrar dependente
@@ -658,7 +689,7 @@ export function ConvenioOdontoConsultaForm() {
                   {erro}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                <div className="rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm font-medium text-[#006f65]">
                   {info}
                 </div>
               )}
@@ -679,7 +710,7 @@ export function ConvenioOdontoConsultaForm() {
                 value="1"
                 checked={mostrarApenasAtivos === "1"}
                 onChange={() => setMostrarApenasAtivos("1")}
-                className="h-4 w-4 accent-emerald-600"
+                className="h-4 w-4 accent-primary"
               />
               Sim
             </label>
@@ -691,7 +722,7 @@ export function ConvenioOdontoConsultaForm() {
                 value="0"
                 checked={mostrarApenasAtivos === "0"}
                 onChange={() => setMostrarApenasAtivos("0")}
-                className="h-4 w-4 accent-emerald-600"
+                className="h-4 w-4 accent-primary"
               />
               Não
             </label>
@@ -701,7 +732,7 @@ export function ConvenioOdontoConsultaForm() {
         {itemsFiltrados.length > 0 && (
           <>
             <Section title="Conveniados">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
                 <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl">
                   <thead>
                     <tr className="bg-slate-100 text-left text-xs font-bold uppercase tracking-[0.03em] text-slate-600">
@@ -734,7 +765,7 @@ export function ConvenioOdontoConsultaForm() {
                         </td>
                         <td className="border-b border-slate-100 px-4 py-3">
                           {String(item.DESC_PARENTESCO || "").trim().toUpperCase() === "TITULAR" ? (
-                            <span className="inline-flex rounded-full border-yellow-200 bg-yellow-50  text-yellow-700 hover:bg-yellow-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+                            <span className="inline-flex rounded-full border border-third/40 bg-third/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--title)]">
                               {item.DESC_PARENTESCO}
                             </span>
                           ) : (
@@ -758,7 +789,7 @@ export function ConvenioOdontoConsultaForm() {
                             <button
                               type="button"
                               onClick={() => abrirModal(item)}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-sky-600 text-white shadow-sm transition hover:bg-sky-700"
+                              className={buttonInfoCompact}
                               title="Ver mais informações"
                             >
                               <FaInfoCircle size={14} />
@@ -767,7 +798,7 @@ export function ConvenioOdontoConsultaForm() {
                             <button
                               type="button"
                               onClick={() => abrirModalEdicao(item)}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm transition hover:bg-amber-600"
+                              className={buttonEditCompact}
                               title="Editar conveniado"
                             >
                               <FaEdit size={14} />
@@ -796,7 +827,7 @@ export function ConvenioOdontoConsultaForm() {
                     type="button"
                     onClick={onBaixarCsv}
                     disabled={loadingBaixar}
-                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-5 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <FaDownload />
                     {loadingBaixar ? "Baixando..." : "Relatório Contratantes"}
@@ -806,6 +837,7 @@ export function ConvenioOdontoConsultaForm() {
             </Section>
           </>
         )}
+        </div>
       </div>
 
       <InfoModal open={openModal} onClose={fecharModal} item={itemModal} />

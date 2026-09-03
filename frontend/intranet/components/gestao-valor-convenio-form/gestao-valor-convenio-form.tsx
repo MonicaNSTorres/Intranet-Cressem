@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useMemo, useState } from "react";
-import { FaEdit, FaSave } from "react-icons/fa";
+import { FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import {
   atualizarFatorAjusteOdonto,
   listarFatoresAjusteOdonto,
@@ -53,7 +53,7 @@ function convenioLabel(item: FatorAjusteOdontoItem) {
 }
 
 const inputBase =
-  "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 function Section({
   title,
@@ -63,11 +63,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-emerald-200 bg-linear-to-r from-[#79B729] to-[#8ED12F] px-5 py-3">
-        <h3 className="text-sm font-bold text-white">{title}</h3>
-      </div>
-      <div className="p-5">{children}</div>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+        {title}
+      </h3>
+      {children}
     </section>
   );
 }
@@ -124,16 +124,22 @@ function EditarConvenioModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h3 className="text-lg font-semibold text-slate-800">Editar informações</h3>
+      <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 px-5 py-4">
+          <div>
+            <h3 className="text-lg font-bold text-[var(--title)]">Editar informações</h3>
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
+              Atualize o valor e a data de vigência do plano selecionado.
+            </p>
+          </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-3 py-1 text-sm font-medium text-slate-500 hover:bg-slate-100 cursor-pointer"
+            aria-label="Fechar modal"
+            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white"
           >
-            Fechar
+            <FaTimes size={14} />
           </button>
         </div>
 
@@ -168,23 +174,15 @@ function EditarConvenioModal({
           </Field>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-slate-200 px-5 py-4">
+        <div className="flex justify-end border-t border-slate-200 px-5 py-4">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
             <FaSave />
             {saving ? "Salvando..." : "Editar"}
-          </button>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 cursor-pointer"
-          >
-            Fechar
           </button>
         </div>
       </div>
@@ -288,13 +286,13 @@ export function GestaoValorConvenioForm() {
 
   return (
     <>
-      <div className="mx-auto w-full min-w-225 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
+      <div className="w-full space-y-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="mb-2">
-            <h2 className="text-xl font-bold text-slate-800">
+          <div>
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
               Planos e valores vigentes
             </h2>
-            <p className="text-sm text-slate-500">
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
               Edite os fatores de ajuste de cada plano odontológico.
             </p>
           </div>
@@ -306,7 +304,7 @@ export function GestaoValorConvenioForm() {
                   {erro}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                <div className="rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm font-medium text-[#006f65]">
                   {info}
                 </div>
               )}
@@ -324,10 +322,10 @@ export function GestaoValorConvenioForm() {
               Nenhum convênio encontrado.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200">
               <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl">
                 <thead>
-                  <tr className="bg-slate-100 text-left text-xs font-bold uppercase tracking-[0.03em] text-slate-600">
+                  <tr className="bg-primary/10 text-left text-xs font-bold uppercase tracking-[0.03em] text-[#006f65]">
                     <th className="border-b border-slate-200 px-4 py-3">Convênio</th>
                     <th className="border-b border-slate-200 px-4 py-3">Plano</th>
                     <th className="border-b border-slate-200 px-4 py-3">Valor</th>
@@ -362,7 +360,7 @@ export function GestaoValorConvenioForm() {
                         <button
                           type="button"
                           onClick={() => abrirModal(item)}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-third cursor-pointer"
+                          className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-secondary/30 bg-secondary/10 px-4 text-xs font-semibold text-secondary shadow-sm transition hover:bg-secondary hover:text-white"
                         >
                           <FaEdit size={13} />
                           Editar

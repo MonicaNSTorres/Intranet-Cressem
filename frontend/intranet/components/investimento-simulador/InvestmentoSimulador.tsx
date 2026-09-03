@@ -57,9 +57,11 @@ export default function InvestmentSimulator() {
           selic: json?.selic?.value ?? prev.selic,
           poupanca: json?.poupanca?.value ?? prev.poupanca,
         }));
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!mounted) return;
-        setIndexesError(e?.message || "Falha ao carregar indicadores.");
+        setIndexesError(
+          e instanceof Error ? e.message : "Falha ao carregar indicadores."
+        );
       } finally {
         if (!mounted) return;
         setLoadingIndexes(false);
@@ -77,7 +79,7 @@ export default function InvestmentSimulator() {
   }, [investment.poupanca, investment.di]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
       <div className="lg:col-span-4">
         <InvestmentInput
           value={investment}

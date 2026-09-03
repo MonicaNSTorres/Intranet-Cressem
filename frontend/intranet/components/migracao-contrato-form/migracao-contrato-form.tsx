@@ -2,17 +2,14 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useState } from "react";
-import { FaFileAlt, FaTrash } from "react-icons/fa";
-import { formatCpfCnpjView, onlyCpfCnpjChars, onlyDigits } from "@/utils/br";
+import { FaFileAlt, FaSearch, FaTrash } from "react-icons/fa";
+import { formatCpfCnpjView, onlyCpfCnpjChars } from "@/utils/br";
 import {
   buscarMigracaoContratoAssociadoPorCpf,
   type BuscarMigracaoContratoAssociadoResponse,
   type MigracaoContratoLinhaPayload,
 } from "@/services/migracao_contrato.service";
 import { gerarArquivoMigracaoContratoTxt } from "@/lib/txt/gerarArquivoMigracaoContrato";
-import { SearchForm } from "@/components/ui/search-form";
-import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
 
 type LinhaMigracao = {
   id: string;
@@ -24,6 +21,15 @@ type LinhaMigracao = {
   situacao: string;
   matricula: string;
 };
+
+const INPUT_CLASS =
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
+
+const BUTTON_PRIMARY_CLASS =
+  "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60";
+
+const BUTTON_REMOVE_CLASS =
+  "inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-fourth/30 bg-fourth/10 text-fourth shadow-sm transition hover:bg-fourth hover:text-white disabled:cursor-not-allowed disabled:opacity-60";
 
 function formatCurrencyInput(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -66,10 +72,10 @@ function mapResponseToLinha(
     salario:
       typeof data.VL_RENDA_BRUTA === "number"
         ? data.VL_RENDA_BRUTA.toLocaleString("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-          minimumFractionDigits: 2,
-        })
+            style: "currency",
+            currency: "BRL",
+            minimumFractionDigits: 2,
+          })
         : "",
     admissao: data.DT_ADMISSAO || "",
     cpf: data.NR_CPF_CNPJ || "",
@@ -156,14 +162,14 @@ export function MigracaoContratoForm() {
       prev.map((linha) =>
         linha.id === id
           ? {
-            ...linha,
-            [field]:
-              field === "cpf"
-                ? formatCpfCnpjView(value)
-                : field === "salario"
-                  ? formatCurrencyInput(value)
-                  : value,
-          }
+              ...linha,
+              [field]:
+                field === "cpf"
+                  ? formatCpfCnpjView(value)
+                  : field === "salario"
+                    ? formatCurrencyInput(value)
+                    : value,
+            }
           : linha
       )
     );
@@ -264,176 +270,224 @@ export function MigracaoContratoForm() {
   };
 
   return (
-    <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <SearchForm onSearch={onBuscar}>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            CPF do associado(a)
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-            <SearchInput
-              value={formatCpfCnpjView(cpfBusca)}
-              onChange={(e) => setCpfBusca(onlyCpfCnpjChars(e.target.value).slice(0, 14))}
-              placeholder="CPF/CNPJ"
-              maxLength={18}
-            />
-            <SearchButton loading={loadingBusca} label="Pesquisar" />
+    <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#79B729]" />
+
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+        <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 shadow-sm">
+          <div className="mb-4">
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+              Buscar associado
+            </h2>
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
+              Informe o CPF/CNPJ para carregar os dados e adicionar o associado à migração.
+            </p>
           </div>
 
-          {erro && (
-            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-              {erro}
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void onBuscar();
+            }}
+            className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"
+          >
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                CPF do associado(a)
+              </label>
+              <input
+                value={formatCpfCnpjView(cpfBusca)}
+                onChange={(event) =>
+                  setCpfBusca(onlyCpfCnpjChars(event.target.value).slice(0, 14))
+                }
+                placeholder="CPF/CNPJ"
+                maxLength={18}
+                className={INPUT_CLASS}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loadingBusca}
+              className={`${BUTTON_PRIMARY_CLASS} w-full md:w-auto`}
+            >
+              <FaSearch size={13} />
+              {loadingBusca ? "Pesquisando..." : "Pesquisar"}
+            </button>
+          </form>
+
+          {(erro || info) && (
+            <div className="mt-4">
+              {erro ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  {erro}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-medium text-[#006f65]">
+                  {info}
+                </div>
+              )}
             </div>
           )}
+        </section>
 
-          {info && (
-            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-              {info}
+        <section>
+          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+                Associados adicionados
+              </h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Revise os dados antes de gerar o arquivo de migração.
+              </p>
             </div>
-          )}
-        </div>
-      </SearchForm>
 
-      <div className="mt-6 overflow-x-auto">
-        <table className="w-full min-w-[1000px] border-separate border-spacing-0">
-          <thead>
-            <tr>
-              <th className="text-left text-xs font-semibold text-gray-600 px-3 py-3 bg-gray-50 border-b">
-                Nascimento
-              </th>
-              <th className="text-left text-xs font-semibold text-gray-600 px-3 py-3 bg-gray-50 border-b">
-                Cargo
-              </th>
-              <th className="text-left text-xs font-semibold text-gray-600 px-3 py-3 bg-gray-50 border-b">
-                Salário
-              </th>
-              <th className="text-left text-xs font-semibold text-gray-600 px-3 py-3 bg-gray-50 border-b">
-                Admissão
-              </th>
-              <th className="text-left text-xs font-semibold text-gray-600 px-3 py-3 bg-gray-50 border-b">
-                CPF
-              </th>
-              <th className="text-left text-xs font-semibold text-gray-600 px-3 py-3 bg-gray-50 border-b">
-                Situação
-              </th>
-              <th className="text-left text-xs font-semibold text-gray-600 px-3 py-3 bg-gray-50 border-b">
-                Nova Matrícula
-              </th>
-              <th className="text-center text-xs font-semibold text-gray-600 px-3 py-3 bg-gray-50 border-b w-[80px]">
-                Ação
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={8}
-                  className="px-3 py-6 text-sm text-gray-500 text-center border-b"
-                >
-                  Nenhum associado adicionado ainda.
-                </td>
-              </tr>
-            ) : (
-              linhas.map((linha) => (
-                <tr key={linha.id}>
-                  <td className="px-3 py-3 border-b">
-                    <input
-                      type="date"
-                      value={linha.nascimento}
-                      onChange={(e) =>
-                        updateLinha(linha.id, "nascimento", e.target.value)
-                      }
-                      className="w-full border px-3 py-2 rounded"
-                    />
-                  </td>
-                  <td className="px-3 py-3 border-b">
-                    <input
-                      value={linha.cargo}
-                      onChange={(e) =>
-                        updateLinha(linha.id, "cargo", e.target.value)
-                      }
-                      className="w-full border px-3 py-2 rounded"
-                    />
-                  </td>
-                  <td className="px-3 py-3 border-b">
-                    <input
-                      value={linha.salario}
-                      onChange={(e) =>
-                        updateLinha(linha.id, "salario", e.target.value)
-                      }
-                      className="w-full border px-3 py-2 rounded text-right"
-                      placeholder="R$ 0,00"
-                    />
-                  </td>
-                  <td className="px-3 py-3 border-b">
-                    <input
-                      type="date"
-                      value={linha.admissao}
-                      onChange={(e) =>
-                        updateLinha(linha.id, "admissao", e.target.value)
-                      }
-                      className="w-full border px-3 py-2 rounded"
-                    />
-                  </td>
-                  <td className="px-3 py-3 border-b">
-                    <input
-                      value={formatCpfCnpjView(linha.cpf)}
-                      onChange={(e) =>
-                        updateLinha(linha.id, "cpf", e.target.value)
-                      }
-                      className="w-full border px-3 py-2 rounded"
-                      maxLength={14}
-                    />
-                  </td>
-                  <td className="px-3 py-3 border-b">
-                    <input
-                      value={linha.situacao}
-                      onChange={(e) =>
-                        updateLinha(linha.id, "situacao", e.target.value)
-                      }
-                      className="w-full border px-3 py-2 rounded"
-                    />
-                  </td>
-                  <td className="px-3 py-3 border-b">
-                    <input
-                      value={linha.matricula}
-                      onChange={(e) =>
-                        updateLinha(linha.id, "matricula", e.target.value)
-                      }
-                      className="w-full border px-3 py-2 rounded"
-                    />
-                  </td>
-                  <td className="px-3 py-3 border-b text-center">
-                    <button
-                      onClick={() => removerLinha(linha.id)}
-                      className="inline-flex items-center justify-center h-10 w-10 rounded bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
-                      title="Excluir"
-                    >
-                      <FaTrash size={14} />
-                    </button>
-                  </td>
+            <span className="text-xs font-semibold text-slate-500">
+              {linhas.length} associado(s)
+            </span>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <table className="w-full min-w-[1120px] border-separate border-spacing-0 text-sm">
+              <thead>
+                <tr className="bg-slate-50">
+                  <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                    Nascimento
+                  </th>
+                  <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                    Cargo
+                  </th>
+                  <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                    Salário
+                  </th>
+                  <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                    Admissão
+                  </th>
+                  <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                    CPF
+                  </th>
+                  <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                    Situação
+                  </th>
+                  <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                    Nova Matrícula
+                  </th>
+                  <th className="w-[90px] border-b border-slate-200 px-3 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
+                    Ação
+                  </th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
 
-      <div className="pt-5 border-t mt-6 flex items-center justify-end">
-        <button
-          type="button"
-          onClick={gerar}
-          disabled={!formularioValido || loadingGerar}
-          className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
-    ${formularioValido && !loadingGerar
-              ? "bg-secondary hover:bg-primary cursor-pointer"
-              : "bg-gray-300 cursor-not-allowed"
-            }`}
-        >
-          <FaFileAlt size={14} />
-          {loadingGerar ? "Gerando..." : "Gerar arquivo"}
-        </button>
+              <tbody className="bg-white">
+                {linhas.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-10 text-center text-sm text-slate-500"
+                    >
+                      Nenhum associado adicionado ainda.
+                    </td>
+                  </tr>
+                ) : (
+                  linhas.map((linha) => (
+                    <tr key={linha.id} className="transition hover:bg-slate-50/70">
+                      <td className="border-b border-slate-100 px-3 py-3">
+                        <input
+                          type="date"
+                          value={linha.nascimento}
+                          onChange={(event) =>
+                            updateLinha(linha.id, "nascimento", event.target.value)
+                          }
+                          className={INPUT_CLASS}
+                        />
+                      </td>
+                      <td className="border-b border-slate-100 px-3 py-3">
+                        <input
+                          value={linha.cargo}
+                          onChange={(event) =>
+                            updateLinha(linha.id, "cargo", event.target.value)
+                          }
+                          className={INPUT_CLASS}
+                        />
+                      </td>
+                      <td className="border-b border-slate-100 px-3 py-3">
+                        <input
+                          value={linha.salario}
+                          onChange={(event) =>
+                            updateLinha(linha.id, "salario", event.target.value)
+                          }
+                          className={`${INPUT_CLASS} text-right`}
+                          placeholder="R$ 0,00"
+                        />
+                      </td>
+                      <td className="border-b border-slate-100 px-3 py-3">
+                        <input
+                          type="date"
+                          value={linha.admissao}
+                          onChange={(event) =>
+                            updateLinha(linha.id, "admissao", event.target.value)
+                          }
+                          className={INPUT_CLASS}
+                        />
+                      </td>
+                      <td className="border-b border-slate-100 px-3 py-3">
+                        <input
+                          value={formatCpfCnpjView(linha.cpf)}
+                          onChange={(event) =>
+                            updateLinha(linha.id, "cpf", event.target.value)
+                          }
+                          className={INPUT_CLASS}
+                          maxLength={14}
+                        />
+                      </td>
+                      <td className="border-b border-slate-100 px-3 py-3">
+                        <input
+                          value={linha.situacao}
+                          onChange={(event) =>
+                            updateLinha(linha.id, "situacao", event.target.value)
+                          }
+                          className={INPUT_CLASS}
+                        />
+                      </td>
+                      <td className="border-b border-slate-100 px-3 py-3">
+                        <input
+                          value={linha.matricula}
+                          onChange={(event) =>
+                            updateLinha(linha.id, "matricula", event.target.value)
+                          }
+                          className={INPUT_CLASS}
+                        />
+                      </td>
+                      <td className="border-b border-slate-100 px-3 py-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => removerLinha(linha.id)}
+                          className={BUTTON_REMOVE_CLASS}
+                          title="Remover associado"
+                          aria-label="Remover associado"
+                        >
+                          <FaTrash size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div className="flex items-center justify-end border-t border-slate-200 pt-5">
+          <button
+            type="button"
+            onClick={gerar}
+            disabled={!formularioValido || loadingGerar}
+            className={BUTTON_PRIMARY_CLASS}
+          >
+            <FaFileAlt size={14} />
+            {loadingGerar ? "Gerando..." : "Gerar arquivo"}
+          </button>
+        </div>
       </div>
     </div>
   );

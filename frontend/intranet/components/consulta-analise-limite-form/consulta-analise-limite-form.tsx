@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FaSearch,
   FaEraser,
@@ -11,9 +11,8 @@ import {
   FaSignature,
   FaDownload,
   FaUpload,
-  FaFilePdf,
-  FaCalendarAlt,
-  FaUserTie,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
 import {
   listarAnalisesLimite,
@@ -78,7 +77,7 @@ type ApiResponse = {
 };
 
 const inputBase =
-  "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10";
 
 function formatDateBR(date?: string | null) {
   if (!date) return "";
@@ -132,10 +131,6 @@ function primeiroUltimoNome(name?: string) {
   const partes = name.trim().split(/\s+/).filter(Boolean);
   if (partes.length <= 1) return name;
   return `${partes[0]} ${partes[partes.length - 1]}`;
-}
-
-function onlyDigits(value: string) {
-  return String(value || "").replace(/\D/g, "");
 }
 
 function onlyCpfCnpjChars(value: string) {
@@ -204,33 +199,6 @@ function toNumberValue(value: any): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function buildPagination(current: number, total: number) {
-  const pages: (number | string)[] = [];
-  const range = 2;
-
-  if (total <= 1) return [1];
-
-  if (current > 1) {
-    pages.push(1);
-    if (current > 3) pages.push("...");
-  }
-
-  for (
-    let i = Math.max(1, current - range);
-    i <= Math.min(total, current + range);
-    i++
-  ) {
-    if (!pages.includes(i)) pages.push(i);
-  }
-
-  if (current < total) {
-    if (current < total - 2) pages.push("...");
-    if (!pages.includes(total)) pages.push(total);
-  }
-
-  return pages;
-}
-
 function Field({
   label,
   value,
@@ -244,11 +212,11 @@ function Field({
 }) {
   return (
     <div className={colSpan || ""}>
-      <label className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.03em] text-slate-600">
+      <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-600">
         {label}
       </label>
       <div
-        className={`rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm ${multiline ? "min-h-[90px] whitespace-pre-wrap" : ""
+        className={`rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3 text-sm font-semibold text-slate-800 shadow-sm ${multiline ? "min-h-[96px] whitespace-pre-wrap" : ""
           }`}
       >
         {value || "-"}
@@ -265,9 +233,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-emerald-200 bg-gradient-to-r from-[#79B729] to-[#8ED12F] px-5 py-3">
-        <h3 className="text-sm font-bold text-white">{title}</h3>
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-100 bg-white px-5 py-4">
+        <h3 className="flex items-center gap-2 text-sm font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
+          {title}
+        </h3>
       </div>
       <div className="p-5">{children}</div>
     </section>
@@ -278,12 +248,94 @@ function FieldGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{children}</div>;
 }
 
+function Pagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  limit,
+  loading,
+  onChange,
+  onLimitChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  limit: number;
+  loading: boolean;
+  onChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
+}) {
+  const primeiroRegistro = totalItems === 0 ? 0 : (currentPage - 1) * limit + 1;
+  const ultimoRegistro = Math.min(currentPage * limit, totalItems);
+
+  return (
+    <div className="border-t border-slate-100 bg-white px-4 py-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <p className="text-sm text-slate-500">
+            Mostrando{" "}
+            <span className="font-semibold text-slate-700">
+              {primeiroRegistro}
+            </span>{" "}
+            até{" "}
+            <span className="font-semibold text-slate-700">
+              {ultimoRegistro}
+            </span>{" "}
+            de{" "}
+            <span className="font-semibold text-slate-700">{totalItems}</span>{" "}
+            análise(s)
+          </p>
+
+          <select
+            value={limit}
+            onChange={(event) => onLimitChange(Number(event.target.value))}
+            disabled={loading}
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <option value={10}>10 por página</option>
+            <option value={20}>20 por página</option>
+            <option value={50}>50 por página</option>
+            <option value={100}>100 por página</option>
+          </select>
+        </div>
+
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(currentPage - 1, 1))}
+            disabled={currentPage <= 1 || loading}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FaChevronLeft />
+            Anterior
+          </button>
+
+          <span className="rounded-xl bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+            Página {currentPage} de {totalPages}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => onChange(Math.min(currentPage + 1, totalPages))}
+            disabled={currentPage >= totalPages || loading}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Próxima
+            <FaChevronRight />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ConsultaAnaliseLimiteForm() {
   const [txtAnalise, setTxtAnalise] = useState("");
   const [txtDia, setTxtDia] = useState("");
 
   const [analises, setAnalises] = useState<AnaliseLimite[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -294,11 +346,7 @@ export function ConsultaAnaliseLimiteForm() {
 
   const [arquivoAssinatura, setArquivoAssinatura] = useState<File | null>(null);
   const [salvandoAssinatura, setSalvandoAssinatura] = useState(false);
-
-  const paginationItems = useMemo(
-    () => buildPagination(paginaAtual, totalPages),
-    [paginaAtual, totalPages]
-  );
+  const assinaturaInputRef = useRef<HTMLInputElement | null>(null);
 
   async function buscarAlteracoes(page = 1, limit = 10) {
     try {
@@ -342,6 +390,7 @@ export function ConsultaAnaliseLimiteForm() {
     setTxtDia("");
     setAnalises([]);
     setPaginaAtual(1);
+    setLimit(10);
     setTotalPages(0);
     setTotalItems(0);
   }
@@ -528,38 +577,41 @@ export function ConsultaAnaliseLimiteForm() {
     }
   }
 
-  useEffect(() => {
-    function onEnter(event: KeyboardEvent) {
-      if (event.key === "Enter") {
-        buscarAlteracoes(1, 10);
-      }
+  function buscarAoPressionarEnter(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      buscarAlteracoes(1, limit);
     }
+  }
 
-    document.addEventListener("keypress", onEnter);
-    return () => document.removeEventListener("keypress", onEnter);
-  }, [txtAnalise, txtDia]);
+  useEffect(() => {
+    buscarAlteracoes(1, 10);
+    // A busca inicial deve rodar só uma vez ao abrir a consulta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const ehPJSelecionado = selectedAnalise
     ? isPJ(selectedAnalise.NR_CPF_CNPJ_ASSOCIADO)
     : false;
 
   return (
-    <div className="mx-auto w-full space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+    <div className="mx-auto w-full space-y-5">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 bg-white px-5 py-4">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-slate-800">
+            <h2 className="flex items-center gap-2 text-xl font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
               Consulta de Análise de Limite
             </h2>
-            <p className="text-sm text-slate-500">
+            <p className="mt-1 text-sm font-medium text-slate-500">
               Busque análises cadastradas, visualize detalhes e gerencie assinaturas.
             </p>
           </div>
         </div>
+        </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px_auto]">
+        <div className="grid gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_220px_auto]">
           <div>
-            <label className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.03em] text-slate-600">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-600">
               Nome, CPF/CNPJ ou Funcionário
             </label>
             <input
@@ -580,19 +632,21 @@ export function ConsultaAnaliseLimiteForm() {
                   setTxtAnalise(value);
                 }
               }}
+              onKeyDown={buscarAoPressionarEnter}
               placeholder="Nome, CPF/CNPJ ou Funcionário"
               className={inputBase}
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.03em] text-slate-600">
+            <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-600">
               Dia
             </label>
             <input
               type="date"
               value={txtDia}
               onChange={(e) => setTxtDia(e.target.value)}
+              onKeyDown={buscarAoPressionarEnter}
               className={inputBase}
             />
           </div>
@@ -600,9 +654,9 @@ export function ConsultaAnaliseLimiteForm() {
           <div className="flex flex-col gap-3 sm:flex-row xl:items-end">
             <button
               type="button"
-              onClick={() => buscarAlteracoes(1, 10)}
+              onClick={() => buscarAlteracoes(1, limit)}
               disabled={loading}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#79B729] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00AE9D] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <FaSearch />
               {loading ? "Buscando..." : "Buscar"}
@@ -611,7 +665,7 @@ export function ConsultaAnaliseLimiteForm() {
             <button
               type="button"
               onClick={limpar}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 cursor-pointer"
+              className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#49479D] hover:text-[#49479D]"
             >
               <FaEraser />
               Limpar
@@ -620,57 +674,14 @@ export function ConsultaAnaliseLimiteForm() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-              <FaFilePdf />
-            </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                Total encontrado
-              </p>
-              <p className="text-2xl font-bold text-slate-900">{totalItems}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
-              <FaCalendarAlt />
-            </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                Página atual
-              </p>
-              <p className="text-2xl font-bold text-slate-900">{paginaAtual}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-lime-50 text-lime-700">
-              <FaUserTie />
-            </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                Total de páginas
-              </p>
-              <p className="text-2xl font-bold text-slate-900">{totalPages}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 px-5 py-4">
-          <h3 className="text-lg font-semibold text-slate-900">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 bg-white px-5 py-4">
+          <h3 className="flex items-center gap-2 text-lg font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
             Resultados da consulta
           </h3>
-          <p className="text-sm text-slate-500">
+          <p className="mt-1 text-sm font-medium text-slate-500">
             Visualize os dados e acesse as ações disponíveis para cada análise.
+            {totalItems > 0 ? ` Total localizado: ${totalItems}.` : ""}
           </p>
         </div>
 
@@ -679,7 +690,7 @@ export function ConsultaAnaliseLimiteForm() {
             <thead className="bg-slate-50">
               <tr className="text-left">
                 <th className="px-4 py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
-                  CPF/CNPJ
+                  Solicitante
                 </th>
                 <th className="px-4 py-4 text-xs font-bold uppercase tracking-wide text-slate-500">
                   Dia
@@ -702,19 +713,13 @@ export function ConsultaAnaliseLimiteForm() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-10 text-center text-sm text-slate-500"
-                  >
+                  <td colSpan={6} className="px-4 py-10 text-center text-sm font-medium text-slate-500">
                     Carregando análises...
                   </td>
                 </tr>
               ) : analises.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-10 text-center text-sm text-slate-500"
-                  >
+                  <td colSpan={6} className="px-4 py-10 text-center text-sm font-medium text-slate-500">
                     Nenhum resultado encontrado.
                   </td>
                 </tr>
@@ -722,15 +727,20 @@ export function ConsultaAnaliseLimiteForm() {
                 analises.map((analise) => (
                   <tr
                     key={analise.ID_ANALISE}
-                    className="transition hover:bg-slate-50"
+                    className="transition hover:bg-[#00AE9D]/5"
                   >
-                    <td className="px-4 py-4 text-sm font-medium text-slate-700">
-                      {analise.NR_CPF_CNPJ_ASSOCIADO}
+                    <td className="px-4 py-4">
+                      <div className="text-sm font-bold text-slate-800">
+                        {capitalizeWords(analise.NM_ASSOCIADO) || "-"}
+                      </div>
+                      <div className="mt-1 text-xs font-semibold text-slate-500">
+                        {formatCpfCnpjView(analise.NR_CPF_CNPJ_ASSOCIADO)}
+                      </div>
                     </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">
+                    <td className="px-4 py-4 text-sm font-medium text-slate-600">
                       {formatDateBR(analise.DT)}
                     </td>
-                    <td className="px-4 py-4 text-sm text-slate-700">
+                    <td className="px-4 py-4 text-sm font-semibold text-slate-700">
                       {primeiroUltimoNome(
                         capitalizeWords(analise.NM_FUNCIONARIO)
                       )}
@@ -739,7 +749,7 @@ export function ConsultaAnaliseLimiteForm() {
                     <td className="px-4 py-4 text-center">
                       <button
                         onClick={() => abrirModalInfo(analise)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-600 text-white transition hover:bg-slate-700"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#49479D] text-white shadow-sm transition hover:bg-[#00AE9D]"
                         title="Ver detalhes"
                       >
                         <FaInfoCircle />
@@ -749,7 +759,7 @@ export function ConsultaAnaliseLimiteForm() {
                     <td className="px-4 py-4 text-center">
                       <button
                         onClick={() => imprimiAnalise(analise)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-sky-600 text-white transition hover:bg-sky-700"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#00AE9D] text-white shadow-sm transition hover:bg-[#79B729]"
                         title="Imprimir"
                       >
                         <FaPrint />
@@ -759,7 +769,7 @@ export function ConsultaAnaliseLimiteForm() {
                     <td className="px-4 py-4 text-center">
                       <button
                         onClick={() => abrirModalAssinatura(analise)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white transition hover:bg-emerald-700"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#C7D300] text-[#006f65] shadow-sm transition hover:bg-[#00AE9D] hover:text-white"
                         title="Assinatura"
                       >
                         <FaSignature />
@@ -772,60 +782,31 @@ export function ConsultaAnaliseLimiteForm() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex flex-wrap items-center justify-center gap-2 border-t border-slate-200 px-4 py-5">
-            <button
-              onClick={() => buscarAlteracoes(Math.max(1, paginaAtual - 1), 10)}
-              disabled={paginaAtual === 1}
-              className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Anterior
-            </button>
-
-            {paginationItems.map((item, index) =>
-              item === "..." ? (
-                <span
-                  key={`dots-${index}`}
-                  className="px-2 text-sm text-slate-400"
-                >
-                  ...
-                </span>
-              ) : (
-                <button
-                  key={item}
-                  onClick={() => buscarAlteracoes(Number(item), 10)}
-                  className={`h-10 min-w-[40px] rounded-xl px-3 text-sm font-semibold transition ${paginaAtual === item
-                    ? "bg-[#79B729] text-white"
-                    : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
-                >
-                  {item}
-                </button>
-              )
-            )}
-
-            <button
-              onClick={() =>
-                buscarAlteracoes(Math.min(totalPages, paginaAtual + 1), 10)
-              }
-              disabled={paginaAtual === totalPages}
-              className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Próxima
-            </button>
-          </div>
+        {totalItems > 0 && (
+          <Pagination
+            currentPage={paginaAtual}
+            totalPages={Math.max(totalPages, 1)}
+            totalItems={totalItems}
+            limit={limit}
+            loading={loading}
+            onChange={(page) => buscarAlteracoes(page, limit)}
+            onLimitChange={(novoLimit) => {
+              setLimit(novoLimit);
+              buscarAlteracoes(1, novoLimit);
+            }}
+          />
         )}
       </div>
 
       {openInfoModal && selectedAnalise && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4">
-          <div className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">
+                <h3 className="text-lg font-black text-slate-950">
                   Detalhes da Análise
                 </h3>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm font-medium text-slate-500">
                   Análise feita por{" "}
                   {primeiroUltimoNome(
                     capitalizeWords(selectedAnalise.NM_FUNCIONARIO)
@@ -836,7 +817,7 @@ export function ConsultaAnaliseLimiteForm() {
 
               <button
                 onClick={() => setOpenInfoModal(false)}
-                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#49479D] hover:text-[#49479D]"
               >
                 Fechar
               </button>
@@ -945,66 +926,72 @@ export function ConsultaAnaliseLimiteForm() {
 
       {openAssinaturaModal && selectedAnalise && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4">
-          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div className="w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">
+                <h3 className="text-lg font-black text-slate-950">
                   Assinatura da Análise
                 </h3>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm font-medium text-slate-500">
                   Gerencie o arquivo assinado desta análise.
                 </p>
               </div>
 
               <button
                 onClick={() => setOpenAssinaturaModal(false)}
-                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#49479D] hover:text-[#49479D]"
               >
                 Fechar
               </button>
             </div>
 
             <div className="space-y-5 p-6">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <label className="mb-3 block text-sm font-semibold text-slate-700">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
+                <label className="mb-3 block text-sm font-black text-slate-700">
                   Upload de Arquivo Assinado
                 </label>
 
-                <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <input
+                    ref={assinaturaInputRef}
                     type="file"
                     accept=".pdf"
                     onChange={(e) =>
                       setArquivoAssinatura(e.target.files?.[0] || null)
                     }
-                    className="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700"
+                    className="hidden"
                   />
+
+                  <div className="flex h-10 min-w-0 flex-1 items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => assinaturaInputRef.current?.click()}
+                      className="ml-1 inline-flex h-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-200"
+                    >
+                      Procurar...
+                    </button>
+
+                    <span className="min-w-0 truncate px-3 text-sm font-medium text-slate-600">
+                      {arquivoAssinatura?.name || "Nenhum arquivo selecionado."}
+                    </span>
+                  </div>
 
                   <button
                     onClick={salvarAssinatura}
                     disabled={salvandoAssinatura}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#79B729] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00AE9D] disabled:opacity-60"
                   >
                     <FaUpload />
                     {salvandoAssinatura ? "Salvando..." : "Salvar"}
                   </button>
                 </div>
-
-                {arquivoAssinatura && (
-                  <p className="mt-3 text-sm text-slate-500">
-                    Arquivo selecionado:{" "}
-                    <span className="font-medium text-slate-700">
-                      {arquivoAssinatura.name}
-                    </span>
-                  </p>
-                )}
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="mb-2 text-sm font-semibold text-slate-700">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
+                <p className="mb-2 text-sm font-black text-slate-700">
                   Arquivo atual salvo
                 </p>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm font-medium text-slate-500">
                   {selectedAnalise.NM_ASSINATURA
                     ? selectedAnalise.NM_ASSINATURA.split("/").pop()
                     : "Nenhum arquivo enviado ainda."}
@@ -1014,7 +1001,7 @@ export function ConsultaAnaliseLimiteForm() {
               <div className="flex justify-end">
                 <button
                   onClick={() => baixarArquivo(selectedAnalise.NM_ASSINATURA)}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:brightness-95"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#00AE9D] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#79B729]"
                 >
                   <FaDownload />
                   Baixar Documento
@@ -1027,4 +1014,3 @@ export function ConsultaAnaliseLimiteForm() {
     </div>
   );
 }
-

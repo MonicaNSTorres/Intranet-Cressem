@@ -12,7 +12,6 @@ import {
 import { gerarPdfAutorizacaoDebito } from "@/lib/pdf/gerarPdfAutorizacaoDebito";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
 
 type ExtraDebito = {
   id: string;
@@ -31,6 +30,14 @@ function getHojeParts() {
   const ano = String(data.getFullYear());
 
   return { dia, mes, ano };
+}
+
+function normalizarCidade(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
 }
 
 export function AutorizacaoDebitoForm() {
@@ -90,12 +97,23 @@ export function AutorizacaoDebitoForm() {
 
   const total = useMemo(() => totalBase + totalExtras, [totalBase, totalExtras]);
 
+  const cidadeAtendimentoEstaNaLista = useMemo(() => {
+    const cidadeSelecionada = normalizarCidade(cidadeAtendimento);
+
+    if (!cidadeSelecionada) return true;
+
+    return cidades.some(
+      (cidade) => normalizarCidade(cidade.NM_CIDADE) === cidadeSelecionada
+    );
+  }, [cidadeAtendimento, cidades]);
+
   const onBuscar = async () => {
     setErro("");
     setInfo("");
     setContaAssociado("");
     setContasCorrentes([]);
     setContaManual(false);
+    setCidadeAtendimento("");
 
     const clean = onlyDigits(cpf);
 
@@ -117,6 +135,17 @@ export function AutorizacaoDebitoForm() {
       }
 
       setNome(associado.nome || "");
+
+      const cidadeAssociado = String(associado.cidade || "").trim();
+
+      if (cidadeAssociado) {
+        const cidadeLista = cidades.find(
+          (cidade) =>
+            normalizarCidade(cidade.NM_CIDADE) === normalizarCidade(cidadeAssociado)
+        );
+
+        setCidadeAtendimento(cidadeLista?.NM_CIDADE || cidadeAssociado);
+      }
 
       const contas = await buscarContaCorrenteAutorizacaoDebito(clean);
 
@@ -239,11 +268,26 @@ export function AutorizacaoDebitoForm() {
     });
   };
 
+  const labelClass =
+    "mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500";
+  const inputClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10";
+  const moneyInputClass = `${inputClass} text-right`;
+  const readOnlyMoneyClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-right text-sm text-slate-700 shadow-sm outline-none";
+  const sectionClass =
+    "mx-5 mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
+  const sectionTitleClass =
+    "mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]";
+
   return (
-    <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-      <SearchForm onSearch={onBuscar}>
+    <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white pb-5 shadow-sm">
+      <SearchForm
+        onSearch={onBuscar}
+        className="border-b border-emerald-100 bg-gradient-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/20 p-5"
+      >
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             CPF associado
           </label>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
@@ -251,42 +295,51 @@ export function AutorizacaoDebitoForm() {
               value={formatCpfView(cpf)}
               onChange={(e) => setCpf(e.target.value)}
               placeholder="CPF do associado"
-              className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className="h-10 rounded-xl border-slate-200 text-sm shadow-sm focus:border-[#00AE9D] focus:ring-[#00AE9D]/10"
               inputMode="numeric"
               maxLength={14}
             />
-            <SearchButton loading={loadingBuscar} label="Pesquisar" />
+            <button
+              type="submit"
+              disabled={loadingBuscar}
+              className="h-10 rounded-xl bg-secondary px-4 font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+            >
+              {loadingBuscar ? "Buscando..." : "Pesquisar"}
+            </button>
           </div>
 
           {erro && (
-            <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
               {erro}
             </div>
           )}
 
           {info && !erro && (
-            <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+            <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
               {info}
             </div>
           )}
         </div>
       </SearchForm>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-12">
+      <div className={sectionClass}>
+        <h2 className={sectionTitleClass}>Dados do associado</h2>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
         <div className="md:col-span-9">
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Nome associado
           </label>
           <input
             value={nome}
             onChange={(e) => setNome(e.target.value)}
-            className="w-full rounded border px-3 py-2"
+            className={inputClass}
           />
         </div>
 
         <div className="md:col-span-3">
           <div className="mb-1 flex items-center justify-between gap-2">
-            <label className="block text-xs font-medium text-gray-600">
+            <label className="block text-xs font-bold uppercase tracking-wide text-slate-500">
               Conta
             </label>
           </div>
@@ -296,14 +349,14 @@ export function AutorizacaoDebitoForm() {
               <input
                 value={contaAssociado}
                 onChange={(e) => setContaAssociado(e.target.value)}
-                className="w-full rounded border px-3 py-2"
+                className={inputClass}
                 placeholder="Digite a conta corrente"
               />
             ) : (
               <select
                 value={contaAssociado}
                 onChange={(e) => setContaAssociado(e.target.value)}
-                className="w-full rounded border px-3 py-2"
+                className={inputClass}
               >
                 <option value="">
                   {contasCorrentes.length > 0
@@ -326,7 +379,7 @@ export function AutorizacaoDebitoForm() {
                   setContaManual((prev) => !prev);
                   setContaAssociado("");
                 }}
-                className="rounded bg-secondary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary"
+                className="h-10 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 {contaManual ? "Usar lista" : "Manual"}
               </button>
@@ -334,11 +387,12 @@ export function AutorizacaoDebitoForm() {
           </div>
         </div>
 
+        </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="rounded border p-4">
-          <h3 className="mb-4 text-sm font-semibold text-gray-800">
+      <div className="mx-5 mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className={sectionTitleClass}>
             Débitos
           </h3>
 
@@ -361,13 +415,13 @@ export function AutorizacaoDebitoForm() {
             />
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className={labelClass}>
                 Descrição do campo adicional base
               </label>
               <input
                 value={labelOutros}
                 onChange={(e) => setLabelOutros(e.target.value)}
-                className="w-full rounded border px-3 py-2"
+                className={inputClass}
               />
             </div>
 
@@ -380,11 +434,11 @@ export function AutorizacaoDebitoForm() {
             {extras.map((item, index) => (
               <div
                 key={item.id}
-                className="rounded border border-dashed border-gray-300 p-3"
+                className="rounded-2xl border border-dashed border-[#00AE9D]/30 bg-[#00AE9D]/5 p-3"
               >
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
                   <div className="md:col-span-7">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className={labelClass}>
                       Descrição adicional {index + 1}
                     </label>
                     <input
@@ -392,12 +446,12 @@ export function AutorizacaoDebitoForm() {
                       onChange={(e) =>
                         atualizarExtra(item.id, "descricao", e.target.value)
                       }
-                      className="w-full rounded border px-3 py-2"
+                      className={inputClass}
                     />
                   </div>
 
                   <div className="md:col-span-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className={labelClass}>
                       Valor
                     </label>
                     <input
@@ -409,7 +463,7 @@ export function AutorizacaoDebitoForm() {
                           monetizarDigitacao(e.target.value)
                         )
                       }
-                      className="w-full rounded border px-3 py-2 text-right"
+                      className={moneyInputClass}
                       placeholder="R$ 0,00"
                     />
                   </div>
@@ -421,7 +475,7 @@ export function AutorizacaoDebitoForm() {
               <button
                 type="button"
                 onClick={adicionarExtra}
-                className="rounded border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                className="h-10 rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 Adicionar
               </button>
@@ -429,7 +483,7 @@ export function AutorizacaoDebitoForm() {
               <button
                 type="button"
                 onClick={removerUltimoExtra}
-                className="rounded border border-red-500 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+                className="h-10 rounded-xl border border-fourth/30 bg-fourth/10 px-4 text-sm font-semibold text-fourth shadow-sm transition hover:bg-fourth hover:text-white disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 Remover
               </button>
@@ -438,38 +492,38 @@ export function AutorizacaoDebitoForm() {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded border p-4">
-            <h3 className="mb-4 text-sm font-semibold text-gray-800">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className={sectionTitleClass}>
               Limites
             </h3>
 
             <div className="grid grid-cols-1 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Reduzir
                 </label>
                 <input
                   value={reduzir}
                   onChange={(e) => setReduzir(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Cancelar
                 </label>
                 <input
                   value={cancelar}
                   onChange={(e) => setCancelar(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
+                  className={inputClass}
                 />
               </div>
             </div>
           </div>
 
-          <div className="rounded border p-4">
-            <h3 className="mb-4 text-sm font-semibold text-gray-800">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className={sectionTitleClass}>
               Detalhamento no Sistema
             </h3>
 
@@ -489,28 +543,34 @@ export function AutorizacaoDebitoForm() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className={sectionClass}>
+        <h2 className={sectionTitleClass}>Fechamento da autorização</h2>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Total
           </label>
           <input
             readOnly
             value={fmtBRL(total)}
-            className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+            className={readOnlyMoneyClass}
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label className={labelClass}>
             Cidade do atendimento
           </label>
           <select
             value={cidadeAtendimento}
             onChange={(e) => setCidadeAtendimento(e.target.value)}
-            className="w-full rounded border px-3 py-2"
+            className={inputClass}
           >
             <option value=""></option>
+            {!cidadeAtendimentoEstaNaLista && cidadeAtendimento && (
+              <option value={cidadeAtendimento}>{cidadeAtendimento}</option>
+            )}
             {cidades.map((cidade) => (
               <option key={cidade.ID_CIDADES} value={cidade.NM_CIDADE}>
                 {cidade.NM_CIDADE}
@@ -518,17 +578,18 @@ export function AutorizacaoDebitoForm() {
             ))}
           </select>
         </div>
+        </div>
       </div>
 
-      <div className="mt-6 border-t pt-5 flex items-center justify-end">
+      <div className="mx-5 mt-5 flex items-center justify-end border-t border-slate-100 pt-5">
         <button
           type="button"
           onClick={handleGerarPdf}
           disabled={!formularioValido}
-          className={`inline-flex items-center gap-2 rounded px-5 py-2 font-semibold text-white shadow transition
+          className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white shadow-sm transition
     ${formularioValido
               ? "bg-secondary hover:bg-primary cursor-pointer"
-              : "bg-gray-300 cursor-not-allowed"
+              : "bg-slate-300 cursor-not-allowed"
             }`}
         >
           Gerar PDF
@@ -547,13 +608,13 @@ type CampoMoedaProps = {
 function CampoMoeda({ label, value, setValue }: CampoMoedaProps) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-gray-600">
+      <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
         {label}
       </label>
       <input
         value={value}
         onChange={(e) => setValue(monetizarDigitacao(e.target.value))}
-        className="w-full rounded border px-3 py-2 text-right"
+        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-right text-sm text-slate-800 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10"
         placeholder="R$ 0,00"
       />
     </div>

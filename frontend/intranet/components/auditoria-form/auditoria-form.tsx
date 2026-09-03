@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaCopy, FaSearch } from "react-icons/fa";
 import {
   buscarAssociadoAuditoria,
@@ -11,7 +11,6 @@ import {
 } from "@/services/auditoria.service";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
 
 type CampoInlineKey =
   | "cpf_cnpj"
@@ -82,10 +81,6 @@ const initialState: FormState = {
   outrasInformacoes: "",
   parecerFinal: "Após uma análise detalhada da sua solicitação de crédito, devido ",
 };
-
-function somenteNumeros(valor: string) {
-  return valor.replace(/\D/g, "");
-}
 
 function onlyCpfCnpjChars(valor: string) {
   return String(valor || "")
@@ -186,7 +181,7 @@ function CampoEditavel({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`inline-block min-w-[140px] border-b border-dashed border-gray-400 bg-transparent px-1 py-0.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#013641] ${className}`}
+      className={`inline-block min-h-10 min-w-[140px] rounded-t-lg border-b border-dashed border-slate-300 bg-slate-50/50 px-2 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 hover:bg-slate-50 focus:border-[#00AE9D] focus:bg-[#00AE9D]/5 ${className}`}
     />
   );
 }
@@ -198,11 +193,6 @@ export function AuditoriaForm() {
   const [copiando, setCopiando] = useState(false);
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
-
-  const cpfCnpjLimpo = useMemo(
-    () => onlyCpfCnpjChars(form.cpf_cnpj),
-    [form.cpf_cnpj]
-  );
 
   useEffect(() => {
     if (!info || erro) return;
@@ -368,48 +358,66 @@ export function AuditoriaForm() {
   }
 
   return (
-    <div className="mx-auto min-w-0 rounded-xl bg-white p-6 shadow">
+    <div className="mx-auto min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
       <SearchForm onSearch={preencherFormulario}>
-        <div ref={feedbackRef} />
-        {erro && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {erro}
-          </div>
-        )}
-
-        {info && !erro && (
-          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-            {info}
-          </div>
-        )}
-
-        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
-          <p className="text-sm font-medium text-gray-700">
-            Digite o CPF/CNPJ, busque os dados automáticos e complete o parecer antes de copiar o texto final.
+        <div className="border-b border-slate-100 bg-white px-5 py-4">
+          <h2 className="flex items-center gap-2 text-lg font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
+            Parecer de crédito
+          </h2>
+          <p className="mt-1 text-sm font-medium text-slate-500">
+            Busque o associado, revise os dados e copie o texto final para uso no processo.
           </p>
         </div>
 
-        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end">
-          <div className="w-full md:max-w-sm">
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              CPF/CNPJ
-            </label>
-            <SearchInput
-              value={form.cpf_cnpj}
-              onChange={(e) => updateField("cpf_cnpj", formatarCpfCnpj(e.target.value))}
-              onBlur={preencherFormulario}
-              placeholder="Digite CPF ou CNPJ"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            />
+        <div className="p-5">
+          <div ref={feedbackRef} />
+          {erro && (
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+              {erro}
+            </div>
+          )}
+
+          {info && !erro && (
+            <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
+              {info}
+            </div>
+          )}
+
+          <div className="mb-6 rounded-2xl border border-[#00AE9D]/20 bg-[#00AE9D]/5 px-4 py-3 text-center">
+            <p className="text-sm font-semibold text-slate-700">
+              Digite o CPF/CNPJ, busque os dados automáticos e complete o parecer antes de copiar o texto final.
+            </p>
           </div>
 
-          <SearchButton loading={loadingBusca} label="Pesquisar" />
+          <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end">
+            <div className="w-full md:max-w-sm">
+              <label className="mb-2 block text-[11px] font-black uppercase tracking-wide text-slate-600">
+                CPF/CNPJ
+              </label>
+              <SearchInput
+                value={form.cpf_cnpj}
+                onChange={(e) => updateField("cpf_cnpj", formatarCpfCnpj(e.target.value))}
+                onBlur={preencherFormulario}
+                placeholder="Digite CPF ou CNPJ"
+                className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loadingBusca}
+              className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#79B729] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00AE9D] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <FaSearch />
+              {loadingBusca ? "Buscando..." : "Pesquisar"}
+            </button>
+          </div>
         </div>
       </SearchForm>
 
-      <div className="space-y-4 text-sm text-gray-900">
+      <div className="space-y-4 border-t border-slate-100 px-5 py-5 text-sm leading-relaxed text-slate-900">
         <div className="leading-8">
-          <span className="font-medium">CPF/CNPJ:</span>{" "}
+          <span className="font-black text-slate-800">CPF/CNPJ:</span>{" "}
           <CampoEditavel
             value={form.cpf_cnpj}
             onChange={(value) => updateField("cpf_cnpj", formatarCpfCnpj(value))}
@@ -419,7 +427,7 @@ export function AuditoriaForm() {
         </div>
 
         <div className="leading-8">
-          <span className="font-medium">NOME:</span>{" "}
+          <span className="font-black text-slate-800">NOME:</span>{" "}
           <CampoEditavel
             value={form.nome}
             onChange={(value) => updateField("nome", value)}
@@ -429,7 +437,7 @@ export function AuditoriaForm() {
         </div>
 
         <div className="leading-8">
-          <span className="font-medium">EMPRESA:</span>{" "}
+          <span className="font-black text-slate-800">EMPRESA:</span>{" "}
           <CampoEditavel
             value={form.empresa}
             onChange={(value) => updateField("empresa", value)}
@@ -439,7 +447,7 @@ export function AuditoriaForm() {
         </div>
 
         <div className="leading-8">
-          <span className="font-medium">ASSUNTO:</span> Parecer sobre{" "}
+          <span className="font-black text-slate-800">ASSUNTO:</span> Parecer sobre{" "}
           <CampoEditavel
             value={form.assunto}
             onChange={(value) => updateField("assunto", value)}
@@ -448,7 +456,7 @@ export function AuditoriaForm() {
           />
         </div>
 
-        <h3 className="pt-2 text-base font-semibold text-gray-900">
+        <h3 className="flex items-center gap-2 pt-2 text-base font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#C7D300]">
           Destacamos os seguintes pontos:
         </h3>
 
@@ -656,37 +664,37 @@ export function AuditoriaForm() {
         </div>
 
         <div className="pt-2">
-          <h3 className="mb-2 text-base font-semibold text-gray-900">
+          <h3 className="mb-2 flex items-center gap-2 text-base font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
             Outras Informações:
           </h3>
           <textarea
             value={form.outrasInformacoes}
             onChange={(e) => updateField("outrasInformacoes", e.target.value)}
             placeholder="Digite mais informações..."
-            className="min-h-[100px] w-full rounded-lg border border-dashed border-gray-400 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#013641] focus:ring-2 focus:ring-emerald-100"
+            className="min-h-[96px] w-full rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:bg-white focus:ring-2 focus:ring-[#00AE9D]/10"
           />
         </div>
 
         <div className="pt-2">
-          <h3 className="mb-2 text-base font-semibold text-gray-900">
+          <h3 className="mb-2 flex items-center gap-2 text-base font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#79B729]">
             Parecer Final:
           </h3>
           <textarea
             value={form.parecerFinal}
             onChange={(e) => updateField("parecerFinal", e.target.value)}
             placeholder="Descreva o parecer final aqui..."
-            className="min-h-[120px] w-full rounded-lg border border-dashed border-gray-400 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#013641] focus:ring-2 focus:ring-emerald-100"
+            className="min-h-[96px] w-full rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:bg-white focus:ring-2 focus:ring-[#00AE9D]/10"
           />
         </div>
       </div>
 
-      <div className="mt-6 border-t border-gray-200 pt-5">
+      <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-5">
         <div className="flex items-center justify-end">
           <button
             type="button"
             onClick={handleCopiar}
             disabled={copiando}
-            className="inline-flex items-center gap-2 rounded-lg bg-secondary px-6 py-2 font-semibold text-white shadow transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-[#00AE9D] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#79B729] disabled:cursor-not-allowed disabled:opacity-70"
           >
             <FaCopy />
             {copiando ? "Copiando..." : "Copiar tudo"}

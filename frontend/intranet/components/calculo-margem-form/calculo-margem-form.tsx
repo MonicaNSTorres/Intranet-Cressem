@@ -20,6 +20,14 @@ function toMoney(value: number) {
     return fmtBRL(Number.isFinite(value) ? value : 0);
 }
 
+const labelClass = "mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500";
+const fieldClass =
+    "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
+const readOnlyClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 shadow-sm outline-none";
+const sectionClass = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
+const sectionTitleClass = "flex items-center gap-2 text-base font-semibold text-title";
+
 export function CalculoMargemForm() {
     const [cpf, setCpf] = useState("");
     const [nome, setNome] = useState("");
@@ -191,124 +199,150 @@ export function CalculoMargemForm() {
     const alertMargemNegativa = margemDisponivel < 0;
 
     return (
-        <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-            <SearchForm onSearch={onBuscar}>
-                <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        CPF do associado
-                    </label>
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                        <SearchInput
-                            value={formatCpfView(cpf)}
-                            onChange={(e) => setCpf(e.target.value)}
-                            placeholder="CPF do associado"
-                            className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                            inputMode="numeric"
-                            maxLength={14}
-                        />
-                        <SearchButton loading={loading} label="Pesquisar" />
+        <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+            <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
+
+            <div className="space-y-5 p-5 md:p-6">
+                <SearchForm onSearch={onBuscar} className={sectionClass}>
+                    <div className="mb-4">
+                        <h2 className={sectionTitleClass}>
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                            Consulta do associado
+                        </h2>
+                        <p className="mt-1 text-sm text-paragraph">
+                            Informe o CPF para carregar os dados principais antes do cálculo.
+                        </p>
                     </div>
 
-                    {erro && (
-                        <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                            {erro}
+                    <label className={labelClass}>CPF do associado</label>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                            <SearchInput
+                                value={formatCpfView(cpf)}
+                                onChange={(e) => setCpf(e.target.value)}
+                                placeholder="CPF do associado"
+                                className="h-10 rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary/15"
+                                inputMode="numeric"
+                                maxLength={14}
+                            />
+                            <SearchButton loading={loading} label="Pesquisar" />
                         </div>
-                    )}
 
-                    {info && !erro && (
-                        <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                            {info}
+                        {erro && (
+                            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                {erro}
+                            </div>
+                        )}
+
+                        {info && !erro && (
+                            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                                {info}
+                            </div>
+                        )}
+                </SearchForm>
+
+                <section className={sectionClass}>
+                    <div className="mb-4">
+                        <h2 className={sectionTitleClass}>
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                            Dados do associado
+                        </h2>
+                        <p className="mt-1 text-sm text-paragraph">
+                            Confirme ou ajuste os dados carregados pela consulta.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                        <div className="md:col-span-5">
+                            <label className={labelClass}>Nome associado</label>
+                            <input
+                                value={nome}
+                                onChange={(e) => setNome(e.target.value)}
+                                className={fieldClass}
+                            />
                         </div>
-                    )}
-                </div>
-            </SearchForm>
 
-            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-12">
-                <div className="md:col-span-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Nome associado
-                    </label>
-                    <input
-                        value={nome}
-                        onChange={(e) => setNome(e.target.value)}
-                        className="w-full rounded border px-3 py-2"
-                    />
-                </div>
+                        <div className="md:col-span-7">
+                            <label className={labelClass}>Empresa associado</label>
+                            <input
+                                value={empresa}
+                                onChange={(e) => setEmpresa(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+                    </div>
+                </section>
 
-                <div className="md:col-span-7">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Empresa associado
-                    </label>
-                    <input
-                        value={empresa}
-                        onChange={(e) => setEmpresa(e.target.value)}
-                        className="w-full rounded border px-3 py-2"
-                    />
-                </div>
-            </div>
+                <section className={sectionClass}>
+                    <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 className={sectionTitleClass}>
+                                <span className="h-2 w-2 rounded-full bg-primary" />
+                                Ganhos
+                            </h2>
+                            <p className="mt-1 text-sm text-paragraph">
+                                Base de vencimentos usada para iniciar o cálculo.
+                            </p>
+                        </div>
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                            Total: {toMoney(totalGanhos)}
+                        </span>
+                    </div>
 
-            <div className="mt-6 rounded border p-4">
-                <h3 className="mb-4 text-sm font-semibold text-gray-800">
-                    Ganhos
-                </h3>
-
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Vencimentos
-                        </label>
+                        <label className={labelClass}>Vencimentos</label>
                         <input
                             value={vencimentos}
                             onChange={(e) => setVencimentos(monetizarDigitacao(e.target.value))}
-                            className="w-full rounded border px-3 py-2 text-right"
+                            className={`${fieldClass} text-right`}
                             placeholder="R$ 0,00"
                         />
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Triênio
-                        </label>
+                        <label className={labelClass}>Triênio</label>
                         <input
                             value={trienio}
                             onChange={(e) => setTrienio(monetizarDigitacao(e.target.value))}
-                            className="w-full rounded border px-3 py-2 text-right"
+                            className={`${fieldClass} text-right`}
                             placeholder="R$ 0,00"
                         />
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Adicional de tempo serviço
-                        </label>
+                        <label className={labelClass}>Adicional de tempo serviço</label>
                         <input
                             value={adcTempo}
                             onChange={(e) => setAdcTempo(monetizarDigitacao(e.target.value))}
-                            className="w-full rounded border px-3 py-2 text-right"
+                            className={`${fieldClass} text-right`}
                             placeholder="R$ 0,00"
                         />
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Total de ganhos
-                        </label>
+                        <label className={labelClass}>Total de ganhos</label>
                         <input
                             readOnly
                             value={toMoney(totalGanhos)}
-                            className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+                            className={`${readOnlyClass} text-right`}
                         />
                     </div>
-                </div>
-            </div>
+                    </div>
+                </section>
 
-            <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-                <div className="rounded border p-4">
-                    <h3 className="mb-4 text-sm font-semibold text-gray-800">
-                        Base da margem
-                    </h3>
+                <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                    <section className={sectionClass}>
+                        <div className="mb-4">
+                            <h2 className={sectionTitleClass}>
+                                <span className="h-2 w-2 rounded-full bg-primary" />
+                                Base da margem
+                            </h2>
+                            <p className="mt-1 text-sm text-paragraph">
+                                Descontos considerados antes de aplicar o percentual.
+                            </p>
+                        </div>
 
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 gap-4">
                         <CampoMoeda label="INSS" value={inss} setValue={setInss} />
                         <CampoMoeda label="IRPF (se tiver)" value={irpf} setValue={setIrpf} />
                         <CampoMoeda
@@ -337,39 +371,41 @@ export function CalculoMargemForm() {
                             setValue={setOutrosGanhos}
                         />
 
-                        <div className="grid grid-cols-1 gap-3 pt-3 md:grid-cols-12">
+                        <div className="grid grid-cols-1 gap-4 pt-2 md:grid-cols-12">
                             <div className="md:col-span-8">
-                                <label className="mb-1 block text-xs font-medium text-gray-600">
-                                    Margem considerada
-                                </label>
+                                <label className={labelClass}>Margem considerada</label>
                                 <input
                                     readOnly
                                     value={toMoney(margemConsiderada)}
-                                    className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+                                    className={`${readOnlyClass} text-right`}
                                 />
                             </div>
 
                             <div className="md:col-span-4">
-                                <label className="mb-1 block text-xs font-medium text-gray-600">
-                                    % considerado
-                                </label>
+                                <label className={labelClass}>% considerado</label>
                                 <input
                                     value={percentualConsiderado}
                                     onChange={(e) => setPercentualConsiderado(e.target.value)}
-                                    className="w-full rounded border px-3 py-2 text-right"
+                                    className={`${fieldClass} text-right`}
                                     placeholder="Ex: 30"
                                 />
                             </div>
                         </div>
                     </div>
-                </div>
+                    </section>
 
-                <div className="rounded border p-4">
-                    <h3 className="mb-4 text-sm font-semibold text-gray-800">
-                        Descontos / Subtotal
-                    </h3>
+                    <section className={sectionClass}>
+                        <div className="mb-4">
+                            <h2 className={sectionTitleClass}>
+                                <span className="h-2 w-2 rounded-full bg-primary" />
+                                Descontos / Subtotal
+                            </h2>
+                            <p className="mt-1 text-sm text-paragraph">
+                                Valores que serão abatidos da margem considerada.
+                            </p>
+                        </div>
 
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 gap-4">
                         <CampoMoeda
                             label="Convênio Odontológico"
                             value={convenioOdonto}
@@ -421,41 +457,50 @@ export function CalculoMargemForm() {
                             setValue={setSindicato}
                         />
                     </div>
+                    </section>
                 </div>
-            </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <section className={sectionClass}>
+                <div className="mb-4">
+                    <h2 className={sectionTitleClass}>
+                        <span className="h-2 w-2 rounded-full bg-primary" />
+                        Resultado da margem
+                    </h2>
+                    <p className="mt-1 text-sm text-paragraph">
+                        Conferência final do subtotal e da margem disponível.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Margem disponível
-                    </label>
+                    <label className={labelClass}>Margem disponível</label>
                     <input
                         readOnly
                         value={toMoney(margemDisponivel)}
-                        className={`w-full rounded border px-3 py-2 text-right ${alertMargemNegativa
+                        className={`h-10 w-full rounded-xl border px-3 text-right text-sm font-semibold shadow-sm outline-none ${alertMargemNegativa
                             ? "border-red-300 bg-red-50 text-red-700"
-                            : "bg-gray-50"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-800"
                             }`}
                     />
                 </div>
 
                 <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Subtotal
-                    </label>
+                    <label className={labelClass}>Subtotal</label>
                     <input
                         readOnly
                         value={toMoney(subtotal)}
-                        className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+                        className={`${readOnlyClass} text-right`}
                     />
                 </div>
-            </div>
-
-            {alertMargemNegativa && (
-                <div className="mt-6 rounded border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-                    Atenção: margem negativa.
                 </div>
-            )}
+
+                {alertMargemNegativa && (
+                    <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+                        Atenção: margem negativa.
+                    </div>
+                )}
+            </section>
+            </div>
         </div>
     );
 }
@@ -469,13 +514,11 @@ type CampoMoedaProps = {
 function CampoMoeda({ label, value, setValue }: CampoMoedaProps) {
     return (
         <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-                {label}
-            </label>
+            <label className={labelClass}>{label}</label>
             <input
                 value={value}
                 onChange={(e) => setValue(monetizarDigitacao(e.target.value))}
-                className="w-full rounded border px-3 py-2 text-right"
+                className={`${fieldClass} text-right`}
                 placeholder="R$ 0,00"
             />
         </div>

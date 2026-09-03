@@ -40,13 +40,11 @@ export default function ProgressInput(props: {
 
   return (
     <div className="relative">
-      {/*barra verde*/}
       <div
-        className="absolute inset-y-0 left-0 rounded-md bg-secondary/70 pointer-events-none transition-all duration-300"
+        className="pointer-events-none absolute inset-y-0 left-0 rounded-xl bg-gradient-to-r from-[#00AE9D]/25 to-[#79B729]/30 transition-all duration-300"
         style={{ width: `${p}%` }}
       />
-      {/*mask*/}
-      <div className="absolute inset-0 rounded-md ring-1 ring-black/10 pointer-events-none" />
+      <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-slate-200" />
 
       <input
         value={value}
@@ -56,9 +54,9 @@ export default function ProgressInput(props: {
         maxLength={maxLength}
         disabled={disabled}
         className={[
-          "relative z-10 w-full rounded-md border bg-transparent px-3 py-2",
-          "focus:outline-none focus:ring-2 focus:ring-secondary-300",
-          "disabled:bg-gray-50 disabled:text-gray-500",
+          "relative z-10 h-10 w-full rounded-xl border border-transparent bg-transparent px-3 text-sm font-semibold text-slate-800 shadow-sm",
+          "focus:outline-none focus:ring-2 focus:ring-[#00AE9D]/15",
+          "disabled:bg-slate-50 disabled:text-slate-500",
         ].join(" ")}
       />
     </div>

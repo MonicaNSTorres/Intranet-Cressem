@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import { formatCpfView, hojeBR } from "@/utils/br";
@@ -44,6 +44,12 @@ function toBrFromIso(value: string) {
   if (!ano || !mes || !dia) return "";
   return `${dia}/${mes}/${ano}`;
 }
+
+const labelClass = "mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500";
+const fieldClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
+const sectionClass = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
+const sectionTitleClass = "flex items-center gap-2 text-base font-semibold text-title";
 
 export function AdiantamentoSalarialEmprestimoForm() {
   const [cpf, setCpf] = useState("");
@@ -207,12 +213,23 @@ export function AdiantamentoSalarialEmprestimoForm() {
   ]);
 
   return (
-    <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <SearchForm onSearch={onBuscar}>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">CPF do associado</label>
+    <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
 
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
+      <div className="space-y-5 p-5 md:p-6">
+        <SearchForm onSearch={onBuscar} className={sectionClass}>
+          <div className="mb-4">
+            <h2 className={sectionTitleClass}>
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Consulta do associado
+            </h2>
+            <p className="mt-1 text-sm text-paragraph">
+              Informe o CPF para carregar nome e matrícula antes de gerar o PDF.
+            </p>
+          </div>
+
+          <label className={labelClass}>CPF do associado</label>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
             <SearchInput
               value={formatCpfView(cpf)}
               onChange={(e) => {
@@ -221,7 +238,7 @@ export function AdiantamentoSalarialEmprestimoForm() {
                 setInfoLocal("");
               }}
               placeholder="CPF (somente números)"
-              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className="h-10 rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary focus:ring-primary/15"
               inputMode="numeric"
               maxLength={14}
             />
@@ -230,178 +247,244 @@ export function AdiantamentoSalarialEmprestimoForm() {
               type="button"
               onClick={gerar}
               disabled={!formularioValido}
-              className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
-    ${formularioValido
-                  ? "bg-secondary hover:bg-primary cursor-pointer"
-                  : "bg-gray-300 cursor-not-allowed"
-                }`}
+              className={`inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition ${
+                formularioValido
+                  ? "bg-primary hover:bg-fourth"
+                  : "cursor-not-allowed bg-slate-300"
+              }`}
             >
               Gerar PDF
             </button>
           </div>
 
           {erroAtual && (
-            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {erroAtual}
             </div>
           )}
           {infoAtual && (
-            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
               {infoAtual}
             </div>
           )}
-        </div>
-      </SearchForm>
+        </SearchForm>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de formulário</label>
-          <select
-            value={tipoFormulario}
-            onChange={(e) => {
-              setTipoFormulario(e.target.value);
-              setEmpresaCancelamento("");
-              setSolicita("");
-              setEmpresaRetorno("");
-              setMotivoRetorno("");
-              setDataInicio("");
-              setDataFim("");
-              setDocumento("");
-              setReativacaoMeses("");
-              setErroLocal("");
-              setInfoLocal("");
-            }}
-            className="w-full border px-3 py-2 rounded"
-          >
-            <option value="">Selecione</option>
-            <option value="CANCELAMENTO">Cancelamento</option>
-            <option value="RETORNO">Retorno</option>
-          </select>
-        </div>
-
-        {isCancelamento && (
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Empresa</label>
-            <select
-              value={empresaCancelamento}
-              onChange={(e) => setEmpresaCancelamento(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-            >
-              <option value="">Selecione</option>
-              {EMPRESAS_CANCELAMENTO.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
+        <section className={sectionClass}>
+          <div className="mb-4">
+            <h2 className={sectionTitleClass}>
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Dados do formulário
+            </h2>
+            <p className="mt-1 text-sm text-paragraph">
+              Selecione se o documento será de cancelamento ou retorno.
+            </p>
           </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div>
+              <label className={labelClass}>Tipo de formulário</label>
+              <select
+                value={tipoFormulario}
+                onChange={(e) => {
+                  setTipoFormulario(e.target.value);
+                  setEmpresaCancelamento("");
+                  setSolicita("");
+                  setEmpresaRetorno("");
+                  setMotivoRetorno("");
+                  setDataInicio("");
+                  setDataFim("");
+                  setDocumento("");
+                  setReativacaoMeses("");
+                  setErroLocal("");
+                  setInfoLocal("");
+                }}
+                className={fieldClass}
+              >
+                <option value="">Selecione</option>
+                <option value="CANCELAMENTO">Cancelamento</option>
+                <option value="RETORNO">Retorno</option>
+              </select>
+            </div>
+
+            {isCancelamento && (
+              <div>
+                <label className={labelClass}>Empresa</label>
+                <select
+                  value={empresaCancelamento}
+                  onChange={(e) => setEmpresaCancelamento(e.target.value)}
+                  className={fieldClass}
+                >
+                  <option value="">Selecione</option>
+                  {EMPRESAS_CANCELAMENTO.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {isUrbam && (
+              <div>
+                <label className={labelClass}>Solicita</label>
+                <select
+                  value={solicita}
+                  onChange={(e) => setSolicita(e.target.value)}
+                  className={fieldClass}
+                >
+                  <option value="">Selecione</option>
+                  <option value="CANCELAR">Cancelar</option>
+                  <option value="REATIVAR">Reativar</option>
+                </select>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {(isCancelamento || isRetorno) && (
+          <section className={sectionClass}>
+            <div className="mb-4">
+              <h2 className={sectionTitleClass}>
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                Dados do associado
+              </h2>
+              <p className="mt-1 text-sm text-paragraph">
+                As informações podem ser ajustadas manualmente se necessário.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className={labelClass}>Nome do associado</label>
+                <input
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Matrícula</label>
+                <input
+                  value={matricula}
+                  onChange={(e) => setMatricula(e.target.value)}
+                  className={fieldClass}
+                />
+              </div>
+            </div>
+          </section>
         )}
 
-        {isUrbam && (
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Solicita</label>
-            <select
-              value={solicita}
-              onChange={(e) => setSolicita(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-            >
-              <option value="">Selecione</option>
-              <option value="CANCELAR">Cancelar</option>
-              <option value="REATIVAR">Reativar</option>
-            </select>
-          </div>
+        {isRetorno && (
+          <section className={sectionClass}>
+            <div className="mb-4">
+              <h2 className={sectionTitleClass}>
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                Dados do retorno
+              </h2>
+              <p className="mt-1 text-sm text-paragraph">
+                Informe a empresa e o motivo do retorno do desconto.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className={labelClass}>Empresa</label>
+                <select
+                  value={empresaRetorno}
+                  onChange={(e) => setEmpresaRetorno(e.target.value)}
+                  className={fieldClass}
+                >
+                  <option value="">Selecione</option>
+                  {EMPRESAS_RETORNO.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>Motivo</label>
+                <select
+                  value={motivoRetorno}
+                  onChange={(e) => setMotivoRetorno(e.target.value)}
+                  className={fieldClass}
+                >
+                  <option value="">Selecione</option>
+                  {MOTIVOS_RETORNO.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {isCancelamento && (isIpsm || isUrbam || isPmsjc) && (
+          <section className={sectionClass}>
+            <div className="mb-4">
+              <h2 className={sectionTitleClass}>
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                Período do cancelamento
+              </h2>
+              <p className="mt-1 text-sm text-paragraph">
+                Preencha o intervalo e os dados adicionais exigidos pela empresa.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <label className={labelClass}>Início</label>
+                <input
+                  type="date"
+                  value={dataInicio}
+                  onChange={(e) => setDataInicio(e.target.value)}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Fim</label>
+                <input
+                  type="date"
+                  value={dataFim}
+                  onChange={(e) => setDataFim(e.target.value)}
+                  className={fieldClass}
+                />
+              </div>
+
+              {(isUrbam || isPmsjc) && (
+                <div>
+                  <label className={labelClass}>Documento</label>
+                  <input
+                    value={documento}
+                    onChange={(e) => setDocumento(e.target.value)}
+                    className={fieldClass}
+                    placeholder={isPmsjc ? "RG" : "Documento"}
+                  />
+                </div>
+              )}
+            </div>
+
+            {(isUrbam || isPmsjc) && (
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Reativação em meses</label>
+                  <input
+                    value={reativacaoMeses}
+                    onChange={(e) => setReativacaoMeses(e.target.value)}
+                    className={fieldClass}
+                    placeholder="Ex.: 12"
+                  />
+                </div>
+              </div>
+            )}
+          </section>
         )}
       </div>
-
-      {(isCancelamento || isRetorno) && (
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Nome do associado</label>
-            <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full border px-3 py-2 rounded" />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Matrícula</label>
-            <input value={matricula} onChange={(e) => setMatricula(e.target.value)} className="w-full border px-3 py-2 rounded" />
-          </div>
-        </div>
-      )}
-
-      {isRetorno && (
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Empresa</label>
-            <select
-              value={empresaRetorno}
-              onChange={(e) => setEmpresaRetorno(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-            >
-              <option value="">Selecione</option>
-              {EMPRESAS_RETORNO.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Motivo</label>
-            <select
-              value={motivoRetorno}
-              onChange={(e) => setMotivoRetorno(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-            >
-              <option value="">Selecione</option>
-              {MOTIVOS_RETORNO.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
-
-      {isCancelamento && (isIpsm || isUrbam || isPmsjc) && (
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Início</label>
-            <input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="w-full border px-3 py-2 rounded" />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Fim</label>
-            <input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-full border px-3 py-2 rounded" />
-          </div>
-
-          {(isUrbam || isPmsjc) && (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Documento</label>
-              <input
-                value={documento}
-                onChange={(e) => setDocumento(e.target.value)}
-                className="w-full border px-3 py-2 rounded"
-                placeholder={isPmsjc ? "RG" : "Documento"}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {isCancelamento && (isUrbam || isPmsjc) && (
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Reativação em meses</label>
-            <input
-              value={reativacaoMeses}
-              onChange={(e) => setReativacaoMeses(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-              placeholder="Ex.: 12"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

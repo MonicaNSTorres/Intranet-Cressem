@@ -14,6 +14,14 @@ function hojeISO() {
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+const labelClass = "mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500";
+const fieldClass =
+    "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
+const readOnlyClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 shadow-sm outline-none";
+const sectionClass = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
+const sectionTitleClass = "flex items-center gap-2 text-base font-semibold text-title";
+
 export function RcoForm() {
     const [tipos, setTipos] = useState<string[]>([]);
     const [tipo, setTipo] = useState("");
@@ -122,104 +130,148 @@ export function RcoForm() {
     };
 
     return (
-        <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-            {erro && (
-                <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-                    {erro}
-                </div>
-            )}
+        <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+            <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de crédito</label>
-                    <select
-                        value={tipo}
-                        onChange={(e) => {
-                            const novoTipo = e.target.value;
-                            setTipo(novoTipo);
-                            void carregarValorBase(novoTipo);
-                        }}
-                        className="w-full border px-3 py-2 rounded"
-                    >
-                        <option value="">Selecione</option>
-                        {tipos.map((t) => (
-                            <option key={t} value={t}>
-                                {t}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+            <div className="space-y-5 p-5 md:p-6">
+                {erro && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        {erro}
+                    </div>
+                )}
 
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Valor contratado</label>
-                    <input
-                        value={valorContratado}
-                        onChange={(e) => setValorContratado(monetizarDigitacao(e.target.value))}
-                        onBlur={() => void carregarValorBase()}
-                        placeholder="R$ 0,00"
-                        inputMode="numeric"
-                        className="w-full border px-3 py-2 rounded"
-                    />
-                </div>
+                <section className={sectionClass}>
+                    <div className="mb-4">
+                        <h2 className={sectionTitleClass}>
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                            Dados da operação
+                        </h2>
+                        <p className="mt-1 text-sm text-paragraph">
+                            Selecione o tipo de crédito e informe o valor contratado para carregar a base RCO.
+                        </p>
+                    </div>
 
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Valor Base (RCO)</label>
-                    <input
-                        value={valorBaseRco}
-                        readOnly
-                        className="w-full border px-3 py-2 rounded bg-gray-50"
-                    />
-                </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div>
+                            <label className={labelClass}>Tipo de crédito</label>
+                            <select
+                                value={tipo}
+                                onChange={(e) => {
+                                    const novoTipo = e.target.value;
+                                    setTipo(novoTipo);
+                                    void carregarValorBase(novoTipo);
+                                }}
+                                className={fieldClass}
+                            >
+                                <option value="">Selecione</option>
+                                {tipos.map((t) => (
+                                    <option key={t} value={t}>
+                                        {t}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Data operação</label>
-                    <input
-                        type="date"
-                        value={dataOperacao}
-                        onChange={(e) => setDataOperacao(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
-                    />
-                </div>
+                        <div>
+                            <label className={labelClass}>Valor contratado</label>
+                            <input
+                                value={valorContratado}
+                                onChange={(e) => setValorContratado(monetizarDigitacao(e.target.value))}
+                                onBlur={() => void carregarValorBase()}
+                                placeholder="R$ 0,00"
+                                inputMode="numeric"
+                                className={`${fieldClass} text-right`}
+                            />
+                        </div>
 
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Data última parcela</label>
-                    <input
-                        type="date"
-                        value={dataUltima}
-                        onChange={(e) => setDataUltima(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
-                    />
-                </div>
+                        <div>
+                            <label className={labelClass}>Valor base (RCO)</label>
+                            <input
+                                value={valorBaseRco}
+                                readOnly
+                                className={`${readOnlyClass} text-right`}
+                            />
+                        </div>
+                    </div>
+                </section>
 
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Data hoje (saldo devedor)</label>
-                    <input
-                        type="date"
-                        value={dataHoje}
-                        onChange={(e) => setDataHoje(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
-                    />
-                </div>
-            </div>
+                <section className={sectionClass}>
+                    <div className="mb-4">
+                        <h2 className={sectionTitleClass}>
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                            Datas para cálculo
+                        </h2>
+                        <p className="mt-1 text-sm text-paragraph">
+                            Informe as datas usadas no processamento do saldo devedor.
+                        </p>
+                    </div>
 
-            <div className="pt-5 border-t mt-6 flex items-center gap-3 justify-between">
-                <button
-                    type="button"
-                    onClick={onProcessar}
-                    disabled={loading}
-                    className="bg-secondary hover:bg-primary disabled:opacity-60 text-white font-semibold px-5 py-2 rounded shadow"
-                >
-                    {loading ? "Processando..." : "Processar"}
-                </button>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div>
+                            <label className={labelClass}>Data operação</label>
+                            <input
+                                type="date"
+                                value={dataOperacao}
+                                onChange={(e) => setDataOperacao(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
 
-                <div className="w-full max-w-xs">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Custo da operação</label>
-                    <input
-                        value={processoRco}
-                        readOnly
-                        className="w-full border px-3 py-2 rounded bg-gray-50 text-right"
-                    />
-                </div>
+                        <div>
+                            <label className={labelClass}>Data última parcela</label>
+                            <input
+                                type="date"
+                                value={dataUltima}
+                                onChange={(e) => setDataUltima(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+
+                        <div>
+                            <label className={labelClass}>Data hoje (saldo devedor)</label>
+                            <input
+                                type="date"
+                                value={dataHoje}
+                                onChange={(e) => setDataHoje(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                <section className={sectionClass}>
+                    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                        <div className="min-w-0">
+                            <h2 className={sectionTitleClass}>
+                                <span className="h-2 w-2 rounded-full bg-primary" />
+                                Resultado
+                            </h2>
+                            <p className="mt-1 text-sm text-paragraph">
+                                Processe os dados para visualizar o custo da operação.
+                            </p>
+                        </div>
+
+                        <div className="grid w-full grid-cols-1 gap-3 md:max-w-xl md:grid-cols-[auto_1fr] md:items-end">
+                            <button
+                                type="button"
+                                onClick={onProcessar}
+                                disabled={loading}
+                                className="inline-flex h-10 items-center justify-center rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-slate-300"
+                            >
+                                {loading ? "Processando..." : "Processar"}
+                            </button>
+
+                            <div>
+                                <label className={labelClass}>Custo da operação</label>
+                                <input
+                                    value={processoRco}
+                                    readOnly
+                                    className={`${readOnlyClass} text-right font-semibold text-primary`}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
     );

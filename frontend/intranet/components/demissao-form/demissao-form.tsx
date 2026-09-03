@@ -38,10 +38,6 @@ function formatTelefone(value: string) {
     .replace(/(\d{5})(\d)/, "$1-$2");
 }
 
-function onlyDigits(value: string) {
-  return String(value || "").replace(/\D/g, "");
-}
-
 function onlyCpfCnpjChars(value: string) {
   return String(value || "")
     .replace(/[^a-zA-Z0-9]/g, "")
@@ -241,10 +237,21 @@ export function DemissaoForm() {
     () => reciboTransferenciaNum + reciboPixNum + reciboDebitoContaNum,
     [reciboTransferenciaNum, reciboPixNum, reciboDebitoContaNum]
   );
+  const diferencaReciboPagar = useMemo(
+    () => Math.max(0, Number((Math.abs(saldoFinal) - totalRecibo).toFixed(2))),
+    [saldoFinal, totalRecibo]
+  );
+  const mostrarResumoRecibo = useMemo(
+    () => diferencaReciboPagar > 0,
+    [diferencaReciboPagar]
+  );
+
+  const temValorADevolver = useMemo(() => saldoFinal > 0, [saldoFinal]);
+  const temValorAPagar = useMemo(() => saldoFinal < 0, [saldoFinal]);
 
   const tipoFormulario = useMemo<"CREDOR" | "DEVEDOR">(
-    () => (saldoFinal >= 0 ? "CREDOR" : "DEVEDOR"),
-    [saldoFinal]
+    () => (temValorADevolver ? "CREDOR" : "DEVEDOR"),
+    [temValorADevolver]
   );
 
   function limparParcelas() {
@@ -304,7 +311,7 @@ export function DemissaoForm() {
 
     const totalAjustado = Number(Math.abs(saldoFinal).toFixed(2));
 
-    if (tipoFormulario === "CREDOR") {
+    if (temValorADevolver) {
       if (!banco.trim()) {
         setErro("Número do banco não preenchido.");
         return false;
@@ -354,7 +361,7 @@ export function DemissaoForm() {
       }
     }
 
-    if (tipoFormulario === "DEVEDOR") {
+    if (temValorAPagar) {
       const totalReciboNum = Number(totalRecibo.toFixed(2));
       if (totalReciboNum <= 0) {
         setErro("Preencha os valores do recibo.");
@@ -527,6 +534,56 @@ export function DemissaoForm() {
     }
   };
 
+  const gerarPdfAtual = async () => {
+    await gerarPdfDemissao({
+      tipoFormulario,
+      cpf: formatCpfCnpjView(cpf),
+      nome,
+      matricula,
+      empresa,
+      telefone,
+
+      saldoCapital: fmtBRL(saldoCapitalNum),
+      possuiConvenioOdontologico: possuiConvenio,
+      debitoConta: fmtBRL(debitoContaNum),
+      debitoEmprestimo: fmtBRL(debitoEmprestimoNum),
+      debitoCartao: fmtBRL(debitoCartaoNum),
+      convenioOdontologico: fmtBRL(valorConvenioNum),
+      totalDebitos: fmtBRL(totalDebitos),
+      saldoFinal: fmtBRL(Math.abs(saldoFinal)),
+      temValorADevolver,
+      temValorAPagar,
+
+      banco,
+      agencia,
+      conta,
+      digito,
+
+      primeiraParcelaValor: valorPrimeiraParcela || "",
+      primeiraParcelaData: dataPrimeiraParcela
+        ? formatDateBR(dataPrimeiraParcela)
+        : "",
+      totalDevolucaoParcelada: fmtBRL(totalDevolucaoParcelada),
+      parcelas: parcelas.map((item) => ({
+        numero: item.numero,
+        data: formatDateBR(item.data),
+        valor: item.valor,
+      })),
+
+      motivoDemissao,
+      dataRetorno,
+
+      reciboTransferencia: fmtBRL(reciboTransferenciaNum),
+      reciboPix: fmtBRL(reciboPixNum),
+      reciboDebitoConta: fmtBRL(reciboDebitoContaNum),
+      reciboTotal: fmtBRL(totalRecibo),
+
+      cidadeAtendimento,
+      dataAtendimento: hojeBR(),
+      atendente: nomeAtendente || "Atendente",
+    } as any);
+  };
+
   const gerar = async () => {
     try {
       setErro("");
@@ -551,51 +608,7 @@ export function DemissaoForm() {
         }
       }
 
-      await gerarPdfDemissao({
-        tipoFormulario,
-        cpf: formatCpfCnpjView(cpf),
-        nome,
-        matricula,
-        empresa,
-        telefone,
-
-        saldoCapital: fmtBRL(saldoCapitalNum),
-        possuiConvenioOdontologico: possuiConvenio,
-        debitoConta: fmtBRL(debitoContaNum),
-        debitoEmprestimo: fmtBRL(debitoEmprestimoNum),
-        debitoCartao: fmtBRL(debitoCartaoNum),
-        convenioOdontologico: fmtBRL(valorConvenioNum),
-        totalDebitos: fmtBRL(totalDebitos),
-        saldoFinal: fmtBRL(Math.abs(saldoFinal)),
-
-        banco,
-        agencia,
-        conta,
-        digito,
-
-        primeiraParcelaValor: valorPrimeiraParcela || "",
-        primeiraParcelaData: dataPrimeiraParcela
-          ? formatDateBR(dataPrimeiraParcela)
-          : "",
-        totalDevolucaoParcelada: fmtBRL(totalDevolucaoParcelada),
-        parcelas: parcelas.map((item) => ({
-          numero: item.numero,
-          data: formatDateBR(item.data),
-          valor: item.valor,
-        })),
-
-        motivoDemissao,
-        dataRetorno,
-
-        reciboTransferencia: fmtBRL(reciboTransferenciaNum),
-        reciboPix: fmtBRL(reciboPixNum),
-        reciboDebitoConta: fmtBRL(reciboDebitoContaNum),
-        reciboTotal: fmtBRL(totalRecibo),
-
-        cidadeAtendimento,
-        dataAtendimento: hojeBR(),
-        atendente: nomeAtendente || "Atendente",
-      } as any);
+      await gerarPdfAtual();
 
       if (falhaConvenio) {
         setInfo(`PDF gerado com sucesso. Atenção: ${falhaConvenio}`);
@@ -658,12 +671,29 @@ export function DemissaoForm() {
     setCpf(onlyCpfCnpjChars(novoValor).slice(0, 14));
   };
 
+  const labelClass =
+    "mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500";
+  const inputClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10";
+  const readOnlyClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 shadow-sm outline-none";
+  const moneyInputClass = `${inputClass} text-right`;
+  const readOnlyMoneyClass = `${readOnlyClass} text-right`;
+  const sectionClass =
+    "mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
+  const sectionTitleClass =
+    "mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]";
+
   return (
-    <div className="min-w-0 mx-auto rounded-xl bg-white p-6 shadow">
-      <SearchForm onSearch={onBuscar}>
+    <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
+      <SearchForm
+        onSearch={onBuscar}
+        className="border-b border-slate-100 bg-white p-5"
+      >
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label className={labelClass}>
               CPF/CNPJ do associado
             </label>
 
@@ -673,7 +703,7 @@ export function DemissaoForm() {
                 onChange={(e) => setCpf(onlyCpfCnpjChars(e.target.value).slice(0, 14))}
                 onKeyDown={onDocumentoKeyDown}
                 placeholder="CPF/CNPJ"
-                className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                className="h-10 rounded-xl border-slate-200 text-sm shadow-sm focus:border-primary focus:ring-primary/10"
                 maxLength={18}
               />
 
@@ -682,7 +712,7 @@ export function DemissaoForm() {
               <button
                 type="button"
                 onClick={limparFormulario}
-                className="inline-flex items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/40 hover:bg-primary/5 cursor-pointer"
               >
                 <FaTimes />
                 Limpar
@@ -695,7 +725,7 @@ export function DemissaoForm() {
               type="button"
               onClick={salvar}
               disabled={loadingGerar || loadingSalvar}
-              className="inline-flex items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary cursor-pointer disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-fourth cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
             >
               <FaPrint />
               {loadingSalvar ? "Salvando..." : "Salvar e imprimir"}
@@ -706,11 +736,11 @@ export function DemissaoForm() {
         {(erro || info) && (
           <div className="mt-4">
             {erro ? (
-              <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
                 {erro}
               </div>
             ) : (
-              <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
                 {info}
               </div>
             )}
@@ -718,226 +748,242 @@ export function DemissaoForm() {
         )}
       </SearchForm>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Nome do associado
-          </label>
-          <input
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
+      <div className={sectionClass}>
+        <h2 className={sectionTitleClass}>Dados do associado</h2>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label className={labelClass}>
+              Nome do associado
+            </label>
+            <input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Empresa
+            </label>
+            <input
+              value={empresa}
+              onChange={(e) => setEmpresa(e.target.value)}
+              className={inputClass}
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Empresa
-          </label>
-          <input
-            value={empresa}
-            onChange={(e) => setEmpresa(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div>
+            <label className={labelClass}>
+              Matrícula
+            </label>
+            <input
+              value={matricula}
+              onChange={(e) => setMatricula(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Telefone
+            </label>
+            <input
+              value={telefone}
+              onChange={(e) => setTelefone(formatTelefone(e.target.value))}
+              className={inputClass}
+              placeholder="(00) 00000-0000"
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Tipo do formulário
+            </label>
+            <input
+              readOnly
+              value={tipoFormulario === "CREDOR" ? "Credor" : "Devedor"}
+              className={readOnlyClass + " font-semibold"}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label className={labelClass}>
+              Possui convênio odontológico
+            </label>
+            <select
+              value={possuiConvenio}
+              onChange={(e) => {
+                const valor = e.target.value as "Sim" | "Não";
+                setPossuiConvenio(valor);
+                if (valor === "Não") {
+                  setValorConvenio(fmtBRL(0));
+                }
+              }}
+              className={inputClass + " font-semibold"}
+            >
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Valor convênio odontológico
+            </label>
+            <input
+              value={valorConvenio}
+              onChange={(e) => setValorConvenio(monetizarDigitacao(e.target.value))}
+              className={moneyInputClass}
+              placeholder="R$ 0,00"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Matrícula
-          </label>
-          <input
-            value={matricula}
-            onChange={(e) => setMatricula(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
+      <div className={sectionClass}>
+        <h2 className={sectionTitleClass}>Saldos e débitos</h2>
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Telefone
-          </label>
-          <input
-            value={telefone}
-            onChange={(e) => setTelefone(formatTelefone(e.target.value))}
-            className="w-full border px-3 py-2 rounded"
-            placeholder="(00) 00000-0000"
-          />
-        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <div>
+            <label className={labelClass}>
+              Saldo capital
+            </label>
+            <input
+              value={saldoCapital}
+              onChange={(e) => setSaldoCapital(monetizarDigitacao(e.target.value))}
+              className={moneyInputClass}
+              placeholder="R$ 0,00"
+            />
+          </div>
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Tipo do formulário
-          </label>
-          <input
-            readOnly
-            value={tipoFormulario === "CREDOR" ? "Credor" : "Devedor"}
-            className="w-full border px-3 py-2 rounded bg-gray-50 font-medium"
-          />
-        </div>
-      </div>
+          <div>
+            <label className={labelClass}>
+              Débito conta
+            </label>
+            <input
+              value={debitoConta}
+              onChange={(e) => setDebitoConta(monetizarDigitacao(e.target.value))}
+              className={moneyInputClass}
+              placeholder="R$ 0,00"
+            />
+          </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Possui convênio odontológico
-          </label>
-          <select
-            value={possuiConvenio}
-            onChange={(e) => {
-              const valor = e.target.value as "Sim" | "Não";
-              setPossuiConvenio(valor);
-              if (valor === "Não") {
-                setValorConvenio(fmtBRL(0));
+          <div>
+            <label className={labelClass}>
+              Débito empréstimo
+            </label>
+            <input
+              value={debitoEmprestimo}
+              onChange={(e) =>
+                setDebitoEmprestimo(monetizarDigitacao(e.target.value))
               }
-            }}
-            className="w-full border px-3 py-2 rounded font-medium"
-          >
-            <option value="Sim">Sim</option>
-            <option value="Não">Não</option>
-          </select>
+              className={moneyInputClass}
+              placeholder="R$ 0,00"
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Débito cartão
+            </label>
+            <input
+              value={debitoCartao}
+              onChange={(e) => setDebitoCartao(monetizarDigitacao(e.target.value))}
+              className={moneyInputClass}
+              placeholder="R$ 0,00"
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Valor convênio odontológico
-          </label>
-          <input
-            value={valorConvenio}
-            onChange={(e) => setValorConvenio(monetizarDigitacao(e.target.value))}
-            className="w-full border px-3 py-2 rounded text-right"
-            placeholder="R$ 0,00"
-          />
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label className={labelClass}>
+              Total débitos
+            </label>
+            <input
+              readOnly
+              value={fmtBRL(totalDebitos)}
+              className={readOnlyMoneyClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              {temValorADevolver
+                ? "Total a devolver"
+                : temValorAPagar
+                  ? "Total a pagar"
+                  : "Sem devolução ou pagamento"}
+            </label>
+            <input
+              readOnly
+              value={fmtBRL(Math.abs(saldoFinal))}
+              className={readOnlyMoneyClass}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-4">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Saldo capital
-          </label>
-          <input
-            value={saldoCapital}
-            onChange={(e) => setSaldoCapital(monetizarDigitacao(e.target.value))}
-            className="w-full border px-3 py-2 rounded text-right"
-            placeholder="R$ 0,00"
-          />
-        </div>
+      {temValorADevolver && (
+        <div className={sectionClass}>
+          <h2 className={sectionTitleClass}>Dados para devolução</h2>
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Débito conta
-          </label>
-          <input
-            value={debitoConta}
-            onChange={(e) => setDebitoConta(monetizarDigitacao(e.target.value))}
-            className="w-full border px-3 py-2 rounded text-right"
-            placeholder="R$ 0,00"
-          />
-        </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <div>
+              <label className={labelClass}>
+                Banco
+              </label>
+              <input
+                value={banco}
+                onChange={(e) => setBanco(e.target.value)}
+                className={inputClass}
+              />
+            </div>
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Débito empréstimo
-          </label>
-          <input
-            value={debitoEmprestimo}
-            onChange={(e) =>
-              setDebitoEmprestimo(monetizarDigitacao(e.target.value))
-            }
-            className="w-full border px-3 py-2 rounded text-right"
-            placeholder="R$ 0,00"
-          />
-        </div>
+            <div>
+              <label className={labelClass}>
+                Agência
+              </label>
+              <input
+                value={agencia}
+                onChange={(e) => setAgencia(e.target.value)}
+                className={inputClass}
+              />
+            </div>
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Débito cartão
-          </label>
-          <input
-            value={debitoCartao}
-            onChange={(e) => setDebitoCartao(monetizarDigitacao(e.target.value))}
-            className="w-full border px-3 py-2 rounded text-right"
-            placeholder="R$ 0,00"
-          />
-        </div>
-      </div>
+            <div>
+              <label className={labelClass}>
+                Conta
+              </label>
+              <input
+                value={conta}
+                onChange={(e) => setConta(e.target.value)}
+                className={inputClass}
+              />
+            </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Total débitos
-          </label>
-          <input
-            readOnly
-            value={fmtBRL(totalDebitos)}
-            className="w-full border px-3 py-2 rounded bg-gray-50 text-right"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            {tipoFormulario === "CREDOR" ? "Total a devolver" : "Total a pagar"}
-          </label>
-          <input
-            readOnly
-            value={fmtBRL(Math.abs(saldoFinal))}
-            className="w-full border px-3 py-2 rounded bg-gray-50 text-right"
-          />
-        </div>
-      </div>
-
-      {tipoFormulario === "CREDOR" && (
-        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Banco
-            </label>
-            <input
-              value={banco}
-              onChange={(e) => setBanco(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-            />
+            <div>
+              <label className={labelClass}>
+                Dígito
+              </label>
+              <input
+                value={digito}
+                onChange={(e) => setDigito(e.target.value)}
+                className={inputClass}
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Agência
-            </label>
-            <input
-              value={agencia}
-              onChange={(e) => setAgencia(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Conta
-            </label>
-            <input
-              value={conta}
-              onChange={(e) => setConta(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Dígito
-            </label>
-            <input
-              value={digito}
-              onChange={(e) => setDigito(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-            />
-          </div>
-
-          <div className="md:col-span-4 mt-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="mt-4 rounded-2xl border border-[#00AE9D]/15 bg-[#00AE9D]/5 p-4">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Valor da 1ª parcela
                 </label>
                 <input
@@ -946,13 +992,13 @@ export function DemissaoForm() {
                     setValorPrimeiraParcela(monetizarDigitacao(e.target.value));
                     limparParcelas();
                   }}
-                  className="w-full border px-3 py-2 rounded text-right bg-white"
+                  className={moneyInputClass}
                   placeholder="R$ 0,00"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Data da 1ª parcela
                 </label>
                 <input
@@ -967,18 +1013,18 @@ export function DemissaoForm() {
                     if (!dataPrimeiraParcela) return;
                     await validarDataPrimeiraParcela(dataPrimeiraParcela);
                   }}
-                  className="w-full border px-3 py-2 rounded bg-white"
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label className={labelClass}>
                   Total devolução parcelada
                 </label>
                 <input
                   readOnly
                   value={fmtBRL(totalDevolucaoParcelada)}
-                  className="w-full border px-3 py-2 rounded bg-gray-100 text-right"
+                  className={readOnlyMoneyClass}
                 />
               </div>
             </div>
@@ -987,7 +1033,7 @@ export function DemissaoForm() {
               <button
                 type="button"
                 onClick={adicionarParcela}
-                className="inline-flex items-center gap-2 rounded bg-secondary px-3 py-2 text-sm font-medium text-white hover:bg-primary"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white"
               >
                 <FaPlus size={12} />
                 Adicionar parcela
@@ -996,7 +1042,7 @@ export function DemissaoForm() {
               <button
                 type="button"
                 onClick={removerParcela}
-                className="inline-flex items-center gap-2 rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-fourth/30 bg-fourth/10 px-4 text-sm font-semibold text-fourth shadow-sm transition hover:bg-fourth hover:text-white"
               >
                 <FaTrash size={12} />
                 Remover parcela
@@ -1004,9 +1050,9 @@ export function DemissaoForm() {
             </div>
 
             {(parcelas.length > 0 || totalDevolucaoParcelada > 0) && (
-              <div className="mt-4 overflow-hidden rounded border border-slate-200 bg-white">
+              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-100 text-slate-700">
+                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                     <tr>
                       <th className="px-3 py-2 text-left">Parcela</th>
                       <th className="px-3 py-2 text-left">Data</th>
@@ -1037,118 +1083,130 @@ export function DemissaoForm() {
         </div>
       )}
 
-      {tipoFormulario === "DEVEDOR" && (
-        <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-semibold text-slate-700">Recibo (devedor)</h3>
+      {temValorAPagar && (
+        <div className={sectionClass}>
+          <h2 className={sectionTitleClass}>Recibo do devedor</h2>
 
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className={labelClass}>
                 Transferência
               </label>
               <input
                 value={reciboTransferencia}
                 onChange={(e) => setReciboTransferencia(monetizarDigitacao(e.target.value))}
-                className="w-full border px-3 py-2 rounded text-right bg-white"
+                className={moneyInputClass}
                 placeholder="R$ 0,00"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Pix</label>
+              <label className={labelClass}>Pix</label>
               <input
                 value={reciboPix}
                 onChange={(e) => setReciboPix(monetizarDigitacao(e.target.value))}
-                className="w-full border px-3 py-2 rounded text-right bg-white"
+                className={moneyInputClass}
                 placeholder="R$ 0,00"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className={labelClass}>
                 Débito em C/C
               </label>
               <input
                 value={reciboDebitoConta}
                 onChange={(e) => setReciboDebitoConta(monetizarDigitacao(e.target.value))}
-                className="w-full border px-3 py-2 rounded text-right bg-white"
+                className={moneyInputClass}
                 placeholder="R$ 0,00"
               />
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Total do recibo
-              </label>
-              <input
-                readOnly
-                value={fmtBRL(totalRecibo)}
-                className="w-full border px-3 py-2 rounded bg-gray-100 text-right"
-              />
-            </div>
+          {mostrarResumoRecibo && (
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <label className={labelClass}>
+                  Total recebido
+                </label>
+                <input
+                  readOnly
+                  value={fmtBRL(totalRecibo)}
+                  className={readOnlyMoneyClass}
+                />
+              </div>
 
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Diferença para total a pagar
-              </label>
-              <input
-                readOnly
-                value={fmtBRL(Number((totalRecibo - Math.abs(saldoFinal)).toFixed(2)))}
-                className="w-full border px-3 py-2 rounded bg-gray-100 text-right"
-              />
+              <div>
+                <label className={labelClass}>
+                  Diferença para total a pagar
+                </label>
+                <input
+                  readOnly
+                  value={fmtBRL(diferencaReciboPagar)}
+                  className={readOnlyMoneyClass}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Motivo da demissão
-          </label>
-          <select
-            value={motivoDemissao}
-            onChange={(e) => setMotivoDemissao(e.target.value)}
-            className="w-full border px-3 py-2 rounded bg-white"
-          >
-            <option value="">Selecione</option>
-            {motivos.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
+      {!temValorADevolver && !temValorAPagar && (
+        <div className="my-4 rounded-2xl border border-[#00AE9D]/30 bg-[#00AE9D]/10 p-4 text-sm font-semibold text-[#006B5F]">
+          Não há valor a devolver ou a pagar. Os dados bancários não são necessários.
         </div>
+      )}
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Cidade do atendimento
-          </label>
-          <select
-            value={cidadeAtendimento}
-            onChange={(e) => setCidadeAtendimento(e.target.value)}
-            className="w-full border px-3 py-2 rounded bg-white"
-          >
-            <option value="">Selecione</option>
-            {cidades.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className={sectionClass}>
+        <h2 className={sectionTitleClass}>Fechamento do formulário</h2>
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
-            Data de retorno
-          </label>
-          <input
-            readOnly
-            value={dataRetorno}
-            className="w-full border px-3 py-2 rounded bg-gray-50 cursor-not-allowed"
-          />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div>
+            <label className={labelClass}>
+              Motivo da demissão
+            </label>
+            <select
+              value={motivoDemissao}
+              onChange={(e) => setMotivoDemissao(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Selecione</option>
+              {motivos.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Cidade do atendimento
+            </label>
+            <select
+              value={cidadeAtendimento}
+              onChange={(e) => setCidadeAtendimento(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Selecione</option>
+              {cidades.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Data de retorno
+            </label>
+            <input
+              readOnly
+              value={dataRetorno}
+              className={readOnlyClass + " cursor-not-allowed"}
+            />
+          </div>
         </div>
       </div>
 

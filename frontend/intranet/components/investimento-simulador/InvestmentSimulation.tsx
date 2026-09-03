@@ -31,9 +31,11 @@ export default function InvestmentSimulation(props: {
       : getPoupancaResult(investment.amount, investment.poupanca, days);
 
   return (
-    <div className="bg-white rounded-2xl shadow p-6">
-      <h2 className="text-lg font-semibold text-gray-900">Simulação</h2>
-      <p className="text-sm text-gray-600 mt-1">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
+        Simulação
+      </h2>
+      <p className="mt-1 text-sm font-medium text-slate-600">
         Simulação da rentabilidade do seu investimento conforme o tipo de aplicação.
       </p>
 

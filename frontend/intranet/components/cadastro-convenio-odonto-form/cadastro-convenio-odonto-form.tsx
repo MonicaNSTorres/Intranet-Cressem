@@ -25,7 +25,6 @@ import {
 } from "@/services/convenio_odonto.service";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
 
 function onlyDigits(value: string) {
     return String(value || "").replace(/\D/g, "");
@@ -105,10 +104,10 @@ function associadoAtivo(associado: any) {
 }
 
 const inputBase =
-    "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+    "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 const textareaBase =
-    "w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+    "min-h-[96px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-4 focus:ring-primary/10";
 
 function Field({
     label,
@@ -120,8 +119,8 @@ function Field({
     hint?: string;
 }) {
     return (
-        <div className="space-y-1.5">
-            <label className="block text-[12px] font-semibold uppercase tracking-[0.03em] text-slate-600">
+        <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-600">
                 {label}
             </label>
             {children}
@@ -138,11 +137,11 @@ function Section({
     children: React.ReactNode;
 }) {
     return (
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm mb-10">
-            <div className="border-b border-emerald-200 bg-linear-to-r from-[#79B729] to-[#8ED12F] px-5 py-3">
-                <h3 className="text-sm font-bold text-white">{title}</h3>
-            </div>
-            <div className="p-5">{children}</div>
+        <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+                {title}
+            </h3>
+            {children}
         </section>
     );
 }
@@ -835,38 +834,40 @@ export function CadastroConvenioOdontoForm() {
 
     if (loadingInicial) {
         return (
-            <div className="mx-auto w-full min-w-225 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <p className="text-sm text-slate-500">Carregando dados da tela...</p>
             </div>
         );
     }
 
     return (
-        <div className="mx-auto w-full min-w-225 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
+        <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="h-1 bg-gradient-to-r from-[#006f65] via-primary to-secondary" />
+            <div className="space-y-5 p-4 sm:p-6 lg:p-8">
             <SearchForm onSearch={onBuscar}>
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm mb-10">
-                    <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-800">
-                                {modoEdicao ? "Alteração de Convênio Odontológico" : "Cadastro de Convênio Odontológico"}
-                            </h1>
-                            <p className="text-sm text-slate-500">
-                                Consulte o titular, selecione empresa, convênio, plano e gerencie os dependentes.
+                            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+                                Consulta do titular
+                            </h2>
+                            <p className="mt-1 text-sm text-[var(--paragraph)]">
+                                Consulte o CPF para carregar os dados e continuar o cadastro ou alteração.
                             </p>
                         </div>
 
-                        <div className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                        <div className="inline-flex h-10 items-center rounded-xl border border-primary/20 bg-primary/10 px-4 text-sm font-semibold text-primary">
                             Gasto mensal: {fmtBRL(gastoMensal)}
                         </div>
                     </div>
 
-                    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
-                        <div className="space-y-1.5">
-                            <label className="block text-[12px] font-semibold uppercase tracking-[0.03em] text-slate-600">
+                    <div>
+                        <div className="space-y-1">
+                            <label className="block text-xs font-semibold text-slate-600">
                                 CPF do titular
                             </label>
 
-                            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px_140px]">
+                            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto]">
                                 <SearchInput
                                     value={formatCpf(cpf)}
                                     onChange={(e) => setCpf(e.target.value)}
@@ -876,44 +877,35 @@ export function CadastroConvenioOdontoForm() {
                                     maxLength={14}
                                 />
 
-                                <SearchButton loading={loadingBuscar} label="Pesquisar" />
+                                <button
+                                    type="submit"
+                                    disabled={loadingBuscar}
+                                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <FaSearch />
+                                    {loadingBuscar ? "Pesquisando..." : "Pesquisar"}
+                                </button>
 
                                 <button
                                     type="button"
                                     onClick={limparFormulario}
-                                    className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50"
+                                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10"
                                 >
                                     Limpar
                                 </button>
                             </div>
                         </div>
 
-
-                        <div className="flex flex-col gap-3 sm:flex-row xl:items-end">
-                            <button
-                                type="button"
-                                onClick={salvar}
-                                disabled={loadingSalvar}
-                                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                <FaSave />
-                                {loadingSalvar
-                                    ? "Salvando..."
-                                    : modoEdicao
-                                        ? "Salvar Alterações"
-                                        : "Salvar Cadastro"}
-                            </button>
-                        </div>
                     </div>
 
                     {(erro || info) && (
                         <div className="mt-4">
                             {erro ? (
-                                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                                     {erro}
                                 </div>
                             ) : (
-                                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                                <div className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
                                     {info}
                                 </div>
                             )}
@@ -931,14 +923,14 @@ export function CadastroConvenioOdontoForm() {
 
                         <div className="md:col-span-5">
                             <Field label="Empresa">
-                                <div className="space-y-2 rounded-xl border border-slate-300 bg-slate-50 p-3">
+                                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
                                     {empresas.length === 0 ? (
                                         <p className="text-sm text-slate-500">Nenhuma empresa carregada.</p>
                                     ) : (
                                         empresas.map((empresa) => (
                                             <label
                                                 key={`${empresa.NR_MATRICULA}-${empresa.NR_CPF_CNPJ_EMPREGADOR}`}
-                                                className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3"
+                                                className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-primary/30 hover:bg-primary/5"
                                             >
                                                 <input
                                                     type="radio"
@@ -947,7 +939,7 @@ export function CadastroConvenioOdontoForm() {
                                                     onChange={() =>
                                                         syncEmpresaSelecionada(String(empresa.NR_MATRICULA), empresas)
                                                     }
-                                                    className="mt-1 h-4 w-4 accent-emerald-600"
+                                                    className="mt-1 h-4 w-4 accent-primary"
                                                 />
 
                                                 <span className="text-sm text-slate-700">
@@ -1072,9 +1064,9 @@ export function CadastroConvenioOdontoForm() {
                                 <button
                                     type="button"
                                     onClick={() => setTitularAtivo((old) => !old)}
-                                    className={`inline-flex h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition ${titularAtivo
-                                        ? "bg-emerald-600 text-white hover:brightness-95"
-                                        : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                                    className={`inline-flex h-10 w-full cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold shadow-sm transition ${titularAtivo
+                                        ? "border-secondary/30 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white"
+                                        : "border-fourth/30 bg-fourth/10 text-fourth hover:bg-fourth hover:text-white"
                                         }`}
                                 >
                                     {titularAtivo ? "Ativo" : "Inativo"}
@@ -1085,9 +1077,9 @@ export function CadastroConvenioOdontoForm() {
                 </Section>
 
                 <Section title="Dependentes">
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h4 className="text-sm font-semibold text-slate-700">Dados dos Dependentes</h4>
+                            <h4 className="text-sm font-black text-slate-800">Dados dos Dependentes</h4>
                             <p className="text-xs text-slate-500">
                                 Adicione, altere ou inative dependentes do convênio odontológico.
                             </p>
@@ -1096,7 +1088,7 @@ export function CadastroConvenioOdontoForm() {
                         <button
                             type="button"
                             onClick={adicionarDependente}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-third px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95"
+                            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white"
                         >
                             <FaPlus />
                             Adicionar Dependente
@@ -1104,26 +1096,26 @@ export function CadastroConvenioOdontoForm() {
                     </div>
 
                     {dependentes.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
                             Nenhum dependente adicionado.
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             {dependentes.map((dep, index) => (
                                 <div
                                     key={dep.localId}
-                                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                                    className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4"
                                 >
-                                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <h5 className="text-sm font-bold text-slate-700">Dependente {index + 1}</h5>
 
                                         <div className="flex gap-2">
                                             <button
                                                 type="button"
                                                 onClick={() => atualizarDependente(dep.localId, "ativo", !dep.ativo)}
-                                                className={`inline-flex h-10 items-center justify-center rounded-xl px-4 text-xs font-semibold shadow-sm transition ${dep.ativo
-                                                    ? "bg-emerald-600 text-white"
-                                                    : "border border-slate-300 bg-white text-slate-700"
+                                                className={`inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border px-3 text-xs font-semibold shadow-sm transition ${dep.ativo
+                                                    ? "border-secondary/30 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white"
+                                                    : "border-fourth/30 bg-fourth/10 text-fourth hover:bg-fourth hover:text-white"
                                                     }`}
                                             >
                                                 {dep.ativo ? "Ativo" : "Inativo"}
@@ -1132,7 +1124,7 @@ export function CadastroConvenioOdontoForm() {
                                             <button
                                                 type="button"
                                                 onClick={() => removerDependente(dep.localId)}
-                                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700"
+                                                className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-fourth/30 bg-fourth/10 px-3 text-xs font-semibold text-fourth shadow-sm transition hover:bg-fourth hover:text-white"
                                             >
                                                 <FaTrash />
                                                 Remover
@@ -1278,7 +1270,7 @@ export function CadastroConvenioOdontoForm() {
                     </div>
                 </Section>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                         <div className="max-w-sm">
                             <p className="text-sm text-slate-500">
@@ -1291,7 +1283,7 @@ export function CadastroConvenioOdontoForm() {
                                 type="button"
                                 onClick={salvar}
                                 disabled={loadingSalvar}
-                                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <FaSave />
                                 {loadingSalvar
@@ -1304,6 +1296,7 @@ export function CadastroConvenioOdontoForm() {
                     </div>
                 </div>
             </SearchForm>
+            </div>
         </div>
     );
 }

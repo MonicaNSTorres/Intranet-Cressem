@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState } from "react";
-import { FaDownload, FaFileCsv, FaUsers, FaBirthdayCake, FaMoneyBillWave, FaFileInvoiceDollar } from "react-icons/fa";
+import { FaDownload, FaUsers, FaBirthdayCake, FaMoneyBillWave, FaFileInvoiceDollar } from "react-icons/fa";
 import {
   downloadCsvContratantesOdonto,
   downloadCsvHistoricoCustoOdonto,
@@ -19,11 +19,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-emerald-200 bg-linear-to-r from-[#79B729] to-[#8ED12F] px-5 py-3">
-        <h3 className="text-sm font-bold text-white">{title}</h3>
-      </div>
-      <div className="p-5">{children}</div>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+        {title}
+      </h3>
+      {children}
     </section>
   );
 }
@@ -42,26 +42,30 @@ function ReportButton({
   loading?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
-      className="group flex min-h-29.5 w-full flex-col items-start justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-secondary hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-    >
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-secondary transition">
-        {icon}
+    <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+          {icon}
+        </div>
+
+        <div className="min-w-0">
+          <h4 className="text-sm font-bold text-[var(--title)]">{title}</h4>
+          <p className="mt-1 text-sm text-[var(--paragraph)]">{subtitle}</p>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        <h4 className="text-md font-semibold text-slate-800 mt-3">{title}</h4>
-        <p className="text-sm text-slate-500">{subtitle}</p>
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={loading}
+          className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <FaDownload size={13} />
+          {loading ? "Baixando..." : "Baixar CSV"}
+        </button>
       </div>
-
-      <div className="inline-flex items-center gap-2 mt-3 text-md font-semibold text-secondary">
-        <FaDownload size={12} />
-        {loading ? "Baixando..." : "Baixar CSV"}
-      </div>
-    </button>
+    </div>
   );
 }
 
@@ -155,17 +159,15 @@ export function RelatorioConvenioOdontoForm() {
   }
 
   return (
-    <div className="mx-auto w-full min-w-225 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
+    <div className="w-full space-y-6">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-2 flex items-center gap-3">
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">
-              Exportação de relatórios
-            </h2>
-            <p className="text-sm text-slate-500">
-              Escolha abaixo o relatório desejado para download.
-            </p>
-          </div>
+        <div>
+          <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+            Exportação de relatórios
+          </h2>
+          <p className="mt-1 text-sm text-[var(--paragraph)]">
+            Escolha abaixo o relatório desejado para download.
+          </p>
         </div>
 
         {(erro || info) && (
@@ -175,7 +177,7 @@ export function RelatorioConvenioOdontoForm() {
                 {erro}
               </div>
             ) : (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+              <div className="rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm font-medium text-[#006f65]">
                 {info}
               </div>
             )}

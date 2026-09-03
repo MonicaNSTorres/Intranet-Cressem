@@ -1,15 +1,15 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useRef, useState } from "react";
-import { FaCalendarPlus, FaSearch, FaTrash } from "react-icons/fa";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { FaCalendarPlus, FaTrash } from "react-icons/fa";
 import {
     cadastrarSolicitacaoParticipacao,
     dispararEmailGerencia,
     listarCidades,
     type CidadeResponse,
 } from "@/services/solicitacao_participacao.service";
-import { formatCpfView, monetizarDigitacao, onlyDigits } from "@/utils/br";
+import { monetizarDigitacao } from "@/utils/br";
 import { useRouter } from "next/navigation";
 import { getMeAdUser } from "@/services/auth.service";
 
@@ -57,26 +57,71 @@ function converterReaisParaNumero(valorFormatado: string) {
     return Number.isNaN(valorNumerico) ? 0 : valorNumerico;
 }
 
-function formatCpfOuCnpj(value: string) {
+function limparCpfCnpj(value: string) {
     return String(value || "")
         .replace(/[^A-Za-z0-9]/g, "")
         .toUpperCase()
         .slice(0, 14);
 }
 
+function formatCpfOuCnpj(value: string) {
+    const raw = limparCpfCnpj(value);
+
+    // CPF: somente números e até 11 dígitos.
+    // Enquanto o usuário digita um CPF, aplica 000.000.000-00.
+    if (!/[A-Z]/.test(raw) && raw.length <= 11) {
+        return raw
+            .replace(/^(\d{3})(\d)/, "$1.$2")
+            .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+            .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d{1,2}).*/, "$1.$2.$3-$4");
+    }
+
+    // CNPJ: aceita o padrão atual de 14 caracteres, inclusive alfanumérico.
+    // Exibição: 00.000.000/0000-00.
+    return raw
+        .replace(/^(.{2})(.)/, "$1.$2")
+        .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+        .replace(/^(.{2})\.(.{3})\.(.{3})(.)/, "$1.$2.$3/$4")
+        .replace(/^(.{2})\.(.{3})\.(.{3})\/(.{4})(.{1,2}).*/, "$1.$2.$3/$4-$5");
+}
+
+function normalizarCpfCnpjParaBanco(value: string) {
+    return limparCpfCnpj(value);
+}
+
 const ORACLE_BYTE_BUFFER = 2;
+const ORACLE_NUMBER_SAFE_DIGITS = 20;
 const ORACLE_LIMITS = {
     NM_SOLICITANTE: 100,
     NM_CIDADE: 30,
     NM_FUNCIONARIO: 70,
     DESC_SOLICITACAO: 400,
-    DESC_SERVICOS: 200,
-    DESC_VINCULO: 200,
-    DESC_RETORNO_ULTIMO_EVENTO: 300,
-    DESC_RESUMO_EVENTO: 2000,
+    DESC_SERVICOS: 190,
+    DESC_VINCULO: 190,
+    DESC_RETORNO_ULTIMO_EVENTO: 285,
+    DESC_RESUMO_EVENTO: 1900,
 } as const;
 
 const utf8Encoder = new TextEncoder();
+
+const labelBase =
+    "mb-1.5 block text-[12px] font-bold uppercase tracking-[0.04em] text-slate-600";
+const inputBase =
+    "w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/15";
+const inputReadOnlyBase =
+    "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm outline-none";
+const choiceGroupBase =
+    "flex flex-wrap gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 shadow-inner shadow-slate-100";
+const choiceLabelBase =
+    "flex items-center gap-2 text-sm font-medium text-slate-700";
+const fileInputBase =
+    "w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm file:mr-3 file:rounded-xl file:border-0 file:bg-[#79B729] file:px-3 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-[#00AE9D]";
+const sectionTitleBase =
+    "mb-3 border-l-4 border-[#00AE9D] pl-3 text-sm font-black uppercase tracking-[0.04em] text-slate-800";
+const primaryButtonBase =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-[#79B729] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#00AE9D] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70";
+const secondaryButtonBase =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[#00AE9D]/35 bg-[#00AE9D]/10 px-4 text-sm font-bold text-[#006f65] shadow-sm transition hover:bg-[#00AE9D] hover:text-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70";
 
 function limitarTextoPorBytesOracle(value: string, limiteBanco: number) {
     const limiteSeguro = Math.max(1, limiteBanco - ORACLE_BYTE_BUFFER);
@@ -100,6 +145,20 @@ function normalizarOracleUpper(value: string, limiteBanco: number) {
     );
 }
 
+function limitarMoedaOracle(value: string) {
+    const somenteDigitos = String(value || "")
+        .replace(/\D/g, "")
+        .slice(0, ORACLE_NUMBER_SAFE_DIGITS);
+
+    return monetizarDigitacao(somenteDigitos);
+}
+
+function isPdfFile(file: File | null) {
+    if (!file) return true;
+    const nome = file.name.toLowerCase();
+    return file.type === "application/pdf" || nome.endsWith(".pdf");
+}
+
 export function SolicitacaoParticipacaoForm() {
     const router = useRouter();
 
@@ -113,6 +172,8 @@ export function SolicitacaoParticipacaoForm() {
     const [info, setInfo] = useState("");
     const alertRef = useRef<HTMLDivElement | null>(null);
     const oficioInputRef = useRef<HTMLInputElement | null>(null);
+    const painelSisbrInputRef = useRef<HTMLInputElement | null>(null);
+    const docSemFinsInputRef = useRef<HTMLInputElement | null>(null);
     const subirParaAlerta = () => {
         window.requestAnimationFrame(() => {
             alertRef.current?.scrollIntoView({
@@ -166,6 +227,7 @@ export function SolicitacaoParticipacaoForm() {
 
     const [funcionario, setFuncionario] = useState("");
     const [oficio, setOficio] = useState<File | null>(null);
+    const [painelSisbr, setPainelSisbr] = useState<File | null>(null);
     const [diaSolicitacao, setDiaSolicitacao] = useState(hojeISO());
 
     const [openAuditorioModal, setOpenAuditorioModal] = useState(false);
@@ -294,6 +356,26 @@ export function SolicitacaoParticipacaoForm() {
         }));
     };
 
+    const selecionarPdf = (
+        file: File | null,
+        setFile: (file: File | null) => void,
+        inputRef?: RefObject<HTMLInputElement | null>
+    ) => {
+        if (!file) {
+            setFile(null);
+            return;
+        }
+
+        if (!isPdfFile(file)) {
+            setFile(null);
+            if (inputRef?.current) inputRef.current.value = "";
+            mostrarErro("Anexe somente arquivos em PDF.");
+            return;
+        }
+
+        setFile(file);
+    };
+
     const getPlataformaString = () => {
         return auditorio.NM_PLATAFORMA.trim();
     };
@@ -387,7 +469,7 @@ export function SolicitacaoParticipacaoForm() {
             return false;
         }
 
-        const documentoCpfCnpj = cpfCnpj.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+        const documentoCpfCnpj = normalizarCpfCnpjParaBanco(cpfCnpj);
 
         if (![11, 14].includes(documentoCpfCnpj.length)) {
             mostrarErro("Preencha CPF com 11 caracteres ou CNPJ com 14 caracteres.");
@@ -401,6 +483,11 @@ export function SolicitacaoParticipacaoForm() {
 
         if (semFinsLucrativos === "1" && !docSemFins) {
             mostrarErro("Anexe o comprovante de Entidade Sem Fins Lucrativos.");
+            return false;
+        }
+
+        if (!isPdfFile(docSemFins)) {
+            mostrarErro("O comprovante de Entidade Sem Fins Lucrativos deve estar em PDF.");
             return false;
         }
 
@@ -478,6 +565,21 @@ export function SolicitacaoParticipacaoForm() {
             return false;
         }
 
+        if (!isPdfFile(oficio)) {
+            mostrarErro("O Ofício deve estar em PDF.");
+            return false;
+        }
+
+        if (!painelSisbr) {
+            mostrarErro("Anexe o Painel SISBR.");
+            return false;
+        }
+
+        if (!isPdfFile(painelSisbr)) {
+            mostrarErro("O Painel SISBR deve estar em PDF.");
+            return false;
+        }
+
         if (auditorioSede && !validaCamposAuditorio()) {
             return false;
         }
@@ -528,8 +630,15 @@ export function SolicitacaoParticipacaoForm() {
         setEventoAnterior("0");
         setRetornoUltimoEvento("");
         setOficio(null);
+        setPainelSisbr(null);
         if (oficioInputRef.current) {
             oficioInputRef.current.value = "";
+        }
+        if (painelSisbrInputRef.current) {
+            painelSisbrInputRef.current.value = "";
+        }
+        if (docSemFinsInputRef.current) {
+            docSemFinsInputRef.current.value = "";
         }
         setDiaSolicitacao(hojeISO());
         limparAuditorio();
@@ -613,11 +722,10 @@ export function SolicitacaoParticipacaoForm() {
                 ORACLE_LIMITS.DESC_RESUMO_EVENTO
             );
 
+            const nrCpfCnpjBanco = normalizarCpfCnpjParaBanco(cpfCnpj);
+
             formData.append("NM_SOLICITANTE", nmSolicitanteOracle);
-            formData.append(
-                "NR_CPF_CNPJ",
-                cpfCnpj.replace(/[^A-Za-z0-9]/g, "").toUpperCase()
-            );
+            formData.append("NR_CPF_CNPJ", nrCpfCnpjBanco);
             formData.append("NM_FUNCIONARIO", nmFuncionarioOracle);
             formData.append("NM_CIDADE", nmCidadeOracle);
             formData.append("DT_SOLICITACAO", diaSolicitacao);
@@ -696,11 +804,20 @@ export function SolicitacaoParticipacaoForm() {
                 formData.append("DIR_OFICIO", oficio);
             }
 
+            if (painelSisbr) {
+                formData.append("DIR_PAINEL_SISBR", painelSisbr);
+            }
+
             const response = await cadastrarSolicitacaoParticipacao(formData);
             const idPatrocinio = response?.ID_PATROCINIO;
             const duplicidadeIgnorada = Boolean(response?.DUPLICIDADE_IGNORADA);
 
-            if (idPatrocinio && !duplicidadeIgnorada) {
+            const modoTesteParticipacao =
+                process.env.NODE_ENV === "development" &&
+                process.env.NEXT_PUBLIC_PARTICIPACAO_TEST_MODE === "true";
+            const solicitacaoTeste = nmSolicitanteOracle.toUpperCase().includes("TESTE");
+
+            if (idPatrocinio && !duplicidadeIgnorada && !(modoTesteParticipacao && solicitacaoTeste)) {
                 await dispararEmailGerencia({
                     funcionario,
                     empresa: nmSolicitanteOracle,
@@ -720,35 +837,45 @@ export function SolicitacaoParticipacaoForm() {
 
     return (
         <>
-            <div className="mx-auto rounded-xl bg-white p-6 shadow">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div />
-                    <button
-                        type="button"
-                        onClick={handleClick}
-                        className="rounded-lg bg-secondary px-6 py-2 text-md font-semibold text-white hover:bg-primary cursor-pointer"
-                    >
-                        Consulta Participação de Marketing
-                    </button>
+            <div className="mx-auto w-full space-y-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                    <div className="h-1 bg-gradient-to-r from-[#00AE9D] via-[#79B729] to-[#C7D300]" />
+                    <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                        <div className="min-w-0">
+                            <h2 className="text-lg font-black text-slate-950">
+                                Dados da solicitação
+                            </h2>
+                            <p className="mt-1 max-w-3xl text-sm font-medium text-slate-600">
+                                Preencha as informações do evento e anexe o ofício para encaminhar a aprovação.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleClick}
+                            className={`${secondaryButtonBase} shrink-0 cursor-pointer px-5`}
+                        >
+                            Consulta Participação de Marketing
+                        </button>
+                    </div>
                 </div>
 
                 <div ref={alertRef} />
 
                 {erro && (
-                    <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                         {erro}
                     </div>
                 )}
 
                 {info && (
-                    <div className="mt-4 rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                    <div className="rounded-2xl border border-[#00AE9D]/25 bg-[#00AE9D]/10 px-4 py-3 text-sm font-semibold text-[#006f65]">
                         {info}
                     </div>
                 )}
 
-                <div className="mt-6 grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                        <label className={labelBase}>
                             Nome Fantasia
                         </label>
                         <input
@@ -761,26 +888,28 @@ export function SolicitacaoParticipacaoForm() {
                                     )
                                 )
                             }
-                            className="w-full rounded border px-3 py-2"
+                            className={inputBase}
                             maxLength={ORACLE_LIMITS.NM_SOLICITANTE}
                         />
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 CPF/CNPJ
                             </label>
                             <input
                                 value={cpfCnpj}
                                 onChange={(e) => setCpfCnpj(formatCpfOuCnpj(e.target.value))}
-                                className="w-full rounded border px-3 py-2"
+                                className={inputBase}
                                 maxLength={18}
+                                autoComplete="off"
+                                placeholder="000.000.000-00 ou 00.000.000/0000-00"
                             />
                         </div>
 
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Cidade destino
                             </label>
                             <select
@@ -793,7 +922,7 @@ export function SolicitacaoParticipacaoForm() {
                                         )
                                     )
                                 }
-                                className="w-full rounded border px-3 py-2"
+                                className={inputBase}
                             >
                                 <option value="">Selecione uma cidade</option>
                                 {cidadesOrdenadas.map((item, index) => (
@@ -806,11 +935,11 @@ export function SolicitacaoParticipacaoForm() {
                     </div>
 
                     <div>
-                        <label className="mb-2 block text-xs font-medium text-gray-600">
+                        <label className={labelBase}>
                             Entidade Sem Fins Lucrativos?
                         </label>
-                        <div className="flex flex-wrap gap-4 rounded border p-3">
-                            <label className="flex items-center gap-2 text-sm">
+                        <div className={choiceGroupBase}>
+                            <label className={choiceLabelBase}>
                                 <input
                                     type="radio"
                                     name="sem-fins"
@@ -819,7 +948,7 @@ export function SolicitacaoParticipacaoForm() {
                                 />
                                 Sim
                             </label>
-                            <label className="flex items-center gap-2 text-sm">
+                            <label className={choiceLabelBase}>
                                 <input
                                     type="radio"
                                     name="sem-fins"
@@ -833,30 +962,37 @@ export function SolicitacaoParticipacaoForm() {
 
                     {semFinsLucrativos === "1" && (
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Declaração de Utilidade Pública
                             </label>
                             <input
+                                ref={docSemFinsInputRef}
                                 type="file"
                                 accept="application/pdf,.pdf"
-                                onChange={(e) => setDocSemFins(e.target.files?.[0] || null)}
-                                className="w-full rounded border px-3 py-2"
+                                onChange={(e) =>
+                                    selecionarPdf(
+                                        e.target.files?.[0] || null,
+                                        setDocSemFins,
+                                        docSemFinsInputRef
+                                    )
+                                }
+                                className={fileInputBase}
                             />
-                            <p className="mt-1 text-xs text-gray-500">
+                            <p className="mt-1 text-xs text-slate-500">
                                 {docSemFins ? docSemFins.name : "Nenhum arquivo selecionado"}
                             </p>
                         </div>
                     )}
 
-                    <div className="border-t pt-5">
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 shadow-inner shadow-slate-100">
                         <div className="mb-3 flex items-center justify-between">
-                            <label className="block text-xs font-medium text-gray-600">
+                            <label className={sectionTitleBase}>
                                 Dia(s) do Evento
                             </label>
                             <button
                                 type="button"
                                 onClick={adicionarDiaEvento}
-                                className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary"
+                                className={primaryButtonBase}
                             >
                                 <FaCalendarPlus size={12} />
                                 Adicionar Hora e dia
@@ -865,17 +1001,17 @@ export function SolicitacaoParticipacaoForm() {
 
                         <div className="space-y-3">
                             {dias.length === 0 ? (
-                                <div className="rounded border border-dashed p-4 text-sm text-gray-500">
+                                <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">
                                     Nenhum dia adicionado ainda.
                                 </div>
                             ) : (
                                 dias.map((dia) => (
                                     <div
                                         key={dia.id}
-                                        className="grid grid-cols-1 gap-3 rounded border p-3 md:grid-cols-[1.2fr_1fr_1fr_auto]"
+                                        className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-[1.2fr_1fr_1fr_auto]"
                                     >
                                         <div>
-                                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                                            <label className={labelBase}>
                                                 Data
                                             </label>
 
@@ -885,12 +1021,12 @@ export function SolicitacaoParticipacaoForm() {
                                                 onChange={(e) =>
                                                     updateDiaEvento(dia.id, "DT_DIA", e.target.value)
                                                 }
-                                                className="w-full rounded border px-3 py-2"
+                                                className={inputBase}
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                                            <label className={labelBase}>
                                                 Hora Inicial
                                             </label>
 
@@ -900,12 +1036,12 @@ export function SolicitacaoParticipacaoForm() {
                                                 onChange={(e) =>
                                                     updateDiaEvento(dia.id, "HR_INICIO", e.target.value)
                                                 }
-                                                className="w-full rounded border px-3 py-2"
+                                                className={inputBase}
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                                            <label className={labelBase}>
                                                 Hora Final
                                             </label>
 
@@ -915,7 +1051,7 @@ export function SolicitacaoParticipacaoForm() {
                                                 onChange={(e) =>
                                                     updateDiaEvento(dia.id, "HR_FIM", e.target.value)
                                                 }
-                                                className="w-full rounded border px-3 py-2"
+                                                className={inputBase}
                                             />
                                         </div>
 
@@ -923,7 +1059,7 @@ export function SolicitacaoParticipacaoForm() {
                                             <button
                                                 type="button"
                                                 onClick={() => removerDiaEvento(dia.id)}
-                                                className="inline-flex h-10 w-10 items-center justify-center rounded bg-red-50 text-red-600 hover:bg-red-100"
+                                                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
                                             >
                                                 <FaTrash size={14} />
                                             </button>
@@ -936,11 +1072,11 @@ export function SolicitacaoParticipacaoForm() {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
-                            <label className="mb-2 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Precisa de Valor Monetário?
                             </label>
-                            <div className="flex flex-wrap gap-4 rounded border p-3">
-                                <label className="flex items-center gap-2 text-sm">
+                            <div className={choiceGroupBase}>
+                                <label className={choiceLabelBase}>
                                     <input
                                         type="radio"
                                         checked={precisaValorMonetario === "1"}
@@ -948,7 +1084,7 @@ export function SolicitacaoParticipacaoForm() {
                                     />
                                     Sim
                                 </label>
-                                <label className="flex items-center gap-2 text-sm">
+                                <label className={choiceLabelBase}>
                                     <input
                                         type="radio"
                                         checked={precisaValorMonetario === "0"}
@@ -961,15 +1097,15 @@ export function SolicitacaoParticipacaoForm() {
 
                         {precisaValorMonetario === "1" && (
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                <label className={labelBase}>
                                     Valor Solicitado
                                 </label>
                                 <input
                                     value={valorSolicitado}
                                     onChange={(e) =>
-                                        setValorSolicitado(monetizarDigitacao(e.target.value))
+                                        setValorSolicitado(limitarMoedaOracle(e.target.value))
                                     }
-                                    className="w-full rounded border px-3 py-2 text-right"
+                                    className={`${inputBase} text-right`}
                                     placeholder="R$ 0,00"
                                 />
                             </div>
@@ -978,11 +1114,11 @@ export function SolicitacaoParticipacaoForm() {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
-                            <label className="mb-2 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Compra de Insumos?
                             </label>
-                            <div className="flex flex-wrap gap-4 rounded border p-3">
-                                <label className="flex items-center gap-2 text-sm">
+                            <div className={choiceGroupBase}>
+                                <label className={choiceLabelBase}>
                                     <input
                                         type="radio"
                                         checked={precisaInsumo === "1"}
@@ -990,7 +1126,7 @@ export function SolicitacaoParticipacaoForm() {
                                     />
                                     Sim
                                 </label>
-                                <label className="flex items-center gap-2 text-sm">
+                                <label className={choiceLabelBase}>
                                     <input
                                         type="radio"
                                         checked={precisaInsumo === "0"}
@@ -1003,15 +1139,15 @@ export function SolicitacaoParticipacaoForm() {
 
                         {precisaInsumo === "1" && (
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                <label className={labelBase}>
                                     Estimativa de Valor Monetário
                                 </label>
                                 <input
                                     value={estimativaInsumo}
                                     onChange={(e) =>
-                                        setEstimativaInsumo(monetizarDigitacao(e.target.value))
+                                        setEstimativaInsumo(limitarMoedaOracle(e.target.value))
                                     }
-                                    className="w-full rounded border px-3 py-2 text-right"
+                                    className={`${inputBase} text-right`}
                                     placeholder="R$ 0,00"
                                 />
                             </div>
@@ -1020,11 +1156,11 @@ export function SolicitacaoParticipacaoForm() {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div>
-                            <label className="mb-2 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Precisa do Auditório?
                             </label>
-                            <div className="flex flex-wrap gap-4 rounded border p-3">
-                                <label className="flex items-center gap-2 text-sm">
+                            <div className={choiceGroupBase}>
+                                <label className={choiceLabelBase}>
                                     <input
                                         type="radio"
                                         checked={precisaAuditorio === "1"}
@@ -1032,7 +1168,7 @@ export function SolicitacaoParticipacaoForm() {
                                     />
                                     Sim
                                 </label>
-                                <label className="flex items-center gap-2 text-sm">
+                                <label className={choiceLabelBase}>
                                     <input
                                         type="radio"
                                         checked={precisaAuditorio === "0"}
@@ -1045,7 +1181,7 @@ export function SolicitacaoParticipacaoForm() {
 
                         {precisaAuditorio === "1" && (
                             <>
-                                <label className="flex items-center gap-2 rounded border p-3 text-sm">
+                                <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-sm font-semibold text-slate-700 shadow-inner shadow-slate-100">
                                     <input
                                         type="checkbox"
                                         checked={auditorioCentro}
@@ -1054,7 +1190,7 @@ export function SolicitacaoParticipacaoForm() {
                                     Centro de Convivência
                                 </label>
 
-                                <label className="flex items-center justify-between gap-2 rounded border p-3 text-sm">
+                                <label className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-sm font-semibold text-slate-700 shadow-inner shadow-slate-100">
                                     <span className="flex items-center gap-2">
                                         <input
                                             type="checkbox"
@@ -1072,7 +1208,7 @@ export function SolicitacaoParticipacaoForm() {
                                         <button
                                             type="button"
                                             onClick={() => setOpenAuditorioModal(true)}
-                                            className="rounded bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                                            className="rounded-xl border border-[#00AE9D]/30 bg-white px-3 py-1 text-xs font-bold text-[#006f65] shadow-sm transition hover:bg-[#00AE9D]/10"
                                         >
                                             Configurar
                                         </button>
@@ -1084,11 +1220,11 @@ export function SolicitacaoParticipacaoForm() {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
-                            <label className="mb-2 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Precisa de Motorista?
                             </label>
-                            <div className="flex flex-wrap gap-4 rounded border p-3">
-                                <label className="flex items-center gap-2 text-sm">
+                            <div className={choiceGroupBase}>
+                                <label className={choiceLabelBase}>
                                     <input
                                         type="radio"
                                         checked={precisaMotorista === "1"}
@@ -1096,7 +1232,7 @@ export function SolicitacaoParticipacaoForm() {
                                     />
                                     Sim
                                 </label>
-                                <label className="flex items-center gap-2 text-sm">
+                                <label className={choiceLabelBase}>
                                     <input
                                         type="radio"
                                         checked={precisaMotorista === "0"}
@@ -1108,11 +1244,11 @@ export function SolicitacaoParticipacaoForm() {
                         </div>
 
                         <div>
-                            <label className="mb-2 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Precisa de Funcionários?
                             </label>
-                            <div className="flex flex-wrap gap-4 rounded border p-3">
-                                <label className="flex items-center gap-2 text-sm">
+                            <div className={choiceGroupBase}>
+                                <label className={choiceLabelBase}>
                                     <input
                                         type="radio"
                                         checked={precisaFuncionarios === "1"}
@@ -1120,7 +1256,7 @@ export function SolicitacaoParticipacaoForm() {
                                     />
                                     Sim
                                 </label>
-                                <label className="flex items-center gap-2 text-sm">
+                                <label className={choiceLabelBase}>
                                     <input
                                         type="radio"
                                         checked={precisaFuncionarios === "0"}
@@ -1133,7 +1269,7 @@ export function SolicitacaoParticipacaoForm() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                        <label className={labelBase}>
                             Solicitação
                         </label>
                         <textarea
@@ -1146,7 +1282,7 @@ export function SolicitacaoParticipacaoForm() {
                                     )
                                 )
                             }
-                            className="w-full rounded border px-3 py-2"
+                            className={inputBase}
                             rows={5}
                             maxLength={ORACLE_LIMITS.DESC_SOLICITACAO}
                             placeholder="Detalhe sua solicitação de patrocínio, incluindo evento, datas, valores, contrapartidas e demais informações."
@@ -1154,7 +1290,7 @@ export function SolicitacaoParticipacaoForm() {
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                        <label className={labelBase}>
                             Resumo do evento
                         </label>
                         <textarea
@@ -1167,7 +1303,7 @@ export function SolicitacaoParticipacaoForm() {
                                     )
                                 )
                             }
-                            className="w-full rounded border px-3 py-2"
+                            className={inputBase}
                             rows={6}
                             maxLength={ORACLE_LIMITS.DESC_RESUMO_EVENTO}
                             placeholder="Informe um resumo claro do evento e seu objetivo."
@@ -1176,13 +1312,13 @@ export function SolicitacaoParticipacaoForm() {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Conta na Cooperativa?
                             </label>
                             <select
                                 value={contaCooperativa}
                                 onChange={(e) => setContaCooperativa(e.target.value)}
-                                className="w-full rounded border px-3 py-2"
+                                className={inputBase}
                             >
                                 <option value="">Selecione</option>
                                 <option value="1">SIM</option>
@@ -1191,7 +1327,7 @@ export function SolicitacaoParticipacaoForm() {
                         </div>
 
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Vínculo
                             </label>
                             <textarea
@@ -1204,7 +1340,7 @@ export function SolicitacaoParticipacaoForm() {
                                         )
                                     )
                                 }
-                                className="w-full rounded border px-3 py-2"
+                                className={inputBase}
                                 rows={2}
                                 maxLength={ORACLE_LIMITS.DESC_VINCULO}
                             />
@@ -1214,7 +1350,7 @@ export function SolicitacaoParticipacaoForm() {
                     {contaCooperativa === "1" && (
                         <>
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                <label className={labelBase}>
                                     Produtos/Serviços
                                 </label>
                                 <textarea
@@ -1227,7 +1363,7 @@ export function SolicitacaoParticipacaoForm() {
                                             )
                                         )
                                     }
-                                    className="w-full rounded border px-3 py-2"
+                                    className={inputBase}
                                     rows={2}
                                     maxLength={ORACLE_LIMITS.DESC_SERVICOS}
                                 />
@@ -1235,28 +1371,28 @@ export function SolicitacaoParticipacaoForm() {
 
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className={labelBase}>
                                         Sal. Méd. C/C
                                     </label>
                                     <input
                                         value={saldoMedio}
                                         onChange={(e) =>
-                                            setSaldoMedio(monetizarDigitacao(e.target.value))
+                                            setSaldoMedio(limitarMoedaOracle(e.target.value))
                                         }
-                                        className="w-full rounded border px-3 py-2 text-right"
+                                        className={`${inputBase} text-right`}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className={labelBase}>
                                         Rent. Máq.
                                     </label>
                                     <input
                                         value={rentMaq}
                                         onChange={(e) =>
-                                            setRentMaq(monetizarDigitacao(e.target.value))
+                                            setRentMaq(limitarMoedaOracle(e.target.value))
                                         }
-                                        className="w-full rounded border px-3 py-2 text-right"
+                                        className={`${inputBase} text-right`}
                                     />
                                 </div>
                             </div>
@@ -1264,11 +1400,11 @@ export function SolicitacaoParticipacaoForm() {
                     )}
 
                     <div>
-                        <label className="mb-2 block text-xs font-medium text-gray-600">
+                        <label className={labelBase}>
                             Já realizou algum evento conosco anteriormente?
                         </label>
-                        <div className="flex flex-wrap gap-4 rounded border p-3">
-                            <label className="flex items-center gap-2 text-sm">
+                        <div className={choiceGroupBase}>
+                            <label className={choiceLabelBase}>
                                 <input
                                     type="radio"
                                     checked={eventoAnterior === "1"}
@@ -1276,7 +1412,7 @@ export function SolicitacaoParticipacaoForm() {
                                 />
                                 Sim
                             </label>
-                            <label className="flex items-center gap-2 text-sm">
+                            <label className={choiceLabelBase}>
                                 <input
                                     type="radio"
                                     checked={eventoAnterior === "0"}
@@ -1289,7 +1425,7 @@ export function SolicitacaoParticipacaoForm() {
 
                     {eventoAnterior === "1" && (
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Retorno do último evento
                             </label>
                             <textarea
@@ -1302,52 +1438,83 @@ export function SolicitacaoParticipacaoForm() {
                                         )
                                     )
                                 }
-                                className="w-full rounded border px-3 py-2"
+                                className={inputBase}
                                 rows={5}
                                 maxLength={ORACLE_LIMITS.DESC_RETORNO_ULTIMO_EVENTO}
                             />
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
+                    <div className="space-y-4">
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Funcionário
                             </label>
                             <input
                                 value={funcionario || "Carregando usuário..."}
                                 readOnly
-                                className="w-full rounded border bg-gray-50 px-3 py-2"
+                                className={inputReadOnlyBase}
                             />
                         </div>
 
-                        <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Adicionar Ofício
-                            </label>
-                            <input
-                                ref={oficioInputRef}
-                                type="file"
-                                accept="application/pdf,.pdf"
-                                onChange={(e) => setOficio(e.target.files?.[0] || null)}
-                                className="w-full rounded border px-3 py-2"
-                            />
-                            <p className="mt-1 text-xs text-gray-500">
-                                {oficio ? oficio.name : "Nenhum arquivo selecionado"}
-                            </p>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
+                            <div>
+                                <label className={labelBase}>
+                                    Adicionar Ofício
+                                </label>
+                                <input
+                                    ref={oficioInputRef}
+                                    type="file"
+                                    accept="application/pdf,.pdf"
+                                    onChange={(e) =>
+                                        selecionarPdf(
+                                            e.target.files?.[0] || null,
+                                            setOficio,
+                                            oficioInputRef
+                                        )
+                                    }
+                                    className={fileInputBase}
+                                />
+                                <p className="mt-1 text-xs text-slate-500">
+                                    {oficio ? oficio.name : "Nenhum arquivo selecionado"}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className={labelBase}>
+                                    Painel SISBR <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    ref={painelSisbrInputRef}
+                                    type="file"
+                                    accept="application/pdf,.pdf"
+                                    required
+                                    onChange={(e) =>
+                                        selecionarPdf(
+                                            e.target.files?.[0] || null,
+                                            setPainelSisbr,
+                                            painelSisbrInputRef
+                                        )
+                                    }
+                                    className={fileInputBase}
+                                />
+                                <p className="mt-1 text-xs text-slate-500">
+                                    {painelSisbr ? painelSisbr.name : "Nenhum arquivo selecionado"}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-[260px_1fr]">
                         <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label className={labelBase}>
                                 Dia da Solicitação
                             </label>
                             <input
                                 type="date"
                                 value={diaSolicitacao}
                                 readOnly
-                                className="w-full rounded border bg-gray-50 px-3 py-2"
+                                className={inputReadOnlyBase}
                             />
                         </div>
 
@@ -1355,27 +1522,28 @@ export function SolicitacaoParticipacaoForm() {
                             <button
                                 type="button"
                                 onClick={cadastrar}
-                                disabled={loading}
-                                className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 text-sm font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-70"
+                                disabled={loading || submitLockRef.current}
+                                aria-busy={loading}
+                                className={`${primaryButtonBase} px-6`}
                             >
                                 {loading ? "Cadastrando..." : "Cadastrar"}
                             </button>
                         </div>
                     </div>
-                </div>
+            </div>
             </div>
 
             {openAuditorioModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                    <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-                        <div className="sticky top-0 flex items-center justify-between border-b bg-white px-6 py-4">
-                            <h2 className="text-lg font-semibold text-gray-900">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4">
+                    <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
+                            <h2 className="text-lg font-black text-slate-950">
                                 Informações importantes para a reserva do Auditório Sede
                             </h2>
                             <button
                                 type="button"
                                 onClick={() => setOpenAuditorioModal(false)}
-                                className="rounded bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+                                className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-600 transition hover:bg-red-100"
                             >
                                 Fechar
                             </button>
@@ -1384,7 +1552,7 @@ export function SolicitacaoParticipacaoForm() {
                         <div className="space-y-4 p-6">
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_180px]">
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className={labelBase}>
                                         Estimativa de convidados
                                     </label>
                                     <input
@@ -1392,12 +1560,12 @@ export function SolicitacaoParticipacaoForm() {
                                         onChange={(e) =>
                                             updateAuditorio("QTD_ESTIMATIVA_CONVIDADOS", e.target.value)
                                         }
-                                        className="w-full rounded border px-3 py-2"
+                                        className={inputBase}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className={labelBase}>
                                         USO DE MICROFONE?
                                     </label>
                                     <select
@@ -1405,7 +1573,7 @@ export function SolicitacaoParticipacaoForm() {
                                         onChange={(e) =>
                                             updateAuditorio("SN_USO_MICROFONE", e.target.value)
                                         }
-                                        className="w-full rounded border px-3 py-2"
+                                        className={inputBase}
                                     >
                                         <option value="">Selecione</option>
                                         <option value="1">SIM</option>
@@ -1415,7 +1583,7 @@ export function SolicitacaoParticipacaoForm() {
 
                                 {auditorio.SN_USO_MICROFONE === "1" && (
                                     <div>
-                                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                                        <label className={labelBase}>
                                             Quantos?
                                         </label>
                                         <input
@@ -1423,7 +1591,7 @@ export function SolicitacaoParticipacaoForm() {
                                             onChange={(e) =>
                                                 updateAuditorio("QNTD_MICROFONE", e.target.value)
                                             }
-                                            className="w-full rounded border px-3 py-2"
+                                            className={inputBase}
                                         />
                                     </div>
                                 )}
@@ -1431,7 +1599,7 @@ export function SolicitacaoParticipacaoForm() {
 
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className={labelBase}>
                                         USO DE PROJEÇÃO? (DATASHOW/TELA)
                                     </label>
                                     <select
@@ -1439,7 +1607,7 @@ export function SolicitacaoParticipacaoForm() {
                                         onChange={(e) =>
                                             updateAuditorio("SN_USO_PROJETOR", e.target.value)
                                         }
-                                        className="w-full rounded border px-3 py-2"
+                                        className={inputBase}
                                     >
                                         <option value="">Selecione</option>
                                         <option value="1">SIM</option>
@@ -1449,7 +1617,7 @@ export function SolicitacaoParticipacaoForm() {
 
                                 {auditorio.SN_USO_PROJETOR === "1" && (
                                     <div>
-                                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                                        <label className={labelBase}>
                                             APRESENTAÇÃO VIA
                                         </label>
                                         <select
@@ -1457,7 +1625,7 @@ export function SolicitacaoParticipacaoForm() {
                                             onChange={(e) =>
                                                 updateAuditorio("NM_APRESENTACAO", e.target.value)
                                             }
-                                            className="w-full rounded border px-3 py-2"
+                                            className={inputBase}
                                         >
                                             <option value="">Selecione</option>
                                             <option value="POSSUI NOTEBOOK PROPRIO">
@@ -1473,7 +1641,7 @@ export function SolicitacaoParticipacaoForm() {
 
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className={labelBase}>
                                         USO DE ÁUDIO EXTERNO
                                     </label>
                                     <select
@@ -1481,7 +1649,7 @@ export function SolicitacaoParticipacaoForm() {
                                         onChange={(e) =>
                                             updateAuditorio("SN_AUDIO_EXTERNO", e.target.value)
                                         }
-                                        className="w-full rounded border px-3 py-2"
+                                        className={inputBase}
                                     >
                                         <option value="">Selecione</option>
                                         <option value="1">SIM</option>
@@ -1490,7 +1658,7 @@ export function SolicitacaoParticipacaoForm() {
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className={labelBase}>
                                         TEM OPERADOR DO SOM/APRESENTAÇÃO?
                                     </label>
                                     <select
@@ -1498,7 +1666,7 @@ export function SolicitacaoParticipacaoForm() {
                                         onChange={(e) =>
                                             updateAuditorio("SN_OPERADOR", e.target.value)
                                         }
-                                        className="w-full rounded border px-3 py-2"
+                                        className={inputBase}
                                     >
                                         <option value="">Selecione</option>
                                         <option value="1">SIM</option>
@@ -1509,7 +1677,7 @@ export function SolicitacaoParticipacaoForm() {
 
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className={labelBase}>
                                         HAVERÁ TRANSMISSÃO AO VIVO?
                                     </label>
                                     <select
@@ -1517,7 +1685,7 @@ export function SolicitacaoParticipacaoForm() {
                                         onChange={(e) =>
                                             updateAuditorio("SN_AO_VIVO", e.target.value)
                                         }
-                                        className="w-full rounded border px-3 py-2"
+                                        className={inputBase}
                                     >
                                         <option value="">Selecione</option>
                                         <option value="1">SIM</option>
@@ -1527,11 +1695,11 @@ export function SolicitacaoParticipacaoForm() {
 
                                 {auditorio.SN_AO_VIVO === "1" && (
                                     <div>
-                                        <label className="mb-2 block text-xs font-medium text-gray-600">
+                                        <label className={labelBase}>
                                             Plataforma
                                         </label>
-                                        <div className="flex flex-wrap gap-4 rounded border p-3">
-                                            <label className="flex items-center gap-2 text-sm">
+                                        <div className={choiceGroupBase}>
+                                            <label className={choiceLabelBase}>
                                                 <input
                                                     type="checkbox"
                                                     checked={isPlataformaChecked("Youtube")}
@@ -1541,7 +1709,7 @@ export function SolicitacaoParticipacaoForm() {
                                                 />
                                                 Youtube
                                             </label>
-                                            <label className="flex items-center gap-2 text-sm">
+                                            <label className={choiceLabelBase}>
                                                 <input
                                                     type="checkbox"
                                                     checked={isPlataformaChecked("Zoom")}
@@ -1551,7 +1719,7 @@ export function SolicitacaoParticipacaoForm() {
                                                 />
                                                 Zoom
                                             </label>
-                                            <label className="flex items-center gap-2 text-sm">
+                                            <label className={choiceLabelBase}>
                                                 <input
                                                     type="checkbox"
                                                     checked={isPlataformaChecked("Teams")}
@@ -1568,7 +1736,7 @@ export function SolicitacaoParticipacaoForm() {
 
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
                                 <div>
-                                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    <label className={labelBase}>
                                         INTERNET DEDICADA?
                                     </label>
                                     <select
@@ -1576,7 +1744,7 @@ export function SolicitacaoParticipacaoForm() {
                                         onChange={(e) =>
                                             updateAuditorio("SN_INTERNET", e.target.value)
                                         }
-                                        className="w-full rounded border px-3 py-2"
+                                        className={inputBase}
                                     >
                                         <option value="">Selecione</option>
                                         <option value="1">SIM</option>
@@ -1586,7 +1754,7 @@ export function SolicitacaoParticipacaoForm() {
 
                                 {auditorio.SN_INTERNET === "1" && (
                                     <div>
-                                        <label className="mb-1 block text-xs font-medium text-gray-600">
+                                        <label className={labelBase}>
                                             Justifique
                                         </label>
                                         <input
@@ -1594,14 +1762,14 @@ export function SolicitacaoParticipacaoForm() {
                                             onChange={(e) =>
                                                 updateAuditorio("DESC_JUSTIFICATIVA", e.target.value)
                                             }
-                                            className="w-full rounded border px-3 py-2"
+                                            className={inputBase}
                                         />
                                     </div>
                                 )}
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                <label className={labelBase}>
                                     Observações adicionais
                                 </label>
                                 <textarea
@@ -1612,16 +1780,16 @@ export function SolicitacaoParticipacaoForm() {
                                             e.target.value
                                         )
                                     }
-                                    className="w-full rounded border px-3 py-2"
+                                    className={inputBase}
                                     rows={4}
                                 />
                             </div>
 
-                            <div className="flex justify-end border-t pt-4">
+                            <div className="flex justify-end border-t border-slate-200 pt-4">
                                 <button
                                     type="button"
                                     onClick={onSalvarAuditorio}
-                                    className="rounded bg-secondary px-5 py-2 text-sm font-semibold text-white hover:bg-primary"
+                                    className={`${primaryButtonBase} px-5`}
                                 >
                                     Salvar informações do auditório
                                 </button>
@@ -1633,8 +1801,3 @@ export function SolicitacaoParticipacaoForm() {
         </>
     );
 }
-
-
-
-
-

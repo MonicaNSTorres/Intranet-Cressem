@@ -1,11 +1,12 @@
-﻿"use client";
+﻿﻿"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useMemo, useState } from "react";
-import { FaPrint, FaSave, FaSearch } from "react-icons/fa";
+import { FaDownload, FaSave, FaSearch } from "react-icons/fa";
 import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { salvarAnaliseLimite } from "@/services/analise_limite.service";
+import { buscarContaCorrenteAutorizacaoDebito } from "@/services/autorizacao_debito.service";
 import { getMeAdUser } from "@/services/auth.service";
 import {
     monetizarDigitacao,
@@ -15,7 +16,6 @@ import {
 import { gerarPdfAnaliseLimite } from "@/lib/pdf/gerarPdfAnaliseLimite";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
 
 function todayISO() {
     const d = new Date();
@@ -131,10 +131,28 @@ function yesNoText(value: string) {
 }
 
 const inputBase =
-    "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+    "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10";
 
 const textareaBase =
-    "w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+    "min-h-[96px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10";
+
+const primaryButtonClass =
+    "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--primary)] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60";
+
+const secondaryButtonClass =
+    "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-[var(--primary)] hover:bg-[var(--primary)]/10 disabled:cursor-not-allowed disabled:opacity-60";
+
+const auxiliaryButtonClass =
+    "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-4 text-sm font-semibold text-[var(--primary)] shadow-sm transition hover:bg-[var(--primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[var(--primary)]/10 disabled:hover:text-[var(--primary)]";
+
+const topSearchButtonClass =
+    "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--secondary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--primary)] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60";
+
+const topSaveButtonClass =
+    "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--secondary)] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60";
+
+const topPrintButtonClass =
+    "inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--fourth)]/30 bg-[var(--fourth)]/10 px-4 text-sm font-semibold text-[var(--fourth)] shadow-sm transition hover:bg-[var(--fourth)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[var(--fourth)]/10 disabled:hover:text-[var(--fourth)]";
 
 function Field({
     label,
@@ -147,11 +165,11 @@ function Field({
 }) {
     return (
         <div className="space-y-1.5">
-            <label className="block text-[12px] font-semibold uppercase tracking-[0.03em] text-slate-600">
+            <label className="block text-[11px] font-black uppercase tracking-wide text-slate-600">
                 {label}
             </label>
             {children}
-            {hint ? <p className="text-xs text-slate-500">{hint}</p> : null}
+            {hint ? <p className="text-xs font-medium text-slate-500">{hint}</p> : null}
         </div>
     );
 }
@@ -164,9 +182,11 @@ function Section({
     children: React.ReactNode;
 }) {
     return (
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-emerald-200 bg-gradient-to-r from-[#79B729] to-[#8ED12F] px-5 py-3">
-                <h3 className="text-sm font-bold text-white">{title}</h3>
+        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 bg-white px-5 py-4">
+                <h3 className="flex items-center gap-2 text-sm font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
+                    {title}
+                </h3>
             </div>
             <div className="p-5">{children}</div>
         </section>
@@ -183,25 +203,25 @@ function RadioGroup({
     onChange: (value: string) => void;
 }) {
     return (
-        <div className="flex h-11 items-center gap-6 rounded-xl border border-slate-300 bg-white px-4 shadow-sm">
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+        <div className="flex h-10 items-center gap-6 rounded-xl border border-slate-200 bg-white px-4 shadow-sm">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
                 <input
                     type="radio"
                     name={name}
                     checked={value === "1"}
                     onChange={() => onChange("1")}
-                    className="h-4 w-4 accent-emerald-600"
+                    className="h-4 w-4 accent-[#00AE9D]"
                 />
                 Sim
             </label>
 
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
                 <input
                     type="radio"
                     name={name}
                     checked={value === "0"}
                     onChange={() => onChange("0")}
-                    className="h-4 w-4 accent-emerald-600"
+                    className="h-4 w-4 accent-[#00AE9D]"
                 />
                 Não
             </label>
@@ -216,6 +236,8 @@ export function AnaliseLimiteForm() {
     const [empresa, setEmpresa] = useState("");
 
     const [contaCorrente, setContaCorrente] = useState("");
+    const [contasCorrentes, setContasCorrentes] = useState<string[]>([]);
+    const [contaManual, setContaManual] = useState(false);
     const [salarioBruto, setSalarioBruto] = useState("");
     const [salarioLiquido, setSalarioLiquido] = useState("");
     const [portabilidade, setPortabilidade] = useState("");
@@ -259,6 +281,41 @@ export function AnaliseLimiteForm() {
     const { loading, erro: erroBusca, info: infoBusca, buscar } = useAssociadoPorCpf();
 
     useEffect(() => {
+        setSalvo(false);
+    }, [
+        cpf,
+        nome,
+        celular,
+        empresa,
+        contaCorrente,
+        salarioBruto,
+        salarioLiquido,
+        portabilidade,
+        efetivo,
+        cessaoCredito,
+        dataPagamento,
+        carteira,
+        iap,
+        ocorrenciaCRM,
+        obsCRM,
+        risco,
+        pd,
+        crl,
+        capital,
+        divida,
+        restricoes,
+        quaisRestricoes,
+        sugestaoLimiteCartao,
+        sugestaoLimiteCheque,
+        cartao,
+        cartaoAtual,
+        cartaoAprovado,
+        especial,
+        especialAtual,
+        especialAprovado,
+    ]);
+
+    useEffect(() => {
         async function carregarUsuarioLogado() {
             try {
                 const me = await getMeAdUser();
@@ -277,6 +334,9 @@ export function AnaliseLimiteForm() {
         try {
             setErro("");
             setInfo("");
+            setContaCorrente("");
+            setContasCorrentes([]);
+            setContaManual(false);
 
             const digits = onlyCpfCnpjChars(cpf);
 
@@ -322,6 +382,30 @@ export function AnaliseLimiteForm() {
 
                 setCapital(fmtBRL(saldoCapital));
 
+                const contas = await buscarContaCorrenteAutorizacaoDebito(digits);
+                const listaContas = Array.from(
+                    new Set(
+                        (contas || [])
+                            .map((item: any) =>
+                                String(item.NR_CONTA_CORRENTE || item.nr_conta_corrente || "").trim()
+                            )
+                            .filter(Boolean)
+                    )
+                );
+
+                setContasCorrentes(listaContas);
+
+                if (listaContas.length === 1) {
+                    setContaCorrente(listaContas[0]);
+                }
+
+                if (listaContas.length === 0) {
+                    setContaManual(true);
+                    setInfo("Associado carregado, mas nenhuma conta corrente foi encontrada. Digite a conta manualmente.");
+                } else {
+                    setInfo("Associado e conta corrente carregados com sucesso.");
+                }
+
                 if (
                     valorIap === undefined ||
                     valorIap === null ||
@@ -357,7 +441,9 @@ export function AnaliseLimiteForm() {
                     setEspecialAtual(fmtBRL(0));
                 }
 
-                setInfo("Associado carregado com sucesso.");
+            } else {
+                setContaManual(true);
+                setInfo("CPF/CNPJ não encontrado. Preencha os dados e a conta corrente manualmente.");
             }
         } catch (e) {
             console.error(e);
@@ -372,6 +458,8 @@ export function AnaliseLimiteForm() {
         setEmpresa("");
 
         setContaCorrente("");
+        setContasCorrentes([]);
+        setContaManual(false);
         setSalarioBruto("");
         setSalarioLiquido("");
         setPortabilidade("");
@@ -534,72 +622,15 @@ export function AnaliseLimiteForm() {
         }
     }
 
-    async function salvarEImprimir() {
+    async function baixarPdf() {
         try {
             setErro("");
             setInfo("");
-
-            const msg = tipoFormulario === "PF" ? validaCamposPF() : validaCamposPJ();
-            if (msg) {
-                setErro(msg);
-                return;
-            }
 
             if (!salvo) {
-                await salvar();
+                setErro("Salve a análise antes de baixar o PDF.");
                 return;
             }
-
-            await gerarPdfAnaliseLimite({
-                tipoFormulario,
-                cpf: formatCpfCnpjView(cpf),
-                nome: nome || "",
-                celular: celular || "",
-                empresa: empresa || "",
-
-                contaCorrente: contaCorrente || "",
-                salarioBruto: parseBRL(salarioBruto || "0"),
-                salarioLiquido: parseBRL(salarioLiquido || "0"),
-                portabilidade,
-                efetivo,
-                cessaoCredito,
-                dataPagamento,
-
-                carteira,
-                iap,
-
-                ocorrenciaCRM,
-                obsCRM,
-
-                risco,
-                pd,
-                crl: parseBRL(crl || "0"),
-                capital: parseBRL(capital || "0"),
-                divida: parseBRL(divida || "0"),
-                restricoes,
-                quaisRestricoes,
-
-                sugestaoLimiteCartao: parseBRL(sugestaoLimiteCartao || "0"),
-                sugestaoLimiteCheque: parseBRL(sugestaoLimiteCheque || "0"),
-                cartao,
-                cartaoAtual: parseBRL(cartaoAtual || "0"),
-                cartaoAprovado: parseBRL(cartaoAprovado || "0"),
-                especial,
-                especialAtual: parseBRL(especialAtual || "0"),
-                especialAprovado: parseBRL(especialAprovado || "0"),
-
-                dataEnvio,
-            });
-        } catch (err: any) {
-            console.error(err);
-            setErro(err?.message || "Não foi possível gerar o PDF.");
-        }
-    }
-
-    async function imprimirDireto() {
-        try {
-            setErro("");
-            setInfo("");
 
             const msg = tipoFormulario === "PF" ? validaCamposPF() : validaCamposPJ();
             if (msg) {
@@ -675,81 +706,88 @@ export function AnaliseLimiteForm() {
         }
       `}</style>
 
-            <div className="min-w-225 mx-auto w-full space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="mx-auto w-full min-w-225 space-y-5">
                 <SearchForm onSearch={onBuscar}>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                        <div className="border-b border-slate-100 bg-white px-5 py-4">
                         <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                             <div>
-                                <h1 className="text-2xl font-bold text-slate-800">
+                                <h1 className="flex items-center gap-2 text-xl font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
                                     Análise de Limite
                                 </h1>
-                                <p className="text-sm text-slate-500">
+                                <p className="mt-1 text-sm font-medium text-slate-500">
                                     Preencha os dados do associado e registre a análise.
                                 </p>
                             </div>
 
-                            <div className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                            <div className="inline-flex items-center rounded-full border border-[#00AE9D]/20 bg-[#00AE9D]/10 px-3 py-1 text-xs font-black text-[#008f82]">
                                 Tipo: {tipoFormulario}
                             </div>
                         </div>
+                        </div>
 
-                        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
+                        <div className="grid gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_160px_140px_160px_200px] xl:items-end">
                             <div className="space-y-1.5">
-                                <label className="block text-[12px] font-semibold uppercase tracking-[0.03em] text-slate-600">
+                                <label className="block text-[11px] font-black uppercase tracking-wide text-slate-600">
                                     CPF/CNPJ do associado
                                 </label>
 
-                                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_160px_140px]">
-                                    <SearchInput
-                                        value={formatCpfCnpjView(cpf)}
-                                        onChange={(e) => setCpf(e.target.value)}
-                                        placeholder="Digite o CPF/CNPJ"
-                                        className={inputBase}
-                                        maxLength={20}
-                                    />
-
-                                    <SearchButton loading={loading} label="Pesquisar" />
-
-                                    <button
-                                        type="button"
-                                        onClick={limparFormulario}
-                                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 cursor-pointer"
-                                    >
-                                        Limpar
-                                    </button>
-                                </div>
+                                <SearchInput
+                                    value={formatCpfCnpjView(cpf)}
+                                    onChange={(e) => setCpf(e.target.value)}
+                                    placeholder="Digite o CPF/CNPJ"
+                                    className={inputBase}
+                                    maxLength={20}
+                                />
                             </div>
 
-                            <div className="flex flex-col gap-3 sm:flex-row xl:items-end">
-                                <button
-                                    type="button"
-                                    onClick={salvar}
-                                    disabled={loadingSalvar}
-                                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <FaSave />
-                                    {loadingSalvar ? "Salvando..." : "Salvar Análise"}
-                                </button>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className={topSearchButtonClass}
+                            >
+                                <FaSearch />
+                                {loading ? "Pesquisando..." : "Pesquisar"}
+                            </button>
 
-                                <button
-                                    type="button"
-                                    onClick={salvarEImprimir}
-                                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-third px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95"
-                                >
-                                    <FaPrint />
-                                    Salvar e Imprimir / PDF
-                                </button>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={limparFormulario}
+                                className={secondaryButtonClass}
+                            >
+                                Limpar
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={salvar}
+                                disabled={loadingSalvar}
+                                className={topSaveButtonClass}
+                            >
+                                <FaSave />
+                                {loadingSalvar ? "Salvando..." : "Salvar Análise"}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={baixarPdf}
+                                disabled={!salvo}
+                                className={topPrintButtonClass}
+                                title={!salvo ? "Salve a análise antes de baixar o PDF." : undefined}
+                            >
+                                <FaDownload />
+                                Baixar PDF
+                            </button>
                         </div>
 
                         {(erro || info || erroBusca || infoBusca) && (
-                            <div className="mt-4">
+                            <div className="px-5 pb-5">
                                 {erro || erroBusca ? (
-                                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                                         {erro || erroBusca}
                                     </div>
                                 ) : (
-                                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
                                         {info || infoBusca}
                                     </div>
                                 )}
@@ -798,12 +836,47 @@ export function AnaliseLimiteForm() {
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
                         <div className="md:col-span-4">
                             <Field label="Conta Corrente">
-                                <input
-                                    value={contaCorrente}
-                                    onChange={(e) => setContaCorrente(e.target.value)}
-                                    className={inputBase}
-                                    maxLength={8}
-                                />
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+                                    {contaManual ? (
+                                        <input
+                                            value={contaCorrente}
+                                            onChange={(e) => setContaCorrente(e.target.value)}
+                                            className={inputBase}
+                                            maxLength={20}
+                                            placeholder="Digite a conta corrente"
+                                        />
+                                    ) : (
+                                        <select
+                                            value={contaCorrente}
+                                            onChange={(e) => setContaCorrente(e.target.value)}
+                                            className={inputBase}
+                                        >
+                                            <option value="">
+                                                {contasCorrentes.length > 0
+                                                    ? "Selecione a conta"
+                                                    : "Pesquise o CPF/CNPJ"}
+                                            </option>
+                                            {contasCorrentes.map((conta) => (
+                                                <option key={conta} value={conta}>
+                                                    {conta}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+
+                                    {contasCorrentes.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setContaManual((prev) => !prev);
+                                                setContaCorrente("");
+                                            }}
+                                            className={auxiliaryButtonClass}
+                                        >
+                                            {contaManual ? "Usar lista" : "Manual"}
+                                        </button>
+                                    )}
+                                </div>
                             </Field>
                         </div>
 
@@ -1105,7 +1178,7 @@ export function AnaliseLimiteForm() {
                     </div>
                 </Section>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                         <div className="max-w-xs">
                             <Field label="Data">
@@ -1113,7 +1186,7 @@ export function AnaliseLimiteForm() {
                                     readOnly
                                     type="date"
                                     value={dataEnvio}
-                                    className={`${inputBase} bg-slate-50`}
+                                    className={`${inputBase} bg-slate-50 font-bold text-slate-600`}
                                 />
                             </Field>
                         </div>
@@ -1123,7 +1196,7 @@ export function AnaliseLimiteForm() {
                                 type="button"
                                 onClick={salvar}
                                 disabled={loadingSalvar}
-                                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={primaryButtonClass}
                             >
                                 <FaSave />
                                 Salvar Análise
@@ -1131,11 +1204,13 @@ export function AnaliseLimiteForm() {
 
                             <button
                                 type="button"
-                                onClick={imprimirDireto}
-                                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-third px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95"
+                                onClick={baixarPdf}
+                                disabled={!salvo}
+                                className={auxiliaryButtonClass}
+                                title={!salvo ? "Salve a análise antes de baixar o PDF." : undefined}
                             >
-                                <FaPrint />
-                                Imprimir
+                                <FaDownload />
+                                Baixar PDF
                             </button>
                         </div>
                     </div>
@@ -1283,4 +1358,3 @@ function Signature({ label }: { label: string }) {
         </div>
     );
 }
-

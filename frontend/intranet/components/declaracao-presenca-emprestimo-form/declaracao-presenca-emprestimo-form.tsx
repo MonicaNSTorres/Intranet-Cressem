@@ -5,17 +5,42 @@ import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { formatCpfView, onlyDigits } from "@/utils/br";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
-import { SearchButton } from "@/components/ui/search-button";
 import { getMeAdUser } from "@/services/auth.service";
+import {
+  listarCidadesAutorizacaoDebito,
+  type CidadeOption,
+} from "@/services/autorizacao_debito.service";
 import { gerarPdfDeclaracaoPresencaEmprestimo } from "@/lib/pdf/gerarPdfDeclaracaoPresencaEmprestimo";
+
+const sectionClass = "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
+const labelClass = "mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500";
+const inputClass =
+  "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
+const disabledButtonClass =
+  "inline-flex h-10 items-center justify-center rounded-xl bg-slate-200 px-5 text-sm font-semibold text-slate-500 shadow-sm";
+const primaryButtonClass =
+  "inline-flex h-10 items-center justify-center rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary";
+const actionButtonClass =
+  "inline-flex h-10 items-center justify-center rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-fourth";
+
+function getHojeInputDate() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoje.getDate()).padStart(2, "0");
+
+  return `${ano}-${mes}-${dia}`;
+}
 
 export function DeclaracaoPresencaEmprestimoForm() {
   const [cpf, setCpf] = useState("");
   const [nome, setNome] = useState("");
   const [matricula, setMatrícula] = useState("");
-  const [dataPresenca, setDataPresenca] = useState("");
+  const [dataPresenca, setDataPresenca] = useState(getHojeInputDate);
   const [horaInicio, setHoraInicio] = useState("");
   const [horaFim, setHoraFim] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [cidades, setCidades] = useState<CidadeOption[]>([]);
   const [funcionarioLogado, setFuncionárioLogado] = useState("Funcionário");
   const [erroLocal, setErroLocal] = useState("");
   const [infoLocal, setInfoLocal] = useState("");
@@ -30,9 +55,13 @@ export function DeclaracaoPresencaEmprestimoForm() {
 
     (async () => {
       try {
-        const me = await getMeAdUser();
+        const [me, cidadesResp] = await Promise.all([
+          getMeAdUser(),
+          listarCidadesAutorizacaoDebito(),
+        ]);
         const nomeUser = String(me?.nome_completo || me?.username || "").trim();
         if (ativo && nomeUser) setFuncionárioLogado(nomeUser);
+        if (ativo) setCidades(cidadesResp || []);
       } catch {
         // fallback: mantém valor padrão
       }
@@ -59,6 +88,7 @@ export function DeclaracaoPresencaEmprestimoForm() {
 
     setNome(result.data.nome || "");
     setMatrícula(result.data.matricula || "");
+    setCidade(result.data.cidade || "");
     setModoManual(false);
   };
 
@@ -69,9 +99,10 @@ export function DeclaracaoPresencaEmprestimoForm() {
       !!matricula.trim() &&
       !!dataPresenca &&
       !!horaInicio &&
-      !!horaFim
+      !!horaFim &&
+      !!cidade.trim()
     );
-  }, [cpf, nome, matricula, dataPresenca, horaInicio, horaFim]);
+  }, [cpf, nome, matricula, dataPresenca, horaInicio, horaFim, cidade]);
 
   const onGerarPdf = async () => {
     if (!formularioCompleto) {
@@ -90,6 +121,7 @@ export function DeclaracaoPresencaEmprestimoForm() {
       dataPresenca,
       horaInicio,
       horaFim,
+      cidade,
       funcionarioLogado,
     });
 
@@ -97,109 +129,154 @@ export function DeclaracaoPresencaEmprestimoForm() {
   };
 
   return (
-    <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-      <SearchForm onSearch={onBuscar}>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">CPF do associado</label>
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
-            <SearchInput
-              value={formatCpfView(cpf)}
-              onChange={(e) => {
-                setCpf(e.target.value);
-                setErroLocal("");
-                setInfoLocal("");
-              }}
-              placeholder="CPF (somente números)"
-              className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              inputMode="numeric"
-              maxLength={14}
-            />
-            <SearchButton loading={loading} label="Pesquisar" />
-            <button
-              type="button"
-              onClick={onGerarPdf}
-              disabled={!formularioCompleto}
-              className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition ${
-                formularioCompleto
-                  ? "bg-secondary hover:bg-primary cursor-pointer"
-                  : "bg-gray-300 cursor-not-allowed"
-              }`}
-            >
-              Gerar PDF
-            </button>
-          </div>
+    <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
 
-          {erroAtual && (
-            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-              {erroAtual}
+      <div className="space-y-5 p-5 md:p-6">
+        <SearchForm onSearch={onBuscar}>
+          <div className={sectionClass}>
+            <div className="mb-4">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-title">
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                Pesquisa do associado
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Digite o CPF para buscar os dados do associado ou preencher manualmente.
+              </p>
             </div>
-          )}
-          {infoAtual && (
-            <div className="mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3">
-              {infoAtual}
+
+            <label className={labelClass}>CPF do associado</label>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
+              <SearchInput
+                value={formatCpfView(cpf)}
+                onChange={(e) => {
+                  setCpf(e.target.value);
+                  setErroLocal("");
+                  setInfoLocal("");
+                }}
+                placeholder="CPF (somente números)"
+                className={inputClass}
+                inputMode="numeric"
+                maxLength={14}
+              />
+              <button type="submit" disabled={loading} className={primaryButtonClass}>
+                {loading ? "Buscando..." : "Pesquisar"}
+              </button>
+              <button
+                type="button"
+                onClick={onGerarPdf}
+                disabled={!formularioCompleto}
+                className={formularioCompleto ? actionButtonClass : disabledButtonClass}
+              >
+                Gerar PDF
+              </button>
             </div>
-          )}
-          {modoManual && (
-            <div className="mt-3 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded p-3">
-              Modo manual ativo: informe os campos para continuar.
+
+            {erroAtual && (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {erroAtual}
+              </div>
+            )}
+            {infoAtual && (
+              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                {infoAtual}
+              </div>
+            )}
+            {modoManual && (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                Modo manual ativo: informe os campos para continuar.
+              </div>
+            )}
+          </div>
+        </SearchForm>
+
+        <section className={sectionClass}>
+          <div className="mb-4">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-title">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Dados do associado
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <label className={labelClass}>Nome do associado</label>
+              <input
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                className={inputClass}
+              />
             </div>
-          )}
-        </div>
-      </SearchForm>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Nome do associado</label>
-          <input
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
+            <div>
+              <label className={labelClass}>Matrícula</label>
+              <input
+                value={matricula}
+                onChange={(e) => setMatrícula(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          </div>
+        </section>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Matrícula</label>
-          <input
-            value={matricula}
-            onChange={(e) => setMatrícula(e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 border-t pt-5">
-        <label className="block text-xs font-medium text-gray-600 mb-3">Período de presença</label>
-        <div className="grid grid-cols-1 gap-3 rounded border p-3 md:grid-cols-[1.2fr_1fr_1fr]">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Data</label>
-            <input
-              type="date"
-              value={dataPresenca}
-              onChange={(e) => setDataPresenca(e.target.value)}
-              className="w-full rounded border px-3 py-2"
-            />
+        <section className={sectionClass}>
+          <div className="mb-4">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-title">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              Período de presença
+            </h2>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Hora Inicial</label>
-            <input
-              type="time"
-              value={horaInicio}
-              onChange={(e) => setHoraInicio(e.target.value)}
-              className="w-full rounded border px-3 py-2"
-            />
-          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <div>
+              <label className={labelClass}>Data</label>
+              <input
+                type="date"
+                value={dataPresenca}
+                onChange={(e) => setDataPresenca(e.target.value)}
+                className={inputClass}
+              />
+            </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Hora Final</label>
-            <input
-              type="time"
-              value={horaFim}
-              onChange={(e) => setHoraFim(e.target.value)}
-              className="w-full rounded border px-3 py-2"
-            />
+            <div>
+              <label className={labelClass}>Hora inicial</label>
+              <input
+                type="time"
+                value={horaInicio}
+                onChange={(e) => setHoraInicio(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Hora final</label>
+              <input
+                type="time"
+                value={horaFim}
+                onChange={(e) => setHoraFim(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Cidade</label>
+              <select value={cidade} onChange={(e) => setCidade(e.target.value)} className={inputClass}>
+                <option value="">Selecione</option>
+                {cidade &&
+                  !cidades.some(
+                    (item) =>
+                      item.NM_CIDADE.trim().toLocaleUpperCase("pt-BR") ===
+                      cidade.trim().toLocaleUpperCase("pt-BR")
+                  ) && <option value={cidade}>{cidade}</option>}
+                {cidades.map((item) => (
+                  <option key={item.ID_CIDADES} value={item.NM_CIDADE}>
+                    {item.NM_CIDADE}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

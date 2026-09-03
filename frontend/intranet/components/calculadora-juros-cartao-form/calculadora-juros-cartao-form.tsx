@@ -1,4 +1,4 @@
-﻿"use client";
+﻿﻿"use client";
 
 import { monetizarDigitacao } from "@/utils/br";
 import { useEffect, useMemo, useState } from "react";
@@ -39,7 +39,7 @@ export function CalculadoraJurosCartaoForm() {
     const [hoje, setHoje] = useState(hojeISO());
     const [multaPerc, setMultaPerc] = useState(2);
     const [moraPerc, setMoraPerc] = useState(1);
-    const [taxaMensal, setTaxaMensal] = useState(7.5);
+    const [taxaMensal, setTaxaMensal] = useState(9.79);
     const [dividaConsolidada, setDividaConsolidada] = useState("");
     const [mensagem, setMensagem] = useState<string | null>(null);
     const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -112,7 +112,7 @@ export function CalculadoraJurosCartaoForm() {
         setHoje(hojeISO());
         setMultaPerc(2);
         setMoraPerc(1);
-        setTaxaMensal(7.5);
+        setTaxaMensal(9.79);
         setDividaConsolidada("");
         setMensagem(null);
         setResultado(null);
@@ -147,87 +147,113 @@ export function CalculadoraJurosCartaoForm() {
         );
     }
 
+    const labelClass =
+        "mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500";
+    const inputClass =
+        "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10";
+    const moneyInputClass = `${inputClass} text-right`;
+    const readOnlyClass =
+        "h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none";
+    const sectionTitleClass =
+        "mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]";
+    const secondaryButtonClass =
+        "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
+    const primaryButtonClass =
+        "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
+
     return (
-        <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 className={sectionTitleClass}>Dados para cálculo</h2>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Valor da fatura</label>
+                    <label className={labelClass}>Valor da fatura</label>
                     <input
                         value={valorFatura}
                         onChange={(e) => setValorFatura(monetizarDigitacao(e.target.value))}
                         placeholder="R$ 0,00"
-                        className="w-full border px-3 py-2 rounded"
+                        className={moneyInputClass}
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Vencimento</label>
+                    <label className={labelClass}>Vencimento</label>
                     <input
                         type="date"
                         value={vencimento}
                         onChange={(e) => setVencimento(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
+                        className={inputClass}
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Dia de hoje</label>
+                    <label className={labelClass}>Dia de hoje</label>
                     <input
                         type="date"
                         value={hoje}
                         onChange={(e) => setHoje(e.target.value)}
-                        className="w-full border px-3 py-2 rounded"
+                        className={inputClass}
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Multa (%)</label>
-                    <input value={multaPerc} readOnly className="w-full border px-3 py-2 rounded bg-gray-50" />
+                    <label className={labelClass}>Multa (%)</label>
+                    <input value={multaPerc} readOnly className={readOnlyClass} />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Mora (% a.m.)</label>
-                    <input value={moraPerc} readOnly className="w-full border px-3 py-2 rounded bg-gray-50" />
+                    <label className={labelClass}>Mora (% a.m.)</label>
+                    <input value={moraPerc} readOnly className={readOnlyClass} />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Taxa de juros (% a.m.)</label>
-                    <input value={taxaMensal} readOnly className="w-full border px-3 py-2 rounded bg-gray-50" />
+                    <label className={labelClass}>Taxa de juros (% a.m.)</label>
+                    <input value={taxaMensal} readOnly className={readOnlyClass} />
                 </div>
 
                 <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Dívida consolidada</label>
+                    <label className={labelClass}>Dívida consolidada</label>
                     <input
                         value={dividaConsolidada}
                         onChange={(e) => setDividaConsolidada(monetizarDigitacao(e.target.value))}
                         placeholder="R$ 0,00"
-                        className="w-full border px-3 py-2 rounded"
+                        className={moneyInputClass}
                     />
                 </div>
             </div>
 
-            <div className="mt-4 flex gap-3">
-                <button onClick={calcular} className="bg-secondary text-white px-5 py-2 rounded hover:bg-primary">Calcular</button>
-                <button onClick={limpar} className="bg-white border px-5 py-2 rounded hover:bg-gray-50">Limpar</button>
+                <div className="mt-4 flex flex-wrap gap-3">
+                    <button type="button" onClick={calcular} className={primaryButtonClass}>Calcular</button>
+                    <button type="button" onClick={limpar} className={secondaryButtonClass}>Limpar</button>
+                </div>
             </div>
 
-            {mensagem && <p className="mt-4 text-sm font-medium">{mensagem}</p>}
+            {mensagem && (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+                    {mensagem}
+                </div>
+            )}
 
             {resultado && (
-                <div className="mt-6 overflow-x-auto">
-                    <table className="w-full border border-gray-200">
-                        <tbody>
-                            <tr><th className="border p-2 text-left">Dias de Atraso</th><td className="border p-2">{resultado.diasAtraso}</td></tr>
-                            <tr><th className="border p-2 text-left">Multa ({resultado.multaPerc.toFixed(2)}%)</th><td className="border p-2">{fmtBR(resultado.multa)}</td></tr>
-                            <tr><th className="border p-2 text-left">Mora</th><td className="border p-2">{fmtBR(resultado.mora)}</td></tr>
-                            <tr><th className="border p-2 text-left">Juros ({resultado.taxaMensal.toFixed(2)}% a.m.)</th><td className="border p-2">{fmtBR(resultado.jurosDiario)}</td></tr>
-                            <tr><th className="border p-2 text-left">Juros + Multa + Mora</th><td className="border p-2">{fmtBR(resultado.totalJurosMulta)}</td></tr>
-                            <tr><th className="border p-2 text-left">Dívida Consolidada</th><td className="border p-2">{fmtBR(resultado.divConsol)}</td></tr>
-                            <tr className="bg-red-50 font-semibold"><th className="border p-2 text-left">Total a Pagar</th><td className="border p-2">{fmtBR(resultado.totalGeral)}</td></tr>
-                        </tbody>
-                    </table>
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 className={sectionTitleClass}>Resultado do cálculo</h2>
 
-                    <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                        <table className="w-full text-sm">
+                            <tbody className="divide-y divide-slate-100">
+                                <tr><th className="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">Dias de Atraso</th><td className="px-4 py-3 text-right font-semibold text-slate-800">{resultado.diasAtraso}</td></tr>
+                                <tr><th className="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">Multa ({resultado.multaPerc.toFixed(2)}%)</th><td className="px-4 py-3 text-right font-semibold text-slate-800">{fmtBR(resultado.multa)}</td></tr>
+                                <tr><th className="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">Mora</th><td className="px-4 py-3 text-right font-semibold text-slate-800">{fmtBR(resultado.mora)}</td></tr>
+                                <tr><th className="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">Juros ({resultado.taxaMensal.toFixed(2)}% a.m.)</th><td className="px-4 py-3 text-right font-semibold text-slate-800">{fmtBR(resultado.jurosDiario)}</td></tr>
+                                <tr><th className="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">Juros + Multa + Mora</th><td className="px-4 py-3 text-right font-semibold text-slate-800">{fmtBR(resultado.totalJurosMulta)}</td></tr>
+                                <tr><th className="bg-slate-50 px-4 py-3 text-left font-semibold text-slate-700">Dívida Consolidada</th><td className="px-4 py-3 text-right font-semibold text-slate-800">{fmtBR(resultado.divConsol)}</td></tr>
+                                <tr className="bg-red-50"><th className="px-4 py-3 text-left font-black text-red-700">Total a Pagar</th><td className="px-4 py-3 text-right text-lg font-black text-red-700">{fmtBR(resultado.totalGeral)}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-[#00AE9D]/15 bg-[#00AE9D]/5 p-3 text-xs font-medium text-slate-700">
                         Responsável pelo cálculo: <strong>{responsavel}</strong>
                     </div>
 
@@ -236,7 +262,7 @@ export function CalculadoraJurosCartaoForm() {
                             type="button"
                             onClick={() => gerarDocumento("print")}
                             disabled={!podeGerarDocumento}
-                            className="bg-white border px-5 py-2 rounded hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                            className={secondaryButtonClass}
                         >
                             Imprimir
                         </button>
@@ -244,7 +270,7 @@ export function CalculadoraJurosCartaoForm() {
                             type="button"
                             onClick={() => gerarDocumento("download")}
                             disabled={!podeGerarDocumento}
-                            className="bg-secondary text-white px-5 py-2 rounded hover:bg-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                            className={primaryButtonClass}
                         >
                             Gerar PDF
                         </button>
