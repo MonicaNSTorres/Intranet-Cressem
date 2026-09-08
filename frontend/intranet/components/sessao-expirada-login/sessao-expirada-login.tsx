@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { api, logoutAdUser } from "@/services/auth.service";
 
-const PUBLIC_ROUTES = ["/login", "/forget_password"];
 const INTERVALO_VALIDACAO = 60_000;
 
 export function SessionWatcher() {
@@ -14,9 +13,7 @@ export function SessionWatcher() {
   const validandoRef = useRef(false);
   const redirecionandoRef = useRef(false);
 
-  const rotaPublica = PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
+  const rotaProtegida = pathname === "/auth" || pathname.startsWith("/auth/");
 
   const encerrarSessao = useCallback(() => {
     if (redirecionandoRef.current) return;
@@ -49,7 +46,7 @@ export function SessionWatcher() {
   }, [encerrarSessao]);
 
   useEffect(() => {
-    if (rotaPublica) return;
+    if (!rotaProtegida) return;
 
     //valida imediatamente ao carregar uma pagina protegida
     void validarSessao();
@@ -81,7 +78,7 @@ export function SessionWatcher() {
       );
       window.removeEventListener("focus", validarAoReceberFoco);
     };
-  }, [rotaPublica, validarSessao]);
+  }, [rotaProtegida, validarSessao]);
 
   return null;
 }

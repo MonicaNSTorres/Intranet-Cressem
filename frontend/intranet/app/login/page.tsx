@@ -95,13 +95,16 @@ export default function LoginPage() {
             <div className="flex basis-full items-center justify-center px-6 py-10 lg:basis-1/2 lg:px-[9%] lg:py-0">
                 <div className="w-full max-w-xl">
                     <div className="mb-8">
-                        <Image
-                            src="/logo-icon.png"
-                            alt="logo sicoob"
-                            width={80}
-                            height={70}
-                            className="mb-6 h-auto w-auto"
-                        />
+                        <div className="mb-6 h-[70px] w-[80px]">
+                            <Image
+                                src="/logo-icon.png"
+                                alt="logo sicoob"
+                                width={80}
+                                height={70}
+                                priority
+                                className="block h-auto w-auto"
+                            />
+                        </div>
                         <h1 className="text-4xl font-bold leading-tight text-gray-600">
                             Plataforma Intranet Cressem
                         </h1>
