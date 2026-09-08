@@ -1,10 +1,12 @@
 import "dotenv/config";
 import "./src/cron/ferias.cron";
+import "./src/cron/patrocinio-ferias.cron";
 import "./src/cron/contratos.cron";
 import "./src/cron/boas-vindas-funcionarios.cron";
 //import "./src/cron/reserva-sala-lembrete.cron";
 import { iniciarCronLembreteReservaSala } from "./src/cron/reserva-sala-lembrete.cron";
 import { iniciarCronLeiloes } from "./src/cron/leiloes.cron";
+import { iniciarCronAgendaDiariaMotoristas } from "./src/cron/viagens-agenda-motoristas.cron";
 import express from "express";
 import { routes } from "./src/routes/routes";
 import bodyParser from "body-parser";
@@ -109,6 +111,7 @@ async function bootstrap() {
 
   iniciarCronLembreteReservaSala();
   iniciarCronLeiloes();
+  iniciarCronAgendaDiariaMotoristas();
 
   const httpServer = createServer(app);
   const io = new Server(httpServer, {

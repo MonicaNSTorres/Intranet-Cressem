@@ -81,6 +81,7 @@ import {
 import { errorLogController } from "../controllers/errorlog.controller";
 import { termosMensaisCaixaController } from "../controllers/termos-mensais-caixa.controller";
 import { reservaSalaReuniaoController } from "../controllers/reserva-sala-reuniao.controller";
+import { viagensController } from "../controllers/viagens.controller";
 import { monitorMetaAlertasController } from "../controllers/monitor-meta-alertas.controller";
 import { monitorAtendimentoBlipController } from "../controllers/monitor-atendimento-blip.controller";
 import { cnab240Controller } from "../controllers/cnab240.controller";
@@ -674,6 +675,12 @@ routes.get(
 routes.get(
   "/v1/email_informativo_conselho/patrocinio/:id",
   emailController.emailConselho
+);
+
+routes.get(
+  "/v1/email_informativo_financeiro_patrocinio/patrocinio/:id",
+  authMiddleware,
+  emailController.emailFinanceiroPatrocinio
 );
 
 routes.get(
@@ -1377,6 +1384,17 @@ routes.delete(
   authMiddleware,
   reservaSalaReuniaoController.cancelar
 );
+
+// viagens
+routes.get("/v1/viagens/meu-perfil", authMiddleware, viagensController.meuPerfil);
+routes.get("/v1/viagens/funcionarios", authMiddleware, viagensController.pesquisarFuncionarios);
+routes.get("/v1/viagens/motoristas", authMiddleware, viagensController.listarMotoristas);
+routes.get("/v1/viagens/disponibilidade-motorista", authMiddleware, viagensController.consultarDisponibilidadeMotorista);
+routes.post("/v1/viagens", authMiddleware, viagensController.criar);
+routes.get("/v1/viagens/pendentes", authMiddleware, viagensController.listarPendentes);
+routes.get("/v1/viagens", authMiddleware, viagensController.listar);
+routes.get("/v1/viagens/:id", authMiddleware, viagensController.buscarPorId);
+routes.put("/v1/viagens/:id/decisao", authMiddleware, viagensController.decidir);
 
 //cnab240
 routes.get(

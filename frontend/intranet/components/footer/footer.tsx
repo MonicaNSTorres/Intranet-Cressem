@@ -17,8 +17,9 @@ export default function Footer() {
                         <Image
                             src="/logo-icon.png"
                             alt="Sicoob Cressem"
-                            width={32}
+                            width={36}
                             height={32}
+                            className="h-auto w-auto"
                             priority
                         />
                     </div>

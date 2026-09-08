@@ -840,7 +840,9 @@ const Sidebar = () => {
                                     <img
                                         src="/logo-icon.png"
                                         alt="Logo Cressem"
-                                        className="h-12 w-12 object-contain"
+                                        width={48}
+                                        height={42}
+                                        className="h-auto w-12 object-contain"
                                     />
                                 </Link>
 

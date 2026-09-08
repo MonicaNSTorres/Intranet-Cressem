@@ -62,6 +62,19 @@ function aplicarParticipacaoDebugDestinatarios(destinatarios: string | string[])
   return [String(destinatarios || "").trim()].filter(Boolean);
 }
 
+function getEmailsFinanceiroParticipacao() {
+  const raw =
+    process.env.PATROCINIO_FINANCEIRO_EMAIL ||
+    process.env.FINANCEIRO_EMAIL ||
+    process.env.REEMBOLSO_FINANCEIRO_EMAIL ||
+    "";
+
+  return String(raw)
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+}
+
 function simNao(value: any) {
   return Number(value || 0) === 1 ? "SIM" : "NÃO";
 }
@@ -311,6 +324,68 @@ function montarEmailParticipacao({
       </body>
     </html>
   `;
+}
+
+export type EncaminhamentoMarketingPorFerias = {
+  gerente: string;
+  inicio: string;
+  fim: string;
+};
+
+export async function enviarEmailMarketingPatrocinio(
+  id: number,
+  encaminhamentoPorFerias?: EncaminhamentoMarketingPorFerias
+) {
+  const patrocinioResult = await oracleExecute(
+    `SELECT * FROM DBACRESSEM.PATROCINIO WHERE ID_PATROCINIO = :id`,
+    { id }
+  );
+  const patrocinio: any = patrocinioResult.rows?.[0];
+
+  if (!patrocinio) {
+    throw new Error("Patrocínio não encontrado.");
+  }
+
+  const foiEncaminhadoPorFerias = Boolean(encaminhamentoPorFerias);
+  const introducao = foiEncaminhadoPorFerias
+    ? `A etapa de Gerência foi dispensada automaticamente porque ${encaminhamentoPorFerias!.gerente} está de férias de ${encaminhamentoPorFerias!.inicio} a ${encaminhamentoPorFerias!.fim}. A solicitação aguarda a opinião do setor de Marketing.`
+    : "A Gerência registrou o parecer e a solicitação de participação de marketing aguarda a opinião do setor de Marketing.";
+  const linhasEncaminhamento = foiEncaminhadoPorFerias
+    ? linhaTabelaEmail(
+        "Encaminhamento automático",
+        `Gerência dispensada: ${encaminhamentoPorFerias!.gerente} está de férias de ${encaminhamentoPorFerias!.inicio} a ${encaminhamentoPorFerias!.fim}.`
+      )
+    : "";
+
+  const body = montarEmailParticipacao({
+    titulo: "Parecer de Marketing solicitado",
+    saudacao: "Prezados(as),",
+    introducao,
+    linhas: [
+      linhaTabelaEmail("ID Solicitação", id),
+      linhaTabelaEmail("Empresa", patrocinio.NM_SOLICITANTE || ""),
+      linhaTabelaEmail("Solicitante", patrocinio.NM_FUNCIONARIO || ""),
+      linhasEncaminhamento,
+      linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+      linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+      linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+    ].join(""),
+    orientacao:
+      "Por favor, acessem a Intranet para consultar os detalhes e registrar o parecer de Marketing.",
+  });
+
+  await sendEmail(
+    aplicarParticipacaoDebugDestinatarios([
+      "julia.a.coutinho@sicoob.com.br",
+      "luiz.gerhard@sicoob.com.br",
+    ]),
+    "Parecer de Marketing solicitado - Participação",
+    body
+  );
+
+  return {
+    debug_email_ativo: getParticipacaoDebugEmail().length > 0,
+  };
 }
 
 export const emailController = {
@@ -692,45 +767,21 @@ export const emailController = {
         return res.status(400).json({ error: "ID inválido." });
       }
 
-      const patrocinioResult = await oracleExecute(
-        `SELECT * FROM DBACRESSEM.PATROCINIO WHERE ID_PATROCINIO = :id`,
-        { id }
-      );
-      const patrocinio: any = patrocinioResult.rows?.[0];
+      const gerente = String(req.query.gerente_em_ferias || "").trim();
+      const inicio = String(req.query.ferias_inicio || "").trim();
+      const fim = String(req.query.ferias_fim || "").trim();
+      const encaminhamentoPorFerias = gerente && inicio && fim
+        ? { gerente, inicio, fim }
+        : undefined;
 
-      if (!patrocinio) {
-        return res.status(404).json({ error: "Patrocínio não encontrado." });
-      }
-
-      const body = montarEmailParticipacao({
-        titulo: "Parecer de Marketing solicitado",
-        saudacao: "Prezados(as),",
-        introducao:
-          "A Gerência registrou o parecer e a solicitação de participação de marketing aguarda a opinião do setor de Marketing.",
-        linhas: [
-          linhaTabelaEmail("ID Solicitação", id),
-          linhaTabelaEmail("Empresa", patrocinio.NM_SOLICITANTE || ""),
-          linhaTabelaEmail("Solicitante", patrocinio.NM_FUNCIONARIO || ""),
-          linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
-          linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
-          linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
-        ].join(""),
-        orientacao:
-          "Por favor, acessem a Intranet para consultar os detalhes e registrar o parecer de Marketing.",
-      });
-
-      await sendEmail(
-        aplicarParticipacaoDebugDestinatarios([
-          "julia.a.coutinho@sicoob.com.br",
-          "luiz.gerhard@sicoob.com.br",
-        ]),
-        "Parecer de Marketing solicitado - Participação",
-        body
+      const resultado = await enviarEmailMarketingPatrocinio(
+        id,
+        encaminhamentoPorFerias
       );
 
       return res.json({
         message: "Email enviado para marketing",
-        debug_email_ativo: getParticipacaoDebugEmail().length > 0,
+        ...resultado,
       });
     } catch (error: any) {
       console.error(error);
@@ -866,6 +917,130 @@ export const emailController = {
 
       return res.status(500).json({
         error: "Erro ao enviar email conselho",
+        details: error.message,
+      });
+    }
+  },
+
+  async emailFinanceiroPatrocinio(req: Request, res: Response) {
+    try {
+      const id = getParamAsNumber(req.params.id);
+
+      if (id === null) {
+        return res.status(400).json({ error: "ID inválido." });
+      }
+
+      const result = await oracleExecute(
+        `
+          SELECT
+            p.ID_PATROCINIO,
+            p.NM_SOLICITANTE,
+            p.NM_FUNCIONARIO,
+            p.VL_PATROCINIO,
+            p.VL_MONETARIO,
+            p.NM_ANDAMENTO,
+            p.NM_CONSELHO,
+            pg.SN_CONTA_COOPERATIVA,
+            pg.NM_FAVORECIDO,
+            pg.NR_CPF_CNPJ AS NR_CPF_CNPJ_FAVORECIDO,
+            pg.DS_BANCO,
+            pg.NR_AGENCIA,
+            pg.NR_CONTA,
+            pg.TP_CONTA
+          FROM DBACRESSEM.PATROCINIO p
+          LEFT JOIN DBACRESSEM.PAGAMENTO_PATROCINIO pg
+            ON pg.ID_PATROCINIO = p.ID_PATROCINIO
+          WHERE p.ID_PATROCINIO = :id
+        `,
+        { id }
+      );
+
+      const patrocinio: any = result.rows?.[0];
+
+      if (!patrocinio) {
+        return res.status(404).json({ error: "Patrocínio não encontrado." });
+      }
+
+      if (String(patrocinio.NM_ANDAMENTO || "").trim().toUpperCase() !== "APROVADO") {
+        return res.status(409).json({
+          error: "O e-mail ao Financeiro só pode ser enviado para patrocínio aprovado.",
+        });
+      }
+
+      if (Number(patrocinio.VL_MONETARIO || 0) !== 1) {
+        return res.status(409).json({
+          error: "Este patrocínio aprovado não possui valor monetário para pagamento.",
+        });
+      }
+
+      if (
+        !patrocinio.NM_FAVORECIDO ||
+        !patrocinio.NR_CPF_CNPJ_FAVORECIDO ||
+        !patrocinio.DS_BANCO ||
+        !patrocinio.NR_AGENCIA ||
+        !patrocinio.NR_CONTA ||
+        !patrocinio.TP_CONTA
+      ) {
+        return res.status(409).json({
+          error: "Os dados de pagamento deste patrocínio não estão completos.",
+        });
+      }
+
+      const emails = aplicarParticipacaoDebugDestinatarios(
+        getEmailsFinanceiroParticipacao()
+      );
+
+      if (!emails.length) {
+        return res.status(500).json({
+          error:
+            "Configure PATROCINIO_FINANCEIRO_EMAIL, FINANCEIRO_EMAIL ou REEMBOLSO_FINANCEIRO_EMAIL no ambiente.",
+        });
+      }
+
+      const subject = `Patrocínio aprovado para pagamento #${id}`;
+      const body = montarEmailParticipacao({
+        titulo: "Pagamento de patrocínio aprovado",
+        saudacao: "Prezados(as),",
+        introducao:
+          "O Conselho aprovou a solicitação abaixo. Por gentileza, realize o pagamento conforme os dados informados.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", patrocinio.ID_PATROCINIO),
+          linhaTabelaEmail("Empresa", patrocinio.NM_SOLICITANTE || ""),
+          linhaTabelaEmail("Solicitante", patrocinio.NM_FUNCIONARIO || ""),
+          linhaTabelaEmail("Valor aprovado", `R$ ${fmtMoney(patrocinio.VL_PATROCINIO)}`),
+          linhaTabelaEmail("Aprovado por", patrocinio.NM_CONSELHO || "Conselho"),
+          linhaTabelaEmail("Favorecido", patrocinio.NM_FAVORECIDO),
+          linhaTabelaEmail(
+            "CPF/CNPJ do favorecido",
+            formatarCnpj(patrocinio.NR_CPF_CNPJ_FAVORECIDO)
+          ),
+          linhaTabelaEmail(
+            "Conta na cooperativa",
+            Number(patrocinio.SN_CONTA_COOPERATIVA) === 1 ? "Sim" : "Não"
+          ),
+          linhaTabelaEmail("Banco", patrocinio.DS_BANCO),
+          linhaTabelaEmail("Agência", patrocinio.NR_AGENCIA),
+          linhaTabelaEmail("Conta", patrocinio.NR_CONTA),
+          linhaTabelaEmail(
+            "Tipo de conta",
+            patrocinio.TP_CONTA === "POUPANCA" ? "Conta poupança" : "Conta corrente"
+          ),
+        ].join(""),
+        orientacao:
+          "Para consultar a solicitação completa e os pareceres registrados, acesse a Intranet.",
+      });
+
+      await sendEmail(emails, subject, body);
+
+      return res.json({
+        message: "E-mail de pagamento enviado ao Financeiro.",
+        debug_email_ativo: getParticipacaoDebugEmail().length > 0,
+      });
+    } catch (error: any) {
+      console.error("Erro ao enviar e-mail de pagamento do patrocínio:", error);
+
+      return res.status(500).json({
+        error: "Erro ao enviar e-mail de pagamento ao Financeiro.",
         details: error.message,
       });
     }

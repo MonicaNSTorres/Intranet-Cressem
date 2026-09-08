@@ -680,12 +680,12 @@ export function DemissaoForm() {
   const moneyInputClass = `${inputClass} text-right`;
   const readOnlyMoneyClass = `${readOnlyClass} text-right`;
   const sectionClass =
-    "mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
+    "mx-5 mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const sectionTitleClass =
     "mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]";
 
   return (
-    <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white pb-5 shadow-sm">
       <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
       <SearchForm
         onSearch={onBuscar}
@@ -1152,7 +1152,7 @@ export function DemissaoForm() {
       )}
 
       {!temValorADevolver && !temValorAPagar && (
-        <div className="my-4 rounded-2xl border border-[#00AE9D]/30 bg-[#00AE9D]/10 p-4 text-sm font-semibold text-[#006B5F]">
+        <div className="mx-5 mt-5 rounded-2xl border border-[#00AE9D]/30 bg-[#00AE9D]/10 p-4 text-sm font-semibold text-[#006B5F]">
           Não há valor a devolver ou a pagar. Os dados bancários não são necessários.
         </div>
       )}

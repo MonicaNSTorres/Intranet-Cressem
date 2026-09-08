@@ -27,7 +27,7 @@ export default function SolicitacaoParticipacaoPage() {
       </div>
 
       <div className="mt-8 text-xs font-medium text-slate-500">
-        * Os dados são enviados para a intranet-api com upload de arquivos e agenda do evento.
+        Revise os dados e os anexos antes de enviar a solicitação para aprovação.
       </div>
     </div>
   );

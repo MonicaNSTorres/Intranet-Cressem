@@ -36,6 +36,7 @@ export default function RootLayout({
     <html lang="pt-br" suppressHydrationWarning>
       <body
         className={`${asap.className} antialiased`}
+        suppressHydrationWarning
       >
         <SessionWatcher />
         <PageAccessTracker />

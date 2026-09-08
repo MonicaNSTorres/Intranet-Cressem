@@ -98,9 +98,9 @@ export default function LoginPage() {
                         <Image
                             src="/logo-icon.png"
                             alt="logo sicoob"
-                            width={70}
+                            width={80}
                             height={70}
-                            className="mb-6"
+                            className="mb-6 h-auto w-auto"
                         />
                         <h1 className="text-4xl font-bold leading-tight text-gray-600">
                             Plataforma Intranet Cressem

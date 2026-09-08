@@ -34,6 +34,14 @@ const AD_GROUPS = {
 
 export const SCREENS: ScreenItem[] = [
   {
+    title: "Viagens",
+    desc: "Solicite viagens corporativas, consulte a agenda e acompanhe aprovações.",
+    href: "/auth/viagens",
+    group: "Utilidades",
+    allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    keywords: ["viagem", "viagens", "agenda", "motorista", "conselho", "solicitação"],
+  },
+  {
     title: "Home",
     desc: "Página inicial da intranet.",
     href: "/auth/home",

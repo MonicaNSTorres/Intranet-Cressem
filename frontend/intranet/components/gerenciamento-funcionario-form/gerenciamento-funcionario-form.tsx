@@ -70,6 +70,13 @@ function formatarNascimentoTabela(data?: string | null) {
   return `${dia}/${mes}`;
 }
 
+function normalizarTextoBusca(valor?: string | null) {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR");
+}
+
 function formatPhone(value: string) {
   return value
     .replace(/\D/g, "")
@@ -313,7 +320,7 @@ export function GerenciamentoFuncionarioForm() {
   const [secCargo, setSecCargo] = useState("");
   const [secGerencia, setSecGerencia] = useState("");
 
-  const [enviarEmailAdmissao, setEnviarEmailAdmissao] = useState(false);
+  const [enviarEmailAdmissao, setEnviarEmailAdmissao] = useState(true);
 
   const [arquivoDocIdentidade, setArquivoDocIdentidade] = useState<File | null>(null);
   const [arquivoCompEndereco, setArquivoCompEndereco] = useState<File | null>(null);
@@ -452,7 +459,7 @@ export function GerenciamentoFuncionarioForm() {
     setSecSetor("");
     setSecCargo("");
     setSecGerencia("");
-    setEnviarEmailAdmissao(false);
+    setEnviarEmailAdmissao(true);
 
     setArquivoDocIdentidade(null);
     setArquivoCompEndereco(null);
@@ -820,7 +827,7 @@ export function GerenciamentoFuncionarioForm() {
   }
 
   const funcionariosFiltrados = useMemo(() => {
-    const termo = buscaAplicada.trim().toLocaleLowerCase("pt-BR");
+    const termo = normalizarTextoBusca(buscaAplicada.trim());
 
     return todosFuncionarios.filter((funcionario) => {
       const ativo = Number(funcionario.SN_ATIVO) === 1;
@@ -832,9 +839,11 @@ export function GerenciamentoFuncionarioForm() {
       if (!correspondeStatus) return false;
       if (!termo) return true;
 
-      return String(funcionario.NM_FUNCIONARIO || "")
-        .toLocaleLowerCase("pt-BR")
-        .includes(termo);
+      return [
+        funcionario.NM_FUNCIONARIO,
+        funcionario.SETOR?.NM_SETOR,
+        funcionario.CARGO?.NM_CARGO,
+      ].some((campo) => normalizarTextoBusca(campo).includes(termo));
     });
   }, [buscaAplicada, filtroStatus, todosFuncionarios]);
 
@@ -861,7 +870,7 @@ export function GerenciamentoFuncionarioForm() {
               Consulta de funcionários
             </h2>
             <p className="mt-1 text-sm text-[var(--paragraph)]">
-              Pesquise pelo nome e escolha quais vínculos deseja visualizar.
+              Pesquise por nome, setor ou cargo e escolha quais vínculos deseja visualizar.
             </p>
           </div>
 
@@ -877,14 +886,14 @@ export function GerenciamentoFuncionarioForm() {
 
         <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_240px_auto_auto] lg:items-end">
           <div>
-            <label className={LABEL_CLASS}>Nome do funcionário</label>
+            <label className={LABEL_CLASS}>Nome, setor ou cargo</label>
             <input
               value={busca}
               onChange={(e) => setBusca(removerEspacoInicial(e.target.value))}
               onKeyDown={(e) => {
                 if (e.key === "Enter") aplicarFiltros();
               }}
-              placeholder="Digite o nome do funcionário"
+              placeholder="Digite o nome, setor ou cargo"
               className={INPUT_CLASS}
             />
           </div>

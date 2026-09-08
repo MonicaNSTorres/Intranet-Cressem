@@ -14,6 +14,7 @@ import {
 } from "../services/oracle.service";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
 import { PDFDocument } from "pdf-lib";
+import { isConselhoParticipacao } from "../services/perfil-conselho.service";
 
 const execFileAsync = promisify(execFile);
 const AD_GROUP_SUPORTE = "GG_USERS_SUPORTE";
@@ -100,6 +101,74 @@ function toNullableNumber(value: any) {
 function toNullableString(value: any) {
     const v = String(value ?? "").trim();
     return v ? v : null;
+}
+
+type PagamentoPatrocinio = {
+    SN_CONTA_COOPERATIVA: number;
+    NM_FAVORECIDO: string;
+    NR_CPF_CNPJ: string;
+    DS_BANCO: string;
+    NR_AGENCIA: string;
+    NR_CONTA: string;
+    TP_CONTA: string;
+};
+
+function obterPagamentoPatrocinio(body: any): PagamentoPatrocinio {
+    const contaCooperativa = toNumber(
+        body.CD_CONTA_COOPERATIVA,
+        -1
+    );
+
+    if (![0, 1].includes(contaCooperativa)) {
+        throw new Error(
+            "Informe se o recebimento será em conta da cooperativa."
+        );
+    }
+
+    const nomeFavorecido = toNullableString(body.NM_FAVORECIDO);
+    const cpfCnpjFavorecido = onlyCpfCnpjChars(
+        String(body.NR_CPF_CNPJ_FAVORECIDO || "")
+    );
+
+    if (!nomeFavorecido) {
+        throw new Error("NM_FAVORECIDO é obrigatório.");
+    }
+
+    const cpfValido =
+        cpfCnpjFavorecido.length === 11 && /^\d{11}$/.test(cpfCnpjFavorecido);
+    const cnpjValido = cpfCnpjFavorecido.length === 14;
+
+    if (!cpfValido && !cnpjValido) {
+        throw new Error(
+            "NR_CPF_CNPJ_FAVORECIDO deve conter um CPF com 11 dígitos ou CNPJ com 14 caracteres."
+        );
+    }
+
+    const banco = toNullableString(body.DS_BANCO_PAGAMENTO);
+    const agencia = toNullableString(body.NR_AGENCIA_PAGAMENTO);
+    const conta = toNullableString(body.NR_CONTA_PAGAMENTO);
+    const tipoConta =
+        toNullableString(body.TP_CONTA_PAGAMENTO)?.toUpperCase() || null;
+
+    if (!banco || !agencia || !conta || !tipoConta) {
+        throw new Error(
+            "Banco, agência, conta e tipo de conta são obrigatórios para o pagamento."
+        );
+    }
+
+    if (!["CORRENTE", "POUPANCA"].includes(tipoConta)) {
+        throw new Error("TP_CONTA_PAGAMENTO inválido.");
+    }
+
+    return {
+        SN_CONTA_COOPERATIVA: contaCooperativa,
+        NM_FAVORECIDO: nomeFavorecido,
+        NR_CPF_CNPJ: cpfCnpjFavorecido,
+        DS_BANCO: banco,
+        NR_AGENCIA: agencia,
+        NR_CONTA: conta,
+        TP_CONTA: tipoConta,
+    };
 }
 
 function ensurePdf(file?: UploadedFile | null) {
@@ -558,13 +627,7 @@ async function buscarTipoFuncionarioPorNome(nome: string) {
 
     let tipo = "funcionario";
 
-    const nomesConselho = [
-        "JANAINA GABRIELA",
-        "ISABELI LOHANA CARVALHO MARTINS",
-        "VITORIA BEATRIZ FONTOURA CAVALHEIRO DOS SANTOS"
-    ];
-
-    if (nomesConselho.includes(nomeUpper)) {
+    if (isConselhoParticipacao(nomeUpper)) {
         tipo = "conselho";
     } else if (nivelUpper === "DIRETORIA") {
         tipo = "diretoria";
@@ -596,22 +659,37 @@ async function buscarDiasPatrocinio(id: number) {
     return result.rows || [];
 }
 
+type AndamentoInicialPorGestor = {
+    andamento: string;
+    gerenteEmFerias?: {
+        nome: string;
+        inicio: string;
+        fim: string;
+    };
+};
+
 async function definirAndamentoInicialPorGestor(
     conn: oracledb.Connection,
     nomeFuncionario: string
-) {
+): Promise<AndamentoInicialPorGestor> {
     const nome = String(nomeFuncionario || "").trim();
-    if (!nome) return "Pendente Gerencia";
+    if (!nome) return { andamento: "Pendente Gerencia" };
 
     const result = await conn.execute(
         `
       SELECT
-        cg.NM_NIVEL AS NM_NIVEL_GESTOR
+        cg.NM_NIVEL AS NM_NIVEL_GESTOR,
+        gestor.NM_FUNCIONARIO AS NM_GESTOR,
+        TO_CHAR(ferias.DT_DIA_INICIO, 'DD/MM/YYYY') AS DT_FERIAS_INICIO,
+        TO_CHAR(ferias.DT_DIA_FIM, 'DD/MM/YYYY') AS DT_FERIAS_FIM
       FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
       LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM gestor
         ON gestor.ID_FUNCIONARIO = f.CD_GERENCIA
       LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM cg
         ON cg.ID_CARGO = gestor.ID_CARGO
+      LEFT JOIN DBACRESSEM.FERIAS_FUNCIONARIOS ferias
+        ON ferias.ID_FUNCIONARIO = gestor.ID_FUNCIONARIO
+       AND TRUNC(SYSDATE) BETWEEN TRUNC(ferias.DT_DIA_INICIO) AND TRUNC(ferias.DT_DIA_FIM)
       WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) = UPPER(TRIM(:nome))
       FETCH FIRST 1 ROWS ONLY
     `,
@@ -626,11 +704,22 @@ async function definirAndamentoInicialPorGestor(
         .toUpperCase()
         .trim();
 
-    if (nivelGestor === "DIRETORIA") {
-        return "Pendente Diretoria";
+    if (row?.DT_FERIAS_INICIO && row?.DT_FERIAS_FIM) {
+        return {
+            andamento: "Pendente Marketing",
+            gerenteEmFerias: {
+                nome: String(row.NM_GESTOR || "Gerência"),
+                inicio: String(row.DT_FERIAS_INICIO),
+                fim: String(row.DT_FERIAS_FIM),
+            },
+        };
     }
 
-    return "Pendente Gerencia";
+    if (nivelGestor === "DIRETORIA") {
+        return { andamento: "Pendente Diretoria" };
+    }
+
+    return { andamento: "Pendente Gerencia" };
 }
 
 type ParticipacaoSubmitStatus = "processing" | "done";
@@ -669,8 +758,9 @@ function buildParticipacaoDedupeKey(params: {
     painelSisbrFile?: UploadedFile;
     semFinsFile?: UploadedFile | null;
     auditorio: any;
+    pagamento: PagamentoPatrocinio | null;
 }) {
-    const { body, dias, oficioFile, painelSisbrFile, semFinsFile, auditorio } = params;
+    const { body, dias, oficioFile, painelSisbrFile, semFinsFile, auditorio, pagamento } = params;
 
     const diasKey = [...dias]
         .map(
@@ -725,6 +815,17 @@ function buildParticipacaoDedupeKey(params: {
             semFinsFile?.size || 0
         )}`,
         auditorioKey,
+        pagamento
+            ? [
+                String(pagamento.SN_CONTA_COOPERATIVA),
+                normalizeDedupeText(pagamento.NM_FAVORECIDO),
+                pagamento.NR_CPF_CNPJ,
+                normalizeDedupeText(pagamento.DS_BANCO),
+                normalizeDedupeText(pagamento.NR_AGENCIA),
+                normalizeDedupeText(pagamento.NR_CONTA),
+                normalizeDedupeText(pagamento.TP_CONTA),
+            ].join("|")
+            : "SEM_PAGAMENTO",
     ].join("§");
 }
 
@@ -754,6 +855,17 @@ export const patrocinioController = {
 
             const dias = parseDias(body.DIAS);
             const auditorio = parseAuditorio(body.AUDITORIO);
+            let pagamento: PagamentoPatrocinio | null = null;
+
+            if (toNumber(body.VL_MONETARIO) === 1) {
+                try {
+                    pagamento = obterPagamentoPatrocinio(body);
+                } catch (error: any) {
+                    return res.status(400).json({
+                        error: String(error?.message || "Dados de recebimento inválidos."),
+                    });
+                }
+            }
 
             if (!toNullableString(body.NM_SOLICITANTE)) {
                 return res.status(400).json({ error: "NM_SOLICITANTE é obrigatório." });
@@ -822,6 +934,7 @@ export const patrocinioController = {
                 painelSisbrFile,
                 semFinsFile,
                 auditorio,
+                pagamento,
             });
 
             cleanupParticipacaoSubmitMap();
@@ -873,10 +986,11 @@ export const patrocinioController = {
                 "ID_PATROCINIO"
             );
 
-            const andamentoInicial = await definirAndamentoInicialPorGestor(
+            const definicaoAndamentoInicial = await definirAndamentoInicialPorGestor(
                 conn,
                 String(body.NM_FUNCIONARIO || "")
             );
+            const andamentoInicial = definicaoAndamentoInicial.andamento;
 
             await conn.execute(
                 `
@@ -975,6 +1089,43 @@ export const patrocinioController = {
                 },
                 { autoCommit: false }
             );
+
+            if (pagamento) {
+                await conn.execute(
+                    `
+          INSERT INTO DBACRESSEM.PAGAMENTO_PATROCINIO (
+            ID_PATROCINIO,
+            SN_CONTA_COOPERATIVA,
+            NM_FAVORECIDO,
+            NR_CPF_CNPJ,
+            DS_BANCO,
+            NR_AGENCIA,
+            NR_CONTA,
+            TP_CONTA
+          ) VALUES (
+            :ID_PATROCINIO,
+            :SN_CONTA_COOPERATIVA,
+            :NM_FAVORECIDO,
+            :NR_CPF_CNPJ,
+            :DS_BANCO,
+            :NR_AGENCIA,
+            :NR_CONTA,
+            :TP_CONTA
+          )
+          `,
+                    {
+                    ID_PATROCINIO: idPatrocinio,
+                    SN_CONTA_COOPERATIVA: pagamento.SN_CONTA_COOPERATIVA,
+                    NM_FAVORECIDO: pagamento.NM_FAVORECIDO,
+                    NR_CPF_CNPJ: pagamento.NR_CPF_CNPJ,
+                    DS_BANCO: pagamento.DS_BANCO,
+                    NR_AGENCIA: pagamento.NR_AGENCIA,
+                    NR_CONTA: pagamento.NR_CONTA,
+                    TP_CONTA: pagamento.TP_CONTA,
+                    },
+                    { autoCommit: false }
+                );
+            }
 
             for (const dia of dias) {
                 const idDataHora = await getNextNumericId(
@@ -1083,6 +1234,7 @@ export const patrocinioController = {
                 message: "Solicitação cadastrada com sucesso.",
                 ID_PATROCINIO: idPatrocinio,
                 NM_ANDAMENTO: andamentoInicial,
+                GERENTE_EM_FERIAS: definicaoAndamentoInicial.gerenteEmFerias || null,
                 DIR_OFICIO: oficioPath,
                 DIR_PAINEL_SISBR: painelSisbrPath,
                 DIR_DOC_SEM_FINS_LUCRATIVO: semFinsPath,
@@ -1356,8 +1508,17 @@ export const patrocinioController = {
             p.NM_DIRETORIA,
             p.NM_CONSELHO,
             p.NM_PARECER_CONSELHO,
-            p.DESC_PARECER_ESCRITO_CONSELHO
+            p.DESC_PARECER_ESCRITO_CONSELHO,
+            pg.SN_CONTA_COOPERATIVA AS SN_CONTA_COOPERATIVA_PAGAMENTO,
+            pg.NM_FAVORECIDO,
+            pg.NR_CPF_CNPJ AS NR_CPF_CNPJ_FAVORECIDO,
+            pg.DS_BANCO AS DS_BANCO_PAGAMENTO,
+            pg.NR_AGENCIA AS NR_AGENCIA_PAGAMENTO,
+            pg.NR_CONTA AS NR_CONTA_PAGAMENTO,
+            pg.TP_CONTA AS TP_CONTA_PAGAMENTO
           FROM DBACRESSEM.PATROCINIO p
+          LEFT JOIN DBACRESSEM.PAGAMENTO_PATROCINIO pg
+            ON pg.ID_PATROCINIO = p.ID_PATROCINIO
           WHERE p.ID_PATROCINIO = :id
         `,
                 { id },

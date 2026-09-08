@@ -9,6 +9,7 @@ import path from "path";
 import os from "os";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { isConselhoParticipacao } from "../services/perfil-conselho.service";
 import { sendEmail, type EmailAttachment } from "../services/email.service";
 
 const execFileAsync = promisify(execFile);
@@ -400,6 +401,7 @@ function infoTable(rows: Array<[string, any]>) {
 }
 
 const EMAIL_DESTINOS_RH_EFETIVACAO = [
+    "informatica.cressem@sicoob.com.br",
     "luiz.gerhard@sicoob.com.br",
     "fabio.sprado@sicoob.com.br",
     "paulo.tarso@sicoob.com.br",
@@ -914,12 +916,7 @@ export const gerenciamentoFuncionarioController = {
 
             let tipo = "funcionario";
 
-            const nomesConselho = [
-                "JANAINA GABRIELA",
-                "ISABELI LOHANA CARVALHO MARTINS",
-                "VITORIA BEATRIZ FONTOURA CAVALHEIRO DOS SANTOS"
-            ];
-            if (nomesConselho.includes(nomeUpper)) {
+            if (isConselhoParticipacao(nomeUpper)) {
                 tipo = "conselho";
             } else if (nivelUpper === "DIRETORIA") {
                 tipo = "diretoria";
@@ -962,10 +959,13 @@ export const gerenciamentoFuncionarioController = {
         FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
         LEFT JOIN DBACRESSEM.SETOR_SICOOB_CRESSEM s
           ON s.ID_SETOR = f.ID_SETOR
+        LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM c
+          ON c.ID_CARGO = f.ID_CARGO
         WHERE (
           :nome = '%%'
           OR UPPER(f.NM_FUNCIONARIO) LIKE :nome
           OR UPPER(s.NM_SETOR) LIKE :nome
+          OR UPPER(c.NM_CARGO) LIKE :nome
         )
       `;
 
@@ -1018,6 +1018,7 @@ export const gerenciamentoFuncionarioController = {
             :nome = '%%'
             OR UPPER(f.NM_FUNCIONARIO) LIKE :nome
             OR UPPER(s.NM_SETOR) LIKE :nome
+            OR UPPER(c.NM_CARGO) LIKE :nome
           )
         )
         WHERE RN > :offset
@@ -1245,7 +1246,9 @@ export const gerenciamentoFuncionarioController = {
                 return res.status(400).json({ error: "Preencha o setor." });
             }
 
-            const ENVIAR_EMAIL_ADMISSAO = isTruthyBody(req.body.ENVIAR_EMAIL_ADMISSAO);
+            const ENVIAR_EMAIL_ADMISSAO = isTruthyBody(
+                req.body.ENVIAR_EMAIL_ADMISSAO ?? "1"
+            );
             const funcionarioNomePasta = NM_FUNCIONARIO;
             const warnings: string[] = [];
 
@@ -1367,6 +1370,7 @@ export const gerenciamentoFuncionarioController = {
           DT_DESLIGAMENTO,
           NR_MATRICULA,
           NR_CONTA_CORRENTE,
+          SN_ENVIAR_EMAIL_ADMISSAO,
           DOC_INDENTIDADE,
           COMP_ENDERECO,
           FICHA_RH,
@@ -1394,6 +1398,7 @@ export const gerenciamentoFuncionarioController = {
           END,
           :NR_MATRICULA,
           :NR_CONTA_CORRENTE,
+          :SN_ENVIAR_EMAIL_ADMISSAO,
           :DOC_INDENTIDADE,
           :COMP_ENDERECO,
           :FICHA_RH,
@@ -1424,6 +1429,7 @@ export const gerenciamentoFuncionarioController = {
                     DT_DESLIGAMENTO,
                     NR_MATRICULA,
                     NR_CONTA_CORRENTE,
+                    SN_ENVIAR_EMAIL_ADMISSAO: ENVIAR_EMAIL_ADMISSAO ? "S" : "N",
                     DOC_INDENTIDADE: caminhoDocIdentidade,
                     COMP_ENDERECO: caminhoCompEndereco,
                     FICHA_RH: caminhoFichaRh,
@@ -1474,6 +1480,7 @@ export const gerenciamentoFuncionarioController = {
                 ID_FUNCIONARIO: id,
                 NM_FUNCIONARIO,
                 SN_ATIVO: 1,
+                SN_ENVIAR_EMAIL_ADMISSAO: ENVIAR_EMAIL_ADMISSAO ? "S" : "N",
                 DOC_INDENTIDADE: caminhoDocIdentidade,
                 COMP_ENDERECO: caminhoCompEndereco,
                 FICHA_RH: caminhoFichaRh,

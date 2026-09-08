@@ -84,7 +84,9 @@ export default function NotFound() {
                             <img
                                 src="/logo-icon.png"
                                 alt="Logo Cressem"
-                                className="h-10 w-10 object-contain"
+                                width={40}
+                                height={35}
+                                className="h-auto w-10 object-contain"
                             />
 
                             <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-[#79B729]" />

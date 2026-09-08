@@ -408,6 +408,10 @@ export const PAGE_ACCESS = {
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
     },
 
+    viagens: {
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    },
+
     cnab240: {
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
     },

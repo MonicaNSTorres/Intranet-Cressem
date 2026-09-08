@@ -16,6 +16,7 @@ export type PatrocinioItem = {
   NM_CIDADE: string;
   NM_FUNCIONARIO: string;
   DT_SOLICITACAO: string;
+  DT_FINALIZACAO?: string;
   DT_EVENTO_INICIO?: string;
   DT_EVENTO_FIM?: string;
   NM_ANDAMENTO: string;
@@ -48,6 +49,13 @@ export type PatrocinioItem = {
   DESC_PARECER_ESCRITO_CONSELHO: string;
   NM_GERENTE_EVENTO: string;
   NM_SUGESTAO_PARTICIPANTES: string;
+  SN_CONTA_COOPERATIVA_PAGAMENTO?: number;
+  NM_FAVORECIDO?: string;
+  NR_CPF_CNPJ_FAVORECIDO?: string;
+  DS_BANCO_PAGAMENTO?: string;
+  NR_AGENCIA_PAGAMENTO?: string;
+  NR_CONTA_PAGAMENTO?: string;
+  TP_CONTA_PAGAMENTO?: string;
   DIAS: PatrocinioDia[];
 };
 
@@ -485,6 +493,38 @@ export async function enviarEmailConselho(id: number) {
         id,
       },
       "GERENCIAMENTO_PARTICIPACAO_EMAIL_CONSELHO"
+    );
+
+    throw error;
+  }
+}
+
+export async function enviarEmailFinanceiroPatrocinio(id: number) {
+  try {
+    const api = ensureApiUrl();
+    const res = await fetch(
+      `${api}/v1/email_informativo_financeiro_patrocinio/patrocinio/${id}`,
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(json?.error || "Falha ao enviar e-mail para o Financeiro.");
+    }
+
+    return json;
+  } catch (error: any) {
+    await registrarErroGerenciamentoParticipacao(
+      error,
+      {
+        endpoint: `/v1/email_informativo_financeiro_patrocinio/patrocinio/${id}`,
+        method: "GET",
+        id,
+      },
+      "GERENCIAMENTO_PARTICIPACAO_EMAIL_FINANCEIRO"
     );
 
     throw error;

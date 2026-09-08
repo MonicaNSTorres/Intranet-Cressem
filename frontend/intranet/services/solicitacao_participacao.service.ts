@@ -57,3 +57,25 @@ export async function dispararEmailGerencia(opts: {
 
   return true;
 }
+
+export async function dispararEmailMarketingPorFerias(opts: {
+  patrocinioId: string | number;
+  gerente: string;
+  inicio: string;
+  fim: string;
+}): Promise<boolean> {
+  const { patrocinioId, gerente, inicio, fim } = opts;
+  const params = new URLSearchParams({
+    gerente_em_ferias: gerente,
+    ferias_inicio: inicio,
+    ferias_fim: fim,
+  });
+
+  await api.get(
+    `/v1/email_informativo_marketing/patrocinio/${encodeURIComponent(
+      String(patrocinioId)
+    )}?${params.toString()}`
+  );
+
+  return true;
+}

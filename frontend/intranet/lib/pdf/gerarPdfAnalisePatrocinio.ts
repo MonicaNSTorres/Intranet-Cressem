@@ -589,6 +589,26 @@ async function criarPaginaProposta(
 
   adicionarInformacao("Valor solicitado", moeda(registro.VL_PATROCINIO));
 
+  if (Number(registro.VL_MONETARIO || 0) === 1) {
+    const possuiDadosPagamento = Boolean(
+      String(registro.NM_FAVORECIDO || "").trim() ||
+      String(registro.NR_CONTA_PAGAMENTO || "").trim()
+    );
+
+    adicionarInformacao(
+      "Dados para pagamento",
+      possuiDadosPagamento
+        ? [
+          `Favorecido: ${texto(registro.NM_FAVORECIDO)}`,
+          `CPF/CNPJ: ${documento(registro.NR_CPF_CNPJ_FAVORECIDO)}`,
+          `Banco: ${texto(registro.DS_BANCO_PAGAMENTO)} · Agência: ${texto(registro.NR_AGENCIA_PAGAMENTO)}`,
+          `Conta: ${texto(registro.NR_CONTA_PAGAMENTO)} · ${registro.TP_CONTA_PAGAMENTO === "POUPANCA" ? "Conta poupança" : "Conta corrente"}`,
+        ].join("\n")
+        : "Não informados no cadastro."
+    );
+
+  }
+
   adicionarInformacao("Solicitante interno", texto(registro.NM_FUNCIONARIO));
 
   y += 8;
@@ -863,6 +883,11 @@ async function desenharDocumento(
 
     : "Não informado";
 
+  const possuiDadosPagamento = Boolean(
+    String(r.NM_FAVORECIDO || "").trim() ||
+    String(r.NR_CONTA_PAGAMENTO || "").trim()
+  );
+
   y = tabela(doc, y, "IDENTIFICAÇÃO DA SOLICITAÇÃO", [
 
     [campo("Data da solicitação", dataBR(r.DT_SOLICITACAO)), campo("Status", r.NM_ANDAMENTO)],
@@ -878,6 +903,15 @@ async function desenharDocumento(
   y = tabela(doc, y, "RECURSOS E ESTRUTURA", [
 
     [campo("Precisa de dinheiro?", simNao(r.VL_MONETARIO)), campo("Valor solicitado", moeda(r.VL_PATROCINIO)), campo("É insumo?", simNao(r.QTD_INSUMO)), campo("Valor estimado", moeda(r.VL_ESTIMATIVA))],
+
+    ...(Number(r.VL_MONETARIO || 0) === 1
+      ? possuiDadosPagamento
+        ? [
+          [campo("Favorecido", r.NM_FAVORECIDO, 2), campo("CPF/CNPJ do favorecido", documento(r.NR_CPF_CNPJ_FAVORECIDO), 2)],
+          [campo("Banco", r.DS_BANCO_PAGAMENTO), campo("Agência", r.NR_AGENCIA_PAGAMENTO), campo("Conta", r.NR_CONTA_PAGAMENTO), campo("Tipo de conta", r.TP_CONTA_PAGAMENTO === "POUPANCA" ? "Conta poupança" : "Conta corrente")],
+        ]
+        : [[campo("Dados para pagamento", "Não informados no cadastro.", 4)]]
+      : []),
 
     [campo("Auditório Sede", simNao(r.CD_AUDITORIO_SEDE)), campo("Auditório Centro", simNao(r.CD_AUDITORIO_CENTRO)), campo("Motorista", simNao(r.CD_MOTORISTA)), campo("Funcionários", simNao(r.CD_FUNCIONARIOS))],
 

@@ -40,6 +40,8 @@ import {
 
   enviarEmailConselho,
 
+  enviarEmailFinanceiroPatrocinio,
+
   enviarEmailDiretoria,
 
   enviarEmailMarketing,
@@ -1058,6 +1060,12 @@ export function GerenciamentoParticipacaoForm() {
 
       } else if (funcionarioTipo.TIPO === "conselho") {
 
+        if (status1 === "Aprovado" && Number(selected.VL_MONETARIO || 0) === 1) {
+
+          await enviarEmailFinanceiroPatrocinio(selected.ID_PATROCINIO);
+
+        }
+
         await enviarEmailParecerFinal(funcionarioTipo.TIPO, selected.ID_PATROCINIO);
 
       }
@@ -2072,6 +2080,24 @@ export function GerenciamentoParticipacaoForm() {
 
                   <span className="font-bold text-[#006f65]">{situacaoDoEvento(selected)}</span>
 
+                  {["APROVADO", "REPROVADO"].includes(normalizeText(selected.NM_ANDAMENTO)) &&
+
+                    selected.DT_FINALIZACAO && (
+
+                      <>
+
+                        <span className="text-slate-300" aria-hidden="true">•</span>
+
+                        <span className="font-bold text-red-600">
+
+                          Finalizado em {formatarDataBR(selected.DT_FINALIZACAO)}
+
+                        </span>
+
+                      </>
+
+                    )}
+
                 </div>
 
               </div>
@@ -2098,9 +2124,26 @@ export function GerenciamentoParticipacaoForm() {
 
             </div>
 
-            <div className="space-y-4 p-6">
+            <div className="space-y-5 bg-slate-50/60 p-5 sm:p-6">
 
               <CampoTextarea label="Solicitação" value={selected.DESC_SOLICITACAO} readOnly />
+
+              <CampoTextarea
+                label="Resumo do Evento"
+                value={selected.DESC_RESUMO_EVENTO}
+                readOnly
+                rows={5}
+              />
+
+              <div className="space-y-3">
+                {selected.DIAS?.map((dia, index) => (
+                  <div key={`${dia.DT_DIA}-${index}`} className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <CampoInput label="Dia(s)" value={formatarDataBR(dia.DT_DIA)} readOnly />
+                    <CampoInput label="Início" value={dia.HR_INICIO} readOnly />
+                    <CampoInput label="Fim" value={dia.HR_FIM} readOnly />
+                  </div>
+                ))}
+              </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
 
@@ -2220,9 +2263,9 @@ export function GerenciamentoParticipacaoForm() {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 
-                <CampoInput label="S. médio C/C" value={fmtBRL(selected.VL_SALDO_MEDCIOCC)} readOnly />
+                <CampoInput label="Saldo Médio Conta Corrente" value={fmtBRL(selected.VL_SALDO_MEDCIOCC)} readOnly />
 
-                <CampoInput label="R. Maquininha" value={fmtBRL(selected.VL_RENTABILIDADE_MAQUININHA)} readOnly />
+                <CampoInput label="Rentabilidade da Maquininha" value={fmtBRL(selected.VL_RENTABILIDADE_MAQUININHA)} readOnly />
 
                 <CampoInput label="Conta na Cooperativa" value={selectedContaCooperativa} readOnly />
 
@@ -2232,25 +2275,58 @@ export function GerenciamentoParticipacaoForm() {
 
               <CampoTextarea label="Retorno último evento" value={selectedUltimoEvento} readOnly />
 
-              <div className="space-y-3">
-
-                {selected.DIAS?.map((dia, index) => (
-
-                  <div key={`${dia.DT_DIA}-${index}`} className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
-                    <CampoInput label="Dia(s)" value={formatarDataBR(dia.DT_DIA)} readOnly />
-
-                    <CampoInput label="Início" value={dia.HR_INICIO} readOnly />
-
-                    <CampoInput label="Fim" value={dia.HR_FIM} readOnly />
-
+              <section className="space-y-3 rounded-2xl border border-[#00AE9D]/25 bg-white p-3 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
+                    <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
+                      Dados para recebimento
+                    </h3>
+                    <span className="text-xs font-semibold text-slate-500">Dados bancários</span>
                   </div>
 
-                ))}
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <CampoInput
+                      label="Conta na cooperativa"
+                      value={
+                        selected.SN_CONTA_COOPERATIVA_PAGAMENTO === undefined
+                          ? "Não informado"
+                          : selected.SN_CONTA_COOPERATIVA_PAGAMENTO === 1
+                            ? "Sim"
+                            : "Não"
+                      }
+                      readOnly
+                      compact
+                    />
+                    <CampoInput label="Favorecido" value={selected.NM_FAVORECIDO || "Não informado"} readOnly compact />
+                    <CampoInput
+                      label="CPF/CNPJ do favorecido"
+                      value={
+                        selected.NR_CPF_CNPJ_FAVORECIDO
+                          ? formatarCPFouCNPJ(selected.NR_CPF_CNPJ_FAVORECIDO)
+                          : "Não informado"
+                      }
+                      readOnly
+                      compact
+                    />
+                  </div>
 
-              </div>
-
-              <CampoTextarea label="Resumo do Evento" value={selected.DESC_RESUMO_EVENTO} readOnly />
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                    <CampoInput label="Banco" value={selected.DS_BANCO_PAGAMENTO || "Não informado"} readOnly compact />
+                    <CampoInput label="Agência" value={selected.NR_AGENCIA_PAGAMENTO || "Não informado"} readOnly compact />
+                    <CampoInput label="Conta" value={selected.NR_CONTA_PAGAMENTO || "Não informado"} readOnly compact />
+                    <CampoInput
+                      label="Tipo de conta"
+                      value={
+                        selected.TP_CONTA_PAGAMENTO === "POUPANCA"
+                          ? "Conta poupança"
+                          : selected.TP_CONTA_PAGAMENTO === "CORRENTE"
+                            ? "Conta corrente"
+                            : "Não informado"
+                      }
+                      readOnly
+                      compact
+                    />
+                  </div>
+                </section>
 
               <CampoInput label="Nome Gerência" value={inputGerencia} readOnly />
 
@@ -2796,6 +2872,8 @@ function CampoInput({
 
   maxLength,
 
+  compact = false,
+
 }: {
 
   label: string;
@@ -2808,13 +2886,15 @@ function CampoInput({
 
   maxLength?: number;
 
+  compact?: boolean;
+
 }) {
 
   return (
 
     <div>
 
-      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+      <label className={`${compact ? "mb-1" : "mb-1.5"} block text-[11px] font-black uppercase tracking-wide text-slate-500`}>{label}</label>
 
       <input
 
@@ -2826,7 +2906,9 @@ function CampoInput({
 
         maxLength={maxLength}
 
-        className="w-full rounded border px-3 py-2 read-only:bg-gray-50"
+        className={compact
+          ? "h-9 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 outline-none read-only:cursor-default"
+          : `${inputBase} read-only:cursor-default read-only:bg-slate-50 read-only:text-slate-700`}
 
       />
 
@@ -2858,6 +2940,8 @@ function CampoTextarea({
 
   maxLength,
 
+  rows = 3,
+
 }: {
 
   label: string;
@@ -2870,13 +2954,15 @@ function CampoTextarea({
 
   maxLength?: number;
 
+  rows?: number;
+
 }) {
 
   return (
 
     <div>
 
-      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+      <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-500">{label}</label>
 
       <textarea
 
@@ -2888,9 +2974,9 @@ function CampoTextarea({
 
         maxLength={maxLength}
 
-        rows={3}
+        rows={rows}
 
-        className="w-full rounded border px-3 py-2 read-only:bg-gray-50"
+        className="min-h-24 w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10 read-only:cursor-default read-only:bg-slate-50"
 
       />
 

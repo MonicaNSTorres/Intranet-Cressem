@@ -160,6 +160,7 @@ export default function HomePage() {
     const [erroClima, setErroClima] = useState(false);
     const [cidadeClima, setCidadeClima] = useState("São José dos Campos");
     const [localizacaoAutomatica, setLocalizacaoAutomatica] = useState(false);
+    const [graficoAcessosMontado, setGraficoAcessosMontado] = useState(false);
 
     //const popupConteudo = popupHome ?? ultimoPopupRespondido;
     const popupConteudo = popupHome;
@@ -179,6 +180,10 @@ export default function HomePage() {
     const [paginasMaisAcessadas, setPaginasMaisAcessadas] = useState<
         PaginaMaisAcessada[]
     >([]);
+
+    useEffect(() => {
+        setGraficoAcessosMontado(true);
+    }, []);
 
     useEffect(() => {
         const load = async () => {
@@ -725,8 +730,6 @@ export default function HomePage() {
         ? Math.round(totalSemanal / acessosDiarios.length)
         : 0;
 
-    console.log(paginasMaisAcessadas);
-
     const condicaoClima = climaAtual
         ? obterCondicaoClima(climaAtual.codigo)
         : null;
@@ -1259,17 +1262,22 @@ export default function HomePage() {
                                     </div>
                                 </div>
 
-                                <div className="h-70 w-full rounded-3xl border border-[#EAECF0] bg-[linear-gradient(180deg,#F8FFFE_0%,#FFFFFF_100%)] p-4">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart
-                                            data={acessosDiarios}
-                                            margin={{
-                                                top: 10,
-                                                right: 10,
-                                                left: -20,
-                                                bottom: 0,
-                                            }}
+                                <div className="h-[280px] min-w-0 w-full rounded-3xl border border-[#EAECF0] bg-[linear-gradient(180deg,#F8FFFE_0%,#FFFFFF_100%)] p-4">
+                                    {graficoAcessosMontado ? (
+                                        <ResponsiveContainer
+                                            width="100%"
+                                            height="100%"
+                                            minWidth={0}
                                         >
+                                            <AreaChart
+                                                data={acessosDiarios}
+                                                margin={{
+                                                    top: 10,
+                                                    right: 10,
+                                                    left: -20,
+                                                    bottom: 0,
+                                                }}
+                                            >
                                             <defs>
                                                 <linearGradient
                                                     id="colorAcessos"
@@ -1333,8 +1341,9 @@ export default function HomePage() {
                                                 strokeWidth={3}
                                                 fill="url(#colorAcessos)"
                                             />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>

@@ -185,8 +185,9 @@ export default function UserInfo() {
                     <Image
                         src="/logo-icon.png"
                         alt="logo sicoob"
-                        width={30}
+                        width={34}
                         height={30}
+                        className="h-auto w-auto"
                     />
                 </div>
 

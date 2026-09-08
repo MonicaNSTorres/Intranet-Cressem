@@ -6,6 +6,7 @@ import { FaCalendarPlus, FaTrash } from "react-icons/fa";
 import {
     cadastrarSolicitacaoParticipacao,
     dispararEmailGerencia,
+    dispararEmailMarketingPorFerias,
     listarCidades,
     type CidadeResponse,
 } from "@/services/solicitacao_participacao.service";
@@ -95,6 +96,10 @@ const ORACLE_LIMITS = {
     NM_SOLICITANTE: 100,
     NM_CIDADE: 30,
     NM_FUNCIONARIO: 70,
+    NM_FAVORECIDO: 255,
+    DS_BANCO_PAGAMENTO: 120,
+    NR_AGENCIA_PAGAMENTO: 20,
+    NR_CONTA_PAGAMENTO: 30,
     DESC_SOLICITACAO: 400,
     DESC_SERVICOS: 190,
     DESC_VINCULO: 190,
@@ -111,7 +116,7 @@ const inputBase =
 const inputReadOnlyBase =
     "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm outline-none";
 const choiceGroupBase =
-    "flex flex-wrap gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 shadow-inner shadow-slate-100";
+    "flex flex-wrap gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 shadow-inner shadow-slate-100 [&_input]:h-4 [&_input]:w-4 [&_input]:accent-primary";
 const choiceLabelBase =
     "flex items-center gap-2 text-sm font-medium text-slate-700";
 const fileInputBase =
@@ -221,6 +226,17 @@ export function SolicitacaoParticipacaoForm() {
     const [servicos, setServicos] = useState("");
     const [saldoMedio, setSaldoMedio] = useState("");
     const [rentMaq, setRentMaq] = useState("");
+
+    const [contaCorrenteRecebimento, setContaCorrenteRecebimento] =
+        useState("");
+    const [numeroBancoCooperativa, setNumeroBancoCooperativa] = useState("756");
+    const [agenciaCooperativa, setAgenciaCooperativa] = useState("4317");
+    const [nomeFavorecido, setNomeFavorecido] = useState("");
+    const [cpfCnpjFavorecido, setCpfCnpjFavorecido] = useState("");
+    const [bancoFavorecido, setBancoFavorecido] = useState("");
+    const [agenciaFavorecido, setAgenciaFavorecido] = useState("");
+    const [contaBancariaFavorecido, setContaBancariaFavorecido] = useState("");
+    const [tipoContaFavorecido, setTipoContaFavorecido] = useState("");
 
     const [eventoAnterior, setEventoAnterior] = useState("0");
     const [retornoUltimoEvento, setRetornoUltimoEvento] = useState("");
@@ -548,6 +564,42 @@ export function SolicitacaoParticipacaoForm() {
                 mostrarErro("Preencha a rentabilidade da maquininha.");
                 return false;
             }
+
+            if (precisaValorMonetario === "1" && !contaCorrenteRecebimento.trim()) {
+                mostrarErro("Preencha a conta corrente para recebimento.");
+                return false;
+            }
+        } else if (precisaValorMonetario === "1") {
+            if (!nomeFavorecido.trim()) {
+                mostrarErro("Preencha o nome ou razão social de quem receberá.");
+                return false;
+            }
+
+            const documentoFavorecido = normalizarCpfCnpjParaBanco(cpfCnpjFavorecido);
+            if (![11, 14].includes(documentoFavorecido.length)) {
+                mostrarErro("Preencha o CPF/CNPJ de quem receberá.");
+                return false;
+            }
+
+            if (!bancoFavorecido.trim()) {
+                mostrarErro("Preencha o banco para recebimento.");
+                return false;
+            }
+
+            if (!agenciaFavorecido.trim()) {
+                mostrarErro("Preencha a agência para recebimento.");
+                return false;
+            }
+
+            if (!contaBancariaFavorecido.trim()) {
+                mostrarErro("Preencha a conta para recebimento.");
+                return false;
+            }
+
+            if (!tipoContaFavorecido) {
+                mostrarErro("Selecione o tipo de conta para recebimento.");
+                return false;
+            }
         }
 
         if (!vinculo.trim()) {
@@ -627,6 +679,15 @@ export function SolicitacaoParticipacaoForm() {
         setServicos("");
         setSaldoMedio("");
         setRentMaq("");
+        setContaCorrenteRecebimento("");
+        setNumeroBancoCooperativa("756");
+        setAgenciaCooperativa("4317");
+        setNomeFavorecido("");
+        setCpfCnpjFavorecido("");
+        setBancoFavorecido("");
+        setAgenciaFavorecido("");
+        setContaBancariaFavorecido("");
+        setTipoContaFavorecido("");
         setEventoAnterior("0");
         setRetornoUltimoEvento("");
         setOficio(null);
@@ -723,6 +784,47 @@ export function SolicitacaoParticipacaoForm() {
             );
 
             const nrCpfCnpjBanco = normalizarCpfCnpjParaBanco(cpfCnpj);
+            const favorecidoContaCooperativa = contaCooperativa === "1";
+            const nmFavorecidoOracle = normalizarOracleUpper(
+                favorecidoContaCooperativa ? nomeFantasia : nomeFavorecido,
+                ORACLE_LIMITS.NM_FAVORECIDO
+            );
+            const nrCpfCnpjFavorecido = normalizarCpfCnpjParaBanco(
+                favorecidoContaCooperativa ? cpfCnpj : cpfCnpjFavorecido
+            );
+            const nrContaCooperativa = limitarTextoPorBytesOracle(
+                contaCorrenteRecebimento.trim(),
+                ORACLE_LIMITS.NR_CONTA_PAGAMENTO
+            );
+            const dsBancoCooperativa = limitarTextoPorBytesOracle(
+                numeroBancoCooperativa.trim(),
+                ORACLE_LIMITS.DS_BANCO_PAGAMENTO
+            );
+            const nrAgenciaCooperativa = limitarTextoPorBytesOracle(
+                agenciaCooperativa.trim(),
+                ORACLE_LIMITS.NR_AGENCIA_PAGAMENTO
+            );
+            const dsBancoPagamento = favorecidoContaCooperativa
+                ? dsBancoCooperativa
+                : normalizarOracleUpper(
+                    bancoFavorecido,
+                    ORACLE_LIMITS.DS_BANCO_PAGAMENTO
+                );
+            const nrAgenciaPagamento = favorecidoContaCooperativa
+                ? nrAgenciaCooperativa
+                : limitarTextoPorBytesOracle(
+                    agenciaFavorecido.trim(),
+                    ORACLE_LIMITS.NR_AGENCIA_PAGAMENTO
+                );
+            const nrContaPagamento = favorecidoContaCooperativa
+                ? nrContaCooperativa
+                : limitarTextoPorBytesOracle(
+                    contaBancariaFavorecido.trim(),
+                    ORACLE_LIMITS.NR_CONTA_PAGAMENTO
+                );
+            const tpContaPagamento = favorecidoContaCooperativa
+                ? "CORRENTE"
+                : tipoContaFavorecido;
 
             formData.append("NM_SOLICITANTE", nmSolicitanteOracle);
             formData.append("NR_CPF_CNPJ", nrCpfCnpjBanco);
@@ -763,6 +865,14 @@ export function SolicitacaoParticipacaoForm() {
             formData.append("QTD_INSUMO", precisaInsumo);
             formData.append("CD_AUDITORIO_CENTRO", auditorioCentro ? "1" : "0");
             formData.append("CD_AUDITORIO_SEDE", auditorioSede ? "1" : "0");
+            if (precisaValorMonetario === "1") {
+                formData.append("NM_FAVORECIDO", nmFavorecidoOracle);
+                formData.append("NR_CPF_CNPJ_FAVORECIDO", nrCpfCnpjFavorecido);
+                formData.append("DS_BANCO_PAGAMENTO", dsBancoPagamento);
+                formData.append("NR_AGENCIA_PAGAMENTO", nrAgenciaPagamento);
+                formData.append("NR_CONTA_PAGAMENTO", nrContaPagamento);
+                formData.append("TP_CONTA_PAGAMENTO", tpContaPagamento);
+            }
 
             formData.append(
                 "DIAS",
@@ -818,11 +928,22 @@ export function SolicitacaoParticipacaoForm() {
             const solicitacaoTeste = nmSolicitanteOracle.toUpperCase().includes("TESTE");
 
             if (idPatrocinio && !duplicidadeIgnorada && !(modoTesteParticipacao && solicitacaoTeste)) {
-                await dispararEmailGerencia({
-                    funcionario,
-                    empresa: nmSolicitanteOracle,
-                    patrocinioId: idPatrocinio,
-                });
+                const gerenteEmFerias = response?.GERENTE_EM_FERIAS;
+
+                if (gerenteEmFerias) {
+                    await dispararEmailMarketingPorFerias({
+                        patrocinioId: idPatrocinio,
+                        gerente: String(gerenteEmFerias.nome || "Gerência"),
+                        inicio: String(gerenteEmFerias.inicio || ""),
+                        fim: String(gerenteEmFerias.fim || ""),
+                    });
+                } else {
+                    await dispararEmailGerencia({
+                        funcionario,
+                        empresa: nmSolicitanteOracle,
+                        patrocinioId: idPatrocinio,
+                    });
+                }
             }
 
             limparTudo();
@@ -837,10 +958,10 @@ export function SolicitacaoParticipacaoForm() {
 
     return (
         <>
-            <div className="mx-auto w-full space-y-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="mx-auto w-full space-y-5">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="h-1 bg-gradient-to-r from-[#00AE9D] via-[#79B729] to-[#C7D300]" />
-                    <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col gap-4 p-5 sm:p-6 md:flex-row md:items-center md:justify-between">
                         <div className="min-w-0">
                             <h2 className="text-lg font-black text-slate-950">
                                 Dados da solicitação
@@ -873,7 +994,16 @@ export function SolicitacaoParticipacaoForm() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 gap-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="grid grid-cols-1 gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                    <div className="border-b border-slate-100 pb-4">
+                        <h3 className="text-base font-bold text-[var(--title)]">
+                            Identificação do solicitante
+                        </h3>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            Dados da organização que está solicitando o patrocínio.
+                        </p>
+                    </div>
+
                     <div>
                         <label className={labelBase}>
                             Nome Fantasia
@@ -1068,6 +1198,15 @@ export function SolicitacaoParticipacaoForm() {
                                 ))
                             )}
                         </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-5">
+                        <h3 className="text-base font-bold text-[var(--title)]">
+                            Necessidades do evento
+                        </h3>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            Selecione somente os recursos necessários para a realização do evento.
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1268,6 +1407,15 @@ export function SolicitacaoParticipacaoForm() {
                         </div>
                     </div>
 
+                    <div className="border-t border-slate-100 pt-5">
+                        <h3 className="text-base font-bold text-[var(--title)]">
+                            Detalhes do patrocínio
+                        </h3>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            Explique a solicitação e informe os dados necessários para análise.
+                        </p>
+                    </div>
+
                     <div>
                         <label className={labelBase}>
                             Solicitação
@@ -1289,7 +1437,10 @@ export function SolicitacaoParticipacaoForm() {
                         />
                     </div>
 
-                    <div>
+                    <div className="border-t border-slate-100 pt-5">
+                        <h3 className="mb-3 text-base font-bold text-[var(--title)]">
+                            Informações complementares
+                        </h3>
                         <label className={labelBase}>
                             Resumo do evento
                         </label>
@@ -1321,11 +1472,10 @@ export function SolicitacaoParticipacaoForm() {
                                 className={inputBase}
                             >
                                 <option value="">Selecione</option>
-                                <option value="1">SIM</option>
-                                <option value="0">NÃO</option>
+                                <option value="1">Sim</option>
+                                <option value="0">Não</option>
                             </select>
                         </div>
-
                         <div>
                             <label className={labelBase}>
                                 Vínculo
@@ -1372,7 +1522,7 @@ export function SolicitacaoParticipacaoForm() {
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div>
                                     <label className={labelBase}>
-                                        Sal. Méd. C/C
+                                        Saldo Médio Conta Corrente
                                     </label>
                                     <input
                                         value={saldoMedio}
@@ -1385,7 +1535,7 @@ export function SolicitacaoParticipacaoForm() {
 
                                 <div>
                                     <label className={labelBase}>
-                                        Rent. Máq.
+                                        Rentabilidade da Maquininha
                                     </label>
                                     <input
                                         value={rentMaq}
@@ -1397,6 +1547,184 @@ export function SolicitacaoParticipacaoForm() {
                                 </div>
                             </div>
                         </>
+                    )}
+
+                    {contaCooperativa && precisaValorMonetario === "1" && (
+                        <section className="space-y-4 rounded-2xl border border-[#00AE9D]/25 bg-[#00AE9D]/5 p-4">
+                            <div>
+                                <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
+                                    Dados para recebimento
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-600">
+                                    Informe os dados da pessoa ou empresa que receberá o pagamento do patrocínio.
+                                </p>
+                            </div>
+
+                            {contaCooperativa === "1" && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div>
+                                            <label className={labelBase}>Favorecido</label>
+                                            <input
+                                                value={nomeFantasia}
+                                                readOnly
+                                                className={inputReadOnlyBase}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={labelBase}>CPF/CNPJ do favorecido</label>
+                                            <input
+                                                value={cpfCnpj}
+                                                readOnly
+                                                className={inputReadOnlyBase}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                        <div>
+                                            <label className={labelBase}>
+                                                Número do banco
+                                            </label>
+                                            <input
+                                                value={numeroBancoCooperativa}
+                                                readOnly
+                                                className={inputReadOnlyBase}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={labelBase}>
+                                                Agência
+                                            </label>
+                                            <input
+                                                value={agenciaCooperativa}
+                                                readOnly
+                                                className={inputReadOnlyBase}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={labelBase}>
+                                                Conta corrente para recebimento
+                                            </label>
+                                            <input
+                                                value={contaCorrenteRecebimento}
+                                                onChange={(e) =>
+                                                    setContaCorrenteRecebimento(
+                                                        limitarTextoPorBytesOracle(
+                                                            e.target.value,
+                                                            ORACLE_LIMITS.NR_CONTA_PAGAMENTO
+                                                        )
+                                                    )
+                                                }
+                                                className={inputBase}
+                                                maxLength={ORACLE_LIMITS.NR_CONTA_PAGAMENTO}
+                                                placeholder="Informe a conta corrente"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {contaCooperativa === "0" && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label className={labelBase}>Nome ou razão social</label>
+                                        <input
+                                            value={nomeFavorecido}
+                                            onChange={(e) =>
+                                                setNomeFavorecido(
+                                                    limitarTextoPorBytesOracle(
+                                                        e.target.value,
+                                                        ORACLE_LIMITS.NM_FAVORECIDO
+                                                    )
+                                                )
+                                            }
+                                            className={inputBase}
+                                            maxLength={ORACLE_LIMITS.NM_FAVORECIDO}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={labelBase}>CPF/CNPJ</label>
+                                        <input
+                                            value={cpfCnpjFavorecido}
+                                            onChange={(e) =>
+                                                setCpfCnpjFavorecido(formatCpfOuCnpj(e.target.value))
+                                            }
+                                            className={inputBase}
+                                            maxLength={18}
+                                            autoComplete="off"
+                                            placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                                        />
+                                    </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                                    <div>
+                                        <label className={labelBase}>Banco</label>
+                                        <input
+                                            value={bancoFavorecido}
+                                            onChange={(e) =>
+                                                setBancoFavorecido(
+                                                    limitarTextoPorBytesOracle(
+                                                        e.target.value,
+                                                        ORACLE_LIMITS.DS_BANCO_PAGAMENTO
+                                                    )
+                                                )
+                                            }
+                                            className={inputBase}
+                                            maxLength={ORACLE_LIMITS.DS_BANCO_PAGAMENTO}
+                                            placeholder="Ex.: Banco do Brasil"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={labelBase}>Agência</label>
+                                        <input
+                                            value={agenciaFavorecido}
+                                            onChange={(e) =>
+                                                setAgenciaFavorecido(
+                                                    limitarTextoPorBytesOracle(
+                                                        e.target.value,
+                                                        ORACLE_LIMITS.NR_AGENCIA_PAGAMENTO
+                                                    )
+                                                )
+                                            }
+                                            className={inputBase}
+                                            maxLength={ORACLE_LIMITS.NR_AGENCIA_PAGAMENTO}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={labelBase}>Conta</label>
+                                        <input
+                                            value={contaBancariaFavorecido}
+                                            onChange={(e) =>
+                                                setContaBancariaFavorecido(
+                                                    limitarTextoPorBytesOracle(
+                                                        e.target.value,
+                                                        ORACLE_LIMITS.NR_CONTA_PAGAMENTO
+                                                    )
+                                                )
+                                            }
+                                            className={inputBase}
+                                            maxLength={ORACLE_LIMITS.NR_CONTA_PAGAMENTO}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={labelBase}>Tipo de conta</label>
+                                        <select
+                                            value={tipoContaFavorecido}
+                                            onChange={(e) => setTipoContaFavorecido(e.target.value)}
+                                            className={inputBase}
+                                        >
+                                            <option value="">Selecione</option>
+                                            <option value="CORRENTE">Conta corrente</option>
+                                            <option value="POUPANCA">Conta poupança</option>
+                                        </select>
+                                    </div>
+                                    </div>
+                                </div>
+                            )}
+                        </section>
                     )}
 
                     <div>
@@ -1445,7 +1773,16 @@ export function SolicitacaoParticipacaoForm() {
                         </div>
                     )}
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                        <div>
+                            <h3 className="text-base font-bold text-[var(--title)]">
+                                Documentos para análise
+                            </h3>
+                            <p className="mt-1 text-sm text-[var(--paragraph)]">
+                                Anexe os documentos obrigatórios para o encaminhamento da solicitação.
+                            </p>
+                        </div>
+
                         <div>
                             <label className={labelBase}>
                                 Funcionário
@@ -1505,7 +1842,7 @@ export function SolicitacaoParticipacaoForm() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[260px_1fr]">
+                    <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:grid-cols-[260px_1fr]">
                         <div>
                             <label className={labelBase}>
                                 Dia da Solicitação
@@ -1526,7 +1863,7 @@ export function SolicitacaoParticipacaoForm() {
                                 aria-busy={loading}
                                 className={`${primaryButtonBase} px-6`}
                             >
-                                {loading ? "Cadastrando..." : "Cadastrar"}
+                                {loading ? "Cadastrando..." : "Cadastrar solicitação"}
                             </button>
                         </div>
                     </div>

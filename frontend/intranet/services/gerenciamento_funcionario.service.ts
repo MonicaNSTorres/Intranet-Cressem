@@ -229,7 +229,7 @@ export async function cadastrarFuncionario(payload: {
 
     formData.append(
         "ENVIAR_EMAIL_ADMISSAO",
-        String(payload.ENVIAR_EMAIL_ADMISSAO || 0)
+        String(payload.ENVIAR_EMAIL_ADMISSAO ?? 1)
     );
 
     if (payload.DOC_INDENTIDADE) {
