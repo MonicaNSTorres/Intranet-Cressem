@@ -102,6 +102,12 @@ export type CriarParcelaPayload = {
   ID_CONTA_DEPOSITO: number;
 };
 
+export type SaldoCapitalResponse = {
+  found: boolean;
+  saldoCapital: number;
+  dataMovimento: string | null;
+};
+
 export async function buscarMotivosResgate(): Promise<
   MotivoResgateItem[]
 > {
@@ -283,4 +289,14 @@ export async function buscarFuncionarioUnicoPorCpf(
   );
 
   return data;
+}
+
+export async function buscarSaldoCapitalPorCpf(
+  cpf: string
+): Promise<SaldoCapitalResponse> {
+  const response = await api.get("/v1/resgate-capital/saldo-capital", {
+    params: { cpf },
+  });
+
+  return response.data;
 }
