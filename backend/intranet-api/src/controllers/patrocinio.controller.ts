@@ -18,6 +18,7 @@ import { isConselhoParticipacao } from "../services/perfil-conselho.service";
 
 const execFileAsync = promisify(execFile);
 const AD_GROUP_SUPORTE = "GG_USERS_SUPORTE";
+const ID_DIRETOR_PRESIDENTE_PARTICIPACAO = 94;
 const NOMES_MARKETING = [
     "JULIA DE ALMEIDA COUTINHO",
     "LUIZ RODOLFO GERHARD",
@@ -678,15 +679,12 @@ async function definirAndamentoInicialPorGestor(
     const result = await conn.execute(
         `
       SELECT
-        cg.NM_NIVEL AS NM_NIVEL_GESTOR,
         gestor.NM_FUNCIONARIO AS NM_GESTOR,
         TO_CHAR(ferias.DT_DIA_INICIO, 'DD/MM/YYYY') AS DT_FERIAS_INICIO,
         TO_CHAR(ferias.DT_DIA_FIM, 'DD/MM/YYYY') AS DT_FERIAS_FIM
       FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
       LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM gestor
         ON gestor.ID_FUNCIONARIO = f.CD_GERENCIA
-      LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM cg
-        ON cg.ID_CARGO = gestor.ID_CARGO
       LEFT JOIN DBACRESSEM.FERIAS_FUNCIONARIOS ferias
         ON ferias.ID_FUNCIONARIO = gestor.ID_FUNCIONARIO
        AND TRUNC(SYSDATE) BETWEEN TRUNC(ferias.DT_DIA_INICIO) AND TRUNC(ferias.DT_DIA_FIM)
@@ -698,12 +696,6 @@ async function definirAndamentoInicialPorGestor(
     );
 
     const row: any = result.rows?.[0];
-    const nivelGestor = String(row?.NM_NIVEL_GESTOR || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toUpperCase()
-        .trim();
-
     if (row?.DT_FERIAS_INICIO && row?.DT_FERIAS_FIM) {
         return {
             andamento: "Pendente Marketing",
@@ -715,11 +707,71 @@ async function definirAndamentoInicialPorGestor(
         };
     }
 
-    if (nivelGestor === "DIRETORIA") {
-        return { andamento: "Pendente Diretoria" };
-    }
-
     return { andamento: "Pendente Gerencia" };
+}
+
+async function usuarioEhGestorDiretoDaSolicitacao(
+    nomeUsuario: string,
+    nomeSolicitante: string
+) {
+    const result = await oracleExecute(
+        `
+          SELECT 1 AS ENCONTRADO
+          FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM solicitante
+          INNER JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM gestor
+            ON gestor.ID_FUNCIONARIO = solicitante.CD_GERENCIA
+          WHERE UPPER(TRIM(solicitante.NM_FUNCIONARIO)) = UPPER(TRIM(:nomeSolicitante))
+            AND UPPER(TRIM(gestor.NM_FUNCIONARIO)) = UPPER(TRIM(:nomeUsuario))
+            AND ROWNUM = 1
+        `,
+        { nomeUsuario, nomeSolicitante },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    return Boolean(result.rows?.[0]);
+}
+
+async function diretorPodeAprovarParticipacao(nomeUsuario: string) {
+    const result = await oracleExecute(
+        `
+          SELECT
+            f.ID_FUNCIONARIO,
+            CASE
+              WHEN EXISTS (
+                SELECT 1
+                FROM DBACRESSEM.FERIAS_FUNCIONARIOS ferias
+                WHERE ferias.ID_FUNCIONARIO = :idDiretorPresidente
+                  AND TRUNC(SYSDATE) BETWEEN TRUNC(ferias.DT_DIA_INICIO) AND TRUNC(ferias.DT_DIA_FIM)
+              ) THEN 1
+              ELSE 0
+            END AS PRESIDENTE_EM_FERIAS,
+            CASE
+              WHEN EXISTS (
+                SELECT 1
+                FROM DBACRESSEM.FERIAS_FUNCIONARIOS ferias
+                WHERE ferias.ID_FUNCIONARIO = f.ID_FUNCIONARIO
+                  AND TRUNC(SYSDATE) BETWEEN TRUNC(ferias.DT_DIA_INICIO) AND TRUNC(ferias.DT_DIA_FIM)
+              ) THEN 1
+              ELSE 0
+            END AS USUARIO_EM_FERIAS
+          FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+          WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) = UPPER(TRIM(:nomeUsuario))
+            AND ROWNUM = 1
+        `,
+        { nomeUsuario, idDiretorPresidente: ID_DIRETOR_PRESIDENTE_PARTICIPACAO },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const row: any = result.rows?.[0];
+    const idUsuario = Number(row?.ID_FUNCIONARIO || 0);
+    const presidenteEmFerias = Number(row?.PRESIDENTE_EM_FERIAS || 0) === 1;
+    const usuarioEmFerias = Number(row?.USUARIO_EM_FERIAS || 0) === 1;
+
+    if (!idUsuario || usuarioEmFerias) return false;
+
+    return presidenteEmFerias
+        ? idUsuario !== ID_DIRETOR_PRESIDENTE_PARTICIPACAO
+        : idUsuario === ID_DIRETOR_PRESIDENTE_PARTICIPACAO;
 }
 
 type ParticipacaoSubmitStatus = "processing" | "done";
@@ -1335,6 +1387,8 @@ export const patrocinioController = {
         (
           :pesquisa = '%%'
           OR UPPER(p.NM_SOLICITANTE) LIKE :pesquisa
+          OR UPPER(p.NM_CIDADE) LIKE :pesquisa
+          OR UPPER(p.NM_FUNCIONARIO) LIKE :pesquisa
           OR REGEXP_REPLACE(UPPER(p.NR_CPF_CNPJ), '[^A-Z0-9]', '') LIKE REGEXP_REPLACE(UPPER(:pesquisa), '[^A-Z0-9]', '')
           OR UPPER(p.NM_ANDAMENTO) LIKE :pesquisa
         )
@@ -1474,6 +1528,7 @@ export const patrocinioController = {
             p.NR_CPF_CNPJ,
             p.VL_PATROCINIO,
             p.NM_FUNCIONARIO,
+            gestor.NM_FUNCIONARIO AS NM_GESTOR_DIRETO,
             p.DIR_OFICIO,
             p.DIR_PAINEL_SISBR,
             p.NM_CIDADE,
@@ -1519,6 +1574,10 @@ export const patrocinioController = {
           FROM DBACRESSEM.PATROCINIO p
           LEFT JOIN DBACRESSEM.PAGAMENTO_PATROCINIO pg
             ON pg.ID_PATROCINIO = p.ID_PATROCINIO
+          LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM solicitante
+            ON UPPER(TRIM(solicitante.NM_FUNCIONARIO)) = UPPER(TRIM(p.NM_FUNCIONARIO))
+          LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM gestor
+            ON gestor.ID_FUNCIONARIO = solicitante.CD_GERENCIA
           WHERE p.ID_PATROCINIO = :id
         `,
                 { id },
@@ -1566,6 +1625,7 @@ export const patrocinioController = {
                 `
                   SELECT
                     NM_SOLICITANTE,
+                    NM_FUNCIONARIO,
                     NM_ANDAMENTO,
                     DESC_PARECER_GERENCIA,
                     DESC_PARECER_MARKETING,
@@ -1583,10 +1643,7 @@ export const patrocinioController = {
                 return res.status(404).json({ error: "Solicitação não encontrada." });
             }
 
-            if (
-                perfilTeste &&
-                !normalizeFiltroTexto(atual.NM_SOLICITANTE).includes("TESTE")
-            ) {
+            if (perfilTeste && !normalizeFiltroTexto(atual.NM_SOLICITANTE).includes("TESTE")) {
                 return res.status(403).json({
                     error: "O modo de teste local só pode alterar solicitações identificadas com TESTE.",
                 });
@@ -1620,7 +1677,39 @@ export const patrocinioController = {
                     campoParecer: "DESC_PARECER_ESCRITO_CONSELHO",
                 },
             };
-            const regra = regrasFluxo[tipoUsuario.TIPO];
+            let tipoEtapa = tipoUsuario.TIPO;
+
+            if (
+                !perfilTeste &&
+                ["diretoria", "marketing"].includes(tipoUsuario.TIPO) &&
+                statusAtual === "PENDENTE GERENCIA"
+            ) {
+                const ehGestorDireto = await usuarioEhGestorDiretoDaSolicitacao(
+                    nomeUsuario,
+                    String(atual.NM_FUNCIONARIO || "")
+                );
+
+                if (!ehGestorDireto) {
+                    return res.status(403).json({
+                        error: "Somente o gestor direto do solicitante pode registrar o parecer de Gerência.",
+                    });
+                }
+
+                tipoEtapa = "gerencia";
+            }
+
+            if (
+                !perfilTeste &&
+                tipoUsuario.TIPO === "diretoria" &&
+                statusAtual === "PENDENTE DIRETORIA" &&
+                !(await diretorPodeAprovarParticipacao(nomeUsuario))
+            ) {
+                return res.status(403).json({
+                    error: "A etapa de Diretoria está disponível somente ao Diretor Presidente ou, durante as férias dele, aos diretores substitutos disponíveis.",
+                });
+            }
+
+            const regra = regrasFluxo[tipoEtapa];
 
             if (!regra || statusAtual !== regra.statusAtual) {
                 return res.status(403).json({ error: "Você não pode registrar parecer nesta etapa." });
@@ -1637,11 +1726,11 @@ export const patrocinioController = {
                 conselho: String(body.DESC_PARECER_ESCRITO_CONSELHO || "").trim(),
             };
 
-            if (!parecerPorTipo[tipoUsuario.TIPO]) {
+            if (!parecerPorTipo[tipoEtapa]) {
                 return res.status(400).json({ error: "O parecer da sua etapa é obrigatório." });
             }
 
-            if (tipoUsuario.TIPO === "conselho") {
+            if (tipoEtapa === "conselho") {
                 const decisao = normalizeFiltroTexto(body.NM_PARECER_CONSELHO);
                 if (decisao !== "APROVADO" && decisao !== "REPROVADO") {
                     return res.status(400).json({ error: "A decisão final deve ser Aprovado ou Reprovado." });
@@ -1649,6 +1738,13 @@ export const patrocinioController = {
             } else if (statusSolicitado !== regra.proximoStatus) {
                 return res.status(400).json({ error: "Transição de etapa inválida." });
             }
+
+            const condicaoEtapaAindaPendente: Record<string, string> = {
+                gerencia: "DESC_PARECER_GERENCIA IS NULL",
+                marketing: "DESC_PARECER_MARKETING IS NULL",
+                diretoria: "DESC_PARECER_ESCRITO_DIRETORIA IS NULL",
+                conselho: "DESC_PARECER_ESCRITO_CONSELHO IS NULL",
+            };
 
             const sql = `
         UPDATE DBACRESSEM.PATROCINIO
@@ -1670,6 +1766,8 @@ export const patrocinioController = {
             ELSE DT_FINALIZACAO
           END
         WHERE ID_PATROCINIO = :ID_PATROCINIO
+          AND NM_ANDAMENTO = :NM_ANDAMENTO_ATUAL
+          AND ${condicaoEtapaAindaPendente[tipoEtapa]}
       `;
 
             const result = await oracleExecuteCommitWithAudit(
@@ -1677,16 +1775,17 @@ export const patrocinioController = {
                 sql,
                 {
                     ID_PATROCINIO: id,
+                    NM_ANDAMENTO_ATUAL: atual.NM_ANDAMENTO,
                     NM_ANDAMENTO: toNullableString(body.NM_ANDAMENTO),
                     DESC_PARECER_GERENCIA: toNullableString(body.DESC_PARECER_GERENCIA),
-                    NM_GERENCIA: tipoUsuario.TIPO === "gerencia" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_GERENCIA),
+                    NM_GERENCIA: tipoEtapa === "gerencia" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_GERENCIA),
                     DESC_PARECER_MARKETING: toNullableString(body.DESC_PARECER_MARKETING),
-                    NM_MARKETING: tipoUsuario.TIPO === "marketing" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_MARKETING),
+                    NM_MARKETING: tipoEtapa === "marketing" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_MARKETING),
                     DESC_PARECER_ESCRITO_DIRETORIA: toNullableString(
                         body.DESC_PARECER_ESCRITO_DIRETORIA
                     ),
-                    NM_DIRETORIA: tipoUsuario.TIPO === "diretoria" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_DIRETORIA),
-                    NM_CONSELHO: tipoUsuario.TIPO === "conselho" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_CONSELHO),
+                    NM_DIRETORIA: tipoEtapa === "diretoria" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_DIRETORIA),
+                    NM_CONSELHO: tipoEtapa === "conselho" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_CONSELHO),
                     NM_PARECER_CONSELHO: toNullableString(body.NM_PARECER_CONSELHO),
                     DESC_PARECER_ESCRITO_CONSELHO: toNullableString(
                         body.DESC_PARECER_ESCRITO_CONSELHO
@@ -1701,7 +1800,9 @@ export const patrocinioController = {
             );
 
             if (!result.rowsAffected) {
-                return res.status(404).json({ error: "Solicitção nÃ£o encontrada." });
+                return res.status(409).json({
+                    error: "Esta etapa já foi concluída por outro responsável. Atualize a solicitação para ver o parecer registrado.",
+                });
             }
 
             return res.json({

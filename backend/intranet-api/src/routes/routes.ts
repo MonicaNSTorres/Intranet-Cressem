@@ -95,6 +95,7 @@ import { solicitacaoSubsidioAuditivoPaginadoController } from "../controllers/so
 import { cnab240CcoController } from "../controllers/cnab240-cco.controller";
 import { bancoImagensController } from "../controllers/banco-imagens.controller";
 import { convenioOdontologicoController } from "../controllers/convenio-odontologico.controller";
+import { assinaturaEmailController } from "../controllers/assinatura-email.controller";
 
 const routes = Router();
 

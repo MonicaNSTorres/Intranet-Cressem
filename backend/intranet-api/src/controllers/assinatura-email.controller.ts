@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { buscarDadosFuncionarioParaAssinatura } from "../services/assinatura-email.service";
+import { buscarDadosFuncionarioParaAssinatura } from "../services/assinatura_email.service";
 
 export const assinaturaEmailController = {
   async dadosUsuario(req: Request, res: Response) {

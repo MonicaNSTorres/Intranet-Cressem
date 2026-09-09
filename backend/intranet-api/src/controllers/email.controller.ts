@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
+import oracledb from "oracledb";
 import { sendEmail } from "../services/email.service";
 import { oracleExecute } from "../services/oracle.service";
 import { AuthenticatedRequest } from "../middleware/auth.middleware";
+
+const ID_DIRETOR_PRESIDENTE_PARTICIPACAO = 94;
 
 function modoTesteParticipacaoAtivo() {
   return (
@@ -60,6 +63,50 @@ function aplicarParticipacaoDebugDestinatarios(destinatarios: string | string[])
   }
 
   return [String(destinatarios || "").trim()].filter(Boolean);
+}
+
+async function obterEmailsDiretoriaParticipacao() {
+  const result = await oracleExecute(
+    `
+      SELECT
+        f.ID_FUNCIONARIO,
+        f.EMAIL,
+        CASE
+          WHEN EXISTS (
+            SELECT 1
+            FROM DBACRESSEM.FERIAS_FUNCIONARIOS ferias
+            WHERE ferias.ID_FUNCIONARIO = f.ID_FUNCIONARIO
+              AND TRUNC(SYSDATE) BETWEEN TRUNC(ferias.DT_DIA_INICIO) AND TRUNC(ferias.DT_DIA_FIM)
+          ) THEN 1
+          ELSE 0
+        END AS EM_FERIAS
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      INNER JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM cargo
+        ON cargo.ID_CARGO = f.ID_CARGO
+      WHERE UPPER(TRIM(cargo.NM_NIVEL)) = 'DIRETORIA'
+      ORDER BY f.ID_FUNCIONARIO
+    `,
+    {},
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  const diretores = (result.rows || []) as any[];
+  const diretorPresidente = diretores.find(
+    (diretor) => Number(diretor.ID_FUNCIONARIO) === ID_DIRETOR_PRESIDENTE_PARTICIPACAO
+  );
+
+  if (Number(diretorPresidente?.EM_FERIAS || 0) !== 1) {
+    return [String(diretorPresidente?.EMAIL || "").trim()].filter(Boolean);
+  }
+
+  return diretores
+    .filter(
+      (diretor) =>
+        Number(diretor.ID_FUNCIONARIO) !== ID_DIRETOR_PRESIDENTE_PARTICIPACAO &&
+        Number(diretor.EM_FERIAS || 0) !== 1
+    )
+    .map((diretor) => String(diretor.EMAIL || "").trim())
+    .filter(Boolean);
 }
 
 function getEmailsFinanceiroParticipacao() {
@@ -840,9 +887,15 @@ export const emailController = {
           "Por favor, acesse a Intranet para visualizar os detalhes completos e registrar seu parecer.",
       });
 
-      const emails = aplicarParticipacaoDebugDestinatarios([
-        "paulo.tarso@sicoob.com.br",
-      ]);
+      const emailsDiretoria = await obterEmailsDiretoriaParticipacao();
+
+      if (!emailsDiretoria.length) {
+        return res.status(500).json({
+          error: "Nenhum diretor disponível com e-mail cadastrado para receber a solicitação.",
+        });
+      }
+
+      const emails = aplicarParticipacaoDebugDestinatarios(emailsDiretoria);
 
       await sendEmail(emails, subject, body);
 

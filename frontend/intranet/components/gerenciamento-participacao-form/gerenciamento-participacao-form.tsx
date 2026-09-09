@@ -308,6 +308,16 @@ const MODO_TESTE_LOCAL =
 
   process.env.NEXT_PUBLIC_PARTICIPACAO_TEST_MODE === "true";
 
+const DATA_INICIO_NOTIFICACAO_FINANCEIRO = "2026-09-09";
+
+function deveNotificarFinanceiro(dataSolicitacao?: string) {
+
+  const data = String(dataSolicitacao || "").slice(0, 10);
+
+  return data >= DATA_INICIO_NOTIFICACAO_FINANCEIRO;
+
+}
+
 const PERFIS_TESTE: Record<Exclude<PerfilTesteParticipacao, "">, FuncionarioTipoResponse> = {
 
   gerencia: { TIPO: "gerencia", NM_FUNCIONARIO: "GERÊNCIA DE TESTE" },
@@ -455,6 +465,28 @@ export function GerenciamentoParticipacaoForm() {
   const [baixandoPdfCompleto, setBaixandoPdfCompleto] = useState(false);
 
   const [baixandoPdfConselho, setBaixandoPdfConselho] = useState(false);
+
+  const papelEtapaAtual = useMemo(() => {
+
+    if (!funcionarioTipo || !selected) return funcionarioTipo?.TIPO || "funcionario";
+
+    const usuarioEhGestorDireto =
+      ["diretoria", "marketing"].includes(funcionarioTipo.TIPO) &&
+      normalizeText(funcionarioTipo.NM_FUNCIONARIO) ===
+        normalizeText(selected.NM_GESTOR_DIRETO || "");
+
+    if (
+      usuarioEhGestorDireto &&
+      normalizeText(selected.NM_ANDAMENTO) === "PENDENTE GERENCIA"
+    ) {
+
+      return "gerencia";
+
+    }
+
+    return funcionarioTipo.TIPO;
+
+  }, [funcionarioTipo, selected]);
 
   const podeBaixarPdfConselho =
 
@@ -740,7 +772,17 @@ export function GerenciamentoParticipacaoForm() {
 
         completo.NM_GERENCIA ||
 
-        (funcionarioTipo?.TIPO === "gerencia" ? funcionarioTipo.NM_FUNCIONARIO : "")
+        (
+          funcionarioTipo?.TIPO === "gerencia" ||
+          (
+            funcionarioTipo &&
+            ["diretoria", "marketing"].includes(funcionarioTipo.TIPO) &&
+            normalizeText(funcionarioTipo.NM_FUNCIONARIO) ===
+              normalizeText(completo.NM_GESTOR_DIRETO || "")
+          )
+            ? funcionarioTipo.NM_FUNCIONARIO
+            : ""
+        )
 
       );
 
@@ -802,7 +844,7 @@ export function GerenciamentoParticipacaoForm() {
 
     }
 
-    if (funcionarioTipo?.TIPO === "gerencia") {
+    if (papelEtapaAtual === "gerencia") {
 
       if (!inputParecerGerenciaEscrito.trim()) {
 
@@ -830,7 +872,7 @@ export function GerenciamentoParticipacaoForm() {
 
     }
 
-    if (funcionarioTipo?.TIPO === "diretoria") {
+    if (papelEtapaAtual === "diretoria") {
 
       if (!inputParecerDiretoria.trim()) {
 
@@ -858,7 +900,7 @@ export function GerenciamentoParticipacaoForm() {
 
     }
 
-    if (funcionarioTipo?.TIPO === "marketing") {
+    if (papelEtapaAtual === "marketing") {
 
       if (!inputParecerMarketing.trim()) {
 
@@ -870,7 +912,7 @@ export function GerenciamentoParticipacaoForm() {
 
     }
 
-    if (funcionarioTipo?.TIPO === "conselho") {
+    if (papelEtapaAtual === "conselho") {
 
       if (!inputConselho.trim()) {
 
@@ -928,13 +970,13 @@ export function GerenciamentoParticipacaoForm() {
 
       let status1 = "";
 
-      if (funcionarioTipo.TIPO === "gerencia") status1 = "Pendente Marketing";
+      if (papelEtapaAtual === "gerencia") status1 = "Pendente Marketing";
 
-      if (funcionarioTipo.TIPO === "marketing") status1 = "Pendente Diretoria";
+      if (papelEtapaAtual === "marketing") status1 = "Pendente Diretoria";
 
-      if (funcionarioTipo.TIPO === "diretoria") status1 = "Pendente Conselho";
+      if (papelEtapaAtual === "diretoria") status1 = "Pendente Conselho";
 
-      if (funcionarioTipo.TIPO === "conselho") status1 = inputConselhoFinal;
+      if (papelEtapaAtual === "conselho") status1 = inputConselhoFinal;
 
       const data: Record<string, any> = {
 
@@ -964,7 +1006,7 @@ export function GerenciamentoParticipacaoForm() {
 
       };
 
-      switch (funcionarioTipo.TIPO) {
+      switch (papelEtapaAtual) {
 
         case "gerencia":
 
@@ -1058,15 +1100,33 @@ export function GerenciamentoParticipacaoForm() {
 
         await enviarEmailConselho(selected.ID_PATROCINIO);
 
-      } else if (funcionarioTipo.TIPO === "conselho") {
+      } else if (papelEtapaAtual === "conselho") {
 
-        if (status1 === "Aprovado" && Number(selected.VL_MONETARIO || 0) === 1) {
+        if (
+          status1 === "Aprovado" &&
+          Number(existente.VL_MONETARIO || 0) === 1 &&
+          deveNotificarFinanceiro(existente.DT_SOLICITACAO)
+        ) {
 
-          await enviarEmailFinanceiroPatrocinio(selected.ID_PATROCINIO);
+          try {
+
+            await enviarEmailFinanceiroPatrocinio(selected.ID_PATROCINIO);
+
+          } catch (erroFinanceiro: any) {
+
+            const detalhes = String(
+              erroFinanceiro?.message || "Não foi possível identificar o motivo do envio."
+            ).trim();
+
+            setModalErro(
+              `A solicitação foi aprovada, mas o e-mail ao Financeiro não foi enviado. Informe a TI e envie esta mensagem: ${detalhes}`
+            );
+
+          }
 
         }
 
-        await enviarEmailParecerFinal(funcionarioTipo.TIPO, selected.ID_PATROCINIO);
+        await enviarEmailParecerFinal(papelEtapaAtual, selected.ID_PATROCINIO);
 
       }
 
@@ -1422,17 +1482,17 @@ export function GerenciamentoParticipacaoForm() {
 
     if (!funcionarioTipo) return "";
 
-    if (funcionarioTipo.TIPO === "gerencia") return "PENDENTE GERENCIA";
+    if (papelEtapaAtual === "gerencia") return "PENDENTE GERENCIA";
 
-    if (funcionarioTipo.TIPO === "marketing") return "PENDENTE MARKETING";
+    if (papelEtapaAtual === "marketing") return "PENDENTE MARKETING";
 
-    if (funcionarioTipo.TIPO === "diretoria") return "PENDENTE DIRETORIA";
+    if (papelEtapaAtual === "diretoria") return "PENDENTE DIRETORIA";
 
-    if (funcionarioTipo.TIPO === "conselho") return "PENDENTE CONSELHO";
+    if (papelEtapaAtual === "conselho") return "PENDENTE CONSELHO";
 
     return "";
 
-  }, [funcionarioTipo]);
+  }, [papelEtapaAtual]);
 
   const podeEditar = useMemo(() => {
 
@@ -1446,7 +1506,7 @@ export function GerenciamentoParticipacaoForm() {
 
     return statusAtual === statusPermitidoPerfil;
 
-  }, [selected, funcionarioTipo, statusPermitidoPerfil]);
+  }, [selected, papelEtapaAtual, statusPermitidoPerfil]);
 
   const mensagemBloqueioPerfil = useMemo(() => {
 
@@ -1534,7 +1594,7 @@ export function GerenciamentoParticipacaoForm() {
 
             <p className="mt-0.5 text-xs text-slate-500">
 
-              Pesquise por solicitante, CPF/CNPJ ou andamento da participação.
+              Pesquise por solicitante, CPF/CNPJ, cidade, funcionário ou andamento da participação.
 
             </p>
 
@@ -1620,7 +1680,7 @@ export function GerenciamentoParticipacaoForm() {
 
               }}
 
-              placeholder="Digite o solicitante, CPF/CNPJ ou status"
+              placeholder="Digite o solicitante, CPF/CNPJ, cidade, funcionário ou status"
 
               className={inputBase}
 
@@ -2338,7 +2398,7 @@ export function GerenciamentoParticipacaoForm() {
 
                 onChange={setInputParecerGerenciaEscrito}
 
-                readOnly={!(funcionarioTipo?.TIPO === "gerencia" && podeEditar)}
+                readOnly={!(papelEtapaAtual === "gerencia" && podeEditar)}
 
                 maxLength={570}
 
@@ -2352,7 +2412,7 @@ export function GerenciamentoParticipacaoForm() {
 
                 onChange={setInputResponsavelEvento}
 
-                readOnly={!podeEditar || funcionarioTipo?.TIPO === "funcionario"}
+                readOnly={!podeEditar || papelEtapaAtual === "funcionario"}
 
                 maxLength={190}
 
@@ -2366,7 +2426,7 @@ export function GerenciamentoParticipacaoForm() {
 
                 onChange={setInputSugestao}
 
-                readOnly={!podeEditar || funcionarioTipo?.TIPO === "funcionario"}
+                readOnly={!podeEditar || papelEtapaAtual === "funcionario"}
 
                 maxLength={285}
 
@@ -2382,7 +2442,7 @@ export function GerenciamentoParticipacaoForm() {
 
                 onChange={setInputParecerMarketing}
 
-                readOnly={!(funcionarioTipo?.TIPO === "marketing" && podeEditar)}
+                readOnly={!(papelEtapaAtual === "marketing" && podeEditar)}
 
                 maxLength={570}
 
@@ -2398,7 +2458,7 @@ export function GerenciamentoParticipacaoForm() {
 
                 onChange={setInputParecerDiretoria}
 
-                readOnly={!(funcionarioTipo?.TIPO === "diretoria" && podeEditar)}
+                readOnly={!(papelEtapaAtual === "diretoria" && podeEditar)}
 
                 maxLength={285}
 
@@ -2414,9 +2474,9 @@ export function GerenciamentoParticipacaoForm() {
 
                 onChange={setInputConselho}
 
-                readOnly={!(funcionarioTipo?.TIPO === "conselho" && podeEditar)}
+                readOnly={!(papelEtapaAtual === "conselho" && podeEditar)}
 
-                maxLength={380}
+                maxLength={680}
 
               />
 
@@ -2434,7 +2494,7 @@ export function GerenciamentoParticipacaoForm() {
 
                   onChange={(e) => setInputConselhoFinal(e.target.value)}
 
-                  disabled={!(funcionarioTipo?.TIPO === "conselho" && podeEditar)}
+                  disabled={!(papelEtapaAtual === "conselho" && podeEditar)}
 
                   className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10 disabled:bg-gray-50"
 

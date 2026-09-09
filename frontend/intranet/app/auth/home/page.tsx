@@ -175,6 +175,7 @@ export default function HomePage() {
     const [acessosDiarios, setAcessosDiarios] = useState<
         { dia: string; acessos: number }[]
     >([]);
+    const [graficoAcessosMontado, setGraficoAcessosMontado] = useState(false);
 
     const [paginasMaisAcessadas, setPaginasMaisAcessadas] = useState<
         PaginaMaisAcessada[]

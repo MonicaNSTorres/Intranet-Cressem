@@ -15,6 +15,7 @@ export type PatrocinioItem = {
   NR_CPF_CNPJ: string;
   NM_CIDADE: string;
   NM_FUNCIONARIO: string;
+  NM_GESTOR_DIRETO?: string;
   DT_SOLICITACAO: string;
   DT_FINALIZACAO?: string;
   DT_EVENTO_INICIO?: string;
@@ -512,7 +513,21 @@ export async function enviarEmailFinanceiroPatrocinio(id: number) {
     const json = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      throw new Error(json?.error || "Falha ao enviar e-mail para o Financeiro.");
+      const erroApi = String(json?.error || "").trim();
+      const detalheApi = String(json?.details || "").trim();
+      const mensagemApi = [
+        erroApi,
+        detalheApi && detalheApi !== erroApi ? `Detalhes: ${detalheApi}` : "",
+      ]
+        .filter(Boolean)
+        .join(". ");
+      const identificacaoHttp = `HTTP ${res.status}${res.statusText ? ` - ${res.statusText}` : ""}`;
+
+      throw new Error(
+        mensagemApi
+          ? `${mensagemApi} (${identificacaoHttp})`
+          : `Falha ao enviar e-mail para o Financeiro. (${identificacaoHttp})`
+      );
     }
 
     return json;
