@@ -27,6 +27,7 @@ import {
   criarEmprestimo,
   criarParcela,
   criarResgate,
+  buscarSaldoCapitalPorCpf,
   type AutorizacaoResgateItem,
   type CidadeResgateItem,
   type EmprestimoAssociadoItem,
@@ -373,26 +374,46 @@ export function ResgateCapitalForm() {
 
       if (r.found) {
         setNome(limitText(r.data.nome || "", LIMITS.NM_CLIENTE));
-        setMatricula(limitText(r.data.matricula || "", LIMITS.CD_MATRICULA));
-        setEmpresa(limitText(r.data.empresa || "", LIMITS.NM_EMPRESA));
+        setMatricula(
+          limitText(r.data.matricula || "", LIMITS.CD_MATRICULA)
+        );
+        setEmpresa(
+          limitText(r.data.empresa || "", LIMITS.NM_EMPRESA)
+        );
 
-        const saldoRaw: any = (r.data as any).saldo_capital;
-        const saldoNumerico =
-          typeof saldoRaw === "number"
-            ? saldoRaw
-            : Number.isFinite(Number(saldoRaw))
-              ? Number(saldoRaw)
-              : parseBRL(String(saldoRaw || ""));
+        const saldoResponse = await buscarSaldoCapitalPorCpf(cpf);
+
+        if (!saldoResponse.found) {
+          setSaldoCapitalAtual("");
+          setSaldoCapitalFonte(0);
+
+          setErro(
+            "Não foi encontrado saldo de capital para este associado."
+          );
+
+          return;
+        }
+
+        const saldoNumerico = Number(
+          saldoResponse.saldoCapital || 0
+        );
 
         setSaldoCapitalAtual(fmtBRL(saldoNumerico));
         setSaldoCapitalFonte(saldoNumerico);
+
         limparBlocosDebito();
 
-        const cidadeAssociado = String((r.data as any).cidade || "").trim();
+        const cidadeAssociado = String(
+          (r.data as any).cidade || ""
+        ).trim();
+
         if (cidadeAssociado) {
           const encontrada = cidades.find(
-            (c) => normalizeCidade(c.NM_CIDADE) === normalizeCidade(cidadeAssociado)
+            (c) =>
+              normalizeCidade(c.NM_CIDADE) ===
+              normalizeCidade(cidadeAssociado)
           );
+
           if (encontrada?.NM_CIDADE) {
             setSecCidade(encontrada.NM_CIDADE);
           }
@@ -400,9 +421,14 @@ export function ResgateCapitalForm() {
 
         setInfo("Associado carregado com sucesso.");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setErro("Falha ao buscar associado.");
+
+      setErro(
+        e?.response?.data?.error ||
+        e?.response?.data?.details ||
+        "Falha ao buscar associado."
+      );
     }
   }
 
@@ -955,11 +981,11 @@ export function ResgateCapitalForm() {
           emprestimos:
             radioEmprestimo === "Sim"
               ? emprestimos.map((item) => ({
-                  tipo: item.tipo,
-                  contrato: item.contrato,
-                  saldoDevedor: parseBRL(item.saldoDevedor),
-                  amortizacao: parseBRL(item.amortizacao),
-                }))
+                tipo: item.tipo,
+                contrato: item.contrato,
+                saldoDevedor: parseBRL(item.saldoDevedor),
+                amortizacao: parseBRL(item.amortizacao),
+              }))
               : [],
           contaCorrenteNumero: radioConta === "Sim" ? numeroContaCorrente : "",
           contaCorrenteSaldo:
@@ -1019,7 +1045,7 @@ export function ResgateCapitalForm() {
 
   return (
     <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white pb-5 shadow-sm">
-      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
+      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
       <SearchForm
         onSearch={onBuscar}
         className="border-b border-slate-100 bg-white p-5"
@@ -1096,47 +1122,47 @@ export function ResgateCapitalForm() {
         <h2 className={sectionTitleClass}>Dados do associado</h2>
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div>
-          <label className={labelClass}>
-            Nome do associado(a)
-          </label>
-          <input
-            value={nome}
-            onChange={(e) => setNome(limitText(e.target.value, LIMITS.NM_CLIENTE))}
-            maxLength={LIMITS.NM_CLIENTE}
-            className={inputClass}
-          />
-        </div>
-
-        {!isCnpj(cpf) && (
           <div>
             <label className={labelClass}>
-              Matrícula
+              Nome do associado(a)
             </label>
             <input
-              value={matricula}
-              onChange={(e) =>
-                setMatricula(limitText(e.target.value, LIMITS.CD_MATRICULA))
-              }
-              maxLength={LIMITS.CD_MATRICULA}
+              value={nome}
+              onChange={(e) => setNome(limitText(e.target.value, LIMITS.NM_CLIENTE))}
+              maxLength={LIMITS.NM_CLIENTE}
               className={inputClass}
             />
           </div>
-        )}
 
-        {!isCnpj(cpf) && (
-          <div className="md:col-span-2">
-            <label className={labelClass}>
-              Empresa
-            </label>
-            <input
-              value={empresa}
-              onChange={(e) => setEmpresa(limitText(e.target.value, LIMITS.NM_EMPRESA))}
-              maxLength={LIMITS.NM_EMPRESA}
-              className={inputClass}
-            />
-          </div>
-        )}
+          {!isCnpj(cpf) && (
+            <div>
+              <label className={labelClass}>
+                Matrícula
+              </label>
+              <input
+                value={matricula}
+                onChange={(e) =>
+                  setMatricula(limitText(e.target.value, LIMITS.CD_MATRICULA))
+                }
+                maxLength={LIMITS.CD_MATRICULA}
+                className={inputClass}
+              />
+            </div>
+          )}
+
+          {!isCnpj(cpf) && (
+            <div className="md:col-span-2">
+              <label className={labelClass}>
+                Empresa
+              </label>
+              <input
+                value={empresa}
+                onChange={(e) => setEmpresa(limitText(e.target.value, LIMITS.NM_EMPRESA))}
+                maxLength={LIMITS.NM_EMPRESA}
+                className={inputClass}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -1144,56 +1170,56 @@ export function ResgateCapitalForm() {
         <h2 className={sectionTitleClass}>Dados do resgate</h2>
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div>
-          <label className={labelClass}>
-            Saldo de capital atual
-          </label>
-          <input
-            value={saldoCapitalAtual}
-            readOnly
-            className={readOnlyMoneyClass}
-            placeholder="R$ 0,00"
-          />
-        </div>
+          <div>
+            <label className={labelClass}>
+              Saldo de capital atual
+            </label>
+            <input
+              value={saldoCapitalAtual}
+              readOnly
+              className={readOnlyMoneyClass}
+              placeholder="R$ 0,00"
+            />
+          </div>
 
-        <div>
-          <label className={labelClass}>
-            Motivo
-          </label>
-          <select
-            value={secMotivo}
-            onChange={(e) => setSecMotivo(e.target.value)}
-            className={inputClass}
-          >
-            <option value=""></option>
-            {motivos.map((item) => (
-              <option key={item.ID_MOTIVO_RESGATE || item.NM_MOTIVO} value={item.NM_MOTIVO}>
-                {String(item.NM_MOTIVO).toUpperCase()}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div>
+            <label className={labelClass}>
+              Motivo
+            </label>
+            <select
+              value={secMotivo}
+              onChange={(e) => setSecMotivo(e.target.value)}
+              className={inputClass}
+            >
+              <option value=""></option>
+              {motivos.map((item) => (
+                <option key={item.ID_MOTIVO_RESGATE || item.NM_MOTIVO} value={item.NM_MOTIVO}>
+                  {String(item.NM_MOTIVO).toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div>
-          <label className={labelClass}>
-            Autorizado por
-          </label>
-          <select
-            value={secAutorizado}
-            onChange={(e) => setSecAutorizado(e.target.value)}
-            className={inputClass}
-          >
-            <option value=""></option>
-            {autorizacoes.map((item) => (
-              <option
-                key={item.ID_AUTORIZACAO_RESGATE || item.NM_AUTORIZADO}
-                value={item.NM_AUTORIZADO}
-              >
-                {String(item.NM_AUTORIZADO).toUpperCase()}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div>
+            <label className={labelClass}>
+              Autorizado por
+            </label>
+            <select
+              value={secAutorizado}
+              onChange={(e) => setSecAutorizado(e.target.value)}
+              className={inputClass}
+            >
+              <option value=""></option>
+              {autorizacoes.map((item) => (
+                <option
+                  key={item.ID_AUTORIZACAO_RESGATE || item.NM_AUTORIZADO}
+                  value={item.NM_AUTORIZADO}
+                >
+                  {String(item.NM_AUTORIZADO).toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1323,27 +1349,27 @@ export function ResgateCapitalForm() {
 
             <div className="mt-4 rounded-2xl border border-[#00AE9D]/15 bg-[#00AE9D]/5 p-4">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div>
-                <label className={labelClass}>
-                  Total do saldo devedor
-                </label>
-                <input
-                  readOnly
-                  value={fmtBRL(totalSaldoEmprestimo)}
-                  className={readOnlyMoneyClass}
-                />
-              </div>
+                <div>
+                  <label className={labelClass}>
+                    Total do saldo devedor
+                  </label>
+                  <input
+                    readOnly
+                    value={fmtBRL(totalSaldoEmprestimo)}
+                    className={readOnlyMoneyClass}
+                  />
+                </div>
 
-              <div>
-                <label className={labelClass}>
-                  Total da amortização de capital
-                </label>
-                <input
-                  readOnly
-                  value={fmtBRL(totalAmortizacaoEmprestimo)}
-                  className={readOnlyMoneyClass}
-                />
-              </div>
+                <div>
+                  <label className={labelClass}>
+                    Total da amortização de capital
+                  </label>
+                  <input
+                    readOnly
+                    value={fmtBRL(totalAmortizacaoEmprestimo)}
+                    className={readOnlyMoneyClass}
+                  />
+                </div>
               </div>
             </div>
           </>
@@ -1646,35 +1672,35 @@ export function ResgateCapitalForm() {
         <h2 className={sectionTitleClass}>Fechamento do atendimento</h2>
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div>
-          <label className={labelClass}>
-            Cidade do atendimento
-          </label>
-          <select
-            value={secCidade}
-            onChange={(e) => setSecCidade(e.target.value)}
-            className={inputClass}
-          >
-            <option value=""></option>
-            {cidades.map((cidade) => (
-              <option key={cidade.ID_CIDADES} value={cidade.NM_CIDADE}>
-                {String(cidade.NM_CIDADE).toUpperCase()}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div>
+            <label className={labelClass}>
+              Cidade do atendimento
+            </label>
+            <select
+              value={secCidade}
+              onChange={(e) => setSecCidade(e.target.value)}
+              className={inputClass}
+            >
+              <option value=""></option>
+              {cidades.map((cidade) => (
+                <option key={cidade.ID_CIDADES} value={cidade.NM_CIDADE}>
+                  {String(cidade.NM_CIDADE).toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div>
-          <label className={labelClass}>
-            Dia do atendimento
-          </label>
-          <input
-            readOnly
-            type="date"
-            value={diaAtendimento}
-            className={readOnlyClass}
-          />
-        </div>
+          <div>
+            <label className={labelClass}>
+              Dia do atendimento
+            </label>
+            <input
+              readOnly
+              type="date"
+              value={diaAtendimento}
+              className={readOnlyClass}
+            />
+          </div>
         </div>
       </div>
     </div>

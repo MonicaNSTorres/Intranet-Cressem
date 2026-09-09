@@ -18,14 +18,14 @@ import {
     FaEye,
     FaMapSigns,
     FaDesktop,
-    FaSun,
+    /*FaSun,
     FaCloud,
     FaCloudSun,
     FaCloudRain,
     FaSnowflake,
     FaTemperatureHigh,
     FaWind,
-    FaTint,
+    FaTint,*/
 } from "react-icons/fa";
 import HomeScreenSearch from "@/components/search-home/search-home";
 import { SCREENS } from "@/config/screens";
@@ -76,7 +76,7 @@ type PopupAvisoComImagem = PopupAviso & {
     DS_LINK?: string | null;
 };
 
-type ClimaAtual = {
+/*type ClimaAtual = {
     temperatura: number;
     sensacao: number;
     umidade: number;
@@ -85,7 +85,7 @@ type ClimaAtual = {
     minima: number;
     codigo: number;
     atualizadoEm: string;
-};
+};*/
 
 function normalizeSearch(value: string) {
     return String(value || "")
@@ -100,7 +100,7 @@ function isUsuarioOculto(value?: string) {
     return nome === "externo" || nome === "sala ti" || nome === "monica teste";
 }
 
-function obterCondicaoClima(codigo: number) {
+/*function obterCondicaoClima(codigo: number) {
     if (codigo === 0) {
         return {
             descricao: "Céu limpo",
@@ -142,7 +142,7 @@ function obterCondicaoClima(codigo: number) {
         descricao: "Condição variável",
         icon: <FaCloudSun className="h-12 w-12 text-amber-400" />,
     };
-}
+}*/
 
 export default function HomePage() {
     const [aniversariantesHoje, setAniversariantesHoje] = useState<Aniversariante[]>([]);
@@ -155,11 +155,11 @@ export default function HomePage() {
     const [userGroups, setUserGroups] = useState<string[]>([]);
     const [erroPopup, setErroPopup] = useState("");
     const [modalErroAberta, setModalErroAberta] = useState(false);
-    const [climaAtual, setClimaAtual] = useState<ClimaAtual | null>(null);
+    /*const [climaAtual, setClimaAtual] = useState<ClimaAtual | null>(null);
     const [loadingClima, setLoadingClima] = useState(true);
     const [erroClima, setErroClima] = useState(false);
     const [cidadeClima, setCidadeClima] = useState("São José dos Campos");
-    const [localizacaoAutomatica, setLocalizacaoAutomatica] = useState(false);
+    const [localizacaoAutomatica, setLocalizacaoAutomatica] = useState(false);*/
 
     //const popupConteudo = popupHome ?? ultimoPopupRespondido;
     const popupConteudo = popupHome;
@@ -321,7 +321,7 @@ export default function HomePage() {
         carregarPaginasMaisAcessadas();
     }, []);
 
-    useEffect(() => {
+    /*useEffect(() => {
         const LOCALIZACAO_PADRAO = {
             latitude: -23.2237,
             longitude: -45.9009,
@@ -514,7 +514,7 @@ export default function HomePage() {
                 clearInterval(interval);
             }
         };
-    }, []);
+    }, []);*/
 
     async function handleResponderPopupHome(resposta: "ACEITO" | "RECUSADO") {
         if (!popupHome) return;
@@ -727,9 +727,9 @@ export default function HomePage() {
 
     console.log(paginasMaisAcessadas);
 
-    const condicaoClima = climaAtual
+    /*const condicaoClima = climaAtual
         ? obterCondicaoClima(climaAtual.codigo)
-        : null;
+        : null;*/
 
     return (
         <div className="min-h-full bg-linear-to-b from-white via-white to-[#F6FBFA] p-6 lg:p-8">
@@ -959,7 +959,7 @@ export default function HomePage() {
                             </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-[28px] border border-sky-200/70 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
+                        {/*<div className="overflow-hidden rounded-[28px] border border-sky-200/70 bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)]">
                             <div className="border-b border-[#EAECF0] bg-[linear-gradient(135deg,rgba(14,165,233,0.10)_0%,rgba(255,255,255,1)_52%,rgba(250,204,21,0.10)_100%)] px-6 py-5">
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
@@ -1084,7 +1084,8 @@ export default function HomePage() {
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </div>*/}
+                        
                     </div>
 
                     <div className="space-y-6">
