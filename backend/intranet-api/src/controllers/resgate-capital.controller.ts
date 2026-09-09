@@ -121,6 +121,83 @@ export const resgateCapitalController = {
     }
   },
 
+  async buscarSaldoCapitalPorCpf(req: Request, res: Response) {
+    try {
+      const cpfQuery = String(req.query.cpf || "");
+      const cpf = onlyDigits(cpfQuery);
+
+      if (!cpf) {
+        return res.status(400).json({
+          error: "CPF/CNPJ não informado.",
+        });
+      }
+
+      const sql = `
+      SELECT
+        NR_CPF_CNPJ_CLIENTE,
+        NM_CLIENTE,
+        DT_MOVIMENTO,
+        VL_SALDO_FINAL_INTEGRALIZADO_DIARIO AS SALDO_CAPITAL
+      FROM DBACRESSEM.CONTA_CAPITAL_DIARIO_NOVO
+      WHERE REGEXP_REPLACE(NR_CPF_CNPJ_CLIENTE, '[^0-9]', '') = :cpf
+      AND VL_SALDO_FINAL_INTEGRALIZADO_DIARIO <> 0
+      ORDER BY DT_MOVIMENTO DESC
+      FETCH FIRST 1 ROW ONLY
+    `;
+
+      const result = await oracleExecute(
+        sql,
+        { cpf },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      if (!result.rows?.length) {
+        return res.json({
+          found: false,
+          saldoCapital: 0,
+          dataMovimento: null,
+        });
+      }
+
+      const row: any = result.rows[0];
+
+      const saldoRaw = row.SALDO_CAPITAL;
+
+      let saldoCapital = 0;
+
+      if (typeof saldoRaw === "number") {
+        saldoCapital = saldoRaw;
+      } else {
+        const valorTexto = String(saldoRaw || "").trim();
+
+        if (valorTexto) {
+          const valorNormalizado = valorTexto.includes(",")
+            ? valorTexto.replace(/\./g, "").replace(",", ".")
+            : valorTexto;
+
+          const convertido = Number(valorNormalizado);
+
+          saldoCapital = Number.isFinite(convertido)
+            ? convertido
+            : 0;
+        }
+      }
+
+      return res.json({
+        found: true,
+        saldoCapital,
+        dataMovimento: row.DT_MOVIMENTO || null,
+      });
+    } catch (err: any) {
+      console.error("buscarSaldoCapitalPorCpf erro:", err);
+
+      return res.status(500).json({
+        error: "Falha ao consultar saldo de capital do associado.",
+        details: String(err?.message || err),
+      });
+    }
+  },
+
   async buscarEmprestimosPorCpf(req: Request, res: Response) {
     try {
       const cpfQuery = String(req.query.cpf || "");
