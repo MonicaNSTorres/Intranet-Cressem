@@ -41,55 +41,208 @@ export const fichaDesimpedimentoController = {
       const cpf = String(req.query.cpf || "").replace(/\D/g, "");
 
       if (cpf.length !== 11) {
-        return res.status(400).json({ error: "CPF inválido. Informe 11 dígitos." });
+        return res.status(400).json({
+          error: "CPF inválido. Informe 11 dígitos.",
+        });
       }
 
-      const sql = `
-        SELECT
-          a.NM_CLIENTE AS NOME,
-          a.NR_CPF_CNPJ AS CPF,
-          a.NR_MATRICULA AS PRONTUARIO,
-          a.NM_EMPRESA AS EMPRESA,
-          a.DS_ENDERECO AS ENDERECO,
-          a.NM_BAIRRO AS NM_BAIRRO,
-          a.NM_CIDADE AS NM_CIDADE,
-          a.NR_CEP AS NR_CEP,
-          a.NR_TELEFONE AS TELEFONE,
-          a.DS_EMAIL AS DS_EMAIL
-        FROM DBACRESSEM.ASSOCIADO_ANALITICO a
-        WHERE REGEXP_REPLACE(a.NR_CPF_CNPJ, '[^0-9]', '') = :cpf
-        FETCH FIRST 1 ROWS ONLY
-      `;
+      const associadoSql = `
+      SELECT
+        a.NM_CLIENTE AS NOME,
+        a.NR_CPF_CNPJ AS CPF,
+        a.NR_MATRICULA AS PRONTUARIO,
+        a.NM_EMPRESA AS EMPRESA,
+        a.DS_ENDERECO AS ENDERECO,
+        a.NM_BAIRRO AS NM_BAIRRO,
+        a.NM_CIDADE AS NM_CIDADE,
+        a.NR_CEP AS NR_CEP,
+        a.NR_TELEFONE AS TELEFONE,
+        a.DS_EMAIL AS DS_EMAIL
+      FROM DBACRESSEM.ASSOCIADO_ANALITICO a
+      WHERE REGEXP_REPLACE(
+        a.NR_CPF_CNPJ,
+        '[^0-9]',
+        ''
+      ) = :cpf
+      FETCH FIRST 1 ROWS ONLY
+    `;
 
-      const result = await oracleExecute(
-        sql,
+      const associadoResult = await oracleExecute(
+        associadoSql,
         { cpf },
-        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        {
+          outFormat: oracledb.OUT_FORMAT_OBJECT,
+        }
       );
 
-      const row: any = result.rows?.[0];
+      const associado: any =
+        associadoResult.rows?.[0];
 
-      if (!row) {
-        return res.status(404).json({ error: "Associado não encontrado." });
+      if (!associado) {
+        return res.status(404).json({
+          error: "Associado não encontrado.",
+        });
       }
 
+      const odontologicoSql = `
+      SELECT
+        B.ID_BENEFICIARIO,
+        B.NM_BENEFICIARIO,
+        B.NR_CPF,
+
+        TB.CD_TIPO_BENEFICIARIO,
+        TB.NM_TIPO_BENEFICIARIO,
+
+        P.ID_PLANO,
+        P.NM_PLANO,
+        P.TP_COBRANCA,
+
+        O.ID_OPERADORA,
+        O.NM_OPERADORA,
+
+        PV.ID_PLANO_VALOR,
+        PV.VL_MENSALIDADE,
+        PV.DT_VIGENCIA_INICIO,
+        PV.DT_VIGENCIA_FIM
+
+      FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+      INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+        ON TB.ID_TIPO_BENEFICIARIO =
+           B.ID_TIPO_BENEFICIARIO
+
+      INNER JOIN DBACRESSEM.ODONTO_PLANO P
+        ON P.ID_PLANO =
+           B.ID_PLANO
+
+      INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+        ON O.ID_OPERADORA =
+           P.ID_OPERADORA
+
+      LEFT JOIN DBACRESSEM.ODONTO_PLANO_VALOR PV
+        ON PV.ID_PLANO =
+           P.ID_PLANO
+
+       AND TRUNC(SYSDATE) >=
+           TRUNC(PV.DT_VIGENCIA_INICIO)
+
+       AND (
+         PV.DT_VIGENCIA_FIM IS NULL
+         OR SYSDATE <=
+            PV.DT_VIGENCIA_FIM
+       )
+
+      WHERE REGEXP_REPLACE(
+        B.NR_CPF,
+        '[^0-9]',
+        ''
+      ) = :cpf
+
+        AND B.SN_ATIVO = 1
+        AND P.SN_ATIVO = 1
+        AND O.SN_ATIVO = 1
+
+      FETCH FIRST 1 ROWS ONLY
+    `;
+
+      const odontologicoResult =
+        await oracleExecute(
+          odontologicoSql,
+          { cpf },
+          {
+            outFormat:
+              oracledb.OUT_FORMAT_OBJECT,
+          }
+        );
+
+      const odontologico: any =
+        odontologicoResult.rows?.[0];
+
       return res.json({
-        nome: row.NOME || "",
-        cpf: row.CPF || "",
-        prontuario: row.PRONTUARIO || "",
-        empresa: row.EMPRESA || "",
-        endereco: row.ENDERECO || "",
-        nm_bairro: row.NM_BAIRRO || "",
-        nm_cidade: row.NM_CIDADE || "",
-        nr_cep: row.NR_CEP || "",
-        telefone: row.TELEFONE || "",
-        ds_email: row.DS_EMAIL || "",
+        nome:
+          associado.NOME || "",
+
+        cpf:
+          associado.CPF || "",
+
+        prontuario:
+          associado.PRONTUARIO || "",
+
+        empresa:
+          associado.EMPRESA || "",
+
+        endereco:
+          associado.ENDERECO || "",
+
+        nm_bairro:
+          associado.NM_BAIRRO || "",
+
+        nm_cidade:
+          associado.NM_CIDADE || "",
+
+        nr_cep:
+          associado.NR_CEP || "",
+
+        telefone:
+          associado.TELEFONE || "",
+
+        ds_email:
+          associado.DS_EMAIL || "",
+
+        dt_matricula_associacao: "",
+
+        odontologico: odontologico
+          ? {
+            possuiPlanoAtivo: true,
+
+            idBeneficiario:
+              odontologico.ID_BENEFICIARIO,
+
+            tipoBeneficiario:
+              odontologico.CD_TIPO_BENEFICIARIO,
+
+            nomeTipoBeneficiario:
+              odontologico.NM_TIPO_BENEFICIARIO,
+
+            idOperadora:
+              odontologico.ID_OPERADORA,
+
+            operadora:
+              odontologico.NM_OPERADORA,
+
+            idPlano:
+              odontologico.ID_PLANO,
+
+            plano:
+              odontologico.NM_PLANO,
+
+            tipoCobranca:
+              odontologico.TP_COBRANCA,
+
+            valorMensalidade:
+              odontologico.VL_MENSALIDADE,
+
+            dataInicioVigenciaValor:
+              odontologico.DT_VIGENCIA_INICIO,
+
+            dataFimVigenciaValor:
+              odontologico.DT_VIGENCIA_FIM,
+          }
+          : {
+            possuiPlanoAtivo: false,
+          },
       });
     } catch (error: any) {
-      console.error("Erro ao buscar associado por CPF:", error);
+      console.error(
+        "Erro ao buscar associado por CPF:",
+        error
+      );
+
       return res.status(500).json({
-        error: "Erro ao buscar associado por CPF",
-        details: error.message,
+        error:
+          "Erro ao buscar associado por CPF",
+        details:
+          error.message,
       });
     }
   },
@@ -463,7 +616,7 @@ export const fichaDesimpedimentoController = {
       if (conn) {
         try {
           await conn.rollback();
-        } catch {}
+        } catch { }
       }
 
       console.error("Erro ao criar ficha:", error);
@@ -475,7 +628,7 @@ export const fichaDesimpedimentoController = {
       if (conn) {
         try {
           await conn.close();
-        } catch {}
+        } catch { }
       }
     }
   },
@@ -669,7 +822,7 @@ export const fichaDesimpedimentoController = {
       if (conn) {
         try {
           await conn.rollback();
-        } catch {}
+        } catch { }
       }
 
       console.error("Erro ao editar ficha:", error);
@@ -681,7 +834,7 @@ export const fichaDesimpedimentoController = {
       if (conn) {
         try {
           await conn.close();
-        } catch {}
+        } catch { }
       }
     }
   },
@@ -724,7 +877,7 @@ export const fichaDesimpedimentoController = {
       if (conn) {
         try {
           await conn.rollback();
-        } catch {}
+        } catch { }
       }
 
       console.error("Erro ao excluir ficha:", error);
@@ -736,7 +889,7 @@ export const fichaDesimpedimentoController = {
       if (conn) {
         try {
           await conn.close();
-        } catch {}
+        } catch { }
       }
     }
   },

@@ -93,6 +93,7 @@ import { solicitacaoSubsidioAuditivoController } from "../controllers/solicitaca
 import { solicitacaoSubsidioAuditivoPaginadoController } from "../controllers/solicitacao_subsidio_auditivo_paginado.controller";
 import { cnab240CcoController } from "../controllers/cnab240-cco.controller";
 import { bancoImagensController } from "../controllers/banco-imagens.controller";
+import { convenioOdontologicoController } from "../controllers/convenio-odontologico.controller";
 
 const routes = Router();
 
@@ -665,6 +666,10 @@ routes.get("/v1/resgate-capital/cidades", resgateCapitalController.buscarCidades
 routes.get("/v1/resgate-capital/emprestimos", resgateCapitalController.buscarEmprestimosPorCpf);
 routes.get("/v1/resgate-capital/associado-id", resgateCapitalController.buscarIdAssociado);
 routes.get("/v1/resgate-capital/dia-util", resgateCapitalController.buscarDiaUtil);
+routes.get(
+  "/v1/resgate-capital/saldo-capital",
+  resgateCapitalController.buscarSaldoCapitalPorCpf
+);
 
 routes.post("/v1/resgate-capital", authMiddleware, resgateCapitalController.criarResgate);
 routes.post("/v1/resgate-capital/emprestimo", authMiddleware, resgateCapitalController.criarEmprestimo);
@@ -703,7 +708,7 @@ routes.post(
   analiseLimiteController.downloadAssinatura
 );
 
-// convenio odonto
+//convenio odonto
 routes.get("/v1/fator_ajuste", convenioOdontoController.listarFatorAjuste);
 routes.get("/v1/parentesco", convenioOdontoController.listarParentesco);
 
@@ -1552,7 +1557,7 @@ routes.get(
   leiloesController.dashboard
 );
 
-// banco de imagens
+//banco de imagens
 routes.get(
   "/v1/banco-imagens/categorias",
   authMiddleware,
@@ -1613,6 +1618,117 @@ routes.delete(
   "/v1/banco-imagens/:id",
   authMiddleware,
   bancoImagensController.excluir
+);
+
+//Convenio odontologico
+routes.get(
+  "/v1/convenio-odontologico/tipos-beneficiario",
+  authMiddleware,
+  convenioOdontologicoController.listarTiposBeneficiario
+);
+
+routes.get(
+  "/v1/convenio-odontologico/operadoras",
+  authMiddleware,
+  convenioOdontologicoController.listarOperadoras
+);
+
+routes.get(
+  "/v1/convenio-odontologico/empresas",
+  authMiddleware,
+  convenioOdontologicoController.listarEmpresas
+);
+
+routes.get(
+  "/v1/convenio-odontologico/planos",
+  authMiddleware,
+  convenioOdontologicoController.listarPlanos
+);
+
+routes.get(
+  "/v1/convenio-odontologico/planos/:id/valor-vigente",
+  authMiddleware,
+  convenioOdontologicoController.buscarValorVigentePlano
+);
+
+
+//Beneficiarios
+routes.get(
+  "/v1/convenio-odontologico/beneficiarios",
+  authMiddleware,
+  convenioOdontologicoController.listarBeneficiarios
+);
+
+routes.get(
+  "/v1/convenio-odontologico/beneficiarios/cpf/:cpf",
+  authMiddleware,
+  convenioOdontologicoController.buscarBeneficiarioPorCpf
+);
+
+routes.get(
+  "/v1/convenio-odontologico/beneficiarios/:id",
+  authMiddleware,
+  convenioOdontologicoController.buscarBeneficiarioPorId
+);
+
+routes.post(
+  "/v1/convenio-odontologico/beneficiarios",
+  authMiddleware,
+  convenioOdontologicoController.criarBeneficiario
+);
+
+routes.put(
+  "/v1/convenio-odontologico/beneficiarios/:id",
+  authMiddleware,
+  convenioOdontologicoController.editarBeneficiario
+);
+
+routes.patch(
+  "/v1/convenio-odontologico/beneficiarios/:id/inativar",
+  authMiddleware,
+  convenioOdontologicoController.inativarBeneficiario
+);
+
+routes.get(
+  "/v1/convenio-odontologico/titulares/:id/dependentes",
+  authMiddleware,
+  convenioOdontologicoController.listarDependentes
+);
+
+routes.get(
+  "/v1/convenio-odontologico/gestao/planos",
+  authMiddleware,
+  convenioOdontologicoController.listarPlanosGestao
+);
+
+routes.get(
+  "/v1/convenio-odontologico/gestao/planos/:id/valores",
+  authMiddleware,
+  convenioOdontologicoController.listarHistoricoValoresPlano
+);
+
+routes.post(
+  "/v1/convenio-odontologico/gestao/planos/:id/reajuste",
+  authMiddleware,
+  convenioOdontologicoController.reajustarValorPlano
+);
+
+routes.post(
+  "/v1/convenio-odontologico/gestao/planos",
+  authMiddleware,
+  convenioOdontologicoController.criarPlano
+);
+
+routes.put(
+    "/v1/convenio-odontologico/gestao/planos/:id",
+    authMiddleware,
+    convenioOdontologicoController.atualizarPlano
+);
+
+routes.patch(
+    "/v1/convenio-odontologico/gestao/planos/:id/status",
+    authMiddleware,
+    convenioOdontologicoController.alterarStatusPlano
 );
 
 export { routes };
