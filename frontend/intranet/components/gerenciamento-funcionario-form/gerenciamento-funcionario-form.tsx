@@ -861,267 +861,256 @@ export function GerenciamentoFuncionarioForm() {
 
   return (
     <>
-      <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
-        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
-        <div className="p-6">
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Digite o nome
-              </label>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
-                <input
-                  value={busca}
-                  onChange={(e) => setBusca(removerEspacoInicial(e.target.value))}
-                  placeholder="Digite o nome do funcionário"
-                  className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => carregarFuncionarios(1)}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
-                >
-                  <FaSearch />
-                  Buscar
-                </button>
-
-                <button
-                  type="button"
-                  onClick={limparBusca}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  <FaTimes />
-                  Limpar
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-end">
-              <button
-                type="button"
-                onClick={abrirCadastro}
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
-              >
-                <FaPlus />
-                Cadastrar
-              </button>
-            </div>
+      <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#79B729]" />
+        <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+              Consulta de funcionários
+            </h2>
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
+              Pesquise por nome, setor ou cargo e escolha quais vínculos deseja visualizar.
+            </p>
           </div>
 
-          {(erro || info) && (
-            <div className="mt-4">
-              {erro ? (
-                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  {erro}
-                </div>
+          <button
+            type="button"
+            onClick={abrirCadastro}
+            className={`${BUTTON_AUXILIARY_CLASS} w-full lg:w-auto`}
+          >
+            <FaPlus />
+            Cadastrar funcionário
+          </button>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_240px_auto_auto] lg:items-end">
+          <div>
+            <label className={LABEL_CLASS}>Nome, setor ou cargo</label>
+            <input
+              value={busca}
+              onChange={(e) => setBusca(removerEspacoInicial(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") aplicarFiltros();
+              }}
+              placeholder="Digite o nome, setor ou cargo"
+              className={INPUT_CLASS}
+            />
+          </div>
+
+          <div>
+            <label className={LABEL_CLASS}>Status do funcionário</label>
+            <select
+              value={filtroStatus}
+              onChange={(e) =>
+                alterarFiltroStatus(e.target.value as FiltroStatus)
+              }
+              className={INPUT_CLASS}
+            >
+              <option value="ativos">Ativos</option>
+              <option value="inativos">Inativos</option>
+              <option value="todos">Ativos e inativos</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={aplicarFiltros}
+            className={`${BUTTON_PRIMARY_CLASS} w-full lg:w-auto`}
+          >
+            <FaSearch />
+            Pesquisar
+          </button>
+
+          <button
+            type="button"
+            onClick={limparBusca}
+            className={`${BUTTON_SECONDARY_CLASS} w-full lg:w-auto`}
+          >
+            <FaTimes />
+            Limpar
+          </button>
+        </div>
+
+        {(erro || info) && (
+          <div className="mt-4">
+            {erro ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {erro}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                {info}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <SummaryCard
+            label="Total cadastrado"
+            value={totais.total}
+            tone="total"
+            active={filtroStatus === "todos"}
+            icon={<FaUsers />}
+            onClick={() => alterarFiltroStatus("todos")}
+          />
+
+          <SummaryCard
+            label="Ativos"
+            value={totais.ativos}
+            tone="ativos"
+            active={filtroStatus === "ativos"}
+            icon={<FaCheckCircle />}
+            onClick={() => alterarFiltroStatus("ativos")}
+          />
+
+          <SummaryCard
+            label="Inativos"
+            value={totais.inativos}
+            tone="inativos"
+            active={filtroStatus === "inativos"}
+            icon={<FaUserSlash />}
+            onClick={() => alterarFiltroStatus("inativos")}
+          />
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-[var(--title)]">
+              Funcionários encontrados
+            </h3>
+            <p className="text-xs text-slate-500">
+              {funcionariosFiltrados.length} registro(s) no filtro selecionado.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={baixarCsv}
+            className={`${BUTTON_AUXILIARY_CLASS} w-full sm:w-auto`}
+          >
+            <FaDownload />
+            Baixar relatório
+          </button>
+        </div>
+
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                  Nome
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                  Nascimento
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                  Ramal
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                  Setor
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                  Cargo
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
+                  Editar
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
+                  Status
+                </th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {loadingTabela ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
+                    Carregando funcionários...
+                  </td>
+                </tr>
+              ) : funcionarios.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
+                    Nenhum funcionário encontrado com os filtros informados.
+                  </td>
+                </tr>
               ) : (
-                <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                  {info}
-                </div>
-              )}
-            </div>
-          )}
-
-          {(funcionarios.length > 0 || loadingTabela) && (
-            <>
-              <div className="mt-6 overflow-x-auto rounded-xl border">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                        Nome
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                        Nascimento
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                        Ramal
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                        Setor
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                        Cargo
-                      </th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                funcionarios.map((funcionario) => (
+                  <tr
+                    key={funcionario.ID_FUNCIONARIO}
+                    className="transition hover:bg-slate-50"
+                  >
+                    <td className="px-4 py-3 font-semibold text-slate-800">
+                      {funcionario.NM_FUNCIONARIO}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {formatarNascimentoTabela(funcionario.DT_NASCIMENTO)}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {funcionario.NR_RAMAL || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {funcionario.SETOR?.NM_SETOR || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {funcionario.CARGO?.NM_CARGO || "Sem cargo"}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => abrirEdicao(funcionario)}
+                        className={BUTTON_EDIT_COMPACT_CLASS}
+                        title="Editar funcionário"
+                      >
+                        <FaEdit size={12} />
                         Editar
-                      </th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => abrirModalStatus(funcionario)}
+                        className={`inline-flex h-9 min-w-24 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 text-xs font-bold shadow-sm transition ${
+                          Number(funcionario.SN_ATIVO) === 1
+                            ? "border-primary/30 bg-primary/10 text-[#007f73] hover:border-primary hover:bg-primary hover:text-white"
+                            : "border-fourth/30 bg-fourth/10 text-fourth hover:border-fourth hover:bg-fourth hover:text-white"
+                        }`}
+                        title={
+                          Number(funcionario.SN_ATIVO) === 1
+                            ? "Inativar funcionário"
+                            : "Ativar funcionário"
+                        }
+                      >
+                        {Number(funcionario.SN_ATIVO) === 1 ? (
+                          <FaCheckCircle size={12} />
+                        ) : (
+                          <FaUserSlash size={12} />
+                        )}
+                        {Number(funcionario.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {loadingTabela ? (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          className="px-4 py-6 text-center text-slate-500"
-                        >
-                          Carregando funcionários...
-                        </td>
-                      </tr>
-                    ) : funcionarios.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          className="px-4 py-6 text-center text-slate-500"
-                        >
-                          Nenhum funcionário encontrado.
-                        </td>
-                      </tr>
-                    ) : (
-                      funcionarios.map((funcionario) => (
-                        <tr
-                          key={funcionario.ID_FUNCIONARIO}
-                          className="hover:bg-slate-50"
-                        >
-                          <td className="px-4 py-3">{funcionario.NM_FUNCIONARIO}</td>
-                          <td className="px-4 py-3">
-                            {formatarNascimentoTabela(funcionario.DT_NASCIMENTO)}
-                          </td>
-                          <td className="px-4 py-3">{funcionario.NR_RAMAL || ""}</td>
-                          <td className="px-4 py-3">
-                            {funcionario.SETOR?.NM_SETOR || ""}
-                          </td>
-                          <td className="px-4 py-3">
-                            {funcionario.CARGO?.NM_CARGO || "Sem cargo Gerência"}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => abrirEdicao(funcionario)}
-                              className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                            >
-                              <FaEdit />
-                              Editar
-                            </button>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => abrirModalStatus(funcionario)}
-                              className={`inline-flex min-w-21 items-center justify-center rounded px-3 py-1.5 text-xs font-semibold ${Number(funcionario.SN_ATIVO) === 1
-                                ? "bg-secondary text-white hover:bg-third"
-                                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                                }`}
-                            >
-                              {Number(funcionario.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                {paginaAtual > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => carregarFuncionarios(1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      1
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => carregarFuncionarios(paginaAtual - 1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Anterior
-                    </button>
-                  </>
-                )}
-
-                {paginasVisiveis.map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    onClick={() => carregarFuncionarios(page)}
-                    className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
-                      ? "bg-emerald-600 text-white"
-                      : "border text-slate-700 hover:bg-slate-50"
-                      }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-
-                {paginaAtual < totalPages && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => carregarFuncionarios(paginaAtual + 1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Próxima
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => carregarFuncionarios(totalPages)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      {totalPages}
-                    </button>
-                  </>
-                )}
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Total
-                  </label>
-                  <input
-                    readOnly
-                    value={totais.total}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Ativos
-                  </label>
-                  <input
-                    readOnly
-                    value={totais.ativos}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Inativos
-                  </label>
-                  <input
-                    readOnly
-                    value={totais.inativos}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
-
-                <div className="flex items-end">
-                  <button
-                    type="button"
-                    onClick={baixarCsv}
-                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary md:w-auto"
-                  >
-                    <FaDownload />
-                    Baixar Relatório
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+        {!loadingTabela && funcionariosFiltrados.length > 0 && (
+          <div className="overflow-hidden rounded-2xl border border-slate-200">
+            <Pagination
+              currentPage={paginaSegura}
+              totalPages={totalPages}
+              totalItems={funcionariosFiltrados.length}
+              limit={limite}
+              loading={loadingTabela}
+              onChange={setPaginaAtual}
+              onLimitChange={alterarLimite}
+            />
+          </div>
+        )}
         </div>
       </div>
 
@@ -1603,38 +1592,38 @@ export function GerenciamentoFuncionarioForm() {
                   </div>
 
                   {modalModo === "editar" && (
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">
-                        Ficha de Desimpedimento
-                      </label>
-                      <div className="mb-2 flex gap-2">
+                      <div>
+                        <label className={LABEL_CLASS}>
+                          Ficha de Desimpedimento
+                        </label>
+                        <div className="mb-2 flex gap-2">
+                          <input
+                            readOnly
+                            value={getNomeArquivo(funcionarioSelecionado?.FICHA_DESIMPEDIMENTO)}
+                            className={READONLY_INPUT_CLASS}
+                          />
+                          {funcionarioSelecionado?.FICHA_DESIMPEDIMENTO && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                baixarArquivo(funcionarioSelecionado.FICHA_DESIMPEDIMENTO!)
+                              }
+                              className={BUTTON_INFO_COMPACT_CLASS}
+                            >
+                              Consultar
+                            </button>
+                          )}
+                        </div>
                         <input
-                          readOnly
-                          value={getNomeArquivo(funcionarioSelecionado?.FICHA_DESIMPEDIMENTO)}
-                          className="w-full rounded border bg-gray-50 px-3 py-2 text-sm"
+                          type="file"
+                          accept=".pdf"
+                          onChange={(e) =>
+                            setArquivoFichaDesimpedimento(e.target.files?.[0] || null)
+                          }
+                          className={FILE_INPUT_CLASS}
                         />
-                        {funcionarioSelecionado?.FICHA_DESIMPEDIMENTO && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              baixarArquivo(funcionarioSelecionado.FICHA_DESIMPEDIMENTO!)
-                            }
-                            className="rounded bg-secondary px-3 py-2 text-xs font-semibold text-white"
-                          >
-                            Consultar
-                          </button>
-                        )}
                       </div>
-                      <input
-                        type="file"
-                        accept=".pdf"
-                        onChange={(e) =>
-                          setArquivoFichaDesimpedimento(e.target.files?.[0] || null)
-                        }
-                        className="w-full rounded border px-3 py-2"
-                      />
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
 
@@ -1736,10 +1725,11 @@ export function GerenciamentoFuncionarioForm() {
 
             <div className="space-y-4 px-6 py-5">
               <div
-                className={`rounded border p-4 text-sm ${Number(funcionarioStatus.SN_ATIVO) === 1
+                className={`rounded-2xl border p-4 text-sm ${
+                  Number(funcionarioStatus.SN_ATIVO) === 1
                     ? "border-amber-200 bg-amber-50 text-amber-900"
                     : "border-emerald-200 bg-emerald-50 text-emerald-900"
-                  }`}
+                }`}
               >
                 {Number(funcionarioStatus.SN_ATIVO) === 1 ? (
                   <p>
@@ -1890,10 +1880,11 @@ export function GerenciamentoFuncionarioForm() {
                 type="button"
                 onClick={confirmarStatus}
                 disabled={statusLoading}
-                className={`rounded px-4 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${Number(funcionarioStatus.SN_ATIVO) === 1
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-emerald-600 hover:bg-emerald-700"
-                  }`}
+                className={
+                  Number(funcionarioStatus.SN_ATIVO) === 1
+                    ? BUTTON_DANGER_CLASS
+                    : BUTTON_PRIMARY_CLASS
+                }
               >
                 {statusLoading
                   ? "Processando..."

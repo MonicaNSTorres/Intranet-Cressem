@@ -258,7 +258,7 @@ export default function BalancoEstoquePage() {
             <div className="mx-auto min-w-225 space-y-6">
                 <BackButton />
                 <div className="relative overflow-hidden rounded-4xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,174,157,0.18),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(121,183,41,0.16),transparent_30%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(0,174,157,0.18),_transparent_34%),radial-gradient(circle_at_bottom_left,_rgba(121,183,41,0.16),_transparent_30%)]" />
 
                     <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex items-start gap-4">
@@ -395,7 +395,7 @@ export default function BalancoEstoquePage() {
                         </span>
                     </div>
 
-                    <div className="mt-6 h-97.5 rounded-3xl border border-slate-100 bg-linear-to-br from-slate-50 to-white p-4">
+                    <div className="mt-6 h-[390px] rounded-3xl border border-slate-100 bg-linear-to-br from-slate-50 to-white p-4">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 data={balancoFiltrado}

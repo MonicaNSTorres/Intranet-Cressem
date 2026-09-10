@@ -958,10 +958,10 @@ export function SolicitacaoParticipacaoForm() {
 
     return (
         <>
-            <div className="mx-auto w-full space-y-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                    <div className="h-1 bg-linear-to-r from-[#00AE9D] via-[#79B729] to-[#C7D300]" />
-                    <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+            <div className="mx-auto w-full space-y-5">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="h-1 bg-gradient-to-r from-[#00AE9D] via-[#79B729] to-[#C7D300]" />
+                    <div className="flex flex-col gap-4 p-5 sm:p-6 md:flex-row md:items-center md:justify-between">
                         <div className="min-w-0">
                             <h2 className="text-lg font-black text-slate-950">
                                 Dados da solicitação

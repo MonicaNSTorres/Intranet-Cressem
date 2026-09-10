@@ -842,7 +842,7 @@ export function CadastroConvenioOdontoForm() {
 
     return (
         <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+            <div className="h-1 bg-gradient-to-r from-[#006f65] via-primary to-secondary" />
             <div className="space-y-5 p-4 sm:p-6 lg:p-8">
             <SearchForm onSearch={onBuscar}>
                 <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -851,7 +851,7 @@ export function CadastroConvenioOdontoForm() {
                             <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
                                 Consulta do titular
                             </h2>
-                            <p className="mt-1 text-sm text-(--paragraph)">
+                            <p className="mt-1 text-sm text-[var(--paragraph)]">
                                 Consulte o CPF para carregar os dados e continuar o cadastro ou alteração.
                             </p>
                         </div>
@@ -889,7 +889,7 @@ export function CadastroConvenioOdontoForm() {
                                 <button
                                     type="button"
                                     onClick={limparFormulario}
-                                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-(--text-darken-placeholder) bg-white px-4 text-sm font-semibold text-(--title) shadow-sm transition hover:border-primary hover:bg-primary/10"
+                                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10"
                                 >
                                     Limpar
                                 </button>

@@ -349,10 +349,10 @@ export function ContatosNaoPertubeForm() {
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-(--title) before:h-2 before:w-2 before:rounded-full before:bg-primary">
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-[var(--title)] before:h-2 before:w-2 before:rounded-full before:bg-primary">
               Filtros da consulta
             </h2>
-            <p className="mt-1 text-sm text-(--paragraph)">
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
               Localize contatos cadastrados na lista de Não Perturbe do Blip.
             </p>
           </div>
@@ -455,7 +455,7 @@ export function ContatosNaoPertubeForm() {
           <button
             type="button"
             onClick={limparFiltros}
-            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-(--text-darken-placeholder) bg-white px-4 text-sm font-semibold text-(--title) shadow-sm transition hover:border-primary hover:bg-primary/10"
+            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10"
           >
             <FaEraser />
             Limpar
@@ -511,7 +511,7 @@ export function ContatosNaoPertubeForm() {
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="min-w-262.5 w-full border-collapse text-left text-sm">
+            <table className="min-w-[1050px] w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.03em] text-slate-600">
                   <th className="px-4 py-3 font-bold">Contato</th>

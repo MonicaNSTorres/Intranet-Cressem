@@ -463,7 +463,7 @@ export function ChequeEspecialForm() {
                                 <button
                                     type="button"
                                     onClick={limparBusca}
-                                    className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-(--text-darken-placeholder) bg-white text-xs font-semibold text-(--title) shadow-sm transition hover:border-primary hover:bg-primary/10"
+                                    className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-[var(--text-darken-placeholder)] bg-white text-xs font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10"
                                 >
                                     <FaTimes />
                                 </button>
@@ -542,7 +542,7 @@ export function ChequeEspecialForm() {
                     </div>
                 </div>
 
-                <div className="rounded-3xl border border-[#00AE9D]/20 bg-linear-to-br from-[#00AE9D]/10 to-[#C7D300]/20 p-5 shadow-sm lg:w-80">
+                <div className="rounded-3xl border border-[#00AE9D]/20 bg-gradient-to-br from-[#00AE9D]/10 to-[#C7D300]/20 p-5 shadow-sm lg:w-80">
                     <div className="flex items-start justify-between gap-3">
                         <div>
                             <p className="text-xs font-black uppercase tracking-wide text-[#008f82]">
@@ -732,7 +732,7 @@ export function ChequeEspecialForm() {
             </div>
 
             <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-slate-100 bg-linear-to-r from-slate-50 to-white px-5 py-4">
+                <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
                 <div className="flex items-center justify-between">
                     <h2 className="flex items-center gap-2 text-base font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
                         Lista de Alterações
@@ -832,7 +832,7 @@ export function ChequeEspecialForm() {
                                                     onClick={() => marcarComoConcluido(item)}
                                                     disabled={concluido}
                                                     className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold shadow-sm transition ${pendente
-                                                        ? "cursor-pointer border-third/40 bg-third/15 text-(--title) hover:bg-third"
+                                                        ? "cursor-pointer border-third/40 bg-third/15 text-[var(--title)] hover:bg-third"
                                                         : "cursor-not-allowed border-primary/30 bg-primary/10 text-primary opacity-90"
                                                         }`}
                                                 >
@@ -934,7 +934,7 @@ function Pagination({
                         type="button"
                         onClick={() => onChange(Math.max(currentPage - 1, 1))}
                         disabled={currentPage <= 1 || loading}
-                        className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-(--text-darken-placeholder) bg-white px-4 text-sm font-semibold text-(--title) shadow-sm transition hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <FaChevronLeft />
                         Anterior
@@ -948,7 +948,7 @@ function Pagination({
                         type="button"
                         onClick={() => onChange(Math.min(currentPage + 1, totalPages))}
                         disabled={currentPage >= totalPages || loading}
-                        className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-(--text-darken-placeholder) bg-white px-4 text-sm font-semibold text-(--title) shadow-sm transition hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         Próxima
                         <FaChevronRight />

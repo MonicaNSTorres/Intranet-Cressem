@@ -427,7 +427,7 @@ export function PrevisulForm() {
 
     return (
         <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
-            <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+            <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
 
             <div className="space-y-5 p-5 md:p-6">
                 <SectionCard
@@ -466,7 +466,7 @@ export function PrevisulForm() {
                 </SectionCard>
 
                 <SectionCard title="Prévia do termo">
-                    <div className="rounded-2xl border border-teal-100 bg-linear-to-r from-teal-50 via-white to-lime-50 p-4 text-sm leading-relaxed text-slate-700">
+                    <div className="rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50 via-white to-lime-50 p-4 text-sm leading-relaxed text-slate-700">
                         <p>
                             <strong>{nome}</strong>, pessoa física, CPF:{" "}
                             <strong>{cpfTermo === "CPFCLIENTE" ? formatCpfView(cpf) : cpfTermo}</strong>,

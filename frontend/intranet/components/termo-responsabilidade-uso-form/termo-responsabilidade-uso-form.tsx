@@ -275,144 +275,178 @@ export function TermoResponsabilidadeUsoForm() {
     }
 
     return (
-        <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
-            <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
-            <div className="p-6">
-                <SearchForm onSearch={buscarFuncionario}>
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr]">
-                        <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                CPF
-                            </label>
-                            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                                <SearchInput
-                                    value={cpf}
-                                    onChange={(e) => setCpf(formatarCpf(e.target.value))}
-                                    placeholder="000.000.000-00"
-                                    maxLength={14}
-                                    className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                                />
+        <div className="mx-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="h-1 bg-gradient-to-r from-[var(--primary)] via-[var(--primary)] to-[var(--third)]" />
 
-                                <SearchButton loading={loadingBusca} label="Pesquisar" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Nome
-                            </label>
-                            <input
-                                value={nome}
-                                onChange={(e) => setNome(e.target.value)}
-                                className="w-full rounded border px-3 py-2"
-                                placeholder="Nome do colaborador"
-                            />
-                        </div>
+            <div className="space-y-5 p-5 lg:p-6">
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="border-b border-slate-200 p-4">
+                        <h2 className="flex items-center gap-2 text-base font-bold text-[var(--title)]">
+                            <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
+                            Consulta do colaborador
+                        </h2>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            Pesquise pelo CPF para preencher o nome automaticamente.
+                        </p>
                     </div>
 
-                    {(erro || info) && (
-                        <div className="mt-4">
-                            {erro ? (
-                                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                                    {erro}
+                    <div className="p-4">
+                        <SearchForm onSearch={buscarFuncionario}>
+                            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_1fr]">
+                                <div>
+                                    <label className={labelClass}>
+                                        CPF
+                                    </label>
+                                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                                        <SearchInput
+                                            value={cpf}
+                                            onChange={(e) => setCpf(formatarCpf(e.target.value))}
+                                            placeholder="000.000.000-00"
+                                            maxLength={14}
+                                            className={searchInputClass}
+                                        />
+
+                                        <button
+                                            type="submit"
+                                            disabled={loadingBusca}
+                                            className={primaryButtonClass}
+                                        >
+                                            <FaSearch />
+                                            {loadingBusca ? "Pesquisando..." : "Pesquisar"}
+                                        </button>
+                                    </div>
                                 </div>
-                            ) : (
-                                <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                                    {info}
+
+                                <div>
+                                    <label className={labelClass}>
+                                        Nome
+                                    </label>
+                                    <input
+                                        value={nome}
+                                        onChange={(e) => setNome(e.target.value)}
+                                        className={fieldClass}
+                                        placeholder="Nome do colaborador"
+                                    />
+                                </div>
+                            </div>
+
+                            {(erro || info) && (
+                                <div className="mt-4">
+                                    {erro ? (
+                                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+                                            {erro}
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-xl border border-[var(--primary)]/20 bg-[var(--primary)]/10 p-3 text-sm font-medium text-[var(--primary)]">
+                                            {info}
+                                        </div>
+                                    )}
                                 </div>
                             )}
+                        </SearchForm>
+                    </div>
+                </section>
+
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="border-b border-slate-200 p-4">
+                        <h2 className="flex items-center gap-2 text-base font-bold text-[var(--title)]">
+                            <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
+                            Dados do equipamento
+                        </h2>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            Informe o equipamento entregue e os acessórios que constarão no termo.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-12">
+                        <div className="lg:col-span-3">
+                            <label className={labelClass}>
+                                Equipamento
+                            </label>
+                            <select
+                                value={equipamento}
+                                onChange={(e) => aoTrocarEquipamento(e.target.value as EquipamentoTipo)}
+                                className={fieldClass}
+                            >
+                                <option value="">Selecione</option>
+                                <option value="celular">Celular</option>
+                                <option value="notebook">Notebook</option>
+                            </select>
                         </div>
-                    )}
-                </SearchForm>
 
-                <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-12">
-                    <div className="lg:col-span-3">
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Equipamento
-                        </label>
-                        <select
-                            value={equipamento}
-                            onChange={(e) => aoTrocarEquipamento(e.target.value as EquipamentoTipo)}
-                            className="w-full rounded border px-3 py-2"
-                        >
-                            <option value=""></option>
-                            <option value="celular">Celular</option>
-                            <option value="notebook">Notebook</option>
-                        </select>
-                    </div>
-
-                    <div className="lg:col-span-5">
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Modelo
-                        </label>
-                        <input
-                            value={modelo}
-                            onChange={(e) => setModelo(e.target.value)}
-                            className="w-full rounded border px-3 py-2"
-                        />
-                    </div>
-
-                    <div className="lg:col-span-4">
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            NR Série
-                        </label>
-                        <input
-                            value={numeroSerie}
-                            onChange={(e) => setNumeroSerie(e.target.value)}
-                            className="w-full rounded border px-3 py-2"
-                        />
-                    </div>
-
-                    {equipamento === "celular" && (
-                        <div className="lg:col-span-4">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Número Linha
+                        <div className="lg:col-span-5">
+                            <label className={labelClass}>
+                                Modelo
                             </label>
                             <input
-                                value={linha}
-                                onChange={(e) => setLinha(phoneMask(e.target.value))}
-                                maxLength={15}
-                                className="w-full rounded border px-3 py-2"
+                                value={modelo}
+                                onChange={(e) => setModelo(e.target.value)}
+                                className={fieldClass}
                             />
                         </div>
-                    )}
 
-                    <div className="lg:col-span-4">
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Entrega
-                        </label>
-                        <input
-                            type="date"
-                            value={entrega}
-                            onChange={(e) => setEntrega(e.target.value)}
-                            className="w-full rounded border px-3 py-2"
-                            readOnly
-                        />
+                        <div className="lg:col-span-4">
+                            <label className={labelClass}>
+                                NR Série
+                            </label>
+                            <input
+                                value={numeroSerie}
+                                onChange={(e) => setNumeroSerie(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+
+                        {equipamento === "celular" && (
+                            <div className="lg:col-span-4">
+                                <label className={labelClass}>
+                                    Número Linha
+                                </label>
+                                <input
+                                    value={linha}
+                                    onChange={(e) => setLinha(phoneMask(e.target.value))}
+                                    maxLength={15}
+                                    className={fieldClass}
+                                />
+                            </div>
+                        )}
+
+                        <div className="lg:col-span-4">
+                            <label className={labelClass}>
+                                Entrega
+                            </label>
+                            <input
+                                type="date"
+                                value={entrega}
+                                onChange={(e) => setEntrega(e.target.value)}
+                                className={fieldClass}
+                                readOnly
+                            />
+                        </div>
+
+                        <div className="lg:col-span-8">
+                            <label className={labelClass}>
+                                Acessórios
+                            </label>
+                            <input
+                                value={acessorios}
+                                onChange={(e) => setAcessorios(e.target.value)}
+                                maxLength={80}
+                                className={fieldClass}
+                            />
+                        </div>
                     </div>
+                </section>
 
-                    <div className="lg:col-span-8">
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Acessórios
-                        </label>
-                        <input
-                            value={acessorios}
-                            onChange={(e) => setAcessorios(e.target.value)}
-                            maxLength={80}
-                            className="w-full rounded border px-3 py-2"
-                        />
-                    </div>
-                </div>
-
-                <div className="mt-6 border-t pt-5 flex items-center justify-end">
+                <div className="flex items-center justify-end border-t border-slate-200 pt-5">
                     <button
                         type="button"
                         onClick={gerarPdf}
                         disabled={!formularioValido || gerando}
-                        className={`inline-flex items-center gap-2 rounded px-5 py-2 font-semibold text-white shadow transition
-        ${formularioValido && !gerando
-                                ? "bg-secondary hover:bg-primary cursor-pointer"
-                                : "bg-gray-300 cursor-not-allowed"
-                            }`}
+                        className={
+                            formularioValido && !gerando
+                                ? `${pdfButtonClass} cursor-pointer`
+                                : `${pdfButtonClass} bg-slate-300 hover:bg-slate-300`
+                        }
                     >
                         <FaFilePdf />
                         {gerando ? "Gerando PDF..." : "Gerar PDF"}

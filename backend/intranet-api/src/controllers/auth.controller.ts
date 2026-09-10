@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
 import { Client } from "ldapts";
 
-const LDAP_URL = process.env.LDAP_URL || "ldap://10.0.107.231";
+const LDAP_URL = process.env.LDAP_URL || "ldap://10.0.107.251";
 const LDAP_BASE_DN =
   process.env.LDAP_BASE_DN || "ou=CRESSEM,dc=CRESSEM,dc=INTRA";
 const LDAP_DOMAIN = process.env.LDAP_DOMAIN || "@CRESSEM.INTRA";

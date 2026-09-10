@@ -238,90 +238,85 @@ export function DeclaracaoResidenciaForm() {
   return (
     <div className="mx-auto min-w-225 space-y-5">
       <SearchForm onSearch={onBuscar}>
-        <div className={`${cardClass} overflow-hidden`}>
-          <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+        <div className={`${cardClass} p-5`}>
+          <h2 className={sectionTitleClass}>Tipo de declaração</h2>
+          <p className="mt-1 text-sm text-paragraph">Selecione o tipo e preencha os dados para gerar o PDF.</p>
 
-          <div className="p-5">
-            <h2 className={sectionTitleClass}>Tipo de declaração</h2>
-            <p className="mt-1 text-sm text-paragraph">Selecione o tipo e preencha os dados para gerar o PDF.</p>
-
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={handleSelecionarAssociado}
-                className={`h-10 rounded-xl border px-4 text-sm font-semibold transition
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleSelecionarAssociado}
+              className={`h-10 rounded-xl border px-4 text-sm font-semibold transition
             ${isAssociado
-                    ? "border-primary bg-primary text-white"
-                    : "border-slate-300 bg-white text-title hover:border-primary hover:text-primary"
-                  }`}
-              >
-                Associado
-              </button>
+                  ? "border-primary bg-primary text-white"
+                  : "border-slate-300 bg-white text-title hover:border-primary hover:text-primary"
+                }`}
+            >
+              Associado
+            </button>
 
-              <button
-                type="button"
-                onClick={handleSelecionarNaoAssociado}
-                className={`h-10 rounded-xl border px-4 text-sm font-semibold transition
+            <button
+              type="button"
+              onClick={handleSelecionarNaoAssociado}
+              className={`h-10 rounded-xl border px-4 text-sm font-semibold transition
             ${isNaoAssociado
-                    ? "border-primary bg-primary text-white"
-                    : "border-slate-300 bg-white text-title hover:border-primary hover:text-primary"
-                  }`}
-              >
-                Não associado
-              </button>
-            </div>
-
-            {isAssociado && (
-              <p className="mt-4 text-sm text-paragraph">
-                Digite o CPF para preencher automaticamente. Complete os dados se necessário.
-              </p>
-            )}
-
-            {isNaoAssociado && (
-              <p className="mt-4 text-sm text-paragraph">
-                Preencha os dados manualmente para gerar a declaração.
-              </p>
-            )}
-
-            {isAssociado && (
-              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                <SearchInput
-                  value={formatCpfView(cpfBusca)}
-                  onChange={(e) => setCpfBusca(e.target.value)}
-                  placeholder="CPF (somente números)"
-                  className={inputClass}
-                  inputMode="numeric"
-                  maxLength={14}
-                />
-                <SearchButton loading={loading} label="Pesquisar" />
-              </div>
-            )}
-
-            {erro && (
-              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {erro}
-              </div>
-            )}
-
-            {info && (
-              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-secondary">
-                {info}
-              </div>
-            )}
-
-            {erroCep && (
-              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {erroCep}
-              </div>
-            )}
-
-            {infoCep && (
-              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-secondary">
-                {infoCep}
-              </div>
-            )}
-
+                  ? "border-primary bg-primary text-white"
+                  : "border-slate-300 bg-white text-title hover:border-primary hover:text-primary"
+                }`}
+            >
+              Não associado
+            </button>
           </div>
+
+          {isAssociado && (
+            <p className="mt-4 text-sm text-paragraph">
+              Digite o CPF para preencher automaticamente. Complete os dados se necessário.
+            </p>
+          )}
+
+          {isNaoAssociado && (
+            <p className="mt-4 text-sm text-paragraph">
+              Preencha os dados manualmente para gerar a declaração.
+            </p>
+          )}
+
+          {isAssociado && (
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+              <SearchInput
+                value={formatCpfView(cpfBusca)}
+                onChange={(e) => setCpfBusca(e.target.value)}
+                placeholder="CPF (somente números)"
+                className={inputClass}
+                inputMode="numeric"
+                maxLength={14}
+              />
+              <SearchButton loading={loading} label="Pesquisar" />
+            </div>
+          )}
+
+          {erro && (
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {erro}
+            </div>
+          )}
+
+          {info && (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-secondary">
+              {info}
+            </div>
+          )}
+
+          {erroCep && (
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {erroCep}
+            </div>
+          )}
+
+          {infoCep && (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-secondary">
+              {infoCep}
+            </div>
+          )}
         </div>
       </SearchForm>
 

@@ -162,67 +162,66 @@ export function CalculadoraJurosCartaoForm() {
         "inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
 
     return (
-        <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white pb-5 shadow-sm">
-            <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
-            <div className="mx-5 mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 className={sectionTitleClass}>Dados para cálculo</h2>
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div>
-                        <label className={labelClass}>Valor da fatura</label>
-                        <input
-                            value={valorFatura}
-                            onChange={(e) => setValorFatura(monetizarDigitacao(e.target.value))}
-                            placeholder="R$ 0,00"
-                            className={moneyInputClass}
-                        />
-                    </div>
-
-                    <div>
-                        <label className={labelClass}>Vencimento</label>
-                        <input
-                            type="date"
-                            value={vencimento}
-                            onChange={(e) => setVencimento(e.target.value)}
-                            className={inputClass}
-                        />
-                    </div>
-
-                    <div>
-                        <label className={labelClass}>Dia de hoje</label>
-                        <input
-                            type="date"
-                            value={hoje}
-                            onChange={(e) => setHoje(e.target.value)}
-                            className={inputClass}
-                        />
-                    </div>
-
-                    <div>
-                        <label className={labelClass}>Multa (%)</label>
-                        <input value={multaPerc} readOnly className={readOnlyClass} />
-                    </div>
-
-                    <div>
-                        <label className={labelClass}>Mora (% a.m.)</label>
-                        <input value={moraPerc} readOnly className={readOnlyClass} />
-                    </div>
-
-                    <div>
-                        <label className={labelClass}>Taxa de juros (% a.m.)</label>
-                        <input value={taxaMensal} readOnly className={readOnlyClass} />
-                    </div>
-
-                    <div className="md:col-span-2">
-                        <label className={labelClass}>Dívida consolidada</label>
-                        <input
-                            value={dividaConsolidada}
-                            onChange={(e) => setDividaConsolidada(monetizarDigitacao(e.target.value))}
-                            placeholder="R$ 0,00"
-                            className={moneyInputClass}
-                        />
-                    </div>
+                <div>
+                    <label className={labelClass}>Valor da fatura</label>
+                    <input
+                        value={valorFatura}
+                        onChange={(e) => setValorFatura(monetizarDigitacao(e.target.value))}
+                        placeholder="R$ 0,00"
+                        className={moneyInputClass}
+                    />
                 </div>
+
+                <div>
+                    <label className={labelClass}>Vencimento</label>
+                    <input
+                        type="date"
+                        value={vencimento}
+                        onChange={(e) => setVencimento(e.target.value)}
+                        className={inputClass}
+                    />
+                </div>
+
+                <div>
+                    <label className={labelClass}>Dia de hoje</label>
+                    <input
+                        type="date"
+                        value={hoje}
+                        onChange={(e) => setHoje(e.target.value)}
+                        className={inputClass}
+                    />
+                </div>
+
+                <div>
+                    <label className={labelClass}>Multa (%)</label>
+                    <input value={multaPerc} readOnly className={readOnlyClass} />
+                </div>
+
+                <div>
+                    <label className={labelClass}>Mora (% a.m.)</label>
+                    <input value={moraPerc} readOnly className={readOnlyClass} />
+                </div>
+
+                <div>
+                    <label className={labelClass}>Taxa de juros (% a.m.)</label>
+                    <input value={taxaMensal} readOnly className={readOnlyClass} />
+                </div>
+
+                <div className="md:col-span-2">
+                    <label className={labelClass}>Dívida consolidada</label>
+                    <input
+                        value={dividaConsolidada}
+                        onChange={(e) => setDividaConsolidada(monetizarDigitacao(e.target.value))}
+                        placeholder="R$ 0,00"
+                        className={moneyInputClass}
+                    />
+                </div>
+            </div>
 
                 <div className="mt-4 flex flex-wrap gap-3">
                     <button type="button" onClick={calcular} className={primaryButtonClass}>Calcular</button>

@@ -1772,11 +1772,5 @@ routes.patch(
     convenioOdontologicoController.alterarStatusPlano
 );
 
-routes.get(
-  "/v1/assinatura-email/dados-usuario",
-  authMiddleware,
-  assinaturaEmailController.dadosUsuario
-);
-
 export { routes };
 

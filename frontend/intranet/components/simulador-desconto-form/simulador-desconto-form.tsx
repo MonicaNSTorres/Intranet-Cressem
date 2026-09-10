@@ -210,15 +210,15 @@ function pickPortabilidadeIdFromMeses(
   if (meses >= 6) {
     return String(
       portabilidadeMaisDeSeisMeses?.ID_PORTABILIDADE_SALARIO ||
-      opcoesComPortabilidade.at(-1)?.ID_PORTABILIDADE_SALARIO ||
-      ""
+        opcoesComPortabilidade.at(-1)?.ID_PORTABILIDADE_SALARIO ||
+        ""
     );
   }
 
   return String(
     portabilidadeAteCincoMeses?.ID_PORTABILIDADE_SALARIO ||
-    opcoesComPortabilidade[0]?.ID_PORTABILIDADE_SALARIO ||
-    ""
+      opcoesComPortabilidade[0]?.ID_PORTABILIDADE_SALARIO ||
+      ""
   );
 }
 
@@ -901,487 +901,461 @@ export function SimuladorDescontoForm() {
   }
 
   return (
-    <div className="min-w-225 mx-auto overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
-      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
-      <div className="p-6">
-        <SearchForm onSearch={onBuscar}>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-[280px_1fr_auto_auto]">
-            <div>
-              <label className={labelClass}>
-                CPF/CNPJ do associado
-              </label>
-              <SearchInput
-                value={formatCpfView(cpf)}
-                onChange={(e) => {
-                  setCpf(e.target.value);
-                  resetResultados();
-                }}
-                placeholder="CPF/CNPJ"
-                className={fieldClass}
-                inputMode="numeric"
-                maxLength={18}
-              />
-            </div>
-
-            <div>
-              <label className={labelClass}>
-                Nome do associado
-              </label>
-              <input
-                value={nome}
-                onChange={(e) => {
-                  setNome(e.target.value);
-                  resetResultados();
-                }}
-                className={fieldClass}
-              />
-            </div>
-
-            <div className="md:self-end">
-              <button
-                type="submit"
-                disabled={loading || loadingComplementar}
-                className="inline-flex h-10 min-w-30 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading || loadingComplementar ? "Buscando..." : "Pesquisar"}
-              </button>
-            </div>
-
-            <div className="md:self-end">
-              <button
-                type="button"
-                onClick={limparFormulario}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
-              >
-                <FaTimes />
-                Limpar
-              </button>
-            </div>
-
-            {(erro || erroLocal) && (
-              <div
-                ref={alertaRef}
-                className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700 md:col-span-4"
-              >
-                {erroLocal || erro}
-              </div>
-            )}
-
-            {(info || infoLocal) && !(erro || erroLocal) && (
-              <div className="mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm font-medium text-primary md:col-span-4">
-                {infoLocal || info}
-              </div>
-            )}
+    <div className="min-w-225 mx-auto rounded-[22px] border border-slate-200 bg-white p-6 shadow-sm">
+      <SearchForm onSearch={onBuscar}>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[280px_1fr_auto_auto]">
+          <div>
+            <label className={labelClass}>
+              CPF/CNPJ do associado
+            </label>
+            <SearchInput
+              value={formatCpfView(cpf)}
+              onChange={(e) => {
+                setCpf(e.target.value);
+                resetResultados();
+              }}
+              placeholder="CPF/CNPJ"
+              className={fieldClass}
+              inputMode="numeric"
+              maxLength={18}
+            />
           </div>
-        </SearchForm>
 
-        <div className={sectionClass}>
-          <h3 className={sectionTitleClass}>
-            Anos de associacao ininterruptos
-          </h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_170px]">
-            <div>
-              <label className={`${labelClass} whitespace-nowrap`}>
-                Anos de associacao
-              </label>
-              <select
-                value={selectedAnosAssociadoId}
-                onChange={(e) => {
-                  setSelectedAnosAssociadoId(e.target.value);
-                  resetResultados();
-                }}
-                className={fieldClass}
-              >
-                <option value="">Selecione</option>
-                {anosAssociadoOptions.map((item) => (
-                  <option
-                    key={item.ID_ANOS_ASSOCIADO}
-                    value={item.ID_ANOS_ASSOCIADO}
-                  >
-                    {upperText(item.DESC_ANOS_ASSOCIADO)}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label className={labelClass}>
+              Nome do associado
+            </label>
+            <input
+              value={nome}
+              onChange={(e) => {
+                setNome(e.target.value);
+                resetResultados();
+              }}
+              className={fieldClass}
+            />
+          </div>
 
-            <div>
-              <label className={labelClass}>
-                Desconto associacao
-              </label>
-              <input
-                readOnly
-                value={valorAnosAssociado.toFixed(2)}
-                className={readOnlyMoneyFieldClass}
-              />
+          <div className="md:self-end">
+            <button
+              type="submit"
+              disabled={loading || loadingComplementar}
+              className="inline-flex h-10 min-w-[120px] items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading || loadingComplementar ? "Buscando..." : "Pesquisar"}
+            </button>
+          </div>
+
+          <div className="md:self-end">
+            <button
+              type="button"
+              onClick={limparFormulario}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
+            >
+              <FaTimes />
+              Limpar
+            </button>
+          </div>
+
+          {(erro || erroLocal) && (
+            <div
+              ref={alertaRef}
+              className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700 md:col-span-4"
+            >
+              {erroLocal || erro}
             </div>
+          )}
+
+          {(info || infoLocal) && !(erro || erroLocal) && (
+            <div className="mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm font-medium text-primary md:col-span-4">
+              {infoLocal || info}
+            </div>
+          )}
+        </div>
+      </SearchForm>
+
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
+          Anos de associacao ininterruptos
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_170px]">
+          <div>
+            <label className={`${labelClass} whitespace-nowrap`}>
+              Anos de associacao
+            </label>
+            <select
+              value={selectedAnosAssociadoId}
+              onChange={(e) => {
+                setSelectedAnosAssociadoId(e.target.value);
+                resetResultados();
+              }}
+              className={fieldClass}
+            >
+              <option value="">Selecione</option>
+              {anosAssociadoOptions.map((item) => (
+                <option
+                  key={item.ID_ANOS_ASSOCIADO}
+                  value={item.ID_ANOS_ASSOCIADO}
+                >
+                  {upperText(item.DESC_ANOS_ASSOCIADO)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Desconto associacao
+            </label>
+            <input
+              readOnly
+              value={valorAnosAssociado.toFixed(2)}
+              className={readOnlyMoneyFieldClass}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
+          Correntista Sicoob e outros produtos
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_170px]">
+          <div>
+            <label className={labelClass}>
+              Anos de correntista Sicoob
+            </label>
+            <select
+              value={selectedAnosCorrentistaId}
+              onChange={(e) => {
+                setSelectedAnosCorrentistaId(e.target.value);
+                resetResultados();
+              }}
+              className={fieldClass}
+            >
+              <option value="">Selecione</option>
+              {anosCorrentistaOptions.map((item) => (
+                <option
+                  key={item.ID_ANOS_CORRENTISTA}
+                  value={item.ID_ANOS_CORRENTISTA}
+                >
+                  {upperText(item.DESC_CORRENTISTA)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={`${labelClass} whitespace-nowrap`}>
+              Desconto correntista
+            </label>
+            <input
+              readOnly
+              value={valorAnosCorrentista.toFixed(2)}
+              className={readOnlyMoneyFieldClass}
+            />
           </div>
         </div>
 
-        <div className={sectionClass}>
-          <h3 className={sectionTitleClass}>
-            Correntista Sicoob e outros produtos
-          </h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_170px]">
-            <div>
-              <label className={labelClass}>
-                Anos de correntista Sicoob
-              </label>
-              <select
-                value={selectedAnosCorrentistaId}
-                onChange={(e) => {
-                  setSelectedAnosCorrentistaId(e.target.value);
-                  resetResultados();
-                }}
-                className={fieldClass}
-              >
-                <option value="">Selecione</option>
-                {anosCorrentistaOptions.map((item) => (
-                  <option
-                    key={item.ID_ANOS_CORRENTISTA}
-                    value={item.ID_ANOS_CORRENTISTA}
-                  >
-                    {upperText(item.DESC_CORRENTISTA)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className={`${labelClass} whitespace-nowrap`}>
-                Desconto correntista
-              </label>
-              <input
-                readOnly
-                value={valorAnosCorrentista.toFixed(2)}
-                className={readOnlyMoneyFieldClass}
-              />
-            </div>
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[1fr_170px]">
+          <div>
+            <label className={`${labelClass} whitespace-nowrap`}>
+              Portabilidade salario
+            </label>
+            <select
+              value={selectedPortabilidadeId}
+              onChange={(e) => {
+                setSelectedPortabilidadeId(e.target.value);
+                resetResultados();
+              }}
+              className={fieldClass}
+            >
+              <option value="">Selecione</option>
+              {portabilidadeOptions.map((item) => (
+                <option
+                  key={item.ID_PORTABILIDADE_SALARIO}
+                  value={item.ID_PORTABILIDADE_SALARIO}
+                >
+                  {upperText(item.DESC_PORTABILIDADE_SALARIO)}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[1fr_170px]">
-            <div>
-              <label className={`${labelClass} whitespace-nowrap`}>
-                Portabilidade salario
-              </label>
-              <select
-                value={selectedPortabilidadeId}
-                onChange={(e) => {
-                  setSelectedPortabilidadeId(e.target.value);
-                  resetResultados();
-                }}
-                className={fieldClass}
-              >
-                <option value="">Selecione</option>
-                {portabilidadeOptions.map((item) => (
-                  <option
-                    key={item.ID_PORTABILIDADE_SALARIO}
-                    value={item.ID_PORTABILIDADE_SALARIO}
-                  >
-                    {upperText(item.DESC_PORTABILIDADE_SALARIO)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className={`${labelClass} whitespace-nowrap`}>
-                Desconto portabilidade
-              </label>
-              <input
-                readOnly
-                value={valorPortabilidade.toFixed(2)}
-                className={readOnlyMoneyFieldClass}
-              />
-            </div>
+          <div>
+            <label className={`${labelClass} whitespace-nowrap`}>
+              Desconto portabilidade
+            </label>
+            <input
+              readOnly
+              value={valorPortabilidade.toFixed(2)}
+              className={readOnlyMoneyFieldClass}
+            />
           </div>
+        </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            {correntistaItemsOrdenados.map((item, index) => (
-              <label
-                key={item.id}
-                className={`${checkboxCardClass} ${correntistaItemsOrdenados.length % 2 === 1 &&
-                  index === correntistaItemsOrdenados.length - 1
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+          {correntistaItemsOrdenados.map((item, index) => (
+            <label
+              key={item.id}
+              className={`${checkboxCardClass} ${
+                correntistaItemsOrdenados.length % 2 === 1 &&
+                index === correntistaItemsOrdenados.length - 1
                   ? "md:col-span-2"
                   : ""
-                  }`}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    className={checkboxInputClass}
-                    checked={!!checkCorrentista[item.id]}
-                    onChange={() => toggleMapValue(item.id, setCheckCorrentista)}
-                  />
-                  <span className="uppercase">{upperText(item.label)}</span>
-                </div>
-                <span className="min-w-12 text-right font-medium tabular-nums text-gray-600">
-                  {checkCorrentista[item.id] ? item.value.toFixed(2) : ""}
-                </span>
-              </label>
-            ))}
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  className={checkboxInputClass}
+                  checked={!!checkCorrentista[item.id]}
+                  onChange={() => toggleMapValue(item.id, setCheckCorrentista)}
+                />
+                <span className="uppercase">{upperText(item.label)}</span>
+              </div>
+              <span className="min-w-[3rem] text-right font-medium tabular-nums text-gray-600">
+                {checkCorrentista[item.id] ? item.value.toFixed(2) : ""}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
+          Regime de trabalho
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {tempoRegimeItems.map((item) => (
+            <label
+              key={item.id}
+              className={checkboxCardClass}
+            >
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  className={checkboxInputClass}
+                  checked={!!checkTempo[item.id]}
+                  onChange={() => toggleMapValue(item.id, setCheckTempo)}
+                />
+                <span className="uppercase">{upperText(item.label)}</span>
+              </div>
+              <span className="min-w-[3rem] text-right font-medium tabular-nums text-gray-600">
+                {checkTempo[item.id] ? item.value.toFixed(2) : ""}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
+          Outros produtos
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {outrosProdutosItems.map((item) => (
+            <label
+              key={item.id}
+              className={checkboxCardClass}
+            >
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  className={checkboxInputClass}
+                  checked={!!checkProdutos[item.id]}
+                  onChange={() => toggleMapValue(item.id, setCheckProdutos)}
+                />
+                <span className="uppercase">{upperText(item.label)}</span>
+              </div>
+              <span className="min-w-[3rem] text-right font-medium tabular-nums text-gray-600">
+                {checkProdutos[item.id] ? item.value.toFixed(2) : ""}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>Emprestimo</h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <label className={labelClass}>
+              Tipo de emprestimo
+            </label>
+            <select
+              value={tipoEmprestimo}
+              onChange={(e) => {
+                setTipoEmprestimo(e.target.value as TipoEmprestimo);
+                setQuantidadeParcelas("");
+                setTaxaBrutaInput("");
+                resetResultados();
+              }}
+              className={fieldClass}
+            >
+              <option value="">Selecione</option>
+              <option value="trabalhador">CREDITO TRABALHADOR</option>
+              <option value="consignado">CONSIGNADO</option>
+              <option value="pessoal">PESSOAL</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Valor solicitado
+            </label>
+            <input
+              value={valorEmprestimo}
+              onChange={(e) => {
+                setValorEmprestimo(monetizarDigitacao(e.target.value));
+                resetResultados();
+              }}
+              className={moneyFieldClass}
+              placeholder="R$ 0,00"
+            />
           </div>
         </div>
+      </div>
 
-        <div className={sectionClass}>
-          <h3 className={sectionTitleClass}>
-            Regime de trabalho
-          </h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {tempoRegimeItems.map((item) => (
-              <label
-                key={item.id}
-                className={checkboxCardClass}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    className={checkboxInputClass}
-                    checked={!!checkTempo[item.id]}
-                    onChange={() => toggleMapValue(item.id, setCheckTempo)}
-                  />
-                  <span className="uppercase">{upperText(item.label)}</span>
-                </div>
-                <span className="min-w-12 text-right font-medium tabular-nums text-gray-600">
-                  {checkTempo[item.id] ? item.value.toFixed(2) : ""}
-                </span>
-              </label>
-            ))}
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
+          Dados sobre conta
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div>
+            <label className={labelClass}>
+              Divida
+            </label>
+            <input
+              value={valorDivida}
+              onChange={(e) => {
+                setValorDivida(monetizarDigitacao(e.target.value));
+                resetResultados();
+              }}
+              className={moneyFieldClass}
+              placeholder="R$ 0,00"
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Capital
+            </label>
+            <input
+              value={valorCapital}
+              onChange={(e) => {
+                setValorCapital(monetizarDigitacao(e.target.value));
+                resetResultados();
+              }}
+              className={moneyFieldClass}
+              placeholder="R$ 0,00"
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Desconto sobre solicitacao %
+            </label>
+            <input
+              readOnly
+              value={descontoPrevioTotal.toFixed(2)}
+              className={readOnlyMoneyFieldClass}
+            />
           </div>
         </div>
+      </div>
 
-        <div className={sectionClass}>
-          <h3 className={sectionTitleClass}>
-            Outros produtos
-          </h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {outrosProdutosItems.map((item) => (
-              <label
-                key={item.id}
-                className={checkboxCardClass}
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    className={checkboxInputClass}
-                    checked={!!checkProdutos[item.id]}
-                    onChange={() => toggleMapValue(item.id, setCheckProdutos)}
-                  />
-                  <span className="uppercase">{upperText(item.label)}</span>
-                </div>
-                <span className="min-w-12 text-right font-medium tabular-nums text-gray-600">
-                  {checkProdutos[item.id] ? item.value.toFixed(2) : ""}
-                </span>
-              </label>
-            ))}
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
+          Classificacao do risco para desconto
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div>
+            <label className={labelClass}>
+              Classificacao do risco
+            </label>
+            <select
+              value={classificacaoRisco}
+              onChange={(e) => {
+                setClassificacaoRisco(e.target.value);
+                resetResultados();
+              }}
+              className={fieldClass}
+            >
+              <option value="">Selecione</option>
+              {riscoOptions.map((item) => (
+                <option
+                  key={item.ID_CLASSIFICACAO_RISCO}
+                  value={item.ID_CLASSIFICACAO_RISCO}
+                >
+                  {item.DESC_CLASSIFICACAO}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {tipoEmprestimo !== "pessoal" && (
+            <>
+              <div>
+                <label className={labelClass}>
+                  Quantidade de parcelas
+                </label>
+                <select
+                  value={quantidadeParcelas}
+                  onChange={(e) => {
+                    setQuantidadeParcelas(e.target.value);
+                    resetResultados();
+                  }}
+                  className={fieldClass}
+                >
+                  <option value="">Selecione</option>
+                  {parcelasComTaxa.map((item) => (
+                    <option key={item.id} value={item.nrParcela}>
+                      {item.nrParcela}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>
+                  Taxa bruta %
+                </label>
+                <input
+                  readOnly
+                  value={taxaBrutaInput}
+                  className={readOnlyMoneyFieldClass}
+                  placeholder="Selecione as parcelas"
+                />
+              </div>
+            </>
+          )}
         </div>
 
-        <div className={sectionClass}>
-          <h3 className={sectionTitleClass}>Emprestimo</h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>
-                Tipo de emprestimo
-              </label>
-              <select
-                value={tipoEmprestimo}
-                onChange={(e) => {
-                  setTipoEmprestimo(e.target.value as TipoEmprestimo);
-                  setQuantidadeParcelas("");
-                  setTaxaBrutaInput("");
-                  resetResultados();
-                }}
-                className={fieldClass}
-              >
-                <option value="">Selecione</option>
-                <option value="trabalhador">CREDITO TRABALHADOR</option>
-                <option value="consignado">CONSIGNADO</option>
-                <option value="pessoal">PESSOAL</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>
-                Valor solicitado
-              </label>
-              <input
-                value={valorEmprestimo}
-                onChange={(e) => {
-                  setValorEmprestimo(monetizarDigitacao(e.target.value));
-                  resetResultados();
-                }}
-                className={moneyFieldClass}
-                placeholder="R$ 0,00"
-              />
-            </div>
-          </div>
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+          <p>
+            <strong>Classificacao aplicada:</strong> {classificacaoDescricao || "-"}
+          </p>
         </div>
 
-        <div className={sectionClass}>
-          <h3 className={sectionTitleClass}>
-            Dados sobre conta
-          </h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div>
-              <label className={labelClass}>
-                Divida
-              </label>
-              <input
-                value={valorDivida}
-                onChange={(e) => {
-                  setValorDivida(monetizarDigitacao(e.target.value));
-                  resetResultados();
-                }}
-                className={moneyFieldClass}
-                placeholder="R$ 0,00"
-              />
-            </div>
+        {processado && (
+          <div className="mt-4 border-t border-slate-200 pt-4">
+            <h4 className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Resultado das taxas
+            </h4>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {(tipoEmprestimo === "consignado" || tipoEmprestimo === "trabalhador") && (
+                <>
+                  <div>
+                    <label className={labelClass}>
+                      Taxa bruta %
+                    </label>
+                    <input
+                      readOnly
+                      value={taxaBruta ? taxaBruta.toFixed(2) : ""}
+                      className={readOnlyMoneyFieldClass}
+                    />
+                  </div>
 
-            <div>
-              <label className={labelClass}>
-                Capital
-              </label>
-              <input
-                value={valorCapital}
-                onChange={(e) => {
-                  setValorCapital(monetizarDigitacao(e.target.value));
-                  resetResultados();
-                }}
-                className={moneyFieldClass}
-                placeholder="R$ 0,00"
-              />
-            </div>
-
-            <div>
-              <label className={labelClass}>
-                Desconto sobre solicitacao %
-              </label>
-              <input
-                readOnly
-                value={descontoPrevioTotal.toFixed(2)}
-                className={readOnlyMoneyFieldClass}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className={sectionClass}>
-          <h3 className={sectionTitleClass}>
-            Classificacao do risco para desconto
-          </h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div>
-              <label className={labelClass}>
-                Classificacao do risco
-              </label>
-              <select
-                value={classificacaoRisco}
-                onChange={(e) => {
-                  setClassificacaoRisco(e.target.value);
-                  resetResultados();
-                }}
-                className={fieldClass}
-              >
-                <option value="">Selecione</option>
-                {riscoOptions.map((item) => (
-                  <option
-                    key={item.ID_CLASSIFICACAO_RISCO}
-                    value={item.ID_CLASSIFICACAO_RISCO}
-                  >
-                    {item.DESC_CLASSIFICACAO}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {tipoEmprestimo !== "pessoal" && (
-              <>
-                <div>
-                  <label className={labelClass}>
-                    Quantidade de parcelas
-                  </label>
-                  <select
-                    value={quantidadeParcelas}
-                    onChange={(e) => {
-                      setQuantidadeParcelas(e.target.value);
-                      resetResultados();
-                    }}
-                    className={fieldClass}
-                  >
-                    <option value="">Selecione</option>
-                    {parcelasComTaxa.map((item) => (
-                      <option key={item.id} value={item.nrParcela}>
-                        {item.nrParcela}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className={labelClass}>
-                    Taxa bruta %
-                  </label>
-                  <input
-                    readOnly
-                    value={taxaBrutaInput}
-                    className={readOnlyMoneyFieldClass}
-                    placeholder="Selecione as parcelas"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-            <p>
-              <strong>Classificacao aplicada:</strong> {classificacaoDescricao || "-"}
-            </p>
-          </div>
-
-          {processado && (
-            <div className="mt-4 border-t border-slate-200 pt-4">
-              <h4 className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                Resultado das taxas
-              </h4>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                {(tipoEmprestimo === "consignado" || tipoEmprestimo === "trabalhador") && (
-                  <>
-                    <div>
-                      <label className={labelClass}>
-                        Taxa bruta %
-                      </label>
-                      <input
-                        readOnly
-                        value={taxaBruta ? taxaBruta.toFixed(2) : ""}
-                        className={readOnlyMoneyFieldClass}
-                      />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>
-                        Desconto total %
-                      </label>
-                      <input
-                        readOnly
-                        value={descontoTotal.toFixed(3)}
-                        className={readOnlyMoneyFieldClass}
-                      />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>
-                        Taxa final %
-                      </label>
-                      <input
-                        readOnly
-                        value={taxaFinal.toFixed(3)}
-                        className={readOnlyMoneyFieldClass}
-                      />
-                    </div>
-                  </>
-                )}
-
-                {tipoEmprestimo === "pessoal" && (
                   <div>
                     <label className={labelClass}>
                       Desconto total %
@@ -1392,141 +1366,164 @@ export function SimuladorDescontoForm() {
                       className={readOnlyMoneyFieldClass}
                     />
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
 
-        <div className={sectionClass}>
-          <h3 className={sectionTitleClass}>Garantias</h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <label className={checkboxSimpleClass}>
-              <input
-                type="checkbox"
-                className={checkboxInputClass}
-                checked={seguro}
-                onChange={(e) => {
-                  setSeguro(e.target.checked);
-                  resetResultados();
-                }}
-              />
-              <span className="uppercase">SEGURO</span>
-            </label>
+                  <div>
+                    <label className={labelClass}>
+                      Taxa final %
+                    </label>
+                    <input
+                      readOnly
+                      value={taxaFinal.toFixed(3)}
+                      className={readOnlyMoneyFieldClass}
+                    />
+                  </div>
+                </>
+              )}
 
-            <label className={checkboxSimpleClass}>
-              <input
-                type="checkbox"
-                className={checkboxInputClass}
-                checked={avalista}
-                onChange={(e) => {
-                  setAvalista(e.target.checked);
-                  resetResultados();
-                }}
-              />
-              <span className="uppercase">AVALISTA</span>
-            </label>
-
-            <label className={checkboxSimpleClass}>
-              <input
-                type="checkbox"
-                className={checkboxInputClass}
-                checked={outrosGarantias}
-                onChange={(e) => {
-                  setOutrosGarantias(e.target.checked);
-                  resetResultados();
-                }}
-              />
-              <span className="uppercase">OUTROS</span>
-            </label>
-          </div>
-
-          {outrosGarantias && (
-            <div className="mt-3">
-              <input
-                value={outrasGarantiasTexto}
-                onChange={(e) => {
-                  setOutrasGarantiasTexto(e.target.value);
-                  resetResultados();
-                }}
-                placeholder="Outras garantias"
-                className={fieldClass}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className={sectionClass}>
-          <h3 className={sectionTitleClass}>
-            Dados do atendimento
-          </h3>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div>
-              <label className={labelClass}>
-                Cidade do atendimento
-              </label>
-              <select
-                value={cidadeAtendimento}
-                onChange={(e) => {
-                  setCidadeAtendimento(e.target.value);
-                  resetResultados();
-                }}
-                className={fieldClass}
-              >
-                <option value="">Selecione</option>
-                {cidadesOptions.map((item) => (
-                  <option key={item.ID_CIDADES} value={item.NM_CIDADE}>
-                    {upperText(item.NM_CIDADE)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>
-                Dia do atendimento
-              </label>
-              <input
-                readOnly
-                value={dataAtendimento}
-                className={readOnlyFieldClass}
-              />
-            </div>
-
-            <div>
-              <label className={labelClass}>
-                Nome do atendente
-              </label>
-              <input
-                value={atendente}
-                onChange={(e) => {
-                  setAtendente(e.target.value);
-                  resetResultados();
-                }}
-                className={fieldClass}
-              />
+              {tipoEmprestimo === "pessoal" && (
+                <div>
+                  <label className={labelClass}>
+                    Desconto total %
+                  </label>
+                  <input
+                    readOnly
+                    value={descontoTotal.toFixed(3)}
+                    className={readOnlyMoneyFieldClass}
+                  />
+                </div>
+              )}
             </div>
           </div>
+        )}
+      </div>
+
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>Garantias</h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <label className={checkboxSimpleClass}>
+            <input
+              type="checkbox"
+              className={checkboxInputClass}
+              checked={seguro}
+              onChange={(e) => {
+                setSeguro(e.target.checked);
+                resetResultados();
+              }}
+            />
+            <span className="uppercase">SEGURO</span>
+          </label>
+
+          <label className={checkboxSimpleClass}>
+            <input
+              type="checkbox"
+              className={checkboxInputClass}
+              checked={avalista}
+              onChange={(e) => {
+                setAvalista(e.target.checked);
+                resetResultados();
+              }}
+            />
+            <span className="uppercase">AVALISTA</span>
+          </label>
+
+          <label className={checkboxSimpleClass}>
+            <input
+              type="checkbox"
+              className={checkboxInputClass}
+              checked={outrosGarantias}
+              onChange={(e) => {
+                setOutrosGarantias(e.target.checked);
+                resetResultados();
+              }}
+            />
+            <span className="uppercase">OUTROS</span>
+          </label>
         </div>
 
-        <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-200 pt-5">
-          <button
-            onClick={processar}
-            disabled={loadingTabelas}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Processar simulação
-          </button>
+        {outrosGarantias && (
+          <div className="mt-3">
+            <input
+              value={outrasGarantiasTexto}
+              onChange={(e) => {
+                setOutrasGarantiasTexto(e.target.value);
+                resetResultados();
+              }}
+              placeholder="Outras garantias"
+              className={fieldClass}
+            />
+          </div>
+        )}
+      </div>
 
-          <button
-            onClick={gerarPdf}
-            disabled={!processado}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-fourth disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Gerar PDF
-          </button>
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
+          Dados do atendimento
+        </h3>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div>
+            <label className={labelClass}>
+              Cidade do atendimento
+            </label>
+            <select
+              value={cidadeAtendimento}
+              onChange={(e) => {
+                setCidadeAtendimento(e.target.value);
+                resetResultados();
+              }}
+              className={fieldClass}
+            >
+              <option value="">Selecione</option>
+              {cidadesOptions.map((item) => (
+                <option key={item.ID_CIDADES} value={item.NM_CIDADE}>
+                  {upperText(item.NM_CIDADE)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Dia do atendimento
+            </label>
+            <input
+              readOnly
+              value={dataAtendimento}
+              className={readOnlyFieldClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>
+              Nome do atendente
+            </label>
+            <input
+              value={atendente}
+              onChange={(e) => {
+                setAtendente(e.target.value);
+                resetResultados();
+              }}
+              className={fieldClass}
+            />
+          </div>
         </div>
+      </div>
 
+      <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-200 pt-5">
+        <button
+          onClick={processar}
+          disabled={loadingTabelas}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Processar simulação
+        </button>
+
+        <button
+          onClick={gerarPdf}
+          disabled={!processado}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-fourth disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Gerar PDF
+        </button>
       </div>
     </div>
   );

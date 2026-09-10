@@ -220,8 +220,8 @@ export function GerenciamentoSetorForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-        e?.response?.data?.details ||
-        "Não foi possível salvar o setor."
+          e?.response?.data?.details ||
+          "Não foi possível salvar o setor."
       );
     } finally {
       salvarActionRef.current = false;
@@ -259,8 +259,8 @@ export function GerenciamentoSetorForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-        e?.response?.data?.details ||
-        "Erro ao alterar o status do setor."
+          e?.response?.data?.details ||
+          "Erro ao alterar o status do setor."
       );
     } finally {
       statusActionRef.current.delete(setor.ID_SETOR);
@@ -287,263 +287,288 @@ export function GerenciamentoSetorForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-        e?.response?.data?.details ||
-        "Falha ao baixar o relatório."
+          e?.response?.data?.details ||
+          "Falha ao baixar o relatório."
       );
     }
   }
 
   return (
     <>
-      <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
-        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
-        <div className="p-6">
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Digite o setor ou endereço
-              </label>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
-                <input
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  placeholder="Digite o setor ou endereço"
-                  className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => carregarSetores(1)}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
-                >
-                  <FaSearch />
-                  Buscar
-                </button>
-
-                <button
-                  type="button"
-                  onClick={limparBusca}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  <FaTimes />
-                  Limpar
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-end">
-              <button
-                type="button"
-                onClick={abrirCadastro}
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
-              >
-                <FaPlus />
-                Cadastrar
-              </button>
-            </div>
+      <div className="mx-auto w-full rounded-2xl border border-slate-200 border-t-4 border-t-primary bg-white p-5 shadow-sm">
+        <div className="mb-5 flex flex-col gap-3 border-b border-slate-100 pb-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-wide text-primary">
+              Filtros
+            </p>
+            <h2 className="mt-1 text-lg font-bold text-[var(--title)]">
+              Consulta de setores
+            </h2>
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
+              Pesquise por setor ou endereço e acompanhe os registros cadastrados.
+            </p>
           </div>
 
-          {(erro || info) && (
-            <div className="mt-4">
-              {erro ? (
-                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  {erro}
-                </div>
-              ) : (
-                <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                  {info}
-                </div>
-              )}
-            </div>
-          )}
-
-          {(setores.length > 0 || loadingTabela) && (
-            <>
-              <div className="mt-6 overflow-x-auto rounded-xl border">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                        Setor
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                        Ramal
-                      </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                        Endereço
-                      </th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                        Editar
-                      </th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {loadingTabela ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="px-4 py-6 text-center text-slate-500"
-                        >
-                          Carregando setores...
-                        </td>
-                      </tr>
-                    ) : setores.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="px-4 py-6 text-center text-slate-500"
-                        >
-                          Nenhum setor encontrado.
-                        </td>
-                      </tr>
-                    ) : (
-                      setores.map((setor) => (
-                        <tr key={setor.ID_SETOR} className="hover:bg-slate-50">
-                          <td className="px-4 py-3">
-                            {String(setor.NM_SETOR).toUpperCase()}
-                          </td>
-                          <td className="px-4 py-3">{setor.NR_RAMAL || ""}</td>
-                          <td className="px-4 py-3">
-                            {String(setor.NM_ENDERECO).toUpperCase()}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => abrirEdicao(setor)}
-                              className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                            >
-                              <FaEdit />
-                              Editar
-                            </button>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => alternarStatus(setor)}
-                              className={`inline-flex min-w-21 items-center justify-center rounded px-3 py-1.5 text-xs font-semibold ${Number(setor.SN_ATIVO) === 1
-                                ? "bg-secondary text-white hover:bg-third"
-                                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                                }`}
-                            >
-                              {Number(setor.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                {paginaAtual > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => carregarSetores(1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      1
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => carregarSetores(paginaAtual - 1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Anterior
-                    </button>
-                  </>
-                )}
-
-                {paginasVisiveis.map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    onClick={() => carregarSetores(page)}
-                    className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
-                      ? "bg-emerald-600 text-white"
-                      : "border text-slate-700 hover:bg-slate-50"
-                      }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-
-                {paginaAtual < totalPages && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => carregarSetores(paginaAtual + 1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Próxima
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => carregarSetores(totalPages)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      {totalPages}
-                    </button>
-                  </>
-                )}
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Total
-                  </label>
-                  <input
-                    readOnly
-                    value={totais.total}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Ativos
-                  </label>
-                  <input
-                    readOnly
-                    value={totais.ativos}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Inativos
-                  </label>
-                  <input
-                    readOnly
-                    value={totais.inativos}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
-
-                <div className="flex items-end">
-                  <button
-                    type="button"
-                    onClick={baixarCsv}
-                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary md:w-auto"
-                  >
-                    <FaDownload />
-                    Baixar Relatório
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
+          <button
+            type="button"
+            onClick={abrirCadastro}
+            className={`${auxiliaryButtonClass} w-full lg:w-auto`}
+          >
+            <FaPlus />
+            Cadastrar
+          </button>
         </div>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto_auto_auto]">
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">
+              Setor ou endereço
+            </label>
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Digite o setor ou endereço"
+              className={inputClass}
+            />
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => carregarSetores(1)}
+              className={`${primaryButtonClass} w-full lg:w-auto`}
+            >
+              <FaSearch />
+              Buscar
+            </button>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={limparBusca}
+              className={`${secondaryButtonClass} w-full lg:w-auto`}
+            >
+              <FaTimes />
+              Limpar
+            </button>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={baixarCsv}
+              className={`${auxiliaryButtonClass} w-full lg:w-auto`}
+            >
+              <FaDownload />
+              Baixar Relatório
+            </button>
+          </div>
+        </div>
+
+        {(erro || info) && (
+          <div className="mt-4">
+            {erro ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+                {erro}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
+                {info}
+              </div>
+            )}
+          </div>
+        )}
+
+        {(setores.length > 0 || loadingTabela) && (
+          <>
+            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Total
+                </p>
+                <p className="mt-2 text-2xl font-black text-[var(--title)]">
+                  {totais.total}
+                </p>
+                <p className="mt-1 text-xs text-[var(--paragraph)]">
+                  setores cadastrados
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-secondary">
+                  Ativos
+                </p>
+                <p className="mt-2 text-2xl font-black text-[var(--title)]">
+                  {totais.ativos}
+                </p>
+                <p className="mt-1 text-xs text-[var(--paragraph)]">
+                  setores disponíveis
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-fourth/30 bg-fourth/10 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-fourth">
+                  Inativos
+                </p>
+                <p className="mt-2 text-2xl font-black text-[var(--title)]">
+                  {totais.inativos}
+                </p>
+                <p className="mt-1 text-xs text-[var(--paragraph)]">
+                  setores indisponíveis
+                </p>
+              </div>
+
+            </div>
+
+            <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                      Setor
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                      Ramal
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
+                      Endereço
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
+                      Editar
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {loadingTabela ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-4 py-6 text-center text-slate-500"
+                      >
+                        Carregando setores...
+                      </td>
+                    </tr>
+                  ) : setores.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-4 py-6 text-center text-slate-500"
+                      >
+                        Nenhum setor encontrado.
+                      </td>
+                    </tr>
+                  ) : (
+                    setores.map((setor) => (
+                      <tr key={setor.ID_SETOR} className="transition hover:bg-primary/5">
+                        <td className="px-4 py-3 font-semibold text-[var(--title)]">
+                          {String(setor.NM_SETOR).toUpperCase()}
+                        </td>
+                        <td className="px-4 py-3 text-slate-700">{setor.NR_RAMAL || "-"}</td>
+                        <td className="px-4 py-3 text-slate-700">
+                          {String(setor.NM_ENDERECO).toUpperCase()}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => abrirEdicao(setor)}
+                            className={editButtonClass}
+                          >
+                            <FaEdit />
+                            Editar
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => alternarStatus(setor)}
+                            className={`inline-flex h-9 min-w-[86px] cursor-pointer items-center justify-center rounded-xl px-3 text-xs font-bold shadow-sm transition ${
+                              Number(setor.SN_ATIVO) === 1
+                                ? "border border-secondary/30 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white"
+                                : "border border-fourth/30 bg-fourth/10 text-fourth hover:bg-fourth hover:text-white"
+                            }`}
+                          >
+                            {Number(setor.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 bg-white px-4 py-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <p className="text-sm text-slate-500">
+                    Mostrando{" "}
+                    <span className="font-semibold text-slate-700">
+                      {totalItems === 0 ? 0 : (paginaAtual - 1) * limit + 1}
+                    </span>{" "}
+                    até{" "}
+                    <span className="font-semibold text-slate-700">
+                      {Math.min(paginaAtual * limit, totalItems)}
+                    </span>{" "}
+                    de{" "}
+                    <span className="font-semibold text-slate-700">{totalItems}</span>{" "}
+                    setor(es)
+                  </p>
+
+                  <select
+                    value={limit}
+                    onChange={(event) => {
+                      const novoLimit = Number(event.target.value);
+                      setLimit(novoLimit);
+                      carregarSetores(1, novoLimit);
+                    }}
+                    disabled={loadingTabela}
+                    className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value={10}>10 por página</option>
+                    <option value={20}>20 por página</option>
+                    <option value={50}>50 por página</option>
+                    <option value={100}>100 por página</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => carregarSetores(Math.max(paginaAtual - 1, 1))}
+                    disabled={paginaAtual <= 1 || loadingTabela}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                  >
+                    <FaChevronLeft size={12} />
+                    Anterior
+                  </button>
+
+                  <span className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+                    Página {paginaAtual} de {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      carregarSetores(Math.min(paginaAtual + 1, totalPages))
+                    }
+                    disabled={paginaAtual >= totalPages || loadingTabela}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                  >
+                    Próxima
+                    <FaChevronRight size={12} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {modalOpen && (
@@ -642,16 +667,13 @@ export function GerenciamentoSetorForm() {
                 type="button"
                 onClick={salvarModal}
                 disabled={loading}
-                className={`rounded px-4 py-2 font-semibold text-white ${modalModo === "cadastrar"
-                  ? "bg-emerald-600 hover:bg-emerald-700"
-                  : "bg-blue-600 hover:bg-blue-700"
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                className={`${primaryButtonClass} w-full sm:w-auto`}
               >
                 {loading
                   ? "Salvando..."
                   : modalModo === "cadastrar"
-                    ? "Cadastrar"
-                    : "Editar"}
+                  ? "Cadastrar"
+                  : "Editar"}
               </button>
             </div>
           </div>

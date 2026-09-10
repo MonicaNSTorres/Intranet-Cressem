@@ -11,9 +11,8 @@ import {
     type AuthUserLike,
 } from "@/lib/access-control";
 import { getMeAdUser } from "@/services/auth.service";
-export default function FichaDesimpedimentoPage() {
-    const router = useRouter();
 
+export default function FichaDesimpedimentoPage() {
     const [loading, setLoading] = useState(true);
     const [allowed, setAllowed] = useState(false);
     const router = useRouter();
@@ -21,15 +20,9 @@ export default function FichaDesimpedimentoPage() {
     useEffect(() => {
         async function validarAcesso() {
             try {
-                const user =
-                    (await getMeAdUser()) as AuthUserLike;
+                const user = (await getMeAdUser()) as AuthUserLike;
 
-                setAllowed(
-                    canAccess(
-                        user,
-                        PAGE_ACCESS.fichaDesimpedimento
-                    )
-                );
+                setAllowed(canAccess(user, PAGE_ACCESS.fichaDesimpedimento));
             } catch (error) {
                 console.error(error);
                 setAllowed(false);
@@ -60,9 +53,7 @@ export default function FichaDesimpedimentoPage() {
     }
 
     const handleClick = () => {
-        router.push(
-            "/auth/consulta_ficha_desimpedimento"
-        );
+        router.push("/auth/consulta_ficha_desimpedimento");
     };
 
     return (

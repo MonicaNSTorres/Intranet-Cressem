@@ -57,6 +57,20 @@ export interface FichaRow {
   SEQUENCIAL: number;
 }
 
+export interface AssociadoResponse {
+  nome: string;
+  cpf: string;
+  prontuario: string;
+  empresa: string;
+  endereco: string;
+  nm_bairro: string;
+  nm_cidade: string;
+  nr_cep: string;
+  telefone: string;
+  ds_email: string;
+  dt_matricula_associacao: string;
+}
+
 export interface SalvarFichaPayload {
   id?: string;
   tipo: TipoFicha;
@@ -80,63 +94,6 @@ export interface SalvarFichaPayload {
   contasDevedoras: Conta[];
   contasCredoras: Conta[];
   contasBancarias: Conta[];
-}
-
-export interface OdontologicoAssociado {
-  situacao:
-    | "ATIVO"
-    | "INATIVO"
-    | "NAO_ENCONTRADO";
-
-  possuiPlanoAtivo: boolean;
-  tevePlanoAnterior: boolean;
-  idBeneficiario?: number;
-  tipoBeneficiario?: string;
-  nomeTipoBeneficiario?: string;
-  idOperadora?: number;
-  operadora?: string;
-  idPlano?: number;
-  plano?: string;
-
-  tipoCobranca?:
-    | "POR_PESSOA"
-    | "POR_PLANO";
-
-  valorMensalidade?:
-    | number
-    | null;
-
-  dataInicioVigenciaValor?:
-    | string
-    | null;
-
-  dataFimVigenciaValor?:
-    | string
-    | null;
-
-  dataInclusaoPlano?:
-    | string
-    | null;
-
-  dataExclusaoPlano?:
-    | string
-    | null;
-}
-
-export interface AssociadoResponse {
-  nome: string;
-  cpf: string;
-  prontuario: string;
-  empresa: string;
-  endereco: string;
-  nm_bairro: string;
-  nm_cidade: string;
-  nr_cep: string;
-  telefone: string;
-  ds_email: string;
-  dt_matricula_associacao: string;
-  odontologico:
-    OdontologicoAssociado;
 }
 
 export async function buscarAssociadoPorCpf(

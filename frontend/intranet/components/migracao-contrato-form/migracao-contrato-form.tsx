@@ -271,14 +271,15 @@ export function MigracaoContratoForm() {
 
   return (
     <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+      <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#79B729]" />
+
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 shadow-sm">
           <div className="mb-4">
             <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
               Buscar associado
             </h2>
-            <p className="mt-1 text-sm text-(--paragraph)">
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
               Informe o CPF/CNPJ para carregar os dados e adicionar o associado à migração.
             </p>
           </div>
@@ -347,7 +348,7 @@ export function MigracaoContratoForm() {
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="w-full min-w-280 border-separate border-spacing-0 text-sm">
+            <table className="w-full min-w-[1120px] border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="bg-slate-50">
                   <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
@@ -371,7 +372,7 @@ export function MigracaoContratoForm() {
                   <th className="border-b border-slate-200 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
                     Nova Matrícula
                   </th>
-                  <th className="w-22.5 border-b border-slate-200 px-3 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
+                  <th className="w-[90px] border-b border-slate-200 px-3 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
                     Ação
                   </th>
                 </tr>

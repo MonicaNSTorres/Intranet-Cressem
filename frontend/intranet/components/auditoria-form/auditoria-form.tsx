@@ -181,7 +181,7 @@ function CampoEditavel({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`inline-block min-h-10 min-w-35 rounded-t-lg border-b border-dashed border-slate-300 bg-slate-50/50 px-2 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 hover:bg-slate-50 focus:border-[#00AE9D] focus:bg-[#00AE9D]/5 ${className}`}
+      className={`inline-block min-h-10 min-w-[140px] rounded-t-lg border-b border-dashed border-slate-300 bg-slate-50/50 px-2 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 hover:bg-slate-50 focus:border-[#00AE9D] focus:bg-[#00AE9D]/5 ${className}`}
     />
   );
 }
@@ -359,7 +359,6 @@ export function AuditoriaForm() {
 
   return (
     <div className="mx-auto min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
       <SearchForm onSearch={preencherFormulario}>
         <div className="border-b border-slate-100 bg-white px-5 py-4">
           <h2 className="flex items-center gap-2 text-lg font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
@@ -423,7 +422,7 @@ export function AuditoriaForm() {
             value={form.cpf_cnpj}
             onChange={(value) => updateField("cpf_cnpj", formatarCpfCnpj(value))}
             placeholder="Digite CPF ou CNPJ"
-            className="min-w-45"
+            className="min-w-[180px]"
           />
         </div>
 
@@ -433,7 +432,7 @@ export function AuditoriaForm() {
             value={form.nome}
             onChange={(value) => updateField("nome", value)}
             placeholder="Nome completo"
-            className="min-w-70"
+            className="min-w-[280px]"
           />
         </div>
 
@@ -443,7 +442,7 @@ export function AuditoriaForm() {
             value={form.empresa}
             onChange={(value) => updateField("empresa", value)}
             placeholder="Empresa"
-            className="min-w-60"
+            className="min-w-[240px]"
           />
         </div>
 
@@ -453,7 +452,7 @@ export function AuditoriaForm() {
             value={form.assunto}
             onChange={(value) => updateField("assunto", value)}
             placeholder="Digite aqui"
-            className="min-w-55"
+            className="min-w-[220px]"
           />
         </div>
 
@@ -660,7 +659,7 @@ export function AuditoriaForm() {
             value={form.dps}
             onChange={(value) => updateField("dps", value)}
             placeholder="Digite aqui"
-            className="min-w-55"
+            className="min-w-[220px]"
           />
         </div>
 
@@ -672,7 +671,7 @@ export function AuditoriaForm() {
             value={form.outrasInformacoes}
             onChange={(e) => updateField("outrasInformacoes", e.target.value)}
             placeholder="Digite mais informações..."
-            className="min-h-24 w-full rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:bg-white focus:ring-2 focus:ring-[#00AE9D]/10"
+            className="min-h-[96px] w-full rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:bg-white focus:ring-2 focus:ring-[#00AE9D]/10"
           />
         </div>
 
@@ -684,7 +683,7 @@ export function AuditoriaForm() {
             value={form.parecerFinal}
             onChange={(e) => updateField("parecerFinal", e.target.value)}
             placeholder="Descreva o parecer final aqui..."
-            className="min-h-24 w-full rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:bg-white focus:ring-2 focus:ring-[#00AE9D]/10"
+            className="min-h-[96px] w-full rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-3 py-2 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#00AE9D] focus:bg-white focus:ring-2 focus:ring-[#00AE9D]/10"
           />
         </div>
       </div>

@@ -223,7 +223,7 @@ function Pagination({
           key={page}
           type="button"
           onClick={() => onChange(page)}
-          className={`inline-flex h-10 min-w-10 items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition ${
+          className={`inline-flex h-10 min-w-[40px] items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition ${
             page === currentPage
               ? "bg-primary text-white"
               : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
@@ -650,7 +650,7 @@ export function GerenciamentoSubsidioAuditivoForm() {
       </div>
 
       {modalOpen && detalhe ? (
-        <div className="fixed inset-0 z-90 flex items-center justify-center bg-slate-950/45 p-4">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/45 p-4">
           <div className="max-h-[90vh] w-full max-w-5xl overflow-auto rounded-3xl bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
               <div>
@@ -792,7 +792,7 @@ export function GerenciamentoSubsidioAuditivoForm() {
                           Documento faltante / motivo da devolução
                         </label>
                         <textarea
-                          className={`${inputClass} min-h-27.5`}
+                          className={`${inputClass} min-h-[110px]`}
                           value={observacaoAcao}
                           onChange={(e) => setObservacaoAcao(e.target.value)}
                           placeholder="Preencha somente se for recusar, informando qual documento falta."

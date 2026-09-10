@@ -273,156 +273,153 @@ export function ReembolsoConvenioMedicoForm() {
   }
 
   return (
-    <div className="mx-auto min-w-0 overflow-hidden rounded-xl bg-white shadow">
-      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
-      <div className="p-6">
-        {erro && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {erro}
-          </div>
-        )}
+    <div className="mx-auto min-w-0 rounded-2xl border border-slate-200 border-t-[#00AE9D] border-t-4 bg-white p-5 shadow-sm">
+      {erro && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+          {erro}
+        </div>
+      )}
 
-        {info && !erro && (
-          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-            {info}
-          </div>
-        )}
+      {info && !erro && (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
+          {info}
+        </div>
+      )}
 
-        {loading ? (
-          <div className="py-10 text-center text-sm text-gray-500">
-            Carregando dados da solicitação...
+      {loading ? (
+        <div className="py-10 text-center text-sm text-slate-500">
+          Carregando dados da solicitação...
+        </div>
+      ) : (
+        <>
+          <div className="mb-5 rounded-xl border border-[#00AE9D]/20 bg-[#00AE9D]/5 px-4 py-3">
+            <p className="text-sm font-medium text-slate-700">
+              Preencha os dados abaixo. O valor do reembolso é calculado automaticamente em 80%, limitado a R$ 600,00.
+            </p>
           </div>
-        ) : (
-          <>
-            <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
-              <p className="text-sm font-medium text-gray-700">
-                Preencha os dados abaixo. O valor do reembolso é calculado automaticamente em 80%, limitado a R$ 600,00.
-              </p>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+            <div className="md:col-span-9">
+              <label className={labelClass}>
+                Nome do empregado
+              </label>
+              <input
+                type="text"
+                name="nome"
+                value={form.nome}
+                onChange={handleChange}
+                className={inputClass}
+              />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-              <div className="md:col-span-9">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Nome do empregado
-                </label>
-                <input
-                  type="text"
-                  name="nome"
-                  value={form.nome}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                />
-              </div>
-
-              <div className="md:col-span-3">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Matrícula
-                </label>
-                <input
-                  type="text"
-                  name="matricula"
-                  value={form.matricula}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                />
-              </div>
-
-              <div className="md:col-span-5">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Setor
-                </label>
-                <input
-                  type="text"
-                  name="setor"
-                  value={form.setor}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                />
-              </div>
-
-              <div className="md:col-span-12">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Empresa do convênio
-                </label>
-                <input
-                  type="text"
-                  name="empresaConvenio"
-                  value={form.empresaConvenio}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                />
-              </div>
-
-              <div className="md:col-span-6">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Valor da mensalidade
-                </label>
-                <input
-                  type="text"
-                  name="mensalidade"
-                  value={form.mensalidade}
-                  onChange={handleChange}
-                  placeholder="0,00"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                />
-              </div>
-
-              <div className="md:col-span-6">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Valor a reembolsar
-                </label>
-                <input
-                  type="text"
-                  name="valorReembolso"
-                  value={form.valorReembolso}
-                  readOnly
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 outline-none"
-                />
-              </div>
-
-              <div className="md:col-span-6">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Diretor a autorizar
-                </label>
-                <select
-                  name="diretor"
-                  value={form.diretor}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                >
-                  <option value="">Selecione</option>
-                  {diretores.map((diretor) => (
-                    <option
-                      key={diretor.NM_FUNCIONARIO}
-                      value={diretor.NM_FUNCIONARIO}
-                    >
-                      {diretor.NM_FUNCIONARIO}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="md:col-span-3">
+              <label className={labelClass}>
+                Matrícula
+              </label>
+              <input
+                type="text"
+                name="matricula"
+                value={form.matricula}
+                onChange={handleChange}
+                className={inputClass}
+              />
             </div>
 
-            <div className="mt-6 border-t border-gray-200 pt-5">
-              <div className="flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={handleGerar}
-                  disabled={!formularioValido || gerando}
-                  className={`inline-flex items-center gap-2 rounded-lg px-6 py-2 font-semibold text-white shadow transition
+            <div className="md:col-span-5">
+              <label className={labelClass}>
+                Setor
+              </label>
+              <input
+                type="text"
+                name="setor"
+                value={form.setor}
+                onChange={handleChange}
+                className={inputClass}
+              />
+            </div>
+
+            <div className="md:col-span-12">
+              <label className={labelClass}>
+                Empresa do convênio
+              </label>
+              <input
+                type="text"
+                name="empresaConvenio"
+                value={form.empresaConvenio}
+                onChange={handleChange}
+                className={inputClass}
+              />
+            </div>
+
+            <div className="md:col-span-6">
+              <label className={labelClass}>
+                Valor da mensalidade
+              </label>
+              <input
+                type="text"
+                name="mensalidade"
+                value={form.mensalidade}
+                onChange={handleChange}
+                placeholder="0,00"
+                className={inputClass}
+              />
+            </div>
+
+            <div className="md:col-span-6">
+              <label className={labelClass}>
+                Valor a reembolsar
+              </label>
+              <input
+                type="text"
+                name="valorReembolso"
+                value={form.valorReembolso}
+                readOnly
+                className={`${inputClass} bg-slate-50 font-bold`}
+              />
+            </div>
+
+            <div className="md:col-span-6">
+              <label className={labelClass}>
+                Diretor a autorizar
+              </label>
+              <select
+                name="diretor"
+                value={form.diretor}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="">Selecione</option>
+                {diretores.map((diretor) => (
+                  <option
+                    key={diretor.NM_FUNCIONARIO}
+                    value={diretor.NM_FUNCIONARIO}
+                  >
+                    {diretor.NM_FUNCIONARIO}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-6 border-t border-slate-100 pt-5">
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleGerar}
+                disabled={!formularioValido || gerando}
+                className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition
     ${formularioValido && !gerando
-                      ? "bg-secondary hover:bg-primary cursor-pointer"
-                      : "bg-gray-300 cursor-not-allowed"
-                    }`}
-                >
-                  <FaPrint />
-                  {gerando ? "Gerando..." : "Gerar PDF"}
-                </button>
-              </div>
+                    ? "cursor-pointer bg-[#00AE9D] hover:bg-[#49479D]"
+                    : "cursor-not-allowed bg-slate-300"
+                  }`}
+              >
+                <FaFilePdf />
+                {gerando ? "Baixando..." : "Baixar PDF"}
+              </button>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

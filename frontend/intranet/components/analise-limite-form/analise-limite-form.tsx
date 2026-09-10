@@ -709,22 +709,21 @@ export function AnaliseLimiteForm() {
             <div className="mx-auto w-full min-w-225 space-y-5">
                 <SearchForm onSearch={onBuscar}>
                     <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
                         <div className="border-b border-slate-100 bg-white px-5 py-4">
-                            <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                                <div>
-                                    <h1 className="flex items-center gap-2 text-xl font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
-                                        Análise de Limite
-                                    </h1>
-                                    <p className="mt-1 text-sm font-medium text-slate-500">
-                                        Preencha os dados do associado e registre a análise.
-                                    </p>
-                                </div>
-
-                                <div className="inline-flex items-center rounded-full border border-[#00AE9D]/20 bg-[#00AE9D]/10 px-3 py-1 text-xs font-black text-[#008f82]">
-                                    Tipo: {tipoFormulario}
-                                </div>
+                        <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <h1 className="flex items-center gap-2 text-xl font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
+                                    Análise de Limite
+                                </h1>
+                                <p className="mt-1 text-sm font-medium text-slate-500">
+                                    Preencha os dados do associado e registre a análise.
+                                </p>
                             </div>
+
+                            <div className="inline-flex items-center rounded-full border border-[#00AE9D]/20 bg-[#00AE9D]/10 px-3 py-1 text-xs font-black text-[#008f82]">
+                                Tipo: {tipoFormulario}
+                            </div>
+                        </div>
                         </div>
 
                         <div className="grid gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_160px_140px_160px_200px] xl:items-end">

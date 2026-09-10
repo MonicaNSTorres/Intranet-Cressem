@@ -239,8 +239,8 @@ export function GerenciamentoPosicaoForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-        e?.response?.data?.details ||
-        "Não foi possível salvar a posição."
+          e?.response?.data?.details ||
+          "Não foi possível salvar a posição."
       );
     } finally {
       salvarActionRef.current = false;
@@ -279,8 +279,8 @@ export function GerenciamentoPosicaoForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-        e?.response?.data?.details ||
-        "Erro ao alterar o status da posição."
+          e?.response?.data?.details ||
+          "Erro ao alterar o status da posição."
       );
     } finally {
       statusActionRef.current.delete(posicao.ID_POSICAO);
@@ -307,96 +307,138 @@ export function GerenciamentoPosicaoForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-        e?.response?.data?.details ||
-        "Falha ao baixar o relatório."
+          e?.response?.data?.details ||
+          "Falha ao baixar o relatório."
       );
     }
   }
 
   return (
     <>
-      <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
-        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
-        <div className="p-6">
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
-                Digite o código, atuação ou posição
-              </label>
+      <div className="mx-auto w-full rounded-2xl border border-slate-200 border-t-4 border-t-primary bg-white p-5 shadow-sm">
+        <div className="mb-5 flex flex-col gap-3 border-b border-slate-100 pb-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-primary">
+              Filtros
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-title">
+              Consulta de posições
+            </h2>
+            <p className="mt-1 text-sm text-paragraph">
+              Pesquise posições cadastradas, edite dados e acompanhe o status.
+            </p>
+          </div>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
-                <input
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  placeholder="Digite o código, atuação ou posição"
-                  className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                />
+          <button
+            type="button"
+            onClick={abrirCadastro}
+            className={`${accentButtonClass} w-full lg:w-auto`}
+          >
+            <FaPlus />
+            Cadastrar
+          </button>
+        </div>
 
-                <button
-                  type="button"
-                  onClick={() => carregarPosicoes(1)}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
-                >
-                  <FaSearch />
-                  Buscar
-                </button>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
+          <div>
+            <label className="mb-1 block text-xs font-bold uppercase text-slate-600">
+              Código, atuação ou posição
+            </label>
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              onKeyDown={pesquisarComEnter}
+              placeholder="Digite o código, atuação ou posição"
+              className={inputClass}
+            />
+          </div>
 
-                <button
-                  type="button"
-                  onClick={limparBusca}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  <FaTimes />
-                  Limpar
-                </button>
+          <button
+            type="button"
+            onClick={() => carregarPosicoes(1)}
+            className={primaryButtonClass}
+          >
+            <FaSearch />
+            Buscar
+          </button>
+
+          <button
+            type="button"
+            onClick={limparBusca}
+            className={secondaryButtonClass}
+          >
+            <FaTimes />
+            Limpar
+          </button>
+
+          <button
+            type="button"
+            onClick={baixarCsv}
+            className={accentButtonClass}
+          >
+            <FaDownload />
+            Baixar Relatório
+          </button>
+        </div>
+
+        {(erro || info) && (
+          <div className="mt-4">
+            {erro ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {erro}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                {info}
+              </div>
+            )}
+          </div>
+        )}
+
+        {(posicoes.length > 0 || loadingTabela) && (
+          <>
+            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase text-slate-500">Total</p>
+                <p className="mt-2 text-2xl font-bold text-title">{totais.total}</p>
+                <p className="mt-1 text-xs text-paragraph">posições cadastradas</p>
+              </div>
+
+              <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase text-secondary">Ativos</p>
+                <p className="mt-2 text-2xl font-bold text-title">
+                  {totais.ativos}
+                </p>
+                <p className="mt-1 text-xs text-paragraph">posições disponíveis</p>
+              </div>
+
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase text-red-700">Inativos</p>
+                <p className="mt-2 text-2xl font-bold text-red-800">
+                  {totais.inativos}
+                </p>
+                <p className="mt-1 text-xs text-red-700">posições indisponíveis</p>
               </div>
             </div>
 
-            <div className="flex items-end">
-              <button
-                type="button"
-                onClick={abrirCadastro}
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
-              >
-                <FaPlus />
-                Cadastrar
-              </button>
-            </div>
-          </div>
-
-          {(erro || info) && (
-            <div className="mt-4">
-              {erro ? (
-                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  {erro}
-                </div>
-              ) : (
-                <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                  {info}
-                </div>
-              )}
-            </div>
-          )}
-
-          {(posicoes.length > 0 || loadingTabela) && (
-            <>
-              <div className="mt-6 overflow-x-auto rounded-xl border">
+            <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
+              <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50">
+                  <thead className="bg-slate-100">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
                         Código
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
                         Atuação
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                      <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
                         Posição
                       </th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                      <th className="px-4 py-3 text-center text-xs font-bold uppercase text-slate-700">
                         Editar
                       </th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                      <th className="px-4 py-3 text-center text-xs font-bold uppercase text-slate-700">
                         Status
                       </th>
                     </tr>
@@ -423,19 +465,24 @@ export function GerenciamentoPosicaoForm() {
                       </tr>
                     ) : (
                       posicoes.map((posicao) => (
-                        <tr key={posicao.ID_POSICAO} className="hover:bg-slate-50">
-                          <td className="px-4 py-3">{posicao.CD_SICOOB}</td>
-                          <td className="px-4 py-3">
+                        <tr
+                          key={posicao.ID_POSICAO}
+                          className="transition hover:bg-primary/5"
+                        >
+                          <td className="px-4 py-3 font-semibold text-slate-800">
+                            {posicao.CD_SICOOB}
+                          </td>
+                          <td className="px-4 py-3 text-slate-700">
                             {String(posicao.DESC_ATUACAO).toUpperCase()}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-slate-700">
                             {String(posicao.NM_POSICAO).toUpperCase()}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button
                               type="button"
                               onClick={() => abrirEdicao(posicao)}
-                              className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                              className="inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary transition hover:bg-primary hover:text-white cursor-pointer"
                             >
                               <FaEdit />
                               Editar
@@ -445,10 +492,11 @@ export function GerenciamentoPosicaoForm() {
                             <button
                               type="button"
                               onClick={() => alternarStatus(posicao)}
-                              className={`inline-flex min-w-21 items-center justify-center rounded px-3 py-1.5 text-xs font-semibold ${Number(posicao.SN_ATIVO) === 1
-                                  ? "bg-secondary text-white hover:bg-third"
-                                  : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                                }`}
+                              className={`inline-flex h-8 min-w-[5.25rem] items-center justify-center rounded-lg px-3 text-xs font-semibold transition cursor-pointer ${
+                                Number(posicao.SN_ATIVO) === 1
+                                  ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                  : "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                              }`}
                             >
                               {Number(posicao.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
                             </button>
@@ -459,111 +507,73 @@ export function GerenciamentoPosicaoForm() {
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                {paginaAtual > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => carregarPosicoes(1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      1
-                    </button>
+            <div className="border-t border-slate-100 bg-white px-4 py-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <p className="text-sm text-slate-500">
+                    Mostrando{" "}
+                    <span className="font-semibold text-slate-700">
+                      {totalItems === 0 ? 0 : (paginaAtual - 1) * limit + 1}
+                    </span>{" "}
+                    até{" "}
+                    <span className="font-semibold text-slate-700">
+                      {Math.min(paginaAtual * limit, totalItems)}
+                    </span>{" "}
+                    de{" "}
+                    <span className="font-semibold text-slate-700">{totalItems}</span>{" "}
+                    posição(ões)
+                  </p>
 
-                    <button
-                      type="button"
-                      onClick={() => carregarPosicoes(paginaAtual - 1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Anterior
-                    </button>
-                  </>
-                )}
-
-                {paginasVisiveis.map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    onClick={() => carregarPosicoes(page)}
-                    className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
-                        ? "bg-emerald-600 text-white"
-                        : "border text-slate-700 hover:bg-slate-50"
-                      }`}
+                  <select
+                    value={limit}
+                    onChange={(event) => {
+                      const novoLimit = Number(event.target.value);
+                      setLimit(novoLimit);
+                      carregarPosicoes(1, novoLimit);
+                    }}
+                    disabled={loadingTabela}
+                    className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition hover:border-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {page}
+                    <option value={10}>10 por página</option>
+                    <option value={20}>20 por página</option>
+                    <option value={50}>50 por página</option>
+                    <option value={100}>100 por página</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => carregarPosicoes(Math.max(paginaAtual - 1, 1))}
+                    disabled={paginaAtual <= 1 || loadingTabela}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
+                  >
+                    <FaChevronLeft size={12} />
+                    Anterior
                   </button>
-                ))}
 
-                {paginaAtual < totalPages && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => carregarPosicoes(paginaAtual + 1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Próxima
-                    </button>
+                  <span className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+                    Página {paginaAtual} de {totalPages}
+                  </span>
 
-                    <button
-                      type="button"
-                      onClick={() => carregarPosicoes(totalPages)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      {totalPages}
-                    </button>
-                  </>
-                )}
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Total
-                  </label>
-                  <input
-                    readOnly
-                    value={totais.total}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Ativos
-                  </label>
-                  <input
-                    readOnly
-                    value={totais.ativos}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Inativos
-                  </label>
-                  <input
-                    readOnly
-                    value={totais.inativos}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
-
-                <div className="flex items-end">
                   <button
                     type="button"
-                    onClick={baixarCsv}
-                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary md:w-auto"
+                    onClick={() =>
+                      carregarPosicoes(Math.min(paginaAtual + 1, totalPages))
+                    }
+                    disabled={paginaAtual >= totalPages || loadingTabela}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-70"
                   >
-                    <FaDownload />
-                    Baixar Relatório
+                    Próxima
+                    <FaChevronRight size={12} />
                   </button>
                 </div>
               </div>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {modalOpen && (
@@ -674,16 +684,13 @@ export function GerenciamentoPosicaoForm() {
                 type="button"
                 onClick={salvarModal}
                 disabled={loading}
-                className={`rounded px-4 py-2 font-semibold text-white ${modalModo === "cadastrar"
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-blue-600 hover:bg-blue-700"
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                className={primaryButtonClass}
               >
                 {loading
                   ? "Salvando..."
                   : modalModo === "cadastrar"
-                    ? "Cadastrar"
-                    : "Editar"}
+                  ? "Cadastrar"
+                  : "Editar"}
               </button>
             </div>
           </div>

@@ -204,10 +204,10 @@ export default function AniversariantesPage() {
                         </div>
 
                     <div className="min-w-0">
-                        <h1 className="truncate text-2xl font-bold text-(--title)">
+                        <h1 className="truncate text-2xl font-bold text-[var(--title)]">
                             Aniversariantes
                         </h1>
-                        <p className="mt-1 max-w-3xl text-sm text-(--paragraph)">
+                        <p className="mt-1 max-w-3xl text-sm text-[var(--paragraph)]">
                             Consulte os aniversariantes por mês e filtre por nome, setor ou ramal.
                         </p>
                     </div>
@@ -320,8 +320,8 @@ export default function AniversariantesPage() {
                                                 </p>
                                             </div>
 
-                                            <div className="flex w-55 shrink-0 flex-col items-end gap-2">
-                                                <span className="inline-flex w-25 justify-center rounded-full bg-primary px-3 py-1 text-sm font-bold leading-none text-white">
+                                            <div className="flex w-[220px] shrink-0 flex-col items-end gap-2">
+                                                <span className="inline-flex w-[100px] justify-center rounded-full bg-primary px-3 py-1 text-sm font-bold leading-none text-white">
                                                     Data{" "}
                                                     {typeof p.dia === "number" && typeof p.mes === "number"
                                                         ? `${pad2(p.dia)}/${pad2(p.mes)}`
@@ -329,7 +329,7 @@ export default function AniversariantesPage() {
                                                 </span>
 
                                                 <span
-                                                    className={`inline-flex w-25 justify-center rounded-full px-3 py-1 text-sm font-semibold leading-none ${semRamal
+                                                    className={`inline-flex w-[100px] justify-center rounded-full px-3 py-1 text-sm font-semibold leading-none ${semRamal
                                                         ? "border border-fourth/20 bg-fourth/10 text-fourth"
                                                         : "border border-secondary/20 bg-secondary/10 text-[#4f7f14]"
                                                         }`}
@@ -351,7 +351,7 @@ export default function AniversariantesPage() {
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div>
                         <h3 className="mb-1 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">Resumo</h3>
-                        <p className="mt-1 text-sm text-(--paragraph)">
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
                             Visão rápida dos aniversariantes no mês selecionado.
                         </p>
 
@@ -383,7 +383,7 @@ function MiniKpi({ title, value }: { title: string; value: string }) {
     return (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
             <p className="text-[11px] font-bold uppercase tracking-[0.04em] text-slate-500">{title}</p>
-            <p className="mt-1 truncate text-sm font-bold text-(--title)">
+            <p className="mt-1 truncate text-sm font-bold text-[var(--title)]">
                 {value}
             </p>
         </div>

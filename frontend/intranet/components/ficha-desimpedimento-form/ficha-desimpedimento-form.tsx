@@ -2,14 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
-import {
-  ArrowDownToLine,
-  SquarePen,
-  Trash2,
-  TriangleAlert,
-  History,
-  CircleCheck,
-} from "lucide-react";
+import { ArrowDownToLine, SquarePen, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ModalEditarFicha from "@/components/modal-editar-ficha/modal-editar-ficha";
@@ -41,27 +34,27 @@ function hojeIso() {
 
 function criarFormInicial(responsavel = ""): FichaFormData {
   return {
-    nome: "",
-    cpf: "",
-    tipo: "",
-    prontuario: "",
-    empresa: "",
-    endereco: "",
-    nm_bairro: "",
-    nm_cidade: "",
-    nr_cep: "",
-    telefone: "",
-    observacao: "",
-    risco: "",
-    tempo_associado: "",
-    data_ficha: hojeIso(),
-    observacoes_gerais: "",
-    responsavel,
-    total_debitos: "",
-    total_creditos: "",
-    liquido_devedor: "",
-    ds_email: "",
-    sequencial: "",
+  nome: "",
+  cpf: "",
+  tipo: "",
+  prontuario: "",
+  empresa: "",
+  endereco: "",
+  nm_bairro: "",
+  nm_cidade: "",
+  nr_cep: "",
+  telefone: "",
+  observacao: "",
+  risco: "",
+  tempo_associado: "",
+  data_ficha: hojeIso(),
+  observacoes_gerais: "",
+  responsavel,
+  total_debitos: "",
+  total_creditos: "",
+  liquido_devedor: "",
+  ds_email: "",
+  sequencial: "",
   };
 }
 
@@ -158,24 +151,6 @@ export function FichaDesimpedimentoForm() {
   const [loadingCpf, setLoadingCpf] = useState(false);
   const [erroCpf, setErroCpf] = useState("");
   const [infoCpf, setInfoCpf] = useState("");
-  const [odontologico, setOdontologico] = useState<{
-    situacao:
-    | "ATIVO"
-    | "INATIVO"
-    | "NAO_ENCONTRADO";
-    possuiPlanoAtivo: boolean;
-    tevePlanoAnterior: boolean;
-    operadora?: string;
-    plano?: string;
-    tipoBeneficiario?: string;
-    nomeTipoBeneficiario?: string;
-    tipoCobranca?:
-    | "POR_PESSOA"
-    | "POR_PLANO";
-    valorMensalidade?: number | null;
-    dataInclusaoPlano?: string | null;
-    dataExclusaoPlano?: string | null;
-  } | null>(null);
 
   useEffect(() => {
     carregarFichas();
@@ -317,7 +292,6 @@ export function FichaDesimpedimentoForm() {
 
     setErroCpf("");
     setInfoCpf("");
-    setOdontologico(null);
 
     if (cpfLimpo.length !== 11) {
       setErroCpf("CPF inválido. Digite os 11 números.");
@@ -328,13 +302,6 @@ export function FichaDesimpedimentoForm() {
       setLoadingCpf(true);
 
       const data = await buscarAssociadoPorCpf(cpfLimpo);
-      setOdontologico(
-        data.odontologico || {
-          situacao: "NAO_ENCONTRADO",
-          possuiPlanoAtivo: false,
-          tevePlanoAnterior: false,
-        }
-      );
       const tempoAssociado = formatarTempoAssociacao(data.dt_matricula_associacao);
 
       setForm((prev) => ({
@@ -362,39 +329,6 @@ export function FichaDesimpedimentoForm() {
     }
   }
 
-  function formatarTipoCobrancaOdonto(
-    tipo?: "POR_PESSOA" | "POR_PLANO"
-  ) {
-    if (tipo === "POR_PESSOA") {
-      return "Por pessoa";
-    }
-
-    if (tipo === "POR_PLANO") {
-      return "Por plano";
-    }
-
-    return "";
-  }
-
-  function formatarValorOdonto(
-    valor?: number | null
-  ) {
-    if (
-      valor === null ||
-      valor === undefined
-    ) {
-      return "";
-    }
-
-    return Number(valor).toLocaleString(
-      "pt-BR",
-      {
-        style: "currency",
-        currency: "BRL",
-      }
-    );
-  }
-
   async function handleSalvar() {
     try {
       const proximo = await buscarProximoSequencial();
@@ -418,7 +352,6 @@ export function FichaDesimpedimentoForm() {
       setSequencial(null);
       setErroCpf("");
       setInfoCpf("");
-      setOdontologico(null);
       await carregarFichas();
     } catch (error: any) {
       console.error("Erro ao salvar ficha:", error);
@@ -629,503 +562,297 @@ export function FichaDesimpedimentoForm() {
 
   return (
     <div className="mx-auto overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
-      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
       <div className="space-y-6 p-5 md:p-6">
-        <SearchForm onSearch={handleBuscarCpf}>
-          <div>
-            <label className={labelClass}>CPF do empregado(a)</label>
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-              <SearchInput
-                name="cpf"
-                value={formatCpfView(form.cpf)}
-                onChange={handleChange}
-                placeholder="CPF (somente números)"
-                className={fieldClass}
-                inputMode="numeric"
-                maxLength={14}
-              />
-              <SearchButton loading={loading} label="Pesquisar" />
+      <SearchForm onSearch={handleBuscarCpf}>
+        <div>
+          <label className={labelClass}>CPF do empregado(a)</label>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+            <SearchInput
+              name="cpf"
+              value={formatCpfView(form.cpf)}
+              onChange={handleChange}
+              placeholder="CPF (somente números)"
+              className={fieldClass}
+              inputMode="numeric"
+              maxLength={14}
+            />
+            <SearchButton loading={loading} label="Pesquisar" />
+          </div>
+
+          {erroCpf && (
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+              {erroCpf}
             </div>
+          )}
 
-            {erroCpf && (
-              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
-                {erroCpf}
-              </div>
-            )}
+          {infoCpf && (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
+              {infoCpf}
+            </div>
+          )}
+        </div>
+      </SearchForm>
 
-            {infoCpf && (
-              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
-                {infoCpf}
-              </div>
-            )}
-
-            {odontologico?.situacao === "ATIVO" && (
-              <div className="mt-4 overflow-hidden rounded-2xl border border-amber-300 bg-amber-50 shadow-sm">
-                <div className="flex gap-4 border-l-[7px] border-amber-500 p-5">
-
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-                    <TriangleAlert size={26} />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-
-                    <div>
-                      <p className="text-base font-extrabold uppercase tracking-wide text-amber-800">
-                        Atenção - Benefício odontológico ativo
-                      </p>
-
-                      <p className="mt-1 text-lg font-medium leading-6 text-amber-900">
-                        Esta pessoa possui convênio odontológico ativo.
-                        Considere esta informação na análise da Ficha de
-                        Desimpedimento.
-                      </p>
-                    </div>
-
-                    <div className="mt-4 rounded-2xl border border-amber-200 bg-white/80 p-4">
-
-                      <h3 className="text-lg font-bold text-slate-900">
-                        {odontologico.operadora ||
-                          "Operadora não informada"}
-
-                        {odontologico.plano
-                          ? ` - ${odontologico.plano}`
-                          : ""}
-                      </h3>
-
-                      <div className="mt-3 flex flex-wrap gap-x-7 gap-y-3">
-
-                        {(odontologico.nomeTipoBeneficiario ||
-                          odontologico.tipoBeneficiario) && (
-                            <div>
-                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                                Beneficiário
-                              </p>
-
-                              <p className="mt-0.5 text-md font-bold text-slate-900">
-                                {odontologico.nomeTipoBeneficiario ||
-                                  odontologico.tipoBeneficiario}
-                              </p>
-                            </div>
-                          )}
-
-                        {odontologico.tipoCobranca && (
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                              Cobrança
-                            </p>
-
-                            <p className="mt-0.5 text-md font-bold text-slate-900">
-                              {formatarTipoCobrancaOdonto(
-                                odontologico.tipoCobranca
-                              )}
-                            </p>
-                          </div>
-                        )}
-
-                        {odontologico.valorMensalidade !== null &&
-                          odontologico.valorMensalidade !==
-                          undefined && (
-                            <div>
-                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                                Valor vigente
-                              </p>
-
-                              <p className="mt-0.5 text-md font-extrabold text-amber-800">
-                                {formatarValorOdonto(
-                                  odontologico.valorMensalidade
-                                )}
-                              </p>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {odontologico?.situacao === "INATIVO" && (
-              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-300 bg-slate-50 shadow-sm">
-                <div className="flex gap-4 border-l-[7px] border-slate-500 p-5">
-
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-200 text-slate-700">
-                    <History size={25} />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-
-                    <div>
-                      <p className="text-base font-extrabold uppercase tracking-wide text-slate-700">
-                        Histórico - Benefício odontológico inativo
-                      </p>
-
-                      <p className="mt-1 text-lg font-medium leading-6 text-slate-700">
-                        Esta pessoa já possuiu benefício odontológico,
-                        porém ele não está ativo atualmente.
-                      </p>
-                    </div>
-
-                    <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-
-                      <h3 className="text-lg font-bold text-slate-900">
-                        {odontologico.operadora ||
-                          "Operadora não informada"}
-
-                        {odontologico.plano
-                          ? ` - ${odontologico.plano}`
-                          : ""}
-                      </h3>
-
-                      <div className="mt-3 flex flex-wrap gap-x-7 gap-y-3">
-
-                        {(odontologico.nomeTipoBeneficiario ||
-                          odontologico.tipoBeneficiario) && (
-                            <div>
-                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                                Beneficiário
-                              </p>
-
-                              <p className="mt-0.5 text-md font-bold text-slate-900">
-                                {odontologico.nomeTipoBeneficiario ||
-                                  odontologico.tipoBeneficiario}
-                              </p>
-                            </div>
-                          )}
-
-                        {odontologico.tipoCobranca && (
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                              Cobrança
-                            </p>
-
-                            <p className="mt-0.5 text-md font-bold text-slate-900">
-                              {formatarTipoCobrancaOdonto(
-                                odontologico.tipoCobranca
-                              )}
-                            </p>
-                          </div>
-                        )}
-
-                        {odontologico.dataInclusaoPlano && (
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                              Inclusão
-                            </p>
-
-                            <p className="mt-0.5 text-md font-bold text-slate-900">
-                              {formatarDataPtBr(
-                                odontologico.dataInclusaoPlano
-                              )}
-                            </p>
-                          </div>
-                        )}
-
-                        {odontologico.dataExclusaoPlano && (
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                              Exclusão
-                            </p>
-
-                            <p className="mt-0.5 text-md font-bold text-slate-900">
-                              {formatarDataPtBr(
-                                odontologico.dataExclusaoPlano
-                              )}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <p className="mt-3 text-sm font-semibold text-slate-700">
-                      Este histórico deve ser considerado na análise da
-                      Ficha de Desimpedimento.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {odontologico?.situacao === "NAO_ENCONTRADO" && (
-              <div className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                  <CircleCheck size={20} />
-                </div>
-
-                <div>
-                  <p className="text-lg font-bold text-emerald-800">
-                    Nenhum benefício odontológico encontrado
-                  </p>
-
-                  <p className="mt-0.5 text-md text-emerald-700">
-                    Não foi encontrado benefício odontológico atual ou
-                    anterior para este CPF.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </SearchForm>
-
-        <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-2 md:p-5">
-          <div>
-            <label className={labelClass}>Tipo</label>
-            <select
-              name="tipo"
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value as TipoFicha)}
-              className={fieldClass}
-            >
-              <option value="DEVEDOR">DEVEDOR</option>
-              <option value="CREDOR">CREDOR</option>
-            </select>
-          </div>
-
-          <div>
-            <label className={labelClass}>Sequencial</label>
-            <input
-              readOnly
-              value={sequencial ?? "—"}
-              className={readOnlyFieldClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Nome</label>
-            <input
-              name="nome"
-              value={form.nome}
-              onChange={handleChange}
-              className={fieldClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Prontuário</label>
-            <input
-              name="prontuario"
-              value={form.prontuario}
-              onChange={handleChange}
-              className={fieldClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Empresa</label>
-            <input
-              name="empresa"
-              value={form.empresa}
-              onChange={handleChange}
-              className={fieldClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>E-mail</label>
-            <input
-              name="ds_email"
-              value={form.ds_email}
-              onChange={handleChange}
-              className={fieldClass}
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className={labelClass}>Endereço</label>
-            <input
-              name="endereco"
-              value={form.endereco}
-              onChange={handleChange}
-              className={fieldClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Telefone</label>
-            <input
-              name="telefone"
-              value={form.telefone}
-              onChange={handleChange}
-              className={fieldClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Risco</label>
-            <input
-              name="risco"
-              value={form.risco}
-              onChange={handleChange}
-              className={fieldClass}
-              placeholder="Ex: R16"
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Tempo de associação</label>
-            <input
-              name="tempo_associado"
-              value={form.tempo_associado}
-              readOnly
-              className={readOnlyFieldClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Data da ficha</label>
-            <input
-              name="data_ficha"
-              type="date"
-              value={form.data_ficha}
-              readOnly
-              className={readOnlyFieldClass}
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className={labelClass}>Responsável</label>
-            <input
-              name="responsavel"
-              value={form.responsavel}
-              readOnly
-              className={readOnlyFieldClass}
-            />
-          </div>
+      <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-2 md:p-5">
+        <div>
+          <label className={labelClass}>Tipo</label>
+          <select
+            name="tipo"
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value as TipoFicha)}
+            className={fieldClass}
+          >
+            <option value="DEVEDOR">DEVEDOR</option>
+            <option value="CREDOR">CREDOR</option>
+          </select>
         </div>
 
         <div>
-          <label className={labelClass}>Observação</label>
-          <textarea
-            name="observacao"
-            value={form.observacao}
-            onChange={handleChange}
-            className={textareaClass}
-            rows={3}
-            placeholder="Observações da ficha"
+          <label className={labelClass}>Sequencial</label>
+          <input
+            readOnly
+            value={sequencial ?? "—"}
+            className={readOnlyFieldClass}
           />
         </div>
 
         <div>
-          <label className={labelClass}>Observações gerais</label>
-          <textarea
-            name="observacoes_gerais"
-            value={form.observacoes_gerais}
+          <label className={labelClass}>Nome</label>
+          <input
+            name="nome"
+            value={form.nome}
             onChange={handleChange}
-            className={textareaClass}
-            rows={3}
-            placeholder="Observações complementares"
+            className={fieldClass}
           />
         </div>
 
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center">
-          <p className="text-sm font-medium text-amber-800 md:text-base">
-            Preencha todos os campos de valores com vírgula.
-            <br />
-            Exemplo: 2500,60
-          </p>
+        <div>
+          <label className={labelClass}>Prontuário</label>
+          <input
+            name="prontuario"
+            value={form.prontuario}
+            onChange={handleChange}
+            className={fieldClass}
+          />
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-          <h3 className="mb-3 text-base font-semibold text-title">Empréstimos</h3>
-          {contasDevedoras.map((c, i) => (
-            <div key={i} className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
-              <input
-                placeholder="Contrato / Descrição"
-                value={c.descricao}
-                onChange={(e) => updateConta("devedora", i, "descricao", e.target.value)}
-                className={fieldClass}
-              />
-              <input
-                placeholder="Valor (R$)"
-                value={c.valor}
-                onChange={(e) => updateConta("devedora", i, "valor", e.target.value)}
-                className={fieldClass}
-              />
-            </div>
-          ))}
-          <button
-            onClick={() => addConta("devedora")}
-            className={addButtonClass}
-          >
-            + Adicionar conta devedora
-          </button>
+        <div>
+          <label className={labelClass}>Empresa</label>
+          <input
+            name="empresa"
+            value={form.empresa}
+            onChange={handleChange}
+            className={fieldClass}
+          />
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-          <h3 className="mb-3 text-base font-semibold text-title">Contas Credoras</h3>
-          {contasCredoras.map((c, i) => (
-            <div key={i} className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
-              <input
-                placeholder="Tipo / Descrição"
-                value={c.descricao}
-                onChange={(e) => updateConta("credora", i, "descricao", e.target.value)}
-                className={fieldClass}
-              />
-              <input
-                placeholder="Valor (R$)"
-                value={c.valor}
-                onChange={(e) => updateConta("credora", i, "valor", e.target.value)}
-                className={fieldClass}
-              />
-            </div>
-          ))}
-          <button
-            onClick={() => addConta("credora")}
-            className={addButtonClass}
-          >
-            + Adicionar conta credora
-          </button>
+        <div>
+          <label className={labelClass}>E-mail</label>
+          <input
+            name="ds_email"
+            value={form.ds_email}
+            onChange={handleChange}
+            className={fieldClass}
+          />
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-          <h3 className="mb-3 text-base font-semibold text-title">Contas Bancárias (a subtrair do capital)</h3>
-          {contasBancarias.map((c, i) => (
-            <div key={i} className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
-              <input
-                placeholder="Descrição"
-                value={c.descricao}
-                onChange={(e) => updateConta("bancaria", i, "descricao", e.target.value)}
-                className={fieldClass}
-              />
-              <input
-                placeholder="Valor (R$)"
-                value={c.valor}
-                onChange={(e) => updateConta("bancaria", i, "valor", e.target.value)}
-                className={fieldClass}
-              />
-            </div>
-          ))}
-          <button
-            onClick={() => addConta("bancaria")}
-            className={addButtonClass}
-          >
-            + Adicionar conta bancária
-          </button>
+        <div className="md:col-span-2">
+          <label className={labelClass}>Endereço</label>
+          <input
+            name="endereco"
+            value={form.endereco}
+            onChange={handleChange}
+            className={fieldClass}
+          />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-            <span className={labelClass}>Total Capital</span>
-            <p className="text-xl font-bold text-emerald-800">{totalFormatado(contasCredoras)}</p>
+        <div>
+          <label className={labelClass}>Telefone</label>
+          <input
+            name="telefone"
+            value={form.telefone}
+            onChange={handleChange}
+            className={fieldClass}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Risco</label>
+          <input
+            name="risco"
+            value={form.risco}
+            onChange={handleChange}
+            className={fieldClass}
+            placeholder="Ex: R16"
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Tempo de associação</label>
+          <input
+            name="tempo_associado"
+            value={form.tempo_associado}
+            readOnly
+            className={readOnlyFieldClass}
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Data da ficha</label>
+          <input
+            name="data_ficha"
+            type="date"
+            value={form.data_ficha}
+            readOnly
+            className={readOnlyFieldClass}
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className={labelClass}>Responsável</label>
+          <input
+            name="responsavel"
+            value={form.responsavel}
+            readOnly
+            className={readOnlyFieldClass}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className={labelClass}>Observação</label>
+        <textarea
+          name="observacao"
+          value={form.observacao}
+          onChange={handleChange}
+          className={textareaClass}
+          rows={3}
+          placeholder="Observações da ficha"
+        />
+      </div>
+
+      <div>
+        <label className={labelClass}>Observações gerais</label>
+        <textarea
+          name="observacoes_gerais"
+          value={form.observacoes_gerais}
+          onChange={handleChange}
+          className={textareaClass}
+          rows={3}
+          placeholder="Observações complementares"
+        />
+      </div>
+
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center">
+        <p className="text-sm font-medium text-amber-800 md:text-base">
+          Preencha todos os campos de valores com vírgula.
+          <br />
+          Exemplo: 2500,60
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+        <h3 className="mb-3 text-base font-semibold text-title">Empréstimos</h3>
+        {contasDevedoras.map((c, i) => (
+          <div key={i} className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+            <input
+              placeholder="Contrato / Descrição"
+              value={c.descricao}
+              onChange={(e) => updateConta("devedora", i, "descricao", e.target.value)}
+              className={fieldClass}
+            />
+            <input
+              placeholder="Valor (R$)"
+              value={c.valor}
+              onChange={(e) => updateConta("devedora", i, "valor", e.target.value)}
+              className={fieldClass}
+            />
           </div>
-          <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
-            <span className={labelClass}>Contas Bancárias</span>
-            <p className="text-xl font-bold text-sky-800">{totalFormatado(contasBancarias)}</p>
-          </div>
-          <div className="rounded-2xl border border-red-100 bg-red-50 p-4">
-            <span className={labelClass}>Total de Débitos</span>
-            <p className="text-xl font-bold text-red-800">{totalFormatado(contasDevedoras)}</p>
-          </div>
-        </div>
+        ))}
+        <button
+          onClick={() => addConta("devedora")}
+          className={addButtonClass}
+        >
+          + Adicionar conta devedora
+        </button>
+      </div>
 
-        <div className="flex items-center justify-end border-t border-slate-200 pt-5">
-          <button
-            onClick={handleSalvar}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-primary"
-          >
-            Salvar ficha
-          </button>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+        <h3 className="mb-3 text-base font-semibold text-title">Contas Credoras</h3>
+        {contasCredoras.map((c, i) => (
+          <div key={i} className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+            <input
+              placeholder="Tipo / Descrição"
+              value={c.descricao}
+              onChange={(e) => updateConta("credora", i, "descricao", e.target.value)}
+              className={fieldClass}
+            />
+            <input
+              placeholder="Valor (R$)"
+              value={c.valor}
+              onChange={(e) => updateConta("credora", i, "valor", e.target.value)}
+              className={fieldClass}
+            />
+          </div>
+        ))}
+        <button
+          onClick={() => addConta("credora")}
+          className={addButtonClass}
+        >
+          + Adicionar conta credora
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+        <h3 className="mb-3 text-base font-semibold text-title">Contas Bancárias (a subtrair do capital)</h3>
+        {contasBancarias.map((c, i) => (
+          <div key={i} className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+            <input
+              placeholder="Descrição"
+              value={c.descricao}
+              onChange={(e) => updateConta("bancaria", i, "descricao", e.target.value)}
+              className={fieldClass}
+            />
+            <input
+              placeholder="Valor (R$)"
+              value={c.valor}
+              onChange={(e) => updateConta("bancaria", i, "valor", e.target.value)}
+              className={fieldClass}
+            />
+          </div>
+        ))}
+        <button
+          onClick={() => addConta("bancaria")}
+          className={addButtonClass}
+        >
+          + Adicionar conta bancária
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+          <span className={labelClass}>Total Capital</span>
+          <p className="text-xl font-bold text-emerald-800">{totalFormatado(contasCredoras)}</p>
         </div>
+        <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
+          <span className={labelClass}>Contas Bancárias</span>
+          <p className="text-xl font-bold text-sky-800">{totalFormatado(contasBancarias)}</p>
+        </div>
+        <div className="rounded-2xl border border-red-100 bg-red-50 p-4">
+          <span className={labelClass}>Total de Débitos</span>
+          <p className="text-xl font-bold text-red-800">{totalFormatado(contasDevedoras)}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end border-t border-slate-200 pt-5">
+        <button
+          onClick={handleSalvar}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-primary"
+        >
+          Salvar ficha
+        </button>
+      </div>
       </div>
 
       {/*<div className="mt-10">

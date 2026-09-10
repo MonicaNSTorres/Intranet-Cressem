@@ -1572,7 +1572,7 @@ export function GerenciamentoParticipacaoForm() {
 
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
 
-        <div className="h-1 bg-linear-to-r from-[#006f65] via-[#00AE9D] to-[#C7D300]" />
+        <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#C7D300]" />
 
         <div className="p-4 lg:p-5">
 
@@ -1866,7 +1866,7 @@ export function GerenciamentoParticipacaoForm() {
 
                 onClick={baixarCSV}
 
-                className={`${secondaryButtonBase} min-h-14 rounded-xl px-3 py-2`}
+                className={`${secondaryButtonBase} min-h-[56px] rounded-xl px-3 py-2`}
 
               >
 
@@ -1886,7 +1886,7 @@ export function GerenciamentoParticipacaoForm() {
 
                   disabled={baixandoPdfConselho}
 
-                  className={`${secondaryButtonBase} min-h-14 rounded-xl px-3 py-2`}
+                  className={`${secondaryButtonBase} min-h-[56px] rounded-xl px-3 py-2`}
 
                 >
 
@@ -1904,7 +1904,7 @@ export function GerenciamentoParticipacaoForm() {
 
               <div className="overflow-x-auto">
 
-              <table className="w-full min-w-280 table-fixed border-separate border-spacing-0">
+              <table className="w-full min-w-[1120px] table-fixed border-separate border-spacing-0">
 
                 <colgroup>
 

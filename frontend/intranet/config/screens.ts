@@ -296,7 +296,7 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["reembolso", "despesas", "viagem", "prestacao", "prestação", "solicitacao", "solicitação"],
   },
   {
-    title: "Gerenciamento de Despesas/Viagens",
+    title: "Despesas/Viagens - Gerenciamento",
     desc: "Gerenciar solicitações de reembolso de despesas e viagens.",
     href: "/auth/gerenciamento_reembolso_despesa",
     group: "Financeiro",
@@ -304,7 +304,7 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["reembolso", "despesas", "viagem", "gerenciamento", "consulta"],
   },
   {
-    title: "Cadastro de Subsídio Funeral",
+    title: "Subsídio Funeral - Cadastro",
     desc: "Cadastrar solicitação de subsídio funeral.",
     href: "/auth/cadastro_subsidio_funeral",
     group: "Financeiro",
@@ -312,7 +312,7 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["subsidio", "subsídio", "funeral", "cadastro", "solicitacao", "solicitação"],
   },
   {
-    title: "Gerenciamento de Subsídio Funeral",
+    title: "Subsídio Funeral - Gerenciamento",
     desc: "Acompanhar solicitações de subsídio funeral.",
     href: "/auth/gerenciamento_subsidio_funeral",
     group: "Financeiro",
@@ -320,7 +320,7 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["subsidio", "subsídio", "funeral", "gerenciamento", "consulta", "financeiro"],
   },
   {
-    title: "Cadastro de Subsídio Auditivo",
+    title: "Subsídio Auditivo - Cadastro",
     desc: "Tela reservada para cadastro de subsídio auditivo.",
     href: "/auth/cadastro_subsidio_auditivo",
     group: "Financeiro",
@@ -328,7 +328,7 @@ export const SCREENS: ScreenItem[] = [
     keywords: ["subsidio", "subsídio", "auditivo", "cadastro"],
   },
   {
-    title: "Gerenciamento de Subsídio Auditivo",
+    title: "Subsídio Auditivo - Gerenciamento",
     desc: "Tela reservada para gerenciamento de subsídio auditivo.",
     href: "/auth/gerenciamento_subsidio_auditivo",
     group: "Financeiro",
@@ -824,21 +824,5 @@ export const SCREENS: ScreenItem[] = [
     group: "TI",
     allowedGroups: [AD_GROUPS.SUPORTE],
     keywords: ["sisbr", "ti", "tabela", "dados", "rede"],
-  },
-  {
-    title: "Convênio Odontológico",
-    desc: "Gestão dos beneficiários.",
-    href: "/auth/convenio_odontologico",
-    group: "Benefícios",
-    allowedGroups: [AD_GROUPS.SUPORTE],
-    keywords: ["convenio", "convênio", "odonto", "gerenciamento", "odontologico"],
-  },
-  {
-    title: "Planos Odontológicos",
-    desc: "Gestão dos planos, valores vigentes e histórico de reajustes.",
-    href: "/auth/planos_odontologicos",
-    group: "Benefícios",
-    allowedGroups: [AD_GROUPS.SUPORTE],
-    keywords: ["plano", "reajuste", "odonto", "gerenciamento", "odontologico"],
   },
 ];

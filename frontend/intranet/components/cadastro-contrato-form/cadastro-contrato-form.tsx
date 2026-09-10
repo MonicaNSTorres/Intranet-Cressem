@@ -680,7 +680,7 @@ export function CadastroContratoForm({
 
   if (loadingInicial) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+      <div className="rounded-[24px] border border-slate-200 bg-white p-8 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
         <p className="text-sm font-medium text-slate-500">
           Carregando dados do contrato...
         </p>
@@ -694,7 +694,7 @@ export function CadastroContratoForm({
         }`}
     >
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+        <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#C7D300]" />
         <div className="p-5">
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>

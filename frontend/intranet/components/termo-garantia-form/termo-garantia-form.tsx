@@ -326,15 +326,8 @@ export function TermoGarantiaForm() {
     "flex items-center gap-2 px-5 py-4 text-base font-black text-slate-950";
 
   return (
-  <div className="mx-auto w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
-    <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
-
-    <div className="p-5">
-      <SearchForm
-        onSearch={handleBuscarAssociado}
-        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-      >
+    <div className="mx-auto w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <SearchForm onSearch={handleBuscarAssociado} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
           <div>
             <label className={labelClass}>
@@ -691,13 +684,13 @@ export function TermoGarantiaForm() {
       </div>
       </section>
 
-       <div className="mt-6 flex items-center justify-end border-t pt-5">
+      <div className="mt-6 flex items-center justify-end border-t pt-5">
         <button
           type="button"
           onClick={handleGerarPdf}
           disabled={!formularioValido}
           className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-sm transition
-            ${formularioValido
+    ${formularioValido
               ? "bg-[#79B729] text-white hover:bg-[#00AE9D] cursor-pointer"
               : "bg-slate-300 text-white cursor-not-allowed"
             }`}
@@ -705,8 +698,6 @@ export function TermoGarantiaForm() {
           Gerar PDF
         </button>
       </div>
-
     </div>
-  </div>
-);
+  );
 }

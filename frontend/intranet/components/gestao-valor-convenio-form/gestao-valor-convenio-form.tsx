@@ -127,8 +127,8 @@ function EditarConvenioModal({
       <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 px-5 py-4">
           <div>
-            <h3 className="text-lg font-bold text-(--title)">Editar informações</h3>
-            <p className="mt-1 text-sm text-(--paragraph)">
+            <h3 className="text-lg font-bold text-[var(--title)]">Editar informações</h3>
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
               Atualize o valor e a data de vigência do plano selecionado.
             </p>
           </div>
@@ -292,7 +292,7 @@ export function GestaoValorConvenioForm() {
             <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
               Planos e valores vigentes
             </h2>
-            <p className="mt-1 text-sm text-(--paragraph)">
+            <p className="mt-1 text-sm text-[var(--paragraph)]">
               Edite os fatores de ajuste de cada plano odontológico.
             </p>
           </div>

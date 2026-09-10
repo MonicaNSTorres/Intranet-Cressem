@@ -354,270 +354,275 @@ export function TermoMensalCaixaForm({ id }: TermoMensalCaixaFormProps) {
   }
 
   return (
-    <div className="mx-auto overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
-      <div className="p-6">
-        {mensagem && (
-          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-            {mensagem}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-600">
-              Mês
-            </label>
-            <select
-              value={mes}
-              onChange={(e) => setMes(e.target.value)}
-              className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm"
-            >
-              {meses.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-600">
-              Ano
-            </label>
-            <select
-              value={ano}
-              onChange={(e) => setAno(e.target.value)}
-              className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm"
-            >
-              {anosDisponiveis().map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-600">
-              PA
-            </label>
-            <select
-              value={pa}
-              onChange={(e) => setPa(e.target.value)}
-              className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm"
-            >
-              <option value="">Selecione o PA</option>
-
-              {pas.map((item) => (
-                <option key={item.ID_PA_ATUALIZADA} value={item.NM_FANTASIA}>
-                  {item.NR_PA} - {item.NM_FANTASIA}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-600">
-              Data do termo
-            </label>
-            <input
-              type="date"
-              value={dataTermo}
-              onChange={(e) => setDataTermo(e.target.value)}
-              className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm"
-            />
-          </div>
+    <div className="mx-auto rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+      {mensagem && (
+        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+          {mensagem}
         </div>
+      )}
 
-        <div className="mt-6 border-t pt-6">
-          <h2 className="text-base font-semibold text-gray-900">
-            Responsáveis
-          </h2>
-
-          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <input
-              value={responsavel}
-              onChange={(e) => setResponsavel(e.target.value)}
-              className="h-11 rounded-xl border border-gray-300 px-3 text-sm"
-              placeholder="Responsável"
-            />
-
-            <input
-              value={tesoureiro}
-              onChange={(e) => setTesoureiro(e.target.value)}
-              className="h-11 rounded-xl border border-gray-300 px-3 text-sm"
-              placeholder="Tesoureiro"
-            />
-
-            <input
-              value={diretorFinanceiro}
-              onChange={(e) => setDiretorFinanceiro(e.target.value)}
-              className="h-11 rounded-xl border border-gray-300 px-3 text-sm"
-              placeholder="Diretor Financeiro"
-            />
-
-            <input
-              value={gerente}
-              onChange={(e) => setGerente(e.target.value)}
-              className="h-11 rounded-xl border border-gray-300 px-3 text-sm"
-              placeholder="Gerente"
-            />
-          </div>
-        </div>
-
-        <div className="mt-6 border-t pt-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-gray-900">
-              Valores da conferência
-            </h2>
-
-            <div className="rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">
-              Total:{" "}
-              {totalGeral.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
-            </div>
-          </div>
-
-          <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-3 text-left">Local</th>
-                  <th className="px-4 py-3 text-left">Cédulas</th>
-                  <th className="px-4 py-3 text-left">Moedas</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-100">
-                {[
-                  [
-                    "Tesouraria",
-                    cedulaTesouraria,
-                    setCedulaTesouraria,
-                    moedaTesouraria,
-                    setMoedaTesouraria,
-                  ],
-                  [
-                    "Caixa 1",
-                    cedulaCaixa1,
-                    setCedulaCaixa1,
-                    moedaCaixa1,
-                    setMoedaCaixa1,
-                  ],
-                  [
-                    "Caixa 2",
-                    cedulaCaixa2,
-                    setCedulaCaixa2,
-                    moedaCaixa2,
-                    setMoedaCaixa2,
-                  ],
-                  [
-                    "Caixa 3",
-                    cedulaCaixa3,
-                    setCedulaCaixa3,
-                    moedaCaixa3,
-                    setMoedaCaixa3,
-                  ],
-                  [
-                    "Caixa 4",
-                    cedulaCaixa4,
-                    setCedulaCaixa4,
-                    moedaCaixa4,
-                    setMoedaCaixa4,
-                  ],
-                  [
-                    "ATM 63",
-                    cedulaAtm63,
-                    setCedulaAtm63,
-                    moedaAtm63,
-                    setMoedaAtm63,
-                  ],
-                  [
-                    "ATM 64",
-                    cedulaAtm64,
-                    setCedulaAtm64,
-                    moedaAtm64,
-                    setMoedaAtm64,
-                  ],
-                  ["ATM", cedulaAtm, setCedulaAtm, moedaAtm, setMoedaAtm],
-                  [
-                    "Tesoureiro Eletrônico",
-                    cedulaTesoureiroEletronico,
-                    setCedulaTesoureiroEletronico,
-                    moedaTesoureiroEletronico,
-                    setMoedaTesoureiroEletronico,
-                  ],
-                ].map(([label, cedula, setCedula, moeda, setMoeda]: any) => (
-                  <tr key={label}>
-                    <td className="px-4 py-3 font-medium text-gray-700">
-                      {label}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <input
-                        value={cedula}
-                        onChange={(e) =>
-                          setCedula(formatarMoedaDigitacao(e.target.value))
-                        }
-                        className="h-10 w-full rounded-xl border border-gray-300 px-3 text-right text-sm"
-                        placeholder="0,00"
-                      />
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <input
-                        value={moeda}
-                        onChange={(e) =>
-                          setMoeda(formatarMoedaDigitacao(e.target.value))
-                        }
-                        className="h-10 w-full rounded-xl border border-gray-300 px-3 text-right text-sm"
-                        placeholder="0,00"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="mt-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div>
           <label className="mb-1 block text-xs font-semibold text-gray-600">
-            Observação
+            Mês
           </label>
-          <textarea
-            value={observacao}
-            onChange={(e) => setObservacao(e.target.value)}
-            rows={4}
-            className="w-full resize-none rounded-2xl border border-gray-300 px-3 py-3 text-sm"
-            placeholder="Observações adicionais sobre a conferência."
+          <select
+            value={mes}
+            onChange={(e) => setMes(e.target.value)}
+            className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm"
+          >
+            {meses.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-gray-600">
+            Ano
+          </label>
+          <select
+            value={ano}
+            onChange={(e) => setAno(e.target.value)}
+            className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm"
+          >
+            {anosDisponiveis().map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-gray-600">
+            PA
+          </label>
+          <select
+            value={pa}
+            onChange={(e) => setPa(e.target.value)}
+            className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm"
+          >
+            <option value="">Selecione o PA</option>
+
+            {pas.map((item) => (
+              <option key={item.ID_PA_ATUALIZADA} value={item.NM_FANTASIA}>
+                {item.NR_PA} - {item.NM_FANTASIA}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-gray-600">
+            Data do termo
+          </label>
+          <input
+            type="date"
+            value={dataTermo}
+            onChange={(e) => setDataTermo(e.target.value)}
+            className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm"
           />
         </div>
+      </div>
 
-        <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={() => router.push("/auth/termos_mensais_caixa")}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-700"
-          >
-            <FaArrowLeft size={12} />
-            Voltar
-          </button>
+      <div className="mt-6 border-t pt-6">
+        <h2 className="text-base font-semibold text-gray-900">
+          Responsáveis
+        </h2>
 
-          <button
-            type="button"
-            onClick={salvar}
-            disabled={loading}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white hover:bg-primary disabled:bg-gray-300"
-          >
-            <FaSave size={12} />
-            {loading ? "Salvando..." : id ? "Salvar alterações" : "Salvar"}
-          </button>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <input
+            value={responsavel}
+            onChange={(e) => setResponsavel(e.target.value)}
+            className="h-11 rounded-xl border border-gray-300 px-3 text-sm"
+            placeholder="Responsável"
+          />
+
+          <input
+            value={tesoureiro}
+            onChange={(e) => setTesoureiro(e.target.value)}
+            className="h-11 rounded-xl border border-gray-300 px-3 text-sm"
+            placeholder="Tesoureiro"
+          />
+
+          <input
+            value={diretorFinanceiro}
+            onChange={(e) => setDiretorFinanceiro(e.target.value)}
+            className="h-11 rounded-xl border border-gray-300 px-3 text-sm"
+            placeholder="Diretor Financeiro"
+          />
+
+          <input
+            value={gerente}
+            onChange={(e) => setGerente(e.target.value)}
+            className="h-11 rounded-xl border border-gray-300 px-3 text-sm"
+            placeholder="Gerente"
+          />
+        </div>
+      </div>
+
+      <div className="mt-6 border-t pt-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-900">
+            Valores da conferência
+          </h2>
+
+          <div className="rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">
+            Total:{" "}
+            {totalGeral.toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            })}
+          </div>
         </div>
 
+        <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <tr>
+                <th className="px-4 py-3 text-left">Local</th>
+                <th className="px-4 py-3 text-left">Cédulas</th>
+                <th className="px-4 py-3 text-left">Moedas</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-100">
+              {[
+                [
+                  "Tesouraria",
+                  cedulaTesouraria,
+                  setCedulaTesouraria,
+                  moedaTesouraria,
+                  setMoedaTesouraria,
+                ],
+                [
+                  "Caixa 1",
+                  cedulaCaixa1,
+                  setCedulaCaixa1,
+                  moedaCaixa1,
+                  setMoedaCaixa1,
+                ],
+                [
+                  "Caixa 2",
+                  cedulaCaixa2,
+                  setCedulaCaixa2,
+                  moedaCaixa2,
+                  setMoedaCaixa2,
+                ],
+                [
+                  "Caixa 3",
+                  cedulaCaixa3,
+                  setCedulaCaixa3,
+                  moedaCaixa3,
+                  setMoedaCaixa3,
+                ],
+                [
+                  "Caixa 4",
+                  cedulaCaixa4,
+                  setCedulaCaixa4,
+                  moedaCaixa4,
+                  setMoedaCaixa4,
+                ],
+                [
+                  "ATM 63",
+                  cedulaAtm63,
+                  setCedulaAtm63,
+                  moedaAtm63,
+                  setMoedaAtm63,
+                ],
+                [
+                  "ATM 64",
+                  cedulaAtm64,
+                  setCedulaAtm64,
+                  moedaAtm64,
+                  setMoedaAtm64,
+                ],
+                ["ATM", cedulaAtm, setCedulaAtm, moedaAtm, setMoedaAtm],
+                [
+                  "Tesoureiro Eletrônico",
+                  cedulaTesoureiroEletronico,
+                  setCedulaTesoureiroEletronico,
+                  moedaTesoureiroEletronico,
+                  setMoedaTesoureiroEletronico,
+                ],
+              ].map(([label, cedula, setCedula, moeda, setMoeda]: any) => (
+                <tr key={label}>
+                  <td className="px-4 py-3 font-medium text-gray-700">
+                    {label}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <input
+                      value={cedula}
+                      onChange={(e) =>
+                        setCedula(formatarMoedaDigitacao(e.target.value))
+                      }
+                      className="h-10 w-full rounded-xl border border-gray-300 px-3 text-right text-sm"
+                      placeholder="0,00"
+                    />
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <input
+                      value={moeda}
+                      onChange={(e) =>
+                        setMoeda(formatarMoedaDigitacao(e.target.value))
+                      }
+                      className="h-10 w-full rounded-xl border border-gray-300 px-3 text-right text-sm"
+                      placeholder="0,00"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <label className="mb-1 block text-xs font-semibold text-gray-600">
+          Observação
+        </label>
+        <textarea
+          value={observacao}
+          onChange={(e) => setObservacao(e.target.value)}
+          rows={4}
+          className="w-full resize-none rounded-2xl border border-gray-300 px-3 py-3 text-sm"
+          placeholder="Observações adicionais sobre a conferência."
+        />
+      </div>
+
+      <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          onClick={() => router.push("/auth/termos_mensais_caixa")}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 text-sm font-semibold text-gray-700"
+        >
+          <FaArrowLeft size={12} />
+          Voltar
+        </button>
+
+        {/*<button
+          type="button"
+          onClick={gerarPdf}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#00AE9D] px-5 text-sm font-semibold text-white hover:bg-emerald-700"
+        >
+          <FaFilePdf size={12} />
+          Gerar PDF
+        </button>*/}
+
+        <button
+          type="button"
+          onClick={salvar}
+          disabled={loading}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white hover:bg-primary disabled:bg-gray-300"
+        >
+          <FaSave size={12} />
+          {loading ? "Salvando..." : id ? "Salvar alterações" : "Salvar"}
+        </button>
       </div>
     </div>
   );

@@ -216,7 +216,7 @@ function Field({
         {label}
       </label>
       <div
-        className={`rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3 text-sm font-semibold text-slate-800 shadow-sm ${multiline ? "min-h-24 whitespace-pre-wrap" : ""
+        className={`rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3 text-sm font-semibold text-slate-800 shadow-sm ${multiline ? "min-h-[96px] whitespace-pre-wrap" : ""
           }`}
       >
         {value || "-"}
