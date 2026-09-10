@@ -16,7 +16,6 @@ export default function FichaDesimpedimentoPage() {
 
     const [loading, setLoading] = useState(true);
     const [allowed, setAllowed] = useState(false);
-    const router = useRouter();
 
     useEffect(() => {
         async function validarAcesso() {

@@ -9,7 +9,7 @@ type ResidenciaOpts = {
     complemento: string;
     bairro: string;
     cidade: string;
-    cidadeRodape: string;
+    cidadeRodape?: string;
     uf: string;
     cep: string;
     dia: string;
@@ -17,12 +17,39 @@ type ResidenciaOpts = {
     ano: string;
 };
 
+type FieldBox = {
+  label: string;
+  value: string;
+  width: number;
+  maxLines?: number;
+};
+
+const COLORS = {
+  green: { r: 121, g: 183, b: 41 },
+  dark: { r: 0, g: 54, b: 65 },
+  light: { r: 242, g: 248, b: 235 },
+  border: { r: 210, g: 220, b: 210 },
+};
+
+const onlyDigits = (value = "") => value.replace(/\D/g, "");
+const safeText = (value?: string, fallback = "-") => String(value || "").trim() || fallback;
+
+const maskCpf = (value = "") => {
+  const s = onlyDigits(value).slice(0, 11);
+  if (s.length <= 3) return s;
+  if (s.length <= 6) return `${s.slice(0, 3)}.${s.slice(3)}`;
+  if (s.length <= 9) return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6)}`;
+  return `${s.slice(0, 3)}.${s.slice(3, 6)}.${s.slice(6, 9)}-${s.slice(9)}`;
+};
+
+const maskCep = (value = "") => {
+  const s = onlyDigits(value).slice(0, 8);
+  if (s.length <= 5) return s;
+  return `${s.slice(0, 5)}-${s.slice(5)}`;
+};
+
 export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
-    const {
-        nome, cpf, rg, endereco, numero,
-        complemento, bairro, cidade, cidadeRodape, uf, cep,
-        dia, mes, ano
-    } = opts;
+  const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
 
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 28;
@@ -104,43 +131,11 @@ export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
   doc.setDrawColor(148, 163, 184);
   doc.setLineWidth(0.8);
   doc.line(assinaturaX, y, assinaturaX + assinaturaW, y);
-
-        const xLeft = 60;
-        const maxW = pageW - 120;
-
-        doc.text(linha1, xLeft, y, { maxWidth: maxW });
-        y += 26;
-        doc.text(linha2, xLeft, y, { maxWidth: maxW });
-        y += 26;//altura entre as linhas
-    }
-
-
-    /*doc.text(
-        `complemento ${complemento || "__________"} bairro ${bairro || "____________________"}, cidade ${cidade || "____________"}, UF ${uf || "___"}`,
-        60, y
-    ); y += 22;
-    doc.text(`CEP ${cep || "________________"}`, 60, y);
-    y += 40;*/
-
-    y += 60;
-
-    doc.text(
-        `${cidadeRodape || "________________"}, ${dia || "___"} de ${mes || "________"} de ${ano || "20__"}.`,
-        60, y
-    );
-
-
-    const marginLeft = 60;
-    const lineWidth = 250;
-
-    doc.line(marginLeft, y, marginLeft + lineWidth, y);
-
-    doc.text("Assinatura do declarante", marginLeft, y + 16, { align: "left" });
-
-    doc.save(
-        `declaracao_residencia_${(nome || "associado").replace(/\s+/g, "_")}.pdf`
-    );
-
+  y += 15;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(30, 41, 59);
+  doc.text("Assinatura do declarante", pageW / 2, y, { align: "center" });
   doc.save(`declaracao_residencia_${sanitizeFileName(opts.nome || "declarante")}.pdf`);
 }
 

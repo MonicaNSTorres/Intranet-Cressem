@@ -8,6 +8,7 @@ import { buscarFuncionarioPorCpfTermo } from "@/services/termo_responsabilidade_
 import { gerarPdfTermoResponsabilidadeUso } from "@/lib/pdf/gerarPdfTermoResponsabilidadeUso";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type EquipamentoTipo = "" | "celular" | "notebook";
 

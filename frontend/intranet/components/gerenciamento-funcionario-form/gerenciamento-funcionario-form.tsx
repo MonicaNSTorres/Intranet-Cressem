@@ -859,6 +859,18 @@ export function GerenciamentoFuncionarioForm() {
     return funcionariosFiltrados.slice(inicio, inicio + limite);
   }, [funcionariosFiltrados, limite, paginaSegura]);
 
+  const paginasVisiveis = useMemo(() => {
+    const range = 2;
+    const inicio = Math.max(1, paginaAtual - range);
+    const fim = Math.min(totalPages, paginaAtual + range);
+
+    const paginas: number[] = [];
+    for (let i = inicio; i <= fim; i++) {
+      paginas.push(i);
+    }
+    return paginas;
+  }, [paginaAtual, totalPages]);
+
   return (
     <>
       <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">

@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -312,6 +312,18 @@ export function GerenciamentoPosicaoForm() {
       );
     }
   }
+
+  const paginasVisiveis = useMemo(() => {
+    const range = 2;
+    const inicio = Math.max(1, paginaAtual - range);
+    const fim = Math.min(totalPages, paginaAtual + range);
+
+    const paginas: number[] = [];
+    for (let i = inicio; i <= fim; i++) {
+      paginas.push(i);
+    }
+    return paginas;
+  }, [paginaAtual, totalPages]);
 
   return (
     <>

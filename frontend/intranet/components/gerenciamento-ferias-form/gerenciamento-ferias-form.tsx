@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FaChevronLeft, FaChevronRight, FaEdit, FaPlus, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
 import {
@@ -288,6 +288,18 @@ export function GerenciamentoFeriasForm() {
         }
     }
 
+    const paginasVisiveis = useMemo(() => {
+        const range = 2;
+        const inicio = Math.max(1, paginaAtual - range);
+        const fim = Math.min(totalPages, paginaAtual + range);
+
+        const paginas: number[] = [];
+        for (let i = inicio; i <= fim; i++) {
+            paginas.push(i);
+        }
+        return paginas;
+    }, [paginaAtual, totalPages]);
+
     return (
         <>
             <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
@@ -336,6 +348,8 @@ export function GerenciamentoFeriasForm() {
                                 <FaPlus />
                                 Cadastrar
                             </button>
+                        </div>
+                    </div>
 
                     {(erro || info) && (
                         <div className="mt-4">

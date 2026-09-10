@@ -9,6 +9,7 @@ import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
 import { buscarFuncionarioPorNome } from "@/services/bolsa_estudo.service";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 import { FileText, Search } from "lucide-react";
 
 function hojeBRComHora() {

@@ -18,6 +18,7 @@ import {
 } from "@/services/cadastro_ferias.service";
 import { SearchForm } from "@/components/ui/search-form";
 import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
 
 type LinhaFerias = {
   id?: number | string;
