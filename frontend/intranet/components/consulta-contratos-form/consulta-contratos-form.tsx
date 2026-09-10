@@ -219,7 +219,7 @@ function Section({
 }) {
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-[#00AE9D]/20 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#79B729] px-5 py-3">
+      <div className="border-b border-[#00AE9D]/20 bg-linear-to-r from-[#006f65] via-[#00AE9D] to-[#79B729] px-5 py-3">
         <h3 className="text-sm font-black text-white">{title}</h3>
       </div>
       <div className="p-5">{children}</div>
@@ -757,9 +757,9 @@ export function ConsultaContratosForm() {
   return (
     <>
       <div className="mx-auto w-full min-w-225 space-y-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#79B729]" />
+        <div className="h-1 bg-linear-to-r from-[#006f65] via-[#00AE9D] to-[#79B729]" />
         <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-        <div className="rounded-3xl border border-slate-200 bg-gradient-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/15 p-5 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 bg-linear-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/15 p-5 shadow-sm">
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-xl font-black text-slate-950">
@@ -918,7 +918,7 @@ export function ConsultaContratosForm() {
                 <button
                   type="button"
                   onClick={limparFiltros}
-                  className="inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl border border-[var(--text-darken-placeholder)] bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
+                  className="inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl border border-(--text-darken-placeholder) bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
                 >
                   Limpar
                 </button>
@@ -983,7 +983,7 @@ export function ConsultaContratosForm() {
           ) : (
             <>
               <div className="overflow-x-auto rounded-3xl border border-slate-200 shadow-sm">
-                <table className="w-full min-w-[1180px] border-separate border-spacing-0 overflow-hidden rounded-2xl text-[13px]">
+                <table className="w-full min-w-295 border-separate border-spacing-0 overflow-hidden rounded-2xl text-[13px]">
                   <thead>
                     <tr className="bg-slate-100 text-left text-[11px] font-black uppercase tracking-[0.04em] text-slate-600">
                       <th className="border-b border-slate-200 px-3 py-2.5">Empresa</th>
@@ -1109,7 +1109,7 @@ export function ConsultaContratosForm() {
               <button
                 type="button"
                 onClick={fecharModalEdicao}
-                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-[var(--text-darken-placeholder)] bg-white text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
+                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-(--text-darken-placeholder) bg-white text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
               >
                 <FaTimes size={14} />
               </button>
@@ -1146,7 +1146,7 @@ export function ConsultaContratosForm() {
               <button
                 type="button"
                 onClick={fecharModalContatos}
-                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-[var(--text-darken-placeholder)] bg-white text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
+                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-(--text-darken-placeholder) bg-white text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
               >
                 <FaTimes size={14} />
               </button>
@@ -1214,7 +1214,7 @@ export function ConsultaContratosForm() {
               <button
                 type="button"
                 onClick={fecharModalContatos}
-                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border border-[var(--text-darken-placeholder)] bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
+                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border border-(--text-darken-placeholder) bg-white px-5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-fourth hover:text-fourth"
               >
                 Fechar
               </button>

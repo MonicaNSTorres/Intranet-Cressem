@@ -41,7 +41,7 @@ export default function ProgressInput(props: {
   return (
     <div className="relative">
       <div
-        className="pointer-events-none absolute inset-y-0 left-0 rounded-xl bg-gradient-to-r from-[#00AE9D]/25 to-[#79B729]/30 transition-all duration-300"
+        className="pointer-events-none absolute inset-y-0 left-0 rounded-xl bg-linear-to-r from-[#00AE9D]/25 to-[#79B729]/30 transition-all duration-300"
         style={{ width: `${p}%` }}
       />
       <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-slate-200" />

@@ -255,87 +255,80 @@ export default function CadastroNotebookPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-                <div className={`${cardClass} border-t-4 border-t-primary`}>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <h2 className="text-base font-semibold text-title">
-                            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-primary" />
+                <div className="overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-200">
+                    <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+
+                    <div className="p-5">
+                        <h2 className="text-base font-semibold text-gray-900">
                             Dados do equipamento
                         </h2>
 
-                        <Link
-                            href="/auth/consulta_notebook"
-                            className={`${accentButtonClass} w-full sm:w-auto`}
-                        >
-                            <FaList />
-                            Consultar notebooks cadastrados
-                        </Link>
-                    </div>
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            <Field
+                                label="Nome do notebook *"
+                                value={form.NM_NOTEBOOK}
+                                onChange={(v) => handleChange("NM_NOTEBOOK", v)}
+                                placeholder="Ex: NOTE-001"
+                                required
+                            />
 
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        <Field
-                            label="Nome do notebook *"
-                            value={form.NM_NOTEBOOK}
-                            onChange={(v) => handleChange("NM_NOTEBOOK", v)}
-                            placeholder="Ex: NOTE-001"
-                            required
-                        />
+                            <Field
+                                label="Modelo"
+                                value={form.NM_MODELO}
+                                onChange={(v) => handleChange("NM_MODELO", v)}
+                                placeholder="Ex: Dell Latitude"
+                            />
 
-                        <Field
-                            label="Modelo"
-                            value={form.NM_MODELO}
-                            onChange={(v) => handleChange("NM_MODELO", v)}
-                            placeholder="Ex: Dell Latitude"
-                        />
+                            <Field
+                                label="Patrimônio"
+                                value={form.CD_PATRIMONIO}
+                                onChange={(v) => handleChange("CD_PATRIMONIO", v)}
+                                placeholder="Ex: 123456"
+                                type="number"
+                            />
 
-                        <Field
-                            label="Patrimônio"
-                            value={form.CD_PATRIMONIO}
-                            onChange={(v) => handleChange("CD_PATRIMONIO", v)}
-                            placeholder="Ex: 123456"
-                            type="number"
-                        />
+                            <Field
+                                label="IP"
+                                value={form.NR_IP}
+                                onChange={(v) => handleChange("NR_IP", v)}
+                                placeholder="Ex: 192.168.0.10"
+                            />
 
-                        <Field
-                            label="IP"
-                            value={form.NR_IP}
-                            onChange={(v) => handleChange("NR_IP", v)}
-                            placeholder="Ex: 192.168.0.10"
-                        />
+                            <Field
+                                label="MAC"
+                                value={form.NR_MAC}
+                                onChange={(v) => handleChange("NR_MAC", v)}
+                                placeholder="Ex: 00:1A:2B:3C:4D:5E"
+                            />
 
-                        <Field
-                            label="MAC"
-                            value={form.NR_MAC}
-                            onChange={(v) => handleChange("NR_MAC", v)}
-                            placeholder="Ex: 00:1A:2B:3C:4D:5E"
-                        />
+                            <Field
+                                label="BitLocker"
+                                value={form.NR_BITLOCKER}
+                                onChange={(v) => handleChange("NR_BITLOCKER", v)}
+                                placeholder="Número/chave BitLocker"
+                            />
 
-                        <Field
-                            label="BitLocker"
-                            value={form.NR_BITLOCKER}
-                            onChange={(v) => handleChange("NR_BITLOCKER", v)}
-                            placeholder="Número/chave BitLocker"
-                        />
+                            <Field
+                                label="Início da operação"
+                                value={form.DT_INICIO_OPERACAO}
+                                onChange={(v) => handleChange("DT_INICIO_OPERACAO", v)}
+                                type="date"
+                            />
 
-                        <Field
-                            label="Início da operação"
-                            value={form.DT_INICIO_OPERACAO}
-                            onChange={(v) => handleChange("DT_INICIO_OPERACAO", v)}
-                            type="date"
-                        />
+                            <Field
+                                label="Garantia"
+                                value={form.DT_GARANTIA}
+                                onChange={(v) => handleChange("DT_GARANTIA", v)}
+                                type="date"
+                            />
 
-                        <Field
-                            label="Garantia"
-                            value={form.DT_GARANTIA}
-                            onChange={(v) => handleChange("DT_GARANTIA", v)}
-                            type="date"
-                        />
-
-                        <Field
-                            label="Situação"
-                            value={form.DESC_SITUACAO}
-                            onChange={(v) => handleChange("DESC_SITUACAO", v)}
-                            placeholder="Ex: Ativo"
-                        />
+                            <Field
+                                label="Situação"
+                                value={form.DESC_SITUACAO}
+                                onChange={(v) => handleChange("DESC_SITUACAO", v)}
+                                placeholder="Ex: Ativo"
+                            />
+                        </div>
                     </div>
                 </div>
 

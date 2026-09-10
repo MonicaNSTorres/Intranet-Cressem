@@ -140,74 +140,80 @@ export default function TabelaSisbrTiPage() {
         </div>
       </div>
 
-      <div className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">
-            Lista SISBR TI
-          </h2>
-          <div className="text-xs text-gray-500">
-            {loading ? "Carregando..." : `${total} encontrados`}
+      <div className="mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+
+        <div className="p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-gray-900">
+              Lista SISBR TI
+            </h2>
+
+            <div className="text-xs text-gray-500">
+              {loading ? "Carregando..." : `${total} encontrados`}
+            </div>
           </div>
-        </div>
 
-        {error ? (
-          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        ) : null}
+          {error ? (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          ) : null}
 
-        {!loading && !error && rows.length === 0 ? (
-          <div className="mt-6 text-center text-sm text-gray-500">
-            Nenhum registro encontrado.
-          </div>
-        ) : (
-          <div className="mt-4 overflow-auto">
-            <table className="min-w-225 w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="py-3 px-3">PA SisBR</th>
-                  <th className="py-3 px-3">Local</th>
-                  <th className="py-3 px-3">IP</th>
-                  <th className="py-3 px-3">Provedor</th>
-                  <th className="py-3 px-3">Antigo PA</th>
-                  <th className="py-3 px-3">CNPJ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, idx) => (
-                  <tr
-                    key={`${r.FW ?? "fw"}-${r.LOCAL ?? "local"}-${idx}`}
-                    className="border-t border-gray-100 hover:bg-gray-50/60"
-                  >
-                    <td className="py-3 px-3 font-semibold text-gray-900">
-                      {r.FW ?? "-"}
-                    </td>
-
-                    <td className="py-3 px-3 text-gray-900">{r.LOCAL ?? "-"}</td>
-
-                    <td className="py-3 px-3 text-gray-700">{r.IP ?? "-"}</td>
-
-                    <td className="py-3 px-3 text-gray-700">
-                      {r.PROVEDOR ?? "-"}
-                    </td>
-
-                    <td className="py-3 px-3 text-gray-700">
-                      {r.ANTIGO_PA ?? "-"}
-                    </td>
-
-                    <td className="py-3 px-3 text-gray-700">
-                      {r.CNPJ ?? "-"}
-                    </td>
+          {!loading && !error && rows.length === 0 ? (
+            <div className="mt-6 text-center text-sm text-gray-500">
+              Nenhum registro encontrado.
+            </div>
+          ) : (
+            <div className="mt-4 overflow-auto">
+              <table className="min-w-225 w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-500">
+                    <th className="py-3 px-3">PA SisBR</th>
+                    <th className="py-3 px-3">Local</th>
+                    <th className="py-3 px-3">IP</th>
+                    <th className="py-3 px-3">Provedor</th>
+                    <th className="py-3 px-3">Antigo PA</th>
+                    <th className="py-3 px-3">CNPJ</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {rows.map((r, idx) => (
+                    <tr
+                      key={`${r.FW ?? "fw"}-${r.LOCAL ?? "local"}-${idx}`}
+                      className="border-t border-gray-100 hover:bg-gray-50/60"
+                    >
+                      <td className="py-3 px-3 font-semibold text-gray-900">
+                        {r.FW ?? "-"}
+                      </td>
 
-        <p className="mt-3 text-xs text-gray-500">
-          * Dados carregados do Oracle via intranet-api.
-        </p>
+                      <td className="py-3 px-3 text-gray-900">{r.LOCAL ?? "-"}</td>
+
+                      <td className="py-3 px-3 text-gray-700">{r.IP ?? "-"}</td>
+
+                      <td className="py-3 px-3 text-gray-700">
+                        {r.PROVEDOR ?? "-"}
+                      </td>
+
+                      <td className="py-3 px-3 text-gray-700">
+                        {r.ANTIGO_PA ?? "-"}
+                      </td>
+
+                      <td className="py-3 px-3 text-gray-700">
+                        {r.CNPJ ?? "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <p className="mt-3 text-xs text-gray-500">
+            * Dados carregados do Oracle via intranet-api.
+          </p>
+
+        </div>
       </div>
     </div>
   );
