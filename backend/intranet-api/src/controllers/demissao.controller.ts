@@ -101,7 +101,9 @@ export const demissaoController = {
 
   async buscarConvenio(req: Request, res: Response) {
     try {
-      const documento = somenteNumeros(String(req.params.cpf || ""));
+      const documento = somenteNumeros(
+        String(req.params.cpf || "")
+      );
 
       if (!documentoValido(documento)) {
         return res.status(400).json({
@@ -109,71 +111,244 @@ export const demissaoController = {
         });
       }
 
-      const sql = `
+      const ativoSql = `
       SELECT
-        p.ID_CONVENIO_PESSOAS,
-        p.NM_USUARIO,
-        p.NR_CPF_USUARIO,
-        p.NR_CPF_TITULAR,
-        p.DESC_PARENTESCO,
-        p.SN_ATIVO,
-        NVL(f.VL_AJUSTE, 0) AS VL_AJUSTE
-      FROM DBACRESSEM.CONVENIO_PESSOAS p
-      LEFT JOIN DBACRESSEM.CONVENIO_FATOR_AJUSTE f
-        ON f.ID_CONVENIO_FATOR_AJUSTE = p.ID_CONVENIO_FATOR_AJUSTE
-      WHERE p.SN_ATIVO = 1
-        AND (
-          REGEXP_REPLACE(p.NR_CPF_TITULAR, '[^0-9]', '') = :documento
-          OR REGEXP_REPLACE(p.NR_CPF_USUARIO, '[^0-9]', '') = :documento
-        )
+        B.ID_BENEFICIARIO,
+        B.NM_BENEFICIARIO,
+        B.NR_CPF,
+        B.ID_TITULAR,
+        B.DT_INCLUSAO_PLANO,
+        B.DT_EXCLUSAO_PLANO,
+
+        TB.CD_TIPO_BENEFICIARIO,
+        TB.NM_TIPO_BENEFICIARIO,
+
+        P.ID_PLANO,
+        P.NM_PLANO,
+        P.TP_COBRANCA,
+
+        O.ID_OPERADORA,
+        O.NM_OPERADORA,
+
+        PV.ID_PLANO_VALOR,
+        PV.VL_MENSALIDADE,
+        PV.DT_VIGENCIA_INICIO,
+        PV.DT_VIGENCIA_FIM
+
+      FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+      INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+        ON TB.ID_TIPO_BENEFICIARIO =
+           B.ID_TIPO_BENEFICIARIO
+
+      INNER JOIN DBACRESSEM.ODONTO_PLANO P
+        ON P.ID_PLANO =
+           B.ID_PLANO
+
+      INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+        ON O.ID_OPERADORA =
+           P.ID_OPERADORA
+
+      LEFT JOIN DBACRESSEM.ODONTO_PLANO_VALOR PV
+        ON PV.ID_PLANO =
+           P.ID_PLANO
+
+       AND TRUNC(SYSDATE) >=
+           TRUNC(PV.DT_VIGENCIA_INICIO)
+
+       AND (
+         PV.DT_VIGENCIA_FIM IS NULL
+         OR SYSDATE <= PV.DT_VIGENCIA_FIM
+       )
+
+      WHERE REGEXP_REPLACE(
+        B.NR_CPF,
+        '[^0-9]',
+        ''
+      ) = :documento
+
+        AND B.SN_ATIVO = 1
+        AND P.SN_ATIVO = 1
+        AND O.SN_ATIVO = 1
+
+      FETCH FIRST 1 ROWS ONLY
     `;
 
-      const result = await oracleExecute(
-        sql,
+      const ativoResult = await oracleExecute(
+        ativoSql,
         { documento },
-        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        {
+          outFormat: oracledb.OUT_FORMAT_OBJECT,
+        }
       );
 
-      const pessoas: any[] = result.rows || [];
+      const ativo: any =
+        ativoResult.rows?.[0];
 
-      if (!pessoas.length) {
-        return res.status(404).json({
-          error: "Convênio odontológico não encontrado",
+      if (ativo) {
+        const ehTitular =
+          ativo.CD_TIPO_BENEFICIARIO ===
+          "TITULAR";
+
+        return res.json({
+          situacao: "ATIVO",
+
+          titular_ativo: true,
+
+          eh_titular: ehTitular,
+
+          total_custo:
+            Number(
+              ativo.VL_MENSALIDADE || 0
+            ),
+
+          idBeneficiario:
+            ativo.ID_BENEFICIARIO,
+
+          tipoBeneficiario:
+            ativo.CD_TIPO_BENEFICIARIO,
+
+          nomeTipoBeneficiario:
+            ativo.NM_TIPO_BENEFICIARIO,
+
+          idOperadora:
+            ativo.ID_OPERADORA,
+
+          operadora:
+            ativo.NM_OPERADORA,
+
+          idPlano:
+            ativo.ID_PLANO,
+
+          plano:
+            ativo.NM_PLANO,
+
+          tipoCobranca:
+            ativo.TP_COBRANCA,
+
+          valorMensalidade:
+            Number(
+              ativo.VL_MENSALIDADE || 0
+            ),
+
+          dataInicioVigenciaValor:
+            ativo.DT_VIGENCIA_INICIO,
+
+          dataFimVigenciaValor:
+            ativo.DT_VIGENCIA_FIM,
         });
       }
 
-      // verifica se o cpf pesquisado é titular
-      const ehTitular = pessoas.some(
-        (p) =>
-          somenteNumeros(p.NR_CPF_TITULAR) === documento &&
-          somenteNumeros(p.NR_CPF_USUARIO) === documento
-      );
+      const historicoSql = `
+      SELECT
+        B.ID_BENEFICIARIO,
+        B.NM_BENEFICIARIO,
+        B.NR_CPF,
+        B.DT_INCLUSAO_PLANO,
+        B.DT_EXCLUSAO_PLANO,
 
-      let totalCusto = 0;
+        TB.CD_TIPO_BENEFICIARIO,
+        TB.NM_TIPO_BENEFICIARIO,
 
-      // somente titular mostra valor
-      if (ehTitular) {
-        totalCusto = pessoas.reduce(
-          (total, pessoa) =>
-            total + Number(pessoa.VL_AJUSTE || 0),
-          0
+        P.ID_PLANO,
+        P.NM_PLANO,
+        P.TP_COBRANCA,
+
+        O.ID_OPERADORA,
+        O.NM_OPERADORA
+
+      FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+      INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+        ON TB.ID_TIPO_BENEFICIARIO =
+           B.ID_TIPO_BENEFICIARIO
+
+      INNER JOIN DBACRESSEM.ODONTO_PLANO P
+        ON P.ID_PLANO =
+           B.ID_PLANO
+
+      INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+        ON O.ID_OPERADORA =
+           P.ID_OPERADORA
+
+      WHERE REGEXP_REPLACE(
+        B.NR_CPF,
+        '[^0-9]',
+        ''
+      ) = :documento
+
+        AND B.SN_ATIVO = 0
+
+      ORDER BY
+        B.DT_EXCLUSAO_PLANO DESC NULLS LAST,
+        B.ID_BENEFICIARIO DESC
+
+      FETCH FIRST 1 ROWS ONLY
+    `;
+
+      const historicoResult =
+        await oracleExecute(
+          historicoSql,
+          { documento },
+          {
+            outFormat:
+              oracledb.OUT_FORMAT_OBJECT,
+          }
         );
+
+      const historico: any =
+        historicoResult.rows?.[0];
+
+      if (historico) {
+        return res.json({
+          situacao: "INATIVO",
+
+          titular_ativo: false,
+
+          total_custo: 0,
+
+          idBeneficiario:
+            historico.ID_BENEFICIARIO,
+
+          tipoBeneficiario:
+            historico.CD_TIPO_BENEFICIARIO,
+
+          nomeTipoBeneficiario:
+            historico.NM_TIPO_BENEFICIARIO,
+
+          operadora:
+            historico.NM_OPERADORA,
+
+          plano:
+            historico.NM_PLANO,
+
+          tipoCobranca:
+            historico.TP_COBRANCA,
+
+          dataInclusaoPlano:
+            historico.DT_INCLUSAO_PLANO,
+
+          dataExclusaoPlano:
+            historico.DT_EXCLUSAO_PLANO,
+        });
       }
 
       return res.json({
-        titular_ativo: true,
-        eh_titular: ehTitular,
-        total_custo: totalCusto,
-        pessoas,
+        situacao: "NAO_ENCONTRADO",
+        titular_ativo: false,
+        total_custo: 0,
       });
-
     } catch (error: any) {
-
-      console.error("Erro ao buscar convênio demissão:", error);
+      console.error(
+        "Erro ao buscar convênio demissão:",
+        error
+      );
 
       return res.status(500).json({
-        error: "Erro ao consultar convênio odontológico",
-        details: error.message,
+        error:
+          "Erro ao consultar convênio odontológico",
+        details:
+          error.message,
       });
     }
   },
