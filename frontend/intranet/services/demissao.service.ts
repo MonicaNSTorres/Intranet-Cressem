@@ -24,8 +24,43 @@ export type MotivoDemissaoOption = {
 };
 
 export type ConvenioStatusResponse = {
+  situacao:
+  | "ATIVO"
+  | "INATIVO"
+  | "NAO_ENCONTRADO";
+
   titular_ativo?: boolean;
+  eh_titular?: boolean;
   total_custo?: number;
+  idBeneficiario?: number;
+  tipoBeneficiario?: string;
+  nomeTipoBeneficiario?: string;
+  idOperadora?: number;
+  operadora?: string;
+  idPlano?: number;
+  plano?: string;
+
+  tipoCobranca?:
+  | "POR_PESSOA"
+  | "POR_PLANO";
+
+  valorMensalidade?: number | null;
+
+  dataInicioVigenciaValor?:
+  | string
+  | null;
+
+  dataFimVigenciaValor?:
+  | string
+  | null;
+
+  dataInclusaoPlano?:
+  | string
+  | null;
+
+  dataExclusaoPlano?:
+  | string
+  | null;
 };
 
 function onlyDigits(value: string) {

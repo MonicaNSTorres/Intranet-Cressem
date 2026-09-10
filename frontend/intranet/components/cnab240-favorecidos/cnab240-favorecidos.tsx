@@ -58,7 +58,7 @@ type LinhaLote = {
 
 const COLUNAS_LOTE = [
   "CPF/CNPJ",
-  "ID Cliente",
+  //"ID Cliente",
   "Nome",
   "Banco",
   "Agência",
@@ -381,13 +381,13 @@ export function Cnab240FavorecidosForm() {
       .trim()
       .toLowerCase();
 
-    const terceira = String(colunas[2] || "")
+    const segunda = String(colunas[1] || "")
       .trim()
       .toLowerCase();
 
     return (
       (primeira.includes("cpf") || primeira.includes("cnpj")) &&
-      terceira.includes("nome")
+      segunda.includes("nome")
     );
   }
 
@@ -432,7 +432,6 @@ export function Cnab240FavorecidosForm() {
 
         const [
           cpfRaw,
-          idClienteRaw,
           nomeRaw,
           bancoRaw,
           agenciaRaw,
@@ -472,7 +471,7 @@ export function Cnab240FavorecidosForm() {
         const dados: CnabFavorecidoLotePayload = {
           LINHA: numeroLinha,
           CPF: cpf,
-          IDCLIENTE: idClienteRaw || "",
+          //IDCLIENTE: idClienteRaw || "",
           NOME: nome,
           BANCO: onlyDigits(bancoRaw).slice(0, 3),
           AGENCIA: onlyDigits(agenciaRaw).slice(0, 5),
@@ -564,8 +563,8 @@ export function Cnab240FavorecidosForm() {
       console.error(error);
       mostrarMensagem(
         error?.response?.data?.details ||
-          error?.response?.data?.error ||
-          "Erro ao importar favorecidos em lote.",
+        error?.response?.data?.error ||
+        "Erro ao importar favorecidos em lote.",
         "error"
       );
     } finally {
@@ -581,8 +580,8 @@ export function Cnab240FavorecidosForm() {
       {mensagem && (
         <div
           className={`rounded-2xl px-4 py-3 text-sm font-medium ${tipoMensagem === "success"
-              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border border-red-200 bg-red-50 text-red-700"
+            ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+            : "border border-red-200 bg-red-50 text-red-700"
             }`}
         >
           {mensagem}
@@ -897,7 +896,7 @@ export function Cnab240FavorecidosForm() {
                   }}
                   disabled={importandoLote}
                   rows={8}
-                  placeholder={`CPF/CNPJ\tID Cliente\tNome\tBanco\tAgência\tConta\tDV\tUF\tCEP\tCidade\tBairro\tNúmero\tEndereço\tComplemento`}
+                  placeholder={`CPF/CNPJ\tNome\tBanco\tAgência\tConta\tDV\tUF\tCEP\tCidade\tBairro\tNúmero\tEndereço\tComplemento`}
                   className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10 disabled:opacity-60"
                 />
               </section>
@@ -992,9 +991,9 @@ export function Cnab240FavorecidosForm() {
                             <td className="px-4 py-3 text-sm text-slate-700">
                               {formatCpfCnpj(item.dados.CPF || "") || "-"}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-700">
+                            {/*<td className="px-4 py-3 text-sm text-slate-700">
                               {item.dados.IDCLIENTE || "-"}
-                            </td>
+                            </td>*/}
                             <td className="px-4 py-3 text-sm font-semibold text-slate-800">
                               {item.dados.NOME || "-"}
                             </td>
@@ -1016,8 +1015,8 @@ export function Cnab240FavorecidosForm() {
                             <td className="px-4 py-3 text-sm text-slate-700">
                               {item.dados.CEP
                                 ? formatCep(
-                                    `${item.dados.CEP}${item.dados.CEP_COMPLEMENTO || ""}`
-                                  )
+                                  `${item.dados.CEP}${item.dados.CEP_COMPLEMENTO || ""}`
+                                )
                                 : "-"}
                             </td>
                             <td className="px-4 py-3 text-sm text-slate-700">
@@ -1067,10 +1066,9 @@ export function Cnab240FavorecidosForm() {
                 <FaSave />
                 {importandoLote
                   ? "Importando..."
-                  : `Importar ${
-                      linhasLote.filter((item) => item.erros.length === 0)
-                        .length
-                    } favorecido(s)`}
+                  : `Importar ${linhasLote.filter((item) => item.erros.length === 0)
+                    .length
+                  } favorecido(s)`}
               </button>
             </div>
           </div>
@@ -1119,7 +1117,7 @@ export function Cnab240FavorecidosForm() {
                   </h3>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2">
                   <Input
                     label="CPF/CNPJ"
                     value={form.CPF || ""}
@@ -1127,12 +1125,12 @@ export function Cnab240FavorecidosForm() {
                     placeholder="CPF ou CNPJ"
                   />
 
-                  <Input
+                  {/*<Input
                     label="ID Cliente"
                     value={form.IDCLIENTE || ""}
                     onChange={(v) => updateField("IDCLIENTE", v)}
                     placeholder="Opcional"
-                  />
+                  />*/}
 
                   <Input
                     label="Nome"

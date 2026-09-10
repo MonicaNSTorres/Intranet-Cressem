@@ -109,7 +109,7 @@ export function MarcaDaguaForm() {
 
   return (
     <div className="mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 bg-gradient-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/10 p-5">
+      <div className="border-b border-slate-100 bg-linear-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/10 p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#00AE9D]">

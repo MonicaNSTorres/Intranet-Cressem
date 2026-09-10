@@ -140,14 +140,14 @@ function InfoModal({
       <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 px-5 py-4">
           <div>
-            <h3 className="text-lg font-bold text-[var(--title)]">Outras Informações</h3>
+            <h3 className="text-lg font-bold text-(--title)">Outras Informações</h3>
             <p className="mt-1 text-sm text-slate-500">Dados complementares do conveniado.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fechar modal"
-            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-[var(--text-darken-placeholder)] bg-white text-slate-600 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
+            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-(--text-darken-placeholder) bg-white text-slate-600 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
           >
             <FaTimes size={14} />
           </button>
@@ -353,7 +353,7 @@ function EditModal({
       <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50/70 px-5 py-4">
           <div>
-            <h3 className="text-lg font-bold text-[var(--title)]">Editar Conveniado</h3>
+            <h3 className="text-lg font-bold text-(--title)">Editar Conveniado</h3>
             <p className="mt-1 text-sm text-slate-500">Atualize os dados do conveniado selecionado.</p>
           </div>
 
@@ -361,7 +361,7 @@ function EditModal({
             type="button"
             onClick={onClose}
             aria-label="Fechar modal"
-            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-[var(--text-darken-placeholder)] bg-white text-slate-600 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
+            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-(--text-darken-placeholder) bg-white text-slate-600 shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
           >
             <FaTimes size={14} />
           </button>
@@ -624,12 +624,11 @@ export function ConvenioOdontoConsultaForm() {
   return (
     <>
       <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#79B729]" />
         <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-4">
-            <h2 className="text-lg font-bold text-[var(--title)]">Consulta do titular</h2>
-            <p className="mt-1 text-sm text-[var(--paragraph)]">Informe o CPF e escolha o filtro de visualização para consultar os conveniados.</p>
+            <h2 className="text-lg font-bold text-(--title)">Consulta do titular</h2>
+            <p className="mt-1 text-sm text-(--paragraph)">Informe o CPF e escolha o filtro de visualização para consultar os conveniados.</p>
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_260px_220px]">
@@ -765,7 +764,7 @@ export function ConvenioOdontoConsultaForm() {
                         </td>
                         <td className="border-b border-slate-100 px-4 py-3">
                           {String(item.DESC_PARENTESCO || "").trim().toUpperCase() === "TITULAR" ? (
-                            <span className="inline-flex rounded-full border border-third/40 bg-third/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--title)]">
+                            <span className="inline-flex rounded-full border border-third/40 bg-third/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-(--title)">
                               {item.DESC_PARENTESCO}
                             </span>
                           ) : (

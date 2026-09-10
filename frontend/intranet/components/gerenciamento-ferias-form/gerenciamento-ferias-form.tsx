@@ -13,12 +13,12 @@ import {
 } from "@/services/gerenciamento_ferias.service";
 
 function capitalizeWords(value?: string | null) {
-  return String(value || "")
-    .toLocaleLowerCase("pt-BR")
-    .replace(
-      /(^|\s|-|\/)\p{L}/gu,
-      (char) => char.toLocaleUpperCase("pt-BR")
-    );
+    return String(value || "")
+        .toLocaleLowerCase("pt-BR")
+        .replace(
+            /(^|\s|-|\/)\p{L}/gu,
+            (char) => char.toLocaleUpperCase("pt-BR")
+        );
 }
 
 function formatarCpfView(value?: string | null) {
@@ -290,117 +290,80 @@ export function GerenciamentoFeriasForm() {
 
     return (
         <>
-            <div className="mx-auto w-full rounded-2xl border border-slate-200 border-t-4 border-t-primary bg-white p-5 shadow-sm">
-                <div className="mb-5 border-b border-slate-100 pb-4">
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-wide text-primary">
-                            Filtros
-                        </p>
-                        <h2 className="mt-1 text-lg font-semibold text-title">
-                            Consulta de férias
-                        </h2>
-                        <p className="mt-1 text-sm text-paragraph">
-                            Pesquise colaboradores e acompanhe o histórico de férias.
-                        </p>
+            <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
+                <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+                <div className="p-6">
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+                        <div>
+                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                                Digite o nome do funcionário
+                            </label>
 
-                        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
-                            <div>
-                                <label className="mb-1 block text-xs font-bold uppercase text-slate-600">
-                                    Funcionário
-                                </label>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
                                 <input
                                     value={busca}
                                     onChange={(e) => setBusca(e.target.value)}
-                                    onKeyDown={pesquisarComEnter}
                                     placeholder="Digite o nome do funcionário"
-                                    className={inputClass}
+                                    className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
                                 />
+
+                                <button
+                                    type="button"
+                                    onClick={() => carregarFuncionarios(1)}
+                                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+                                >
+                                    <FaSearch />
+                                    Buscar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={limparBusca}
+                                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    <FaTimes />
+                                    Limpar
+                                </button>
                             </div>
+                        </div>
 
-                            <button
-                                type="button"
-                                onClick={() => carregarFuncionarios(1)}
-                                className={primaryButtonClass}
-                            >
-                                <FaSearch />
-                                Buscar
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={limparBusca}
-                                className={secondaryButtonClass}
-                            >
-                                <FaTimes />
-                                Limpar
-                            </button>
-
+                        <div className="flex items-end">
                             <button
                                 type="button"
                                 onClick={irParaCadastro}
-                                className={accentButtonClass}
+                                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
                             >
                                 <FaPlus />
                                 Cadastrar
                             </button>
+
+                    {(erro || info) && (
+                        <div className="mt-4">
+                            {erro ? (
+                                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                    {erro}
+                                </div>
+                            ) : (
+                                <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                                    {info}
+                                </div>
+                            )}
                         </div>
-                    </div>
-                </div>
+                    )}
 
-                {(erro || info) && (
-                    <div className="mt-4">
-                        {erro ? (
-                            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                                {erro}
-                            </div>
-                        ) : (
-                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                                {info}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {(funcionarios.length > 0 || loadingTabela) && (
-                    <>
-                        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                                    Total
-                                </p>
-                                <p className="mt-2 text-2xl font-black text-title">
-                                    {totalRegistros}
-                                </p>
-                                <p className="mt-1 text-xs text-paragraph">
-                                    colaboradores localizados
-                                </p>
-                            </div>
-
-                            <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 shadow-sm">
-                                <p className="text-xs font-bold uppercase tracking-wide text-secondary">
-                                    Ativos
-                                </p>
-                                <p className="mt-2 text-2xl font-black text-title">
-                                    {totalRegistros}
-                                </p>
-                                <p className="mt-1 text-xs text-paragraph">
-                                    colaboradores disponíveis para consulta
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200">
-                            <div className="overflow-x-auto">
+                    {(funcionarios.length > 0 || loadingTabela) && (
+                        <>
+                            <div className="mt-6 overflow-x-auto rounded-xl border">
                                 <table className="min-w-full divide-y divide-slate-200 text-sm">
-                                    <thead className="bg-slate-100">
+                                    <thead className="bg-slate-50">
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
+                                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
                                                 Nome
                                             </th>
-                                            <th className="px-4 py-3 text-left text-xs font-bold uppercase text-slate-700">
+                                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
                                                 Setor
                                             </th>
-                                            <th className="px-4 py-3 text-center text-xs font-bold uppercase text-slate-700">
+                                            <th className="px-4 py-3 text-center font-semibold text-slate-700">
                                                 Ação
                                             </th>
                                         </tr>
@@ -429,19 +392,19 @@ export function GerenciamentoFeriasForm() {
                                             funcionarios.map((funcionario) => (
                                                 <tr
                                                     key={funcionario.ID_FUNCIONARIO}
-                                                    className="transition hover:bg-primary/5"
+                                                    className="hover:bg-slate-50"
                                                 >
-                                                    <td className="px-4 py-3 font-semibold text-slate-800">
+                                                    <td className="px-4 py-3">
                                                         {capitalizeWords(funcionario.NM_FUNCIONARIO)}
                                                     </td>
-                                                    <td className="px-4 py-3 text-slate-700">
+                                                    <td className="px-4 py-3">
                                                         {capitalizeWords(funcionario.SETOR?.NM_SETOR || "")}
                                                     </td>
                                                     <td className="px-4 py-3 text-center">
                                                         <button
                                                             type="button"
                                                             onClick={() => abrirModalInfo(funcionario)}
-                                                            className="inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary transition hover:bg-primary hover:text-white cursor-pointer"
+                                                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
                                                         >
                                                             Informações
                                                         </button>
@@ -452,19 +415,65 @@ export function GerenciamentoFeriasForm() {
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
 
-                        <Pagination
-                            currentPage={paginaAtual}
-                            totalPages={totalPages}
-                            totalItems={totalRegistros}
-                            limit={limitePagina}
-                            loading={loadingTabela}
-                            onChange={carregarFuncionarios}
-                            onLimitChange={alterarLimitePagina}
-                        />
-                    </>
-                )}
+                            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                                {paginaAtual > 1 && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => carregarFuncionarios(1)}
+                                            className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        >
+                                            1
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => carregarFuncionarios(paginaAtual - 1)}
+                                            className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Anterior
+                                        </button>
+                                    </>
+                                )}
+
+                                {paginasVisiveis.map((page) => (
+                                    <button
+                                        key={page}
+                                        type="button"
+                                        onClick={() => carregarFuncionarios(page)}
+                                        className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
+                                            ? "bg-emerald-600 text-white"
+                                            : "border text-slate-700 hover:bg-slate-50"
+                                            }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+
+                                {paginaAtual < totalPages && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => carregarFuncionarios(paginaAtual + 1)}
+                                            className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Próxima
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => carregarFuncionarios(totalPages)}
+                                            className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        >
+                                            {totalPages}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
             {modalOpen && funcionarioSelecionado && (

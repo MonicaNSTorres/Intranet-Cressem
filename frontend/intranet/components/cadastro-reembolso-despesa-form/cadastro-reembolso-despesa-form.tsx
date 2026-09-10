@@ -645,53 +645,177 @@ export function CadastroReembolsoDespesaForm() {
 
   return (
     <>
-      <div className="mx-auto w-full space-y-5">
-        <SearchForm
-          onSearch={onBuscarCpf}
-          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-        >
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto] md:items-end">
+      <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
+        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+        <div className="p-6">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <SearchForm onSearch={onBuscarCpf}>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  CPF do funcionário
+                </label>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                  <SearchInput
+                    value={formatCpfView(cpf)}
+                    onChange={(e) => setCpf(e.target.value)}
+                    placeholder="CPF"
+                    className="w-full rounded border px-3 py-2"
+                    inputMode="numeric"
+                    maxLength={14}
+                  />
+
+                  <SearchButton loading={loading} label="Pesquisar" />
+                </div>
+              </div>
+            </SearchForm>
+
             <div>
-              <label className={labelClass}>
-                CPF do funcionário
-              </label>
-
-              <SearchInput
-                value={formatCpfView(cpf)}
-                onChange={(e) => setCpf(e.target.value)}
-                placeholder="CPF"
-                className={fieldClass}
-                inputMode="numeric"
-                maxLength={14}
-              />
-            </div>
-
-            <SearchButton loading={loading} label="Pesquisar" />
-          </div>
-        </SearchForm>
-
-        <section className={sectionClass}>
-          <h2 className={sectionTitleClass}>
-            <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
-            Dados da solicitação
-          </h2>
-
-          <div className="grid grid-cols-1 gap-4 border-t border-slate-200 p-5 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>Nome</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Nome</label>
               <input
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
-                className={fieldClass}
+                className="
+    w-full
+    h-11
+    rounded-lg
+    border
+    border-gray-300
+    bg-white
+    px-3
+    text-sm
+    text-gray-700
+    shadow-sm
+    outline-none
+    transition
+    focus:border-[#00AE9D]
+    focus:ring-2
+    focus:ring-[#00AE9D]/20
+  "
               />
             </div>
 
             <div>
-              <label className={labelClass}>Cidade</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Data de ida</label>
+              <input
+                type="date"
+                value={ida}
+                max={hoje}
+                onChange={(e) => setIda(e.target.value)}
+                className="
+    w-full
+    h-11
+    rounded-lg
+    border
+    border-gray-300
+    bg-white
+    px-3
+    text-sm
+    text-gray-700
+    shadow-sm
+    outline-none
+    transition
+    focus:border-[#00AE9D]
+    focus:ring-2
+    focus:ring-[#00AE9D]/20
+  "
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Data de volta</label>
+              <input
+                type="date"
+                value={volta}
+                max={hoje}
+                onChange={(e) => setVolta(e.target.value)}
+                className="
+    w-full
+    h-11
+    rounded-lg
+    border
+    border-gray-300
+    bg-white
+    px-3
+    text-sm
+    text-gray-700
+    shadow-sm
+    outline-none
+    transition
+    focus:border-[#00AE9D]
+    focus:ring-2
+    focus:ring-[#00AE9D]/20
+  "
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Número do banco</label>
+              <input
+                value={numeroBanco}
+                onChange={(e) => setNumeroBanco(e.target.value)}
+                className="w-full rounded border bg-gray-50 px-3 py-2"
+                readOnly
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Agência</label>
+              <input
+                value={agencia}
+                onChange={(e) => setAgencia(e.target.value)}
+                className="w-full rounded border bg-gray-50 px-3 py-2"
+                readOnly
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Número da conta</label>
+              <input
+                value={numeroConta}
+                onChange={(e) => setNumeroConta(e.target.value)}
+                className="
+              w-full
+              h-11
+              rounded-lg
+              border
+              border-gray-300
+              bg-white
+              px-3
+              text-sm
+              text-gray-700
+              shadow-sm
+              outline-none
+              transition
+              focus:border-[#00AE9D]
+              focus:ring-2
+              focus:ring-[#00AE9D]/20
+            "
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Cidade</label>
               <select
                 value={cidade}
                 onChange={(e) => setCidade(e.target.value)}
-                className={fieldClass}
+                className="
+              w-full
+              h-11
+              rounded-lg
+              border
+              border-gray-300
+              bg-white
+              px-3
+              text-sm
+              text-gray-700
+              shadow-sm
+              outline-none
+              transition
+              focus:border-[#00AE9D]
+              focus:ring-2
+              focus:ring-[#00AE9D]/20
+            "
               >
                 <option value="">Selecione</option>
                 {cidades.map((item) => (
@@ -702,183 +826,127 @@ export function CadastroReembolsoDespesaForm() {
               </select>
             </div>
 
-            <div>
-              <label className={labelClass}>Data de ida</label>
-              <input
-                type="date"
-                value={ida}
-                max={hoje}
-                onChange={(e) => setIda(e.target.value)}
-                className={fieldClass}
-              />
-            </div>
-
-            <div>
-              <label className={labelClass}>Data de volta</label>
-              <input
-                type="date"
-                value={volta}
-                max={hoje}
-                onChange={(e) => setVolta(e.target.value)}
-                className={fieldClass}
-              />
-            </div>
-
-            <div>
-              <label className={labelClass}>Número do banco</label>
-              <input
-                value={numeroBanco}
-                onChange={(e) => setNumeroBanco(e.target.value)}
-                className={readOnlyFieldClass}
-                readOnly
-              />
-            </div>
-
-            <div>
-              <label className={labelClass}>Agência</label>
-              <input
-                value={agencia}
-                onChange={(e) => setAgencia(e.target.value)}
-                className={readOnlyFieldClass}
-                readOnly
-              />
-            </div>
-
             <div className="md:col-span-2">
-              <label className={labelClass}>Número da conta</label>
-              <input
-                value={numeroConta}
-                onChange={(e) => setNumeroConta(e.target.value)}
-                className={fieldClass}
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className={labelClass}>Justificativa</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Justificativa</label>
               <textarea
                 value={justificativa}
                 onChange={(e) => setJustificativa(e.target.value)}
-                className={textareaClass}
+                className="w-full rounded border border-gray-300 shadow-sm outline-none transition px-3 py-2 focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/20"
                 rows={4}
                 maxLength={400}
                 placeholder="Descreva a justificativa do reembolso"
               />
             </div>
           </div>
-        </section>
 
-        <section className={sectionClass}>
-          <div className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between">
-            <h2 className={sectionTitleClass.replace("px-5 py-4", "p-0")}>
-              <span className="h-2 w-2 rounded-full bg-[#00AE9D]" />
-              Despesas adicionadas
-            </h2>
+          <div className="mt-6 rounded-xl border border-gray-200 p-4">
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-sm font-semibold text-gray-800">Despesas adicionadas</h2>
 
-            <button
-              type="button"
-              onClick={abrirModalNovaDespesa}
-              className={actionButtonClass}
-            >
-              <FaPlus size={12} />
-              Adicionar despesa
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={abrirModalNovaDespesa}
+                className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary cursor-pointer"
+              >
+                <FaPlus size={12} />
+                Adicionar despesa
+              </button>
+            </div>
 
-          <div className="border-t border-slate-200 p-5">
-            <div className="overflow-hidden rounded-2xl border border-slate-200">
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-slate-50">
+            <div className="overflow-x-auto">
+              <table className="min-w-full overflow-hidden rounded-lg border border-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                      Tipo
+                    </th>
+                    <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                      Descrição
+                    </th>
+                    <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                      Valor
+                    </th>
+                    <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                      Arquivo
+                    </th>
+                    <th className="border-b px-3 py-2 text-center text-xs font-semibold text-gray-600">
+                      Editar
+                    </th>
+                    <th className="border-b px-3 py-2 text-center text-xs font-semibold text-gray-600">
+                      Excluir
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {despesas.length === 0 ? (
                     <tr>
-                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
-                        Tipo
-                      </th>
-                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
-                        Descrição
-                      </th>
-                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
-                        Valor
-                      </th>
-                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
-                        Arquivo
-                      </th>
-                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
-                        Editar
-                      </th>
-                      <th className="h-10 border-b border-slate-200 px-4 py-2 text-center text-xs font-bold uppercase tracking-wide text-slate-600">
-                        Excluir
-                      </th>
+                      <td colSpan={6} className="px-3 py-6 text-center text-sm text-gray-500">
+                        Nenhuma despesa adicionada.
+                      </td>
                     </tr>
-                  </thead>
-
-                  <tbody>
-                    {despesas.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
-                          Nenhuma despesa adicionada.
+                  ) : (
+                    despesas.map((item, index) => (
+                      <tr key={`${item.tipo}-${index}`} className="hover:bg-gray-50">
+                        <td className="border-b px-3 py-2 text-sm text-gray-700">{item.tipo}</td>
+                        <td className="whitespace-pre-line border-b px-3 py-2 text-sm text-gray-700">
+                          {item.descricao}
+                        </td>
+                        <td className="border-b px-3 py-2 text-sm text-gray-700">{item.valor}</td>
+                        <td className="border-b px-3 py-2 text-sm text-gray-700">
+                          <button
+                            type="button"
+                            onClick={() => baixarComprovante(item)}
+                            className="text-left text-primary hover:underline"
+                          >
+                            {item.comprovanteNome}
+                          </button>
+                        </td>
+                        <td className="border-b px-3 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => editarDespesa(index)}
+                            className="inline-flex items-center justify-center rounded bg-sky-500 p-2 text-white hover:opacity-90"
+                          >
+                            <FaEdit size={12} />
+                          </button>
+                        </td>
+                        <td className="border-b px-3 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removerDespesa(index)}
+                            className="inline-flex items-center justify-center rounded bg-red-500 p-2 text-white hover:opacity-90"
+                          >
+                            <FaTrash size={12} />
+                          </button>
                         </td>
                       </tr>
-                    ) : (
-                      despesas.map((item, index) => (
-                        <tr key={`${item.tipo}-${index}`} className="transition hover:bg-slate-50">
-                          <td className="h-11 border-b border-slate-100 px-4 py-2 text-sm font-semibold text-slate-800">{item.tipo}</td>
-                          <td className="h-11 whitespace-pre-line border-b border-slate-100 px-4 py-2 text-sm text-slate-700">
-                            {item.descricao}
-                          </td>
-                          <td className="h-11 border-b border-slate-100 px-4 py-2 text-sm font-semibold text-slate-800">{item.valor}</td>
-                          <td className="h-11 border-b border-slate-100 px-4 py-2 text-sm text-slate-700">
-                            <button
-                              type="button"
-                              onClick={() => baixarComprovante(item)}
-                              className="text-left font-semibold text-[#007E7A] hover:underline"
-                            >
-                              {item.comprovanteNome}
-                            </button>
-                          </td>
-                          <td className="h-11 border-b border-slate-100 px-4 py-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => editarDespesa(index)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-700 transition hover:bg-sky-100"
-                            >
-                              <FaEdit size={12} />
-                            </button>
-                          </td>
-                          <td className="h-11 border-b border-slate-100 px-4 py-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => removerDespesa(index)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100"
-                            >
-                              <FaTrash size={12} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-center">
+              <div />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Total de despesas
+                </label>
+                <input
+                  readOnly
+                  value={fmtBRL(totalDespesas)}
+                  className="w-full rounded border bg-gray-50 px-3 py-2 text-right"
+                />
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 border-t border-slate-200 p-5 md:flex-row md:items-center md:justify-between">
-            <div className="w-full max-w-[260px]">
-              <label className={labelClass}>
-                Total de despesas
-              </label>
-              <input
-                readOnly
-                value={fmtBRL(totalDespesas)}
-                className="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-0 text-right text-sm font-bold leading-normal text-slate-900 shadow-sm outline-none"
-              />
-            </div>
-
+          <div className="mt-6 flex items-center justify-end border-t pt-5">
             <button
               onClick={enviarSolicitacao}
-              disabled={saving || enviarSolicitacaoLockRef.current}
-              aria-busy={saving}
-              className={primaryButtonClass}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-70"
             >
               <FaSave size={12} />
               {saving
@@ -888,7 +956,8 @@ export function CadastroReembolsoDespesaForm() {
                   : "Enviar solicitação"}
             </button>
           </div>
-        </section>
+
+        </div>
       </div>
 
       {modalOpen && (

@@ -49,8 +49,8 @@ function ReportButton({
         </div>
 
         <div className="min-w-0">
-          <h4 className="text-sm font-bold text-[var(--title)]">{title}</h4>
-          <p className="mt-1 text-sm text-[var(--paragraph)]">{subtitle}</p>
+          <h4 className="text-sm font-bold text-(--title)">{title}</h4>
+          <p className="mt-1 text-sm text-(--paragraph)">{subtitle}</p>
         </div>
       </div>
 
@@ -165,7 +165,7 @@ export function RelatorioConvenioOdontoForm() {
           <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
             Exportação de relatórios
           </h2>
-          <p className="mt-1 text-sm text-[var(--paragraph)]">
+          <p className="mt-1 text-sm text-(--paragraph)">
             Escolha abaixo o relatório desejado para download.
           </p>
         </div>

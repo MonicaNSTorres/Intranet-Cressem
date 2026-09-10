@@ -158,6 +158,68 @@ export const fichaDesimpedimentoController = {
       const odontologico: any =
         odontologicoResult.rows?.[0];
 
+      let odontologicoHistorico: any = null;
+
+      if (!odontologico) {
+        const historicoResult = await oracleExecute(
+          `
+    SELECT
+      B.ID_BENEFICIARIO,
+      B.NM_BENEFICIARIO,
+      B.NR_CPF,
+
+      B.DT_INCLUSAO_PLANO,
+      B.DT_EXCLUSAO_PLANO,
+
+      TB.CD_TIPO_BENEFICIARIO,
+      TB.NM_TIPO_BENEFICIARIO,
+
+      P.ID_PLANO,
+      P.NM_PLANO,
+      P.TP_COBRANCA,
+
+      O.ID_OPERADORA,
+      O.NM_OPERADORA
+
+    FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+    INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+      ON TB.ID_TIPO_BENEFICIARIO =
+         B.ID_TIPO_BENEFICIARIO
+
+    INNER JOIN DBACRESSEM.ODONTO_PLANO P
+      ON P.ID_PLANO =
+         B.ID_PLANO
+
+    INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+      ON O.ID_OPERADORA =
+         P.ID_OPERADORA
+
+    WHERE REGEXP_REPLACE(
+      B.NR_CPF,
+      '[^0-9]',
+      ''
+    ) = :cpf
+
+      AND B.SN_ATIVO = 0
+
+    ORDER BY
+      B.DT_EXCLUSAO_PLANO DESC NULLS LAST,
+      B.ID_BENEFICIARIO DESC
+
+    FETCH FIRST 1 ROWS ONLY
+    `,
+          { cpf },
+          {
+            outFormat:
+              oracledb.OUT_FORMAT_OBJECT,
+          }
+        );
+
+        odontologicoHistorico =
+          historicoResult.rows?.[0] || null;
+      }
+
       return res.json({
         nome:
           associado.NOME || "",
@@ -193,7 +255,10 @@ export const fichaDesimpedimentoController = {
 
         odontologico: odontologico
           ? {
+            situacao: "ATIVO",
+
             possuiPlanoAtivo: true,
+            tevePlanoAnterior: true,
 
             idBeneficiario:
               odontologico.ID_BENEFICIARIO,
@@ -228,9 +293,51 @@ export const fichaDesimpedimentoController = {
             dataFimVigenciaValor:
               odontologico.DT_VIGENCIA_FIM,
           }
-          : {
-            possuiPlanoAtivo: false,
-          },
+
+          : odontologicoHistorico
+            ? {
+              situacao: "INATIVO",
+
+              possuiPlanoAtivo: false,
+              tevePlanoAnterior: true,
+
+              idBeneficiario:
+                odontologicoHistorico.ID_BENEFICIARIO,
+
+              tipoBeneficiario:
+                odontologicoHistorico.CD_TIPO_BENEFICIARIO,
+
+              nomeTipoBeneficiario:
+                odontologicoHistorico.NM_TIPO_BENEFICIARIO,
+
+              idOperadora:
+                odontologicoHistorico.ID_OPERADORA,
+
+              operadora:
+                odontologicoHistorico.NM_OPERADORA,
+
+              idPlano:
+                odontologicoHistorico.ID_PLANO,
+
+              plano:
+                odontologicoHistorico.NM_PLANO,
+
+              tipoCobranca:
+                odontologicoHistorico.TP_COBRANCA,
+
+              dataInclusaoPlano:
+                odontologicoHistorico.DT_INCLUSAO_PLANO,
+
+              dataExclusaoPlano:
+                odontologicoHistorico.DT_EXCLUSAO_PLANO,
+            }
+
+            : {
+              situacao: "NAO_ENCONTRADO",
+
+              possuiPlanoAtivo: false,
+              tevePlanoAnterior: false,
+            },
       });
     } catch (error: any) {
       console.error(

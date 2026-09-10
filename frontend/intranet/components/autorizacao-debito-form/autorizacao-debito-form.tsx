@@ -284,7 +284,7 @@ export function AutorizacaoDebitoForm() {
     <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white pb-5 shadow-sm">
       <SearchForm
         onSearch={onBuscar}
-        className="border-b border-emerald-100 bg-gradient-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/20 p-5"
+        className="border-b border-emerald-100 bg-linear-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/20 p-5"
       >
         <div>
           <label className={labelClass}>
@@ -379,7 +379,7 @@ export function AutorizacaoDebitoForm() {
                   setContaManual((prev) => !prev);
                   setContaAssociado("");
                 }}
-                className="h-10 rounded-xl border border-[var(--text-darken-placeholder)] bg-white px-4 text-sm font-semibold text-[var(--title)] shadow-sm transition hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                className="h-10 rounded-xl border border-(--text-darken-placeholder) bg-white px-4 text-sm font-semibold text-(--title) shadow-sm transition hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 {contaManual ? "Usar lista" : "Manual"}
               </button>
