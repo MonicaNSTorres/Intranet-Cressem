@@ -227,8 +227,8 @@ export function GerenciamentoCargoForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-          e?.response?.data?.details ||
-          "Não foi possível salvar o cargo."
+        e?.response?.data?.details ||
+        "Não foi possível salvar o cargo."
       );
     } finally {
       setLoading(false);
@@ -262,8 +262,8 @@ export function GerenciamentoCargoForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-          e?.response?.data?.details ||
-          "Erro ao alterar o status do cargo."
+        e?.response?.data?.details ||
+        "Erro ao alterar o status do cargo."
       );
     }
   }
@@ -288,8 +288,8 @@ export function GerenciamentoCargoForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-          e?.response?.data?.details ||
-          "Falha ao baixar o relatório."
+        e?.response?.data?.details ||
+        "Falha ao baixar o relatório."
       );
     }
   }
@@ -308,265 +308,266 @@ export function GerenciamentoCargoForm() {
 
   return (
     <>
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Digite o cargo
-            </label>
+      <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
+        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+        <div className="p-6">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Digite o cargo
+              </label>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
-              <input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Digite o nome do cargo"
-                className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
+                <input
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Digite o nome do cargo"
+                  className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                />
 
+                <button
+                  type="button"
+                  onClick={() => carregarCargos(1)}
+                  className="inline-flex items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary cursor-pointer"
+                >
+                  <FaSearch />
+                  Buscar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={limparBusca}
+                  className="inline-flex items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  <FaTimes />
+                  Limpar
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-end">
               <button
                 type="button"
-                onClick={() => carregarCargos(1)}
-                className="inline-flex items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary cursor-pointer"
+                onClick={abrirCadastro}
+                className="inline-flex w-full items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto cursor-pointer"
               >
-                <FaSearch />
-                Buscar
-              </button>
-
-              <button
-                type="button"
-                onClick={limparBusca}
-                className="inline-flex items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-              >
-                <FaTimes />
-                Limpar
+                <FaPlus />
+                Cadastrar
               </button>
             </div>
           </div>
 
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={abrirCadastro}
-              className="inline-flex w-full items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto cursor-pointer"
-            >
-              <FaPlus />
-              Cadastrar
-            </button>
-          </div>
+          {(erro || info) && (
+            <div className="mt-4">
+              {erro ? (
+                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {erro}
+                </div>
+              ) : (
+                <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  {info}
+                </div>
+              )}
+            </div>
+          )}
+
+          {(cargos.length > 0 || loadingTabela) && (
+            <>
+              <div className="mt-6 overflow-x-auto rounded-xl border">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Cargo
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Código
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Posição
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Nível
+                      </th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                        Editar
+                      </th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {loadingTabela ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-4 py-6 text-center text-slate-500"
+                        >
+                          Carregando cargos...
+                        </td>
+                      </tr>
+                    ) : cargos.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-4 py-6 text-center text-slate-500"
+                        >
+                          Nenhum cargo encontrado.
+                        </td>
+                      </tr>
+                    ) : (
+                      cargos.map((cargo) => {
+                        const codigo = cargo.POSICAO?.CD_SICOOB || "";
+                        const posicao = cargo.POSICAO?.NM_POSICAO || "";
+
+                        return (
+                          <tr key={cargo.ID_CARGO} className="hover:bg-slate-50">
+                            <td className="px-4 py-3">
+                              {String(cargo.NM_CARGO).toUpperCase()}
+                            </td>
+                            <td className="px-4 py-3">{codigo}</td>
+                            <td className="px-4 py-3">
+                              {String(posicao).toUpperCase()}
+                            </td>
+                            <td className="px-4 py-3">
+                              {String(cargo.NM_NIVEL).toUpperCase()}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => abrirEdicao(cargo)}
+                                className="inline-flex items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 cursor-pointer"
+                              >
+                                <FaEdit />
+                                Editar
+                              </button>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => alternarStatus(cargo)}
+                                className={`inline-flex min-w-21 items-center justify-center rounded px-3 py-1.5 text-xs font-semibold ${Number(cargo.SN_ATIVO) === 1
+                                    ? "bg-secondary text-white hover:bg-third"
+                                    : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                  }`}
+                              >
+                                {Number(cargo.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                {paginaAtual > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => carregarCargos(1)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      1
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => carregarCargos(paginaAtual - 1)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Anterior
+                    </button>
+                  </>
+                )}
+
+                {paginasVisiveis.map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => carregarCargos(page)}
+                    className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
+                        ? "bg-emerald-600 text-white"
+                        : "border text-slate-700 hover:bg-slate-50"
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                {paginaAtual < totalPages && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => carregarCargos(paginaAtual + 1)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Próxima
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => carregarCargos(totalPages)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Total
+                  </label>
+                  <input
+                    readOnly
+                    value={totais.total}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Ativos
+                  </label>
+                  <input
+                    readOnly
+                    value={totais.ativos}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Inativos
+                  </label>
+                  <input
+                    readOnly
+                    value={totais.inativos}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={baixarCsv}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary border-primary md:w-auto cursor-pointer"
+                  >
+                    <FaDownload />
+                    Baixar Relatório
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-
-        {(erro || info) && (
-          <div className="mt-4">
-            {erro ? (
-              <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {erro}
-              </div>
-            ) : (
-              <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                {info}
-              </div>
-            )}
-          </div>
-        )}
-
-        {(cargos.length > 0 || loadingTabela) && (
-          <>
-            <div className="mt-6 overflow-x-auto rounded-xl border">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Cargo
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Código
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Posição
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Nível
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                      Editar
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {loadingTabela ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="px-4 py-6 text-center text-slate-500"
-                      >
-                        Carregando cargos...
-                      </td>
-                    </tr>
-                  ) : cargos.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="px-4 py-6 text-center text-slate-500"
-                      >
-                        Nenhum cargo encontrado.
-                      </td>
-                    </tr>
-                  ) : (
-                    cargos.map((cargo) => {
-                      const codigo = cargo.POSICAO?.CD_SICOOB || "";
-                      const posicao = cargo.POSICAO?.NM_POSICAO || "";
-
-                      return (
-                        <tr key={cargo.ID_CARGO} className="hover:bg-slate-50">
-                          <td className="px-4 py-3">
-                            {String(cargo.NM_CARGO).toUpperCase()}
-                          </td>
-                          <td className="px-4 py-3">{codigo}</td>
-                          <td className="px-4 py-3">
-                            {String(posicao).toUpperCase()}
-                          </td>
-                          <td className="px-4 py-3">
-                            {String(cargo.NM_NIVEL).toUpperCase()}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => abrirEdicao(cargo)}
-                              className="inline-flex items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 cursor-pointer"
-                            >
-                              <FaEdit />
-                              Editar
-                            </button>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => alternarStatus(cargo)}
-                              className={`inline-flex min-w-21 items-center justify-center rounded px-3 py-1.5 text-xs font-semibold ${
-                                Number(cargo.SN_ATIVO) === 1
-                                  ? "bg-secondary text-white hover:bg-third"
-                                  : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                              }`}
-                            >
-                              {Number(cargo.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              {paginaAtual > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => carregarCargos(1)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    1
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => carregarCargos(paginaAtual - 1)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    Anterior
-                  </button>
-                </>
-              )}
-
-              {paginasVisiveis.map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => carregarCargos(page)}
-                  className={`rounded px-3 py-1.5 text-sm ${
-                    page === paginaAtual
-                      ? "bg-emerald-600 text-white"
-                      : "border text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-
-              {paginaAtual < totalPages && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => carregarCargos(paginaAtual + 1)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    Próxima
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => carregarCargos(totalPages)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    {totalPages}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Total
-                </label>
-                <input
-                  readOnly
-                  value={totais.total}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Ativos
-                </label>
-                <input
-                  readOnly
-                  value={totais.ativos}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Inativos
-                </label>
-                <input
-                  readOnly
-                  value={totais.inativos}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={baixarCsv}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary border-primary md:w-auto cursor-pointer"
-                >
-                  <FaDownload />
-                  Baixar Relatório
-                </button>
-              </div>
-            </div>
-          </>
-        )}
       </div>
 
       {modalOpen && (
@@ -663,17 +664,16 @@ export function GerenciamentoCargoForm() {
                 type="button"
                 onClick={salvarModal}
                 disabled={loading}
-                className={`rounded px-4 py-2 font-semibold text-white ${
-                  modalModo === "cadastrar"
+                className={`rounded px-4 py-2 font-semibold text-white ${modalModo === "cadastrar"
                     ? "bg-emerald-600 hover:bg-emerald-700"
                     : "bg-blue-600 hover:bg-blue-700"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {loading
                   ? "Salvando..."
                   : modalModo === "cadastrar"
-                  ? "Cadastrar"
-                  : "Editar"}
+                    ? "Cadastrar"
+                    : "Editar"}
               </button>
             </div>
           </div>

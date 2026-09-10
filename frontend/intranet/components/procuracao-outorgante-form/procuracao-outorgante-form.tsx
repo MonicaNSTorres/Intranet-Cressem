@@ -469,7 +469,7 @@ function SectionCard({
 }) {
   return (
     <section className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
-      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
+      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
       <div className="p-4 md:p-5">
         <div className="mb-4">
           <h2 className="flex items-center gap-2 text-base font-semibold text-title">

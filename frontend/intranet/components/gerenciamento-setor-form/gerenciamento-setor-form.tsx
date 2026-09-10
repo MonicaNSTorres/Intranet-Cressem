@@ -195,8 +195,8 @@ export function GerenciamentoSetorForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-          e?.response?.data?.details ||
-          "Não foi possível salvar o setor."
+        e?.response?.data?.details ||
+        "Não foi possível salvar o setor."
       );
     } finally {
       setLoading(false);
@@ -230,8 +230,8 @@ export function GerenciamentoSetorForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-          e?.response?.data?.details ||
-          "Erro ao alterar o status do setor."
+        e?.response?.data?.details ||
+        "Erro ao alterar o status do setor."
       );
     }
   }
@@ -256,8 +256,8 @@ export function GerenciamentoSetorForm() {
       console.error(e);
       setErro(
         e?.response?.data?.error ||
-          e?.response?.data?.details ||
-          "Falha ao baixar o relatório."
+        e?.response?.data?.details ||
+        "Falha ao baixar o relatório."
       );
     }
   }
@@ -276,254 +276,255 @@ export function GerenciamentoSetorForm() {
 
   return (
     <>
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Digite o setor ou endereço
-            </label>
+      <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
+        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+        <div className="p-6">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Digite o setor ou endereço
+              </label>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
-              <input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Digite o setor ou endereço"
-                className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
+                <input
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Digite o setor ou endereço"
+                  className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                />
 
+                <button
+                  type="button"
+                  onClick={() => carregarSetores(1)}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+                >
+                  <FaSearch />
+                  Buscar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={limparBusca}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  <FaTimes />
+                  Limpar
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-end">
               <button
                 type="button"
-                onClick={() => carregarSetores(1)}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+                onClick={abrirCadastro}
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
               >
-                <FaSearch />
-                Buscar
-              </button>
-
-              <button
-                type="button"
-                onClick={limparBusca}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                <FaTimes />
-                Limpar
+                <FaPlus />
+                Cadastrar
               </button>
             </div>
           </div>
 
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={abrirCadastro}
-              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
-            >
-              <FaPlus />
-              Cadastrar
-            </button>
-          </div>
-        </div>
+          {(erro || info) && (
+            <div className="mt-4">
+              {erro ? (
+                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {erro}
+                </div>
+              ) : (
+                <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  {info}
+                </div>
+              )}
+            </div>
+          )}
 
-        {(erro || info) && (
-          <div className="mt-4">
-            {erro ? (
-              <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {erro}
-              </div>
-            ) : (
-              <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                {info}
-              </div>
-            )}
-          </div>
-        )}
-
-        {(setores.length > 0 || loadingTabela) && (
-          <>
-            <div className="mt-6 overflow-x-auto rounded-xl border">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Setor
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Ramal
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Endereço
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                      Editar
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {loadingTabela ? (
+          {(setores.length > 0 || loadingTabela) && (
+            <>
+              <div className="mt-6 overflow-x-auto rounded-xl border">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <td
-                        colSpan={5}
-                        className="px-4 py-6 text-center text-slate-500"
-                      >
-                        Carregando setores...
-                      </td>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Setor
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Ramal
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Endereço
+                      </th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                        Editar
+                      </th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                        Status
+                      </th>
                     </tr>
-                  ) : setores.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-4 py-6 text-center text-slate-500"
-                      >
-                        Nenhum setor encontrado.
-                      </td>
-                    </tr>
-                  ) : (
-                    setores.map((setor) => (
-                      <tr key={setor.ID_SETOR} className="hover:bg-slate-50">
-                        <td className="px-4 py-3">
-                          {String(setor.NM_SETOR).toUpperCase()}
-                        </td>
-                        <td className="px-4 py-3">{setor.NR_RAMAL || ""}</td>
-                        <td className="px-4 py-3">
-                          {String(setor.NM_ENDERECO).toUpperCase()}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => abrirEdicao(setor)}
-                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                          >
-                            <FaEdit />
-                            Editar
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => alternarStatus(setor)}
-                            className={`inline-flex min-w-21 items-center justify-center rounded px-3 py-1.5 text-xs font-semibold ${
-                              Number(setor.SN_ATIVO) === 1
-                                ? "bg-secondary text-white hover:bg-third"
-                                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                            }`}
-                          >
-                            {Number(setor.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
-                          </button>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {loadingTabela ? (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-4 py-6 text-center text-slate-500"
+                        >
+                          Carregando setores...
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : setores.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-4 py-6 text-center text-slate-500"
+                        >
+                          Nenhum setor encontrado.
+                        </td>
+                      </tr>
+                    ) : (
+                      setores.map((setor) => (
+                        <tr key={setor.ID_SETOR} className="hover:bg-slate-50">
+                          <td className="px-4 py-3">
+                            {String(setor.NM_SETOR).toUpperCase()}
+                          </td>
+                          <td className="px-4 py-3">{setor.NR_RAMAL || ""}</td>
+                          <td className="px-4 py-3">
+                            {String(setor.NM_ENDERECO).toUpperCase()}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => abrirEdicao(setor)}
+                              className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                            >
+                              <FaEdit />
+                              Editar
+                            </button>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => alternarStatus(setor)}
+                              className={`inline-flex min-w-21 items-center justify-center rounded px-3 py-1.5 text-xs font-semibold ${Number(setor.SN_ATIVO) === 1
+                                ? "bg-secondary text-white hover:bg-third"
+                                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                }`}
+                            >
+                              {Number(setor.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              {paginaAtual > 1 && (
-                <>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                {paginaAtual > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => carregarSetores(1)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      1
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => carregarSetores(paginaAtual - 1)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Anterior
+                    </button>
+                  </>
+                )}
+
+                {paginasVisiveis.map((page) => (
                   <button
+                    key={page}
                     type="button"
-                    onClick={() => carregarSetores(1)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    1
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => carregarSetores(paginaAtual - 1)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    Anterior
-                  </button>
-                </>
-              )}
-
-              {paginasVisiveis.map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => carregarSetores(page)}
-                  className={`rounded px-3 py-1.5 text-sm ${
-                    page === paginaAtual
+                    onClick={() => carregarSetores(page)}
+                    className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
                       ? "bg-emerald-600 text-white"
                       : "border text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
 
-              {paginaAtual < totalPages && (
-                <>
+                {paginaAtual < totalPages && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => carregarSetores(paginaAtual + 1)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Próxima
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => carregarSetores(totalPages)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Total
+                  </label>
+                  <input
+                    readOnly
+                    value={totais.total}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Ativos
+                  </label>
+                  <input
+                    readOnly
+                    value={totais.ativos}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Inativos
+                  </label>
+                  <input
+                    readOnly
+                    value={totais.inativos}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
+
+                <div className="flex items-end">
                   <button
                     type="button"
-                    onClick={() => carregarSetores(paginaAtual + 1)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={baixarCsv}
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary md:w-auto"
                   >
-                    Próxima
+                    <FaDownload />
+                    Baixar Relatório
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => carregarSetores(totalPages)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    {totalPages}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Total
-                </label>
-                <input
-                  readOnly
-                  value={totais.total}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
+                </div>
               </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Ativos
-                </label>
-                <input
-                  readOnly
-                  value={totais.ativos}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Inativos
-                </label>
-                <input
-                  readOnly
-                  value={totais.inativos}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={baixarCsv}
-                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary md:w-auto"
-                >
-                  <FaDownload />
-                  Baixar Relatório
-                </button>
-              </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {modalOpen && (
@@ -611,17 +612,16 @@ export function GerenciamentoSetorForm() {
                 type="button"
                 onClick={salvarModal}
                 disabled={loading}
-                className={`rounded px-4 py-2 font-semibold text-white ${
-                  modalModo === "cadastrar"
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-blue-600 hover:bg-blue-700"
-                } disabled:cursor-not-allowed disabled:opacity-60`}
+                className={`rounded px-4 py-2 font-semibold text-white ${modalModo === "cadastrar"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-blue-600 hover:bg-blue-700"
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {loading
                   ? "Salvando..."
                   : modalModo === "cadastrar"
-                  ? "Cadastrar"
-                  : "Editar"}
+                    ? "Cadastrar"
+                    : "Editar"}
               </button>
             </div>
           </div>

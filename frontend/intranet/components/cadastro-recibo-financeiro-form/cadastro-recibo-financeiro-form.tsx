@@ -146,8 +146,8 @@ function validaCpfCnpj(valor: string) {
         };
 
         const base12 = v.slice(0, 12);
-        const d1 = calc(base12, [5,4,3,2,9,8,7,6,5,4,3,2]);
-        const d2 = calc(base12 + d1, [6,5,4,3,2,9,8,7,6,5,4,3,2]);
+        const d1 = calc(base12, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+        const d2 = calc(base12 + d1, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
 
         return v === `${base12}${d1}${d2}`;
     }
@@ -720,361 +720,365 @@ export function CadastroReciboFinanceiroForm() {
 
     return (
         <>
-            <div className="mx-auto w-full min-w-225 space-y-6 rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
-                <SearchForm onSearch={buscarAssociado}>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-800">
-                                    Dados do recibo
-                                </h2>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Preencha os dados do associado e registre parcelas e pagamentos.
-                                </p>
+            <div className="mx-auto w-full min-w-225 overflow-hidden rounded-3xl border border-slate-200 bg-[#F8FAFC] shadow-sm">
+                <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+                <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+                    <SearchForm onSearch={buscarAssociado}>
+                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-800">
+                                        Dados do recibo
+                                    </h2>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Preencha os dados do associado e registre parcelas e pagamentos.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={abrirConsulta}
+                                    className={buttonSecondary}
+                                >
+                                    <FaArrowRight />
+                                    Consulta de Recibos
+                                </button>
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={abrirConsulta}
-                                className={buttonSecondary}
-                            >
-                                <FaArrowRight />
-                                Consulta de Recibos
-                            </button>
-                        </div>
+                            {(erro || info) && (
+                                <div className="mb-5">
+                                    {erro ? (
+                                        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                                            {erro}
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                                            {info}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-                        {(erro || info) && (
-                            <div className="mb-5">
-                                {erro ? (
-                                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                                        {erro}
-                                    </div>
-                                ) : (
-                                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-                                        {info}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                                <div className="md:col-span-5">
+                                    <Field label="CPF/CNPJ">
+                                        <div className="flex gap-2">
+                                            <SearchInput
+                                                value={formatCpfCnpj(cpfCnpj)}
+                                                onChange={(e) => setCpfCnpj(e.target.value)}
+                                                className={inputBase}
+                                                maxLength={18}
+                                            />
+                                            <SearchButton loading={loadingBuscaAssociado} label="Pesquisar" />
+                                        </div>
+                                    </Field>
+                                </div>
 
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                            <div className="md:col-span-5">
-                                <Field label="CPF/CNPJ">
-                                    <div className="flex gap-2">
-                                        <SearchInput
-                                            value={formatCpfCnpj(cpfCnpj)}
-                                            onChange={(e) => setCpfCnpj(e.target.value)}
+                                <div className="md:col-span-7">
+                                    <Field label="Nome">
+                                        <input
+                                            value={nome}
+                                            onChange={(e) => setNome(e.target.value)}
                                             className={inputBase}
-                                            maxLength={18}
                                         />
-                                        <SearchButton loading={loadingBuscaAssociado} label="Pesquisar" />
-                                    </div>
-                                </Field>
-                            </div>
+                                    </Field>
+                                </div>
 
-                            <div className="md:col-span-7">
-                                <Field label="Nome">
-                                    <input
-                                        value={nome}
-                                        onChange={(e) => setNome(e.target.value)}
-                                        className={inputBase}
-                                    />
-                                </Field>
-                            </div>
+                                {tipoFormulario === "PF" ? (
+                                    <>
+                                        <div className="md:col-span-4">
+                                            <Field label="Matrícula">
+                                                <input
+                                                    value={matricula}
+                                                    onChange={(e) => setMatricula(e.target.value)}
+                                                    className={inputBase}
+                                                    placeholder="0000000000"
+                                                />
+                                            </Field>
+                                        </div>
 
-                            {tipoFormulario === "PF" ? (
-                                <>
-                                    <div className="md:col-span-4">
-                                        <Field label="Matrícula">
-                                            <input
-                                                value={matricula}
-                                                onChange={(e) => setMatricula(e.target.value)}
-                                                className={inputBase}
-                                                placeholder="0000000000"
-                                            />
-                                        </Field>
-                                    </div>
+                                        <div className="md:col-span-8">
+                                            <Field label="Empresa">
+                                                <input
+                                                    value={empresa}
+                                                    onChange={(e) => setEmpresa(e.target.value)}
+                                                    className={inputBase}
+                                                />
+                                            </Field>
+                                        </div>
+                                    </>
+                                ) : null}
 
-                                    <div className="md:col-span-8">
-                                        <Field label="Empresa">
-                                            <input
-                                                value={empresa}
-                                                onChange={(e) => setEmpresa(e.target.value)}
-                                                className={inputBase}
-                                            />
-                                        </Field>
-                                    </div>
-                                </>
-                            ) : null}
+                                <div className="md:col-span-5">
+                                    <Field label="Data Recibo">
+                                        <input
+                                            type="date"
+                                            value={dataRecibo}
+                                            onChange={(e) => setDataRecibo(e.target.value)}
+                                            className={inputBase}
+                                        />
+                                    </Field>
+                                </div>
 
-                            <div className="md:col-span-5">
-                                <Field label="Data Recibo">
-                                    <input
-                                        type="date"
-                                        value={dataRecibo}
-                                        onChange={(e) => setDataRecibo(e.target.value)}
-                                        className={inputBase}
-                                    />
-                                </Field>
-                            </div>
-
-                            <div className="md:col-span-7">
-                                <Field label="Cidade de Atendimento">
-                                    <select
-                                        value={cidade}
-                                        onChange={(e) => setCidade(e.target.value)}
-                                        className={inputBase}
-                                    >
-                                        <option value=""></option>
-                                        {cidades.map((item, index) => (
-                                            <option key={`${item}-${index}`} value={item}>
-                                                {item}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </Field>
-                            </div>
-
-                            <div className="md:col-span-12">
-                                <Field label="Observação">
-                                    <textarea
-                                        value={observacao}
-                                        onChange={(e) => setObservacao(e.target.value)}
-                                        className={textareaBase}
-                                        rows={3}
-                                        maxLength={250}
-                                    />
-                                </Field>
-                            </div>
-
-                            <div className="md:col-span-6">
-                                <Field label="Tipo Atendimento">
-                                    <select
-                                        value={tipoAtendimento}
-                                        onChange={(e) => setTipoAtendimento(e.target.value)}
-                                        className={inputBase}
-                                    >
-                                        <option value=""></option>
-                                        {tiposAtendimento.map((item, index) => (
-                                            <option key={`${item}-${index}`} value={item}>
-                                                {item}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </Field>
-                            </div>
-
-                        </div>
-                    </div>
-                </SearchForm>
-
-                <Section title="Parcelas e Valores">
-
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl">
-                            <thead>
-                                <tr className="bg-slate-100 text-left text-xs font-bold uppercase tracking-[0.03em] text-slate-600">
-                                    <th className="border-b border-slate-200 px-4 py-3">Contrato</th>
-                                    <th className="border-b border-slate-200 px-4 py-3">Item Pagamento</th>
-                                    <th className="border-b border-slate-200 px-4 py-3">Quitação</th>
-                                    <th className="border-b border-slate-200 px-4 py-3">Data</th>
-                                    <th className="border-b border-slate-200 px-4 py-3">Parcela</th>
-                                    <th className="border-b border-slate-200 px-4 py-3">Valor</th>
-                                    <th className="border-b border-slate-200 px-4 py-3 text-center">Editar</th>
-                                    <th className="border-b border-slate-200 px-4 py-3 text-center">Remover</th>
-                                </tr>
-                            </thead>
-
-                            <tbody className="bg-white text-sm text-slate-700">
-                                {parcelas.length === 0 ? (
-                                    <tr>
-                                        <td
-                                            colSpan={8}
-                                            className="border-b border-slate-100 px-4 py-8 text-center text-slate-400"
+                                <div className="md:col-span-7">
+                                    <Field label="Cidade de Atendimento">
+                                        <select
+                                            value={cidade}
+                                            onChange={(e) => setCidade(e.target.value)}
+                                            className={inputBase}
                                         >
-                                            Nenhuma parcela cadastrada.
-                                        </td>
+                                            <option value=""></option>
+                                            {cidades.map((item, index) => (
+                                                <option key={`${item}-${index}`} value={item}>
+                                                    {item}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </Field>
+                                </div>
+
+                                <div className="md:col-span-12">
+                                    <Field label="Observação">
+                                        <textarea
+                                            value={observacao}
+                                            onChange={(e) => setObservacao(e.target.value)}
+                                            className={textareaBase}
+                                            rows={3}
+                                            maxLength={250}
+                                        />
+                                    </Field>
+                                </div>
+
+                                <div className="md:col-span-6">
+                                    <Field label="Tipo Atendimento">
+                                        <select
+                                            value={tipoAtendimento}
+                                            onChange={(e) => setTipoAtendimento(e.target.value)}
+                                            className={inputBase}
+                                        >
+                                            <option value=""></option>
+                                            {tiposAtendimento.map((item, index) => (
+                                                <option key={`${item}-${index}`} value={item}>
+                                                    {item}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </Field>
+                                </div>
+
+                            </div>
+                        </div>
+                    </SearchForm>
+
+                    <Section title="Parcelas e Valores">
+
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl">
+                                <thead>
+                                    <tr className="bg-slate-100 text-left text-xs font-bold uppercase tracking-[0.03em] text-slate-600">
+                                        <th className="border-b border-slate-200 px-4 py-3">Contrato</th>
+                                        <th className="border-b border-slate-200 px-4 py-3">Item Pagamento</th>
+                                        <th className="border-b border-slate-200 px-4 py-3">Quitação</th>
+                                        <th className="border-b border-slate-200 px-4 py-3">Data</th>
+                                        <th className="border-b border-slate-200 px-4 py-3">Parcela</th>
+                                        <th className="border-b border-slate-200 px-4 py-3">Valor</th>
+                                        <th className="border-b border-slate-200 px-4 py-3 text-center">Editar</th>
+                                        <th className="border-b border-slate-200 px-4 py-3 text-center">Remover</th>
                                     </tr>
-                                ) : (
-                                    parcelas.map((item, index) => (
-                                        <tr key={`${item.NR_CONTRATO}-${index}`} className="hover:bg-slate-50">
-                                            <td className="border-b border-slate-100 px-4 py-3">{item.NR_CONTRATO}</td>
-                                            <td className="border-b border-slate-100 px-4 py-3">{item.NM_CATEGORIA}</td>
-                                            <td className="border-b border-slate-100 px-4 py-3">
-                                                {Number(item.SN_QUITACAO) === 1 ? "Sim" : "Não"}
-                                            </td>
-                                            <td className="border-b border-slate-100 px-4 py-3">
-                                                {formatDateBR(item.DT_PERIODO)}
-                                            </td>
-                                            <td className="border-b border-slate-100 px-4 py-3">{item.NR_PARCELA}</td>
-                                            <td className="border-b border-slate-100 px-4 py-3">
-                                                {formatMoneyBR(item.VL_PARCELA_CRM)}
-                                            </td>
-                                            <td className="border-b border-slate-100 px-4 py-3 text-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => editarLinhaParcela(index)}
-                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
-                                                >
-                                                    <FaEdit size={13} />
-                                                    Editar
-                                                </button>
-                                            </td>
-                                            <td className="border-b border-slate-100 px-4 py-3 text-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removerParcela(index)}
-                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 cursor-pointer"
-                                                >
-                                                    <FaTrash size={13} />
-                                                    Remover
-                                                </button>
+                                </thead>
+
+                                <tbody className="bg-white text-sm text-slate-700">
+                                    {parcelas.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan={8}
+                                                className="border-b border-slate-100 px-4 py-8 text-center text-slate-400"
+                                            >
+                                                Nenhuma parcela cadastrada.
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-12 md:items-end">
-                        <div className="md:col-span-2">
-                            <Field label="Total parcelas">
-                                <input
-                                    readOnly
-                                    value={formatMoneyBR(totalParcelas)}
-                                    className={`${inputBase} bg-slate-50`}
-                                />
-                            </Field>
+                                    ) : (
+                                        parcelas.map((item, index) => (
+                                            <tr key={`${item.NR_CONTRATO}-${index}`} className="hover:bg-slate-50">
+                                                <td className="border-b border-slate-100 px-4 py-3">{item.NR_CONTRATO}</td>
+                                                <td className="border-b border-slate-100 px-4 py-3">{item.NM_CATEGORIA}</td>
+                                                <td className="border-b border-slate-100 px-4 py-3">
+                                                    {Number(item.SN_QUITACAO) === 1 ? "Sim" : "Não"}
+                                                </td>
+                                                <td className="border-b border-slate-100 px-4 py-3">
+                                                    {formatDateBR(item.DT_PERIODO)}
+                                                </td>
+                                                <td className="border-b border-slate-100 px-4 py-3">{item.NR_PARCELA}</td>
+                                                <td className="border-b border-slate-100 px-4 py-3">
+                                                    {formatMoneyBR(item.VL_PARCELA_CRM)}
+                                                </td>
+                                                <td className="border-b border-slate-100 px-4 py-3 text-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => editarLinhaParcela(index)}
+                                                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
+                                                    >
+                                                        <FaEdit size={13} />
+                                                        Editar
+                                                    </button>
+                                                </td>
+                                                <td className="border-b border-slate-100 px-4 py-3 text-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removerParcela(index)}
+                                                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 cursor-pointer"
+                                                    >
+                                                        <FaTrash size={13} />
+                                                        Remover
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
 
-                        <div className="md:col-span-3">
-                            <Field label="Parcelas">
-                                <button
-                                    type="button"
-                                    onClick={abrirModalParcelaNova}
-                                    className={`${buttonPrimary} w-full`}
-                                >
-                                    <FaPlus />
-                                    Cadastrar Parcelas
-                                </button>
-                            </Field>
-                        </div>
-                    </div>
-                </Section>
+                        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-12 md:items-end">
+                            <div className="md:col-span-2">
+                                <Field label="Total parcelas">
+                                    <input
+                                        readOnly
+                                        value={formatMoneyBR(totalParcelas)}
+                                        className={`${inputBase} bg-slate-50`}
+                                    />
+                                </Field>
+                            </div>
 
-                <Section title="Forma de Pagamento">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl">
-                            <thead>
-                                <tr className="bg-slate-100 text-left text-xs font-bold uppercase tracking-[0.03em] text-slate-600">
-                                    <th className="border-b border-slate-200 px-4 py-3">Forma Pagamento</th>
-                                    <th className="border-b border-slate-200 px-4 py-3">Valor</th>
-                                    <th className="border-b border-slate-200 px-4 py-3 text-center">Editar</th>
-                                    <th className="border-b border-slate-200 px-4 py-3 text-center">Remover</th>
-                                </tr>
-                            </thead>
-
-                            <tbody className="bg-white text-sm text-slate-700">
-                                {pagamentos.length === 0 ? (
-                                    <tr>
-                                        <td
-                                            colSpan={4}
-                                            className="border-b border-slate-100 px-4 py-8 text-center text-slate-400"
-                                        >
-                                            Nenhuma forma de pagamento cadastrada.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    pagamentos.map((item, index) => (
-                                        <tr key={`${item.NM_FORMA_PAGAMENTO}-${index}`} className="hover:bg-slate-50">
-                                            <td className="border-b border-slate-100 px-4 py-3">
-                                                {item.NM_FORMA_PAGAMENTO}
-                                            </td>
-                                            <td className="border-b border-slate-100 px-4 py-3">
-                                                {formatMoneyBR(item.VL_PAGAMENTO)}
-                                            </td>
-                                            <td className="border-b border-slate-100 px-4 py-3 text-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => editarLinhaPagamento(index)}
-                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700"
-                                                >
-                                                    <FaEdit size={13} />
-                                                    Editar
-                                                </button>
-                                            </td>
-                                            <td className="border-b border-slate-100 px-4 py-3 text-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removerPagamento(index)}
-                                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700"
-                                                >
-                                                    <FaTrash size={13} />
-                                                    Remover
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-12">
-                        <div className="md:col-span-2">
-                            <Field label="Total pagamento">
-                                <input
-                                    readOnly
-                                    value={formatMoneyBR(totalPagamentos)}
-                                    className={`${inputBase} bg-slate-50`}
-                                />
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-3">
-                            <Field label="Pagamentos">
-                                <button
-                                    type="button"
-                                    onClick={abrirModalPagamentoNovo}
-                                    className={`${buttonPrimary} w-full`}
-                                >
-                                    <FaPlus />
-                                    Cadastrar Pagamentos
-                                </button>
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-5">
-                            <div className="flex flex-col gap-3 pt-5.5 sm:flex-row sm:justify-end">
-                                <button
-                                    type="button"
-                                    onClick={salvarRecibo}
-                                    disabled={loadingSalvar}
-                                    className={`${buttonPrimary} disabled:cursor-not-allowed disabled:opacity-60`}
-                                >
-                                    <FaSave />
-                                    {loadingSalvar
-                                        ? "Salvando..."
-                                        : modoEdicao
-                                            ? "Atualizar Recibo"
-                                            : "Cadastrar"}
-                                </button>
-
-                                {reciboFoiSalvo && (
+                            <div className="md:col-span-3">
+                                <Field label="Parcelas">
                                     <button
                                         type="button"
-                                        onClick={baixarRecibo}
-                                        className={buttonSecondary}
+                                        onClick={abrirModalParcelaNova}
+                                        className={`${buttonPrimary} w-full`}
                                     >
-                                        <FaDownload />
-                                        Baixar Recibo
+                                        <FaPlus />
+                                        Cadastrar Parcelas
                                     </button>
-                                )}
+                                </Field>
                             </div>
                         </div>
-                    </div>
-                </Section>
+                    </Section>
+
+                    <Section title="Forma de Pagamento">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl">
+                                <thead>
+                                    <tr className="bg-slate-100 text-left text-xs font-bold uppercase tracking-[0.03em] text-slate-600">
+                                        <th className="border-b border-slate-200 px-4 py-3">Forma Pagamento</th>
+                                        <th className="border-b border-slate-200 px-4 py-3">Valor</th>
+                                        <th className="border-b border-slate-200 px-4 py-3 text-center">Editar</th>
+                                        <th className="border-b border-slate-200 px-4 py-3 text-center">Remover</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody className="bg-white text-sm text-slate-700">
+                                    {pagamentos.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan={4}
+                                                className="border-b border-slate-100 px-4 py-8 text-center text-slate-400"
+                                            >
+                                                Nenhuma forma de pagamento cadastrada.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        pagamentos.map((item, index) => (
+                                            <tr key={`${item.NM_FORMA_PAGAMENTO}-${index}`} className="hover:bg-slate-50">
+                                                <td className="border-b border-slate-100 px-4 py-3">
+                                                    {item.NM_FORMA_PAGAMENTO}
+                                                </td>
+                                                <td className="border-b border-slate-100 px-4 py-3">
+                                                    {formatMoneyBR(item.VL_PAGAMENTO)}
+                                                </td>
+                                                <td className="border-b border-slate-100 px-4 py-3 text-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => editarLinhaPagamento(index)}
+                                                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                                                    >
+                                                        <FaEdit size={13} />
+                                                        Editar
+                                                    </button>
+                                                </td>
+                                                <td className="border-b border-slate-100 px-4 py-3 text-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removerPagamento(index)}
+                                                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700"
+                                                    >
+                                                        <FaTrash size={13} />
+                                                        Remover
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-12">
+                            <div className="md:col-span-2">
+                                <Field label="Total pagamento">
+                                    <input
+                                        readOnly
+                                        value={formatMoneyBR(totalPagamentos)}
+                                        className={`${inputBase} bg-slate-50`}
+                                    />
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-3">
+                                <Field label="Pagamentos">
+                                    <button
+                                        type="button"
+                                        onClick={abrirModalPagamentoNovo}
+                                        className={`${buttonPrimary} w-full`}
+                                    >
+                                        <FaPlus />
+                                        Cadastrar Pagamentos
+                                    </button>
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-5">
+                                <div className="flex flex-col gap-3 pt-5.5 sm:flex-row sm:justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={salvarRecibo}
+                                        disabled={loadingSalvar}
+                                        className={`${buttonPrimary} disabled:cursor-not-allowed disabled:opacity-60`}
+                                    >
+                                        <FaSave />
+                                        {loadingSalvar
+                                            ? "Salvando..."
+                                            : modoEdicao
+                                                ? "Atualizar Recibo"
+                                                : "Cadastrar"}
+                                    </button>
+
+                                    {reciboFoiSalvo && (
+                                        <button
+                                            type="button"
+                                            onClick={baixarRecibo}
+                                            className={buttonSecondary}
+                                        >
+                                            <FaDownload />
+                                            Baixar Recibo
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+
+                </div>
             </div>
 
             <ModalShell

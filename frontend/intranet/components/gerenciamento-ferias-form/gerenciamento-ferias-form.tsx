@@ -13,12 +13,12 @@ import {
 } from "@/services/gerenciamento_ferias.service";
 
 function capitalizeWords(value?: string | null) {
-  return String(value || "")
-    .toLocaleLowerCase("pt-BR")
-    .replace(
-      /(^|\s|-|\/)\p{L}/gu,
-      (char) => char.toLocaleUpperCase("pt-BR")
-    );
+    return String(value || "")
+        .toLocaleLowerCase("pt-BR")
+        .replace(
+            /(^|\s|-|\/)\p{L}/gu,
+            (char) => char.toLocaleUpperCase("pt-BR")
+        );
 }
 
 function formatarCpfView(value?: string | null) {
@@ -181,189 +181,192 @@ export function GerenciamentoFeriasForm() {
 
     return (
         <>
-            <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-                    <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                            Digite o nome do funcionário
-                        </label>
+            <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
+                <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+                <div className="p-6">
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+                        <div>
+                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                                Digite o nome do funcionário
+                            </label>
 
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
-                            <input
-                                value={busca}
-                                onChange={(e) => setBusca(e.target.value)}
-                                placeholder="Digite o nome do funcionário"
-                                className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                            />
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
+                                <input
+                                    value={busca}
+                                    onChange={(e) => setBusca(e.target.value)}
+                                    placeholder="Digite o nome do funcionário"
+                                    className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                                />
 
+                                <button
+                                    type="button"
+                                    onClick={() => carregarFuncionarios(1)}
+                                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+                                >
+                                    <FaSearch />
+                                    Buscar
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={limparBusca}
+                                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    <FaTimes />
+                                    Limpar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex items-end">
                             <button
                                 type="button"
-                                onClick={() => carregarFuncionarios(1)}
-                                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+                                onClick={irParaCadastro}
+                                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
                             >
-                                <FaSearch />
-                                Buscar
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={limparBusca}
-                                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-                            >
-                                <FaTimes />
-                                Limpar
+                                <FaPlus />
+                                Cadastrar
                             </button>
                         </div>
                     </div>
 
-                    <div className="flex items-end">
-                        <button
-                            type="button"
-                            onClick={irParaCadastro}
-                            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
-                        >
-                            <FaPlus />
-                            Cadastrar
-                        </button>
-                    </div>
-                </div>
+                    {(erro || info) && (
+                        <div className="mt-4">
+                            {erro ? (
+                                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                    {erro}
+                                </div>
+                            ) : (
+                                <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                                    {info}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-                {(erro || info) && (
-                    <div className="mt-4">
-                        {erro ? (
-                            <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                                {erro}
-                            </div>
-                        ) : (
-                            <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                                {info}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {(funcionarios.length > 0 || loadingTabela) && (
-                    <>
-                        <div className="mt-6 overflow-x-auto rounded-xl border">
-                            <table className="min-w-full divide-y divide-slate-200 text-sm">
-                                <thead className="bg-slate-50">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                                            Nome
-                                        </th>
-                                        <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                                            Setor
-                                        </th>
-                                        <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                                            Ação
-                                        </th>
-                                    </tr>
-                                </thead>
-
-                                <tbody className="divide-y divide-slate-100 bg-white">
-                                    {loadingTabela ? (
+                    {(funcionarios.length > 0 || loadingTabela) && (
+                        <>
+                            <div className="mt-6 overflow-x-auto rounded-xl border">
+                                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                                    <thead className="bg-slate-50">
                                         <tr>
-                                            <td
-                                                colSpan={3}
-                                                className="px-4 py-6 text-center text-slate-500"
-                                            >
-                                                Carregando funcionários...
-                                            </td>
+                                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                                                Nome
+                                            </th>
+                                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                                                Setor
+                                            </th>
+                                            <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                                                Ação
+                                            </th>
                                         </tr>
-                                    ) : funcionarios.length === 0 ? (
-                                        <tr>
-                                            <td
-                                                colSpan={3}
-                                                className="px-4 py-6 text-center text-slate-500"
-                                            >
-                                                Nenhum funcionário encontrado.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        funcionarios.map((funcionario) => (
-                                            <tr
-                                                key={funcionario.ID_FUNCIONARIO}
-                                                className="hover:bg-slate-50"
-                                            >
-                                                <td className="px-4 py-3">
-                                                    {capitalizeWords(funcionario.NM_FUNCIONARIO)}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {capitalizeWords(funcionario.SETOR?.NM_SETOR || "")}
-                                                </td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => abrirModalInfo(funcionario)}
-                                                        className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                                                    >
-                                                        Informações
-                                                    </button>
+                                    </thead>
+
+                                    <tbody className="divide-y divide-slate-100 bg-white">
+                                        {loadingTabela ? (
+                                            <tr>
+                                                <td
+                                                    colSpan={3}
+                                                    className="px-4 py-6 text-center text-slate-500"
+                                                >
+                                                    Carregando funcionários...
                                                 </td>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                        ) : funcionarios.length === 0 ? (
+                                            <tr>
+                                                <td
+                                                    colSpan={3}
+                                                    className="px-4 py-6 text-center text-slate-500"
+                                                >
+                                                    Nenhum funcionário encontrado.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            funcionarios.map((funcionario) => (
+                                                <tr
+                                                    key={funcionario.ID_FUNCIONARIO}
+                                                    className="hover:bg-slate-50"
+                                                >
+                                                    <td className="px-4 py-3">
+                                                        {capitalizeWords(funcionario.NM_FUNCIONARIO)}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {capitalizeWords(funcionario.SETOR?.NM_SETOR || "")}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => abrirModalInfo(funcionario)}
+                                                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                                                        >
+                                                            Informações
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                            {paginaAtual > 1 && (
-                                <>
+                            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                                {paginaAtual > 1 && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => carregarFuncionarios(1)}
+                                            className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        >
+                                            1
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => carregarFuncionarios(paginaAtual - 1)}
+                                            className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Anterior
+                                        </button>
+                                    </>
+                                )}
+
+                                {paginasVisiveis.map((page) => (
                                     <button
+                                        key={page}
                                         type="button"
-                                        onClick={() => carregarFuncionarios(1)}
-                                        className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        onClick={() => carregarFuncionarios(page)}
+                                        className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
+                                            ? "bg-emerald-600 text-white"
+                                            : "border text-slate-700 hover:bg-slate-50"
+                                            }`}
                                     >
-                                        1
+                                        {page}
                                     </button>
+                                ))}
 
-                                    <button
-                                        type="button"
-                                        onClick={() => carregarFuncionarios(paginaAtual - 1)}
-                                        className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                                    >
-                                        Anterior
-                                    </button>
-                                </>
-                            )}
+                                {paginaAtual < totalPages && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => carregarFuncionarios(paginaAtual + 1)}
+                                            className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Próxima
+                                        </button>
 
-                            {paginasVisiveis.map((page) => (
-                                <button
-                                    key={page}
-                                    type="button"
-                                    onClick={() => carregarFuncionarios(page)}
-                                    className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
-                                        ? "bg-emerald-600 text-white"
-                                        : "border text-slate-700 hover:bg-slate-50"
-                                        }`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
-
-                            {paginaAtual < totalPages && (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={() => carregarFuncionarios(paginaAtual + 1)}
-                                        className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                                    >
-                                        Próxima
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => carregarFuncionarios(totalPages)}
-                                        className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                                    >
-                                        {totalPages}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </>
-                )}
+                                        <button
+                                            type="button"
+                                            onClick={() => carregarFuncionarios(totalPages)}
+                                            className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                        >
+                                            {totalPages}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
             {modalOpen && funcionarioSelecionado && (

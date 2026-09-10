@@ -185,7 +185,7 @@ export default function EstoquePage() {
   return (
     <div className="mx-auto w-full min-w-225 space-y-6 rounded-[28px] border border-slate-200 bg-[#F8FAFC] p-4 shadow-sm sm:p-6 lg:p-8">
       <div className="relative overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-sm">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(0,174,157,0.16),_transparent_32%),radial-gradient(circle_at_bottom_left,_rgba(121,183,41,0.16),_transparent_28%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,174,157,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(121,183,41,0.16),transparent_28%)]" />
         <div className="relative space-y-6 p-5 sm:p-6 lg:p-8">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex items-start gap-4">

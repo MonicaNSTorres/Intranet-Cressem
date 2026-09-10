@@ -634,265 +634,268 @@ export function GerenciamentoFuncionarioForm() {
 
   return (
     <>
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
-              Digite o nome
-            </label>
+      <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
+        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+        <div className="p-6">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Digite o nome
+              </label>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
-              <input
-                value={busca}
-                onChange={(e) => setBusca(removerEspacoInicial(e.target.value))}
-                placeholder="Digite o nome do funcionário"
-                className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
+                <input
+                  value={busca}
+                  onChange={(e) => setBusca(removerEspacoInicial(e.target.value))}
+                  placeholder="Digite o nome do funcionário"
+                  className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                />
 
+                <button
+                  type="button"
+                  onClick={() => carregarFuncionarios(1)}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+                >
+                  <FaSearch />
+                  Buscar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={limparBusca}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  <FaTimes />
+                  Limpar
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-end">
               <button
                 type="button"
-                onClick={() => carregarFuncionarios(1)}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+                onClick={abrirCadastro}
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
               >
-                <FaSearch />
-                Buscar
-              </button>
-
-              <button
-                type="button"
-                onClick={limparBusca}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-slate-300 bg-white px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                <FaTimes />
-                Limpar
+                <FaPlus />
+                Cadastrar
               </button>
             </div>
           </div>
 
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={abrirCadastro}
-              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary lg:w-auto"
-            >
-              <FaPlus />
-              Cadastrar
-            </button>
-          </div>
-        </div>
+          {(erro || info) && (
+            <div className="mt-4">
+              {erro ? (
+                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {erro}
+                </div>
+              ) : (
+                <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  {info}
+                </div>
+              )}
+            </div>
+          )}
 
-        {(erro || info) && (
-          <div className="mt-4">
-            {erro ? (
-              <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {erro}
-              </div>
-            ) : (
-              <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                {info}
-              </div>
-            )}
-          </div>
-        )}
-
-        {(funcionarios.length > 0 || loadingTabela) && (
-          <>
-            <div className="mt-6 overflow-x-auto rounded-xl border">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Nome
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Nascimento
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Ramal
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Setor
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Cargo
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                      Editar
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {loadingTabela ? (
+          {(funcionarios.length > 0 || loadingTabela) && (
+            <>
+              <div className="mt-6 overflow-x-auto rounded-xl border">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="px-4 py-6 text-center text-slate-500"
-                      >
-                        Carregando funcionários...
-                      </td>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Nome
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Nascimento
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Ramal
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Setor
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Cargo
+                      </th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                        Editar
+                      </th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                        Status
+                      </th>
                     </tr>
-                  ) : funcionarios.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="px-4 py-6 text-center text-slate-500"
-                      >
-                        Nenhum funcionário encontrado.
-                      </td>
-                    </tr>
-                  ) : (
-                    funcionarios.map((funcionario) => (
-                      <tr
-                        key={funcionario.ID_FUNCIONARIO}
-                        className="hover:bg-slate-50"
-                      >
-                        <td className="px-4 py-3">{funcionario.NM_FUNCIONARIO}</td>
-                        <td className="px-4 py-3">
-                          {formatarNascimentoTabela(funcionario.DT_NASCIMENTO)}
-                        </td>
-                        <td className="px-4 py-3">{funcionario.NR_RAMAL || ""}</td>
-                        <td className="px-4 py-3">
-                          {funcionario.SETOR?.NM_SETOR || ""}
-                        </td>
-                        <td className="px-4 py-3">
-                          {funcionario.CARGO?.NM_CARGO || "Sem cargo Gerência"}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => abrirEdicao(funcionario)}
-                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                          >
-                            <FaEdit />
-                            Editar
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => abrirModalStatus(funcionario)}
-                            className={`inline-flex min-w-21 items-center justify-center rounded px-3 py-1.5 text-xs font-semibold ${Number(funcionario.SN_ATIVO) === 1
-                              ? "bg-secondary text-white hover:bg-third"
-                              : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                              }`}
-                          >
-                            {Number(funcionario.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
-                          </button>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {loadingTabela ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="px-4 py-6 text-center text-slate-500"
+                        >
+                          Carregando funcionários...
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              {paginaAtual > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => carregarFuncionarios(1)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    1
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => carregarFuncionarios(paginaAtual - 1)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    Anterior
-                  </button>
-                </>
-              )}
-
-              {paginasVisiveis.map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => carregarFuncionarios(page)}
-                  className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
-                    ? "bg-emerald-600 text-white"
-                    : "border text-slate-700 hover:bg-slate-50"
-                    }`}
-                >
-                  {page}
-                </button>
-              ))}
-
-              {paginaAtual < totalPages && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => carregarFuncionarios(paginaAtual + 1)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    Próxima
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => carregarFuncionarios(totalPages)}
-                    className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    {totalPages}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Total
-                </label>
-                <input
-                  readOnly
-                  value={totais.total}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
+                    ) : funcionarios.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={7}
+                          className="px-4 py-6 text-center text-slate-500"
+                        >
+                          Nenhum funcionário encontrado.
+                        </td>
+                      </tr>
+                    ) : (
+                      funcionarios.map((funcionario) => (
+                        <tr
+                          key={funcionario.ID_FUNCIONARIO}
+                          className="hover:bg-slate-50"
+                        >
+                          <td className="px-4 py-3">{funcionario.NM_FUNCIONARIO}</td>
+                          <td className="px-4 py-3">
+                            {formatarNascimentoTabela(funcionario.DT_NASCIMENTO)}
+                          </td>
+                          <td className="px-4 py-3">{funcionario.NR_RAMAL || ""}</td>
+                          <td className="px-4 py-3">
+                            {funcionario.SETOR?.NM_SETOR || ""}
+                          </td>
+                          <td className="px-4 py-3">
+                            {funcionario.CARGO?.NM_CARGO || "Sem cargo Gerência"}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => abrirEdicao(funcionario)}
+                              className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                            >
+                              <FaEdit />
+                              Editar
+                            </button>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => abrirModalStatus(funcionario)}
+                              className={`inline-flex min-w-21 items-center justify-center rounded px-3 py-1.5 text-xs font-semibold ${Number(funcionario.SN_ATIVO) === 1
+                                ? "bg-secondary text-white hover:bg-third"
+                                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                }`}
+                            >
+                              {Number(funcionario.SN_ATIVO) === 1 ? "Ativo" : "Inativo"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Ativos
-                </label>
-                <input
-                  readOnly
-                  value={totais.ativos}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                {paginaAtual > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => carregarFuncionarios(1)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      1
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => carregarFuncionarios(paginaAtual - 1)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Anterior
+                    </button>
+                  </>
+                )}
+
+                {paginasVisiveis.map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => carregarFuncionarios(page)}
+                    className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
+                      ? "bg-emerald-600 text-white"
+                      : "border text-slate-700 hover:bg-slate-50"
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                {paginaAtual < totalPages && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => carregarFuncionarios(paginaAtual + 1)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Próxima
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => carregarFuncionarios(totalPages)}
+                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Inativos
-                </label>
-                <input
-                  readOnly
-                  value={totais.inativos}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
-              </div>
+              <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Total
+                  </label>
+                  <input
+                    readOnly
+                    value={totais.total}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
 
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={baixarCsv}
-                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary md:w-auto"
-                >
-                  <FaDownload />
-                  Baixar Relatório
-                </button>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Ativos
+                  </label>
+                  <input
+                    readOnly
+                    value={totais.ativos}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Inativos
+                  </label>
+                  <input
+                    readOnly
+                    value={totais.inativos}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={baixarCsv}
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary md:w-auto"
+                  >
+                    <FaDownload />
+                    Baixar Relatório
+                  </button>
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {modalOpen && (
@@ -1363,38 +1366,38 @@ export function GerenciamentoFuncionarioForm() {
                   </div>
 
                   {modalModo === "editar" && (
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">
-                          Ficha de Desimpedimento
-                        </label>
-                        <div className="mb-2 flex gap-2">
-                          <input
-                            readOnly
-                            value={getNomeArquivo(funcionarioSelecionado?.FICHA_DESIMPEDIMENTO)}
-                            className="w-full rounded border bg-gray-50 px-3 py-2 text-sm"
-                          />
-                          {funcionarioSelecionado?.FICHA_DESIMPEDIMENTO && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                baixarArquivo(funcionarioSelecionado.FICHA_DESIMPEDIMENTO!)
-                              }
-                              className="rounded bg-secondary px-3 py-2 text-xs font-semibold text-white"
-                            >
-                              Consultar
-                            </button>
-                          )}
-                        </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-600">
+                        Ficha de Desimpedimento
+                      </label>
+                      <div className="mb-2 flex gap-2">
                         <input
-                          type="file"
-                          accept=".pdf"
-                          onChange={(e) =>
-                            setArquivoFichaDesimpedimento(e.target.files?.[0] || null)
-                          }
-                          className="w-full rounded border px-3 py-2"
+                          readOnly
+                          value={getNomeArquivo(funcionarioSelecionado?.FICHA_DESIMPEDIMENTO)}
+                          className="w-full rounded border bg-gray-50 px-3 py-2 text-sm"
                         />
+                        {funcionarioSelecionado?.FICHA_DESIMPEDIMENTO && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              baixarArquivo(funcionarioSelecionado.FICHA_DESIMPEDIMENTO!)
+                            }
+                            className="rounded bg-secondary px-3 py-2 text-xs font-semibold text-white"
+                          >
+                            Consultar
+                          </button>
+                        )}
                       </div>
-                    )}
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) =>
+                          setArquivoFichaDesimpedimento(e.target.files?.[0] || null)
+                        }
+                        className="w-full rounded border px-3 py-2"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1496,11 +1499,10 @@ export function GerenciamentoFuncionarioForm() {
 
             <div className="space-y-4 px-6 py-5">
               <div
-                className={`rounded border p-4 text-sm ${
-                  Number(funcionarioStatus.SN_ATIVO) === 1
+                className={`rounded border p-4 text-sm ${Number(funcionarioStatus.SN_ATIVO) === 1
                     ? "border-amber-200 bg-amber-50 text-amber-900"
                     : "border-emerald-200 bg-emerald-50 text-emerald-900"
-                }`}
+                  }`}
               >
                 {Number(funcionarioStatus.SN_ATIVO) === 1 ? (
                   <p>
@@ -1645,11 +1647,10 @@ export function GerenciamentoFuncionarioForm() {
                 type="button"
                 onClick={confirmarStatus}
                 disabled={statusLoading}
-                className={`rounded px-4 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${
-                  Number(funcionarioStatus.SN_ATIVO) === 1
+                className={`rounded px-4 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${Number(funcionarioStatus.SN_ATIVO) === 1
                     ? "bg-red-600 hover:bg-red-700"
                     : "bg-emerald-600 hover:bg-emerald-700"
-                }`}
+                  }`}
               >
                 {statusLoading
                   ? "Processando..."

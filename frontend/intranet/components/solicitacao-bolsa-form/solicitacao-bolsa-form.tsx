@@ -198,151 +198,155 @@ export function SolicitacaoBolsaForm() {
     }
 
     return (
-        <div className="mx-auto min-w-0 rounded-xl bg-white p-6 shadow">
-            {erro && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                    {erro}
-                </div>
-            )}
-
-            {info && !erro && (
-                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                    {info}
-                </div>
-            )}
-
-            {loading ? (
-                <div className="py-10 text-center text-sm text-gray-500">
-                    Carregando dados da solicitação...
-                </div>
-            ) : (
-                <>
-                    <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
-                        <p className="text-sm font-medium text-gray-700">
-                            Preencha os dados abaixo e clique em gerar para imprimir a solicitação.
-                        </p>
+        <div className="mx-auto min-w-0 overflow-hidden rounded-xl bg-white shadow">
+            <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+            <div className="p-6">
+                {erro && (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        {erro}
                     </div>
+                )}
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                        <div className="md:col-span-9">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Nome do funcionário
-                            </label>
-                            <input
-                                type="text"
-                                name="nome"
-                                value={form.nome}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            />
-                        </div>
-
-                        <div className="md:col-span-3">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Admissão
-                            </label>
-                            <input
-                                type="date"
-                                name="admissao"
-                                value={form.admissao}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            />
-                        </div>
-
-                        <div className="md:col-span-6">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Curso
-                            </label>
-                            <input
-                                type="text"
-                                name="curso"
-                                value={form.curso}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            />
-                        </div>
-
-                        <div className="md:col-span-3">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Trimestre/Semestre
-                            </label>
-                            <input
-                                type="text"
-                                name="semestre"
-                                value={form.semestre}
-                                onChange={handleChange}
-                                placeholder="Ex.: 1º semestre"
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            />
-                        </div>
-
-                        <div className="md:col-span-3">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Período
-                            </label>
-                            <input
-                                type="text"
-                                name="periodo"
-                                value={form.periodo}
-                                onChange={handleChange}
-                                placeholder="Ex.: 3º período"
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            />
-                        </div>
-
-                        <div className="md:col-span-6">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Faculdade/Universidade
-                            </label>
-                            <input
-                                type="text"
-                                name="universidade"
-                                value={form.universidade}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            />
-                        </div>
-
-                        <div className="md:col-span-6">
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
-                                Cidade
-                            </label>
-                            <select
-                                name="cidade"
-                                value={form.cidade}
-                                onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            >
-                                <option value="">Selecione</option>
-                                {cidades.map((cidade) => (
-                                    <option key={cidade} value={cidade}>
-                                        {cidade}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                {info && !erro && (
+                    <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                        {info}
                     </div>
+                )}
 
-                    <div className="mt-6 border-t border-gray-200 pt-5">
-                        <div className="flex items-center justify-end">
-                            <button
-                                type="button"
-                                onClick={handleGerarPdf}
-                                disabled={!formularioValido || gerando}
-                                className={`inline-flex items-center gap-2 rounded-lg px-6 py-2 font-semibold text-white shadow transition
+                {loading ? (
+                    <div className="py-10 text-center text-sm text-gray-500">
+                        Carregando dados da solicitação...
+                    </div>
+                ) : (
+                    <>
+                        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
+                            <p className="text-sm font-medium text-gray-700">
+                                Preencha os dados abaixo e clique em gerar para imprimir a solicitação.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                            <div className="md:col-span-9">
+                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    Nome do funcionário
+                                </label>
+                                <input
+                                    type="text"
+                                    name="nome"
+                                    value={form.nome}
+                                    onChange={handleChange}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                />
+                            </div>
+
+                            <div className="md:col-span-3">
+                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    Admissão
+                                </label>
+                                <input
+                                    type="date"
+                                    name="admissao"
+                                    value={form.admissao}
+                                    onChange={handleChange}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                />
+                            </div>
+
+                            <div className="md:col-span-6">
+                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    Curso
+                                </label>
+                                <input
+                                    type="text"
+                                    name="curso"
+                                    value={form.curso}
+                                    onChange={handleChange}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                />
+                            </div>
+
+                            <div className="md:col-span-3">
+                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    Trimestre/Semestre
+                                </label>
+                                <input
+                                    type="text"
+                                    name="semestre"
+                                    value={form.semestre}
+                                    onChange={handleChange}
+                                    placeholder="Ex.: 1º semestre"
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                />
+                            </div>
+
+                            <div className="md:col-span-3">
+                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    Período
+                                </label>
+                                <input
+                                    type="text"
+                                    name="periodo"
+                                    value={form.periodo}
+                                    onChange={handleChange}
+                                    placeholder="Ex.: 3º período"
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                />
+                            </div>
+
+                            <div className="md:col-span-6">
+                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    Faculdade/Universidade
+                                </label>
+                                <input
+                                    type="text"
+                                    name="universidade"
+                                    value={form.universidade}
+                                    onChange={handleChange}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                />
+                            </div>
+
+                            <div className="md:col-span-6">
+                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                    Cidade
+                                </label>
+                                <select
+                                    name="cidade"
+                                    value={form.cidade}
+                                    onChange={handleChange}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                >
+                                    <option value="">Selecione</option>
+                                    {cidades.map((cidade) => (
+                                        <option key={cidade} value={cidade}>
+                                            {cidade}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 border-t border-gray-200 pt-5">
+                            <div className="flex items-center justify-end">
+                                <button
+                                    type="button"
+                                    onClick={handleGerarPdf}
+                                    disabled={!formularioValido || gerando}
+                                    className={`inline-flex items-center gap-2 rounded-lg px-6 py-2 font-semibold text-white shadow transition
         ${formularioValido && !gerando
-                                        ? "bg-secondary hover:bg-primary cursor-pointer"
-                                        : "bg-gray-300 cursor-not-allowed"
-                                    }`}
-                            >
-                                <FaPrint />
-                                {gerando ? "Gerando..." : "Gerar PDF"}
-                            </button>
+                                            ? "bg-secondary hover:bg-primary cursor-pointer"
+                                            : "bg-gray-300 cursor-not-allowed"
+                                        }`}
+                                >
+                                    <FaPrint />
+                                    {gerando ? "Gerando..." : "Gerar PDF"}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </>
-            )}
+                    </>
+                )}
+
+            </div>
         </div>
     );
 }

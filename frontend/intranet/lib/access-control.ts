@@ -448,4 +448,12 @@ export const PAGE_ACCESS = {
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
     },
 
+    convenioOdontologico: {
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+
+    planosOdontologicos: {
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+
 } satisfies Record<string, AccessRule>;

@@ -453,333 +453,337 @@ export function CadastroFeriasForm() {
 
   return (
     <>
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <button
-            type="button"
-            onClick={() => router.push("./gerenciamento_ferias")}
-            className="inline-flex cursor-pointer items-center justify-center rounded bg-primary px-5 py-2 font-semibold text-white shadow hover:bg-secondary md:w-auto"
-          >
-            Consultar Férias
-          </button>
-        </div>
-
-        {!idSolicitacao && (
-          <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <h6 className="text-sm font-semibold text-slate-700">Modo de Cadastro</h6>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setModoCadastro("manual")}
-                className={`rounded px-4 py-2 text-sm font-semibold ${modoCadastro === "manual"
-                  ? "bg-secondary text-white"
-                  : "bg-white text-slate-700 border border-slate-300"
-                  }`}
-              >
-                Inserir Manualmente
-              </button>
-              <button
-                type="button"
-                onClick={() => setModoCadastro("lote")}
-                className={`rounded px-4 py-2 text-sm font-semibold ${modoCadastro === "lote"
-                  ? "bg-secondary text-white"
-                  : "bg-white text-slate-700 border border-slate-300"
-                  }`}
-              >
-                Importar por Planilha
-              </button>
-            </div>
+      <div className="min-w-225 mx-auto overflow-hidden rounded-xl bg-white shadow">
+        <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+        <div className="p-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <button
+              type="button"
+              onClick={() => router.push("./gerenciamento_ferias")}
+              className="inline-flex cursor-pointer items-center justify-center rounded bg-primary px-5 py-2 font-semibold text-white shadow hover:bg-secondary md:w-auto"
+            >
+              Consultar Férias
+            </button>
           </div>
-        )}
 
-        {(modoCadastro === "manual" || !!idSolicitacao) && (
-          <>
-            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr]">
-              <SearchForm onSearch={buscarFuncionario}>
+          {!idSolicitacao && (
+            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <h6 className="text-sm font-semibold text-slate-700">Modo de Cadastro</h6>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModoCadastro("manual")}
+                  className={`rounded px-4 py-2 text-sm font-semibold ${modoCadastro === "manual"
+                    ? "bg-secondary text-white"
+                    : "bg-white text-slate-700 border border-slate-300"
+                    }`}
+                >
+                  Inserir Manualmente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoCadastro("lote")}
+                  className={`rounded px-4 py-2 text-sm font-semibold ${modoCadastro === "lote"
+                    ? "bg-secondary text-white"
+                    : "bg-white text-slate-700 border border-slate-300"
+                    }`}
+                >
+                  Importar por Planilha
+                </button>
+              </div>
+            </div>
+          )}
+
+          {(modoCadastro === "manual" || !!idSolicitacao) && (
+            <>
+              <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-[1fr_2fr]">
+                <SearchForm onSearch={buscarFuncionario}>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      CPF
+                    </label>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                      <SearchInput
+                        value={cpf}
+                        onChange={(e) => setCpf(formatCpfView(e.target.value))}
+                        maxLength={14}
+                        className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      />
+
+                      <SearchButton loading={loadingBusca} label="Pesquisar" />
+                    </div>
+                  </div>
+                </SearchForm>
+
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600">
-                    CPF
+                    Nome
                   </label>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                    <SearchInput
-                      value={cpf}
-                      onChange={(e) => setCpf(formatCpfView(e.target.value))}
-                      maxLength={14}
-                      className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                    />
-
-                    <SearchButton loading={loadingBusca} label="Pesquisar" />
-                  </div>
+                  <input
+                    value={nome}
+                    readOnly
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
                 </div>
-              </SearchForm>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Nome
-                </label>
-                <input
-                  value={nome}
-                  readOnly
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={abrirModal}
-                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary"
-              >
-                <FaCalendarPlus />
-                Adicionar Férias
-              </button>
-            </div>
-
-            <div className="mt-6 overflow-x-auto rounded-xl border">
-              <div className="border-b bg-slate-50 px-4 py-3">
-                <h5 className="font-semibold text-slate-700">Férias</h5>
               </div>
 
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Data de Início
-                    </th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                      Data Final
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                      Editar
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700">
-                      Remover
-                    </th>
-                  </tr>
-                </thead>
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={abrirModal}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded bg-third px-5 py-2 font-semibold text-white shadow hover:bg-primary"
+                >
+                  <FaCalendarPlus />
+                  Adicionar Férias
+                </button>
+              </div>
 
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {ferias.length === 0 ? (
+              <div className="mt-6 overflow-x-auto rounded-xl border">
+                <div className="border-b bg-slate-50 px-4 py-3">
+                  <h5 className="font-semibold text-slate-700">Férias</h5>
+                </div>
+
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <td
-                        colSpan={4}
-                        className="px-4 py-6 text-center text-slate-500"
-                      >
-                        Nenhum período de férias adicionado.
-                      </td>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Data de Início
+                      </th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                        Data Final
+                      </th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                        Editar
+                      </th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-700">
+                        Remover
+                      </th>
                     </tr>
-                  ) : (
-                    ferias.map((item, index) => (
-                      <tr key={`${item.id || "novo"}-${index}`} className="hover:bg-slate-50">
-                        <td className="px-4 py-3">{formatarDataBrasil(item.dataInicio)}</td>
-                        <td className="px-4 py-3">{formatarDataBrasil(item.dataFim)}</td>
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => abrirModalEdicao(index)}
-                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                          >
-                            <FaEdit />
-                            Editar
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => removerPeriodo(index)}
-                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
-                          >
-                            <FaTrash />
-                            Remover
-                          </button>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {ferias.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-4 py-6 text-center text-slate-500"
+                        >
+                          Nenhum período de férias adicionado.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_auto]">
-              <div className="max-w-xs">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Total de Dias
-                </label>
-                <input
-                  readOnly
-                  value={String(totalDias)}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
+                    ) : (
+                      ferias.map((item, index) => (
+                        <tr key={`${item.id || "novo"}-${index}`} className="hover:bg-slate-50">
+                          <td className="px-4 py-3">{formatarDataBrasil(item.dataInicio)}</td>
+                          <td className="px-4 py-3">{formatarDataBrasil(item.dataFim)}</td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => abrirModalEdicao(index)}
+                              className="inline-flex cursor-pointer items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                            >
+                              <FaEdit />
+                              Editar
+                            </button>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => removerPeriodo(index)}
+                              className="inline-flex cursor-pointer items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                            >
+                              <FaTrash />
+                              Remover
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
 
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={salvarSolicitacao}
-                  disabled={loadingSalvar}
-                  className="inline-flex w-full cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
-                >
-                  {loadingSalvar ? "Salvando..." : "Salvar Solicitação"}
-                </button>
+              <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_auto]">
+                <div className="max-w-xs">
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Total de Dias
+                  </label>
+                  <input
+                    readOnly
+                    value={String(totalDias)}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={salvarSolicitacao}
+                    disabled={loadingSalvar}
+                    className="inline-flex w-full cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                  >
+                    {loadingSalvar ? "Salvando..." : "Salvar Solicitação"}
+                  </button>
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
-        {modoCadastro === "lote" && !idSolicitacao && (
-          <>
-            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <h6 className="text-sm font-semibold text-slate-700">
-                Importação em Lote por Planilha
-              </h6>
-              <p className="mt-1 text-xs text-slate-600">
-                Colunas esperadas: <b>nome</b>, <b>início programado</b>, <b>fim programado</b>.
-              </p>
+          {modoCadastro === "lote" && !idSolicitacao && (
+            <>
+              <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <h6 className="text-sm font-semibold text-slate-700">
+                  Importação em Lote por Planilha
+                </h6>
+                <p className="mt-1 text-xs text-slate-600">
+                  Colunas esperadas: <b>nome</b>, <b>início programado</b>, <b>fim programado</b>.
+                </p>
 
-              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={(e) => setArquivoImportacao(e.target.files?.[0] || null)}
-                  className="w-full rounded border bg-white px-3 py-2 text-sm"
-                />
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={(e) => setArquivoImportacao(e.target.files?.[0] || null)}
+                    className="w-full rounded border bg-white px-3 py-2 text-sm"
+                  />
 
-                <button
-                  type="button"
-                  onClick={importarPlanilhaFerias}
-                  disabled={loadingImportacao}
-                  className="inline-flex cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loadingImportacao ? "Carregando..." : "Carregar Planilha"}
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={importarPlanilhaFerias}
+                    disabled={loadingImportacao}
+                    className="inline-flex cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {loadingImportacao ? "Carregando..." : "Carregar Planilha"}
+                  </button>
+                </div>
 
-              {resultadoImportacao && (
-                <div className="mt-3 rounded border border-slate-200 bg-white p-3 text-xs text-slate-700">
-                  <div>
-                    Total de linhas: <b>{resultadoImportacao.total_linhas}</b> | Carregados:{" "}
-                    <b>{resultadoImportacao.carregados}</b> | Erros:{" "}
-                    <b>{resultadoImportacao.erros?.length || 0}</b>
-                  </div>
-
-                  {(resultadoImportacao.erros?.length || 0) > 0 && (
-                    <div className="mt-2 max-h-36 overflow-auto rounded border border-red-200 bg-red-50 p-2 text-red-700">
-                      {resultadoImportacao.erros.map((item, index) => (
-                        <div key={`${item.linha}-${index}`}>
-                          Linha {item.linha}: {item.nome ? `${item.nome} - ` : ""}
-                          {item.motivo}
-                        </div>
-                      ))}
+                {resultadoImportacao && (
+                  <div className="mt-3 rounded border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                    <div>
+                      Total de linhas: <b>{resultadoImportacao.total_linhas}</b> | Carregados:{" "}
+                      <b>{resultadoImportacao.carregados}</b> | Erros:{" "}
+                      <b>{resultadoImportacao.erros?.length || 0}</b>
                     </div>
-                  )}
+
+                    {(resultadoImportacao.erros?.length || 0) > 0 && (
+                      <div className="mt-2 max-h-36 overflow-auto rounded border border-red-200 bg-red-50 p-2 text-red-700">
+                        {resultadoImportacao.erros.map((item, index) => (
+                          <div key={`${item.linha}-${index}`}>
+                            Linha {item.linha}: {item.nome ? `${item.nome} - ` : ""}
+                            {item.motivo}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 overflow-x-auto rounded-xl border">
+                <div className="border-b bg-slate-50 px-4 py-3">
+                  <h5 className="font-semibold text-slate-700">Prévia do Lote (editável)</h5>
+                </div>
+
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Funcionário</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Data de Início</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Data Final</th>
+                      <th className="px-4 py-3 text-center font-semibold text-slate-700">Remover</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {feriasLote.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                          Nenhuma linha carregada.
+                        </td>
+                      </tr>
+                    ) : (
+                      feriasLote.map((item, index) => (
+                        <tr key={`lote-${index}`}>
+                          <td className="px-4 py-3">
+                            <input
+                              value={item.nome}
+                              onChange={(e) => atualizarLinhaLote(index, "nome", e.target.value)}
+                              className="w-full rounded border px-2 py-1"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="date"
+                              value={item.dataInicio}
+                              onChange={(e) => atualizarLinhaLote(index, "dataInicio", e.target.value)}
+                              className="w-full rounded border px-2 py-1"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="date"
+                              value={item.dataFim}
+                              onChange={(e) => atualizarLinhaLote(index, "dataFim", e.target.value)}
+                              className="w-full rounded border px-2 py-1"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => removerLinhaLote(index)}
+                              className="inline-flex cursor-pointer items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                            >
+                              <FaTrash />
+                              Remover
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_auto]">
+                <div className="max-w-xs">
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Total de Dias (Lote)
+                  </label>
+                  <input
+                    readOnly
+                    value={String(totalDiasLote)}
+                    className="w-full rounded border bg-gray-50 px-3 py-2"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={salvarLoteImportado}
+                    disabled={loadingSalvar}
+                    className="inline-flex w-full cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+                  >
+                    {loadingSalvar ? "Salvando..." : "Salvar Lote"}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {(erro || info) && (
+            <div className="mt-4">
+              {erro ? (
+                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {erro}
+                </div>
+              ) : (
+                <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  {info}
                 </div>
               )}
             </div>
+          )}
 
-            <div className="mt-6 overflow-x-auto rounded-xl border">
-              <div className="border-b bg-slate-50 px-4 py-3">
-                <h5 className="font-semibold text-slate-700">Prévia do Lote (editável)</h5>
-              </div>
-
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Funcionário</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Data de Início</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-700">Data Final</th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-700">Remover</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {feriasLote.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
-                        Nenhuma linha carregada.
-                      </td>
-                    </tr>
-                  ) : (
-                    feriasLote.map((item, index) => (
-                      <tr key={`lote-${index}`}>
-                        <td className="px-4 py-3">
-                          <input
-                            value={item.nome}
-                            onChange={(e) => atualizarLinhaLote(index, "nome", e.target.value)}
-                            className="w-full rounded border px-2 py-1"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="date"
-                            value={item.dataInicio}
-                            onChange={(e) => atualizarLinhaLote(index, "dataInicio", e.target.value)}
-                            className="w-full rounded border px-2 py-1"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="date"
-                            value={item.dataFim}
-                            onChange={(e) => atualizarLinhaLote(index, "dataFim", e.target.value)}
-                            className="w-full rounded border px-2 py-1"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => removerLinhaLote(index)}
-                            className="inline-flex cursor-pointer items-center gap-2 rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
-                          >
-                            <FaTrash />
-                            Remover
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_auto]">
-              <div className="max-w-xs">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Total de Dias (Lote)
-                </label>
-                <input
-                  readOnly
-                  value={String(totalDiasLote)}
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={salvarLoteImportado}
-                  disabled={loadingSalvar}
-                  className="inline-flex w-full cursor-pointer items-center justify-center rounded bg-secondary px-5 py-2 font-semibold text-white shadow hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
-                >
-                  {loadingSalvar ? "Salvando..." : "Salvar Lote"}
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {(erro || info) && (
-          <div className="mt-4">
-            {erro ? (
-              <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {erro}
-              </div>
-            ) : (
-              <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                {info}
-              </div>
-            )}
-          </div>
-        )}
+        </div>
       </div>
 
       {modalOpen && (

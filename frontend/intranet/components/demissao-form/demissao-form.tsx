@@ -2,7 +2,15 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
-import { FaPlus, FaPrint, FaTimes, FaTrash } from "react-icons/fa";
+import {
+  FaPlus,
+  FaPrint,
+  FaTimes,
+  FaTrash,
+  FaExclamationTriangle,
+  FaHistory,
+  FaCheckCircle,
+} from "react-icons/fa";
 import {
   buscarAssociadoDemissaoPorCpf,
   buscarCidadesDemissao,
@@ -159,6 +167,27 @@ export function DemissaoForm() {
 
   const [possuiConvenio, setPossuiConvenio] = useState<"Sim" | "Não">("Não");
   const [valorConvenio, setValorConvenio] = useState("");
+  const [
+    convenioOdontologico,
+    setConvenioOdontologico,
+  ] = useState<{
+    situacao:
+    | "ATIVO"
+    | "INATIVO"
+    | "NAO_ENCONTRADO";
+
+    operadora?: string;
+    plano?: string;
+    tipoBeneficiario?: string;
+    nomeTipoBeneficiario?: string;
+    tipoCobranca?:
+    | "POR_PESSOA"
+    | "POR_PLANO";
+
+    valorMensalidade?: number | null;
+    dataInclusaoPlano?: string | null;
+    dataExclusaoPlano?: string | null;
+  } | null>(null);
   const [loadingGerar, setLoadingGerar] = useState(false);
   const [nomeAtendente, setNomeAtendente] = useState("Atendente");
 
@@ -285,6 +314,7 @@ export function DemissaoForm() {
     setValorConvenio("");
     setErro("");
     setInfo("");
+    setConvenioOdontologico(null);
   }
 
   function validarAntesDeGerar() {
@@ -513,18 +543,35 @@ export function DemissaoForm() {
       setTelefone(formatTelefone(data.TELEFONE || ""));
       setSaldoCapital(fmtBRL(Number(data.SL_CONTA_CAPITAL || 0)));
 
-      const convenio = await buscarConvenioDemissaoPorCpf(cpf);
+      const convenio =
+        await buscarConvenioDemissaoPorCpf(cpf);
 
-      if (convenio?.titular_ativo) {
+      setConvenioOdontologico(
+        convenio || {
+          situacao: "NAO_ENCONTRADO",
+        }
+      );
+
+      if (
+        convenio?.situacao === "ATIVO"
+      ) {
         setPossuiConvenio("Sim");
+
         setValorConvenio(
-          fmtBRL(Number(convenio?.total_custo || 0))
+          fmtBRL(
+            Number(
+              convenio.valorMensalidade ??
+              convenio.total_custo ??
+              0
+            )
+          )
         );
       } else {
         setPossuiConvenio("Não");
-        setValorConvenio(fmtBRL(0));
+        setValorConvenio(
+          fmtBRL(0)
+        );
       }
-
       setInfo("Associado carregado com sucesso.");
     } catch (error: any) {
       setErro(error?.response?.data?.error || "Erro ao buscar associado.");
@@ -680,13 +727,13 @@ export function DemissaoForm() {
   const moneyInputClass = `${inputClass} text-right`;
   const readOnlyMoneyClass = `${readOnlyClass} text-right`;
   const sectionClass =
-    "mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
+    "mx-5 mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
   const sectionTitleClass =
     "mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]";
 
   return (
-    <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
+    <div className="min-w-0 mx-auto overflow-hidden rounded-3xl border border-slate-200 bg-white pb-5 shadow-sm">
+      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
       <SearchForm
         onSearch={onBuscar}
         className="border-b border-slate-100 bg-white p-5"
@@ -746,6 +793,190 @@ export function DemissaoForm() {
             )}
           </div>
         )}
+
+        {convenioOdontologico?.situacao ===
+          "ATIVO" && (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-amber-300 bg-amber-50 shadow-sm">
+              <div className="flex gap-4 border-l-[7px] border-amber-500 p-5">
+
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <FaExclamationTriangle
+                    size={23}
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+
+                  <p className="text-base font-extrabold uppercase tracking-wide text-amber-800">
+                    Atenção - Benefício odontológico ativo
+                  </p>
+
+                  <p className="mt-1 text-lg font-medium text-amber-900">
+                    Esta pessoa possui convênio odontológico ativo.
+                    Os dados abaixo foram preenchidos automaticamente.
+                  </p>
+
+                  <div className="mt-4 rounded-2xl border border-amber-200 bg-white/80 p-4">
+
+                    <h3 className="text-lg font-bold text-slate-900">
+                      {convenioOdontologico.operadora ||
+                        "Operadora não informada"}
+
+                      {convenioOdontologico.plano
+                        ? ` - ${convenioOdontologico.plano}`
+                        : ""}
+                    </h3>
+
+                    <div className="mt-3 flex flex-wrap gap-x-8 gap-y-3">
+
+                      {(convenioOdontologico
+                        .nomeTipoBeneficiario ||
+                        convenioOdontologico
+                          .tipoBeneficiario) && (
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                              Beneficiário
+                            </p>
+
+                            <p className="text-md font-bold text-slate-900">
+                              {convenioOdontologico
+                                .nomeTipoBeneficiario ||
+                                convenioOdontologico
+                                  .tipoBeneficiario}
+                            </p>
+                          </div>
+                        )}
+
+                      {convenioOdontologico
+                        .tipoCobranca && (
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                              Cobrança
+                            </p>
+
+                            <p className="text-md font-bold text-slate-900">
+                              {convenioOdontologico
+                                .tipoCobranca ===
+                                "POR_PESSOA"
+                                ? "Por pessoa"
+                                : "Por plano"}
+                            </p>
+                          </div>
+                        )}
+
+                      {convenioOdontologico
+                        .valorMensalidade !==
+                        null &&
+                        convenioOdontologico
+                          .valorMensalidade !==
+                        undefined && (
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                              Valor vigente
+                            </p>
+
+                            <p className="text-md font-extrabold text-amber-800">
+                              {fmtBRL(
+                                Number(
+                                  convenioOdontologico
+                                    .valorMensalidade
+                                )
+                              )}
+                            </p>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        {convenioOdontologico?.situacao ===
+          "INATIVO" && (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-300 bg-slate-50 shadow-sm">
+
+              <div className="flex gap-4 border-l-[7px] border-slate-500 p-5">
+
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-200 text-slate-700">
+                  <FaHistory size={22} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+
+                  <p className="text-base font-extrabold uppercase tracking-wide text-slate-700">
+                    Histórico - Benefício odontológico inativo
+                  </p>
+
+                  <p className="mt-1 text-lg font-medium text-slate-700">
+                    Esta pessoa já possuiu convênio odontológico,
+                    porém o benefício não está ativo atualmente.
+                  </p>
+
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+
+                    <h3 className="text-lg font-bold text-slate-900">
+                      {convenioOdontologico.operadora ||
+                        "Operadora não informada"}
+
+                      {convenioOdontologico.plano
+                        ? ` - ${convenioOdontologico.plano}`
+                        : ""}
+                    </h3>
+
+                    <div className="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-md text-slate-700">
+
+                      {convenioOdontologico
+                        .dataInclusaoPlano && (
+                          <span>
+                            <strong>Inclusão:</strong>{" "}
+                            {new Date(
+                              convenioOdontologico
+                                .dataInclusaoPlano
+                            ).toLocaleDateString(
+                              "pt-BR"
+                            )}
+                          </span>
+                        )}
+
+                      {convenioOdontologico
+                        .dataExclusaoPlano && (
+                          <span>
+                            <strong>Exclusão:</strong>{" "}
+                            {new Date(
+                              convenioOdontologico
+                                .dataExclusaoPlano
+                            ).toLocaleDateString(
+                              "pt-BR"
+                            )}
+                          </span>
+                        )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        {convenioOdontologico?.situacao ===
+          "NAO_ENCONTRADO" && (
+            <div className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                <FaCheckCircle size={18} />
+              </div>
+
+              <div>
+                <p className="text-lg font-bold text-emerald-800">
+                  Nenhum benefício odontológico encontrado
+                </p>
+
+                <p className="text-md text-emerald-700">
+                  Não foi encontrado benefício odontológico atual ou anterior para este CPF.
+                </p>
+              </div>
+            </div>
+          )}
       </SearchForm>
 
       <div className={sectionClass}>
@@ -1152,7 +1383,7 @@ export function DemissaoForm() {
       )}
 
       {!temValorADevolver && !temValorAPagar && (
-        <div className="my-4 rounded-2xl border border-[#00AE9D]/30 bg-[#00AE9D]/10 p-4 text-sm font-semibold text-[#006B5F]">
+        <div className="mx-5 mt-5 rounded-2xl border border-[#00AE9D]/30 bg-[#00AE9D]/10 p-4 text-sm font-semibold text-[#006B5F]">
           Não há valor a devolver ou a pagar. Os dados bancários não são necessários.
         </div>
       )}

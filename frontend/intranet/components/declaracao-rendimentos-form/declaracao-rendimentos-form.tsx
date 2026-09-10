@@ -101,7 +101,7 @@ export function DeclaracaoRendimentosForm() {
 
   return (
     <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
-      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
+      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
 
       <div className="space-y-5 p-5 md:p-6">
         <SectionCard

@@ -9,6 +9,7 @@ type ResidenciaOpts = {
     complemento: string;
     bairro: string;
     cidade: string;
+    cidadeRodape: string;
     uf: string;
     cep: string;
     dia: string;
@@ -19,7 +20,7 @@ type ResidenciaOpts = {
 export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
     const {
         nome, cpf, rg, endereco, numero,
-        complemento, bairro, cidade, uf, cep,
+        complemento, bairro, cidade, cidadeRodape, uf, cep,
         dia, mes, ano
     } = opts;
 
@@ -103,9 +104,9 @@ export async function gerarPdfDeclaracaoResidencia(opts: ResidenciaOpts) {
     y += 60;
 
     doc.text(
-        `${cidade || "________________"}, ${dia || "___"} de ${mes || "________"} de ${ano || "20__"}.`,
+        `${cidadeRodape || "________________"}, ${dia || "___"} de ${mes || "________"} de ${ano || "20__"}.`,
         60, y
-    ); y += 60;
+    );
 
 
     const marginLeft = 60;

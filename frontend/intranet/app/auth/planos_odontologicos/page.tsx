@@ -1,32 +1,33 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FaFileSignature } from "react-icons/fa";
+import { FaMoneyBillWave } from "react-icons/fa";
 import BackButton from "@/components/back-button/back-button";
-import { FichaDesimpedimentoForm } from "@/components/ficha-desimpedimento-form/ficha-desimpedimento-form";
-import { useRouter } from "next/navigation";
+import { PlanosOdontologicos } from "@/components/planos-odontologicos/planos-odontologicos";
 import {
     canAccess,
     PAGE_ACCESS,
     type AuthUserLike,
 } from "@/lib/access-control";
 import { getMeAdUser } from "@/services/auth.service";
-export default function FichaDesimpedimentoPage() {
-    const router = useRouter();
 
+export default function PlanosOdontologicosPage() {
     const [loading, setLoading] = useState(true);
     const [allowed, setAllowed] = useState(false);
+    const [
+        modalNovoPlanoAberta,
+        setModalNovoPlanoAberta,
+    ] = useState(false);
 
     useEffect(() => {
         async function validarAcesso() {
             try {
-                const user =
-                    (await getMeAdUser()) as AuthUserLike;
+                const user = (await getMeAdUser()) as AuthUserLike;
 
                 setAllowed(
                     canAccess(
                         user,
-                        PAGE_ACCESS.fichaDesimpedimento
+                        PAGE_ACCESS.planosOdontologicos
                     )
                 );
             } catch (error) {
@@ -58,50 +59,46 @@ export default function FichaDesimpedimentoPage() {
         );
     }
 
-    const handleClick = () => {
-        router.push(
-            "/auth/consulta_ficha_desimpedimento"
-        );
-    };
-
     return (
-        <div className="p-6 lg:p-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div className="min-w-0">
+        <main className="w-full p-6 lg:p-8">
+            <div className="mb-6">
+                <div className="mb-4">
                     <BackButton />
+                </div>
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700 shadow">
-                            <FaFileSignature size={16} />
+                            <FaMoneyBillWave size={16} />
                         </div>
 
                         <div className="min-w-0">
                             <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                                Ficha de Desimpedimento
+                                Planos Odontológicos
                             </h1>
+
                             <p className="text-sm text-gray-600 mt-1">
-                                Preencha os dados, busque por CPF, salve a ficha e gere o PDF quando necessário.
+                                Gestão dos planos, valores vigentes e histórico de reajustes.
                             </p>
                         </div>
                     </div>
-                </div>
 
-                <div>
                     <button
-                        onClick={handleClick}
-                        className="rounded-lg bg-secondary px-6 py-2 text-md font-semibold text-white hover:bg-primary cursor-pointer"
+                        type="button"
+                        onClick={() => setModalNovoPlanoAberta(true)}
+                        className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary"
                     >
-                        Consultar fichas cadastradas
+                        + Novo plano
                     </button>
                 </div>
             </div>
 
-            <div className="mt-6">
-                <FichaDesimpedimentoForm />
-            </div>
-
-            <div className="mt-8 text-xs text-gray-500">
-                * Os dados do empregado(a) são carregados via intranet-api pela consulta de CPF.
-            </div>
-        </div>
+            <PlanosOdontologicos
+                abrirNovoPlano={modalNovoPlanoAberta}
+                onFecharNovoPlano={() =>
+                    setModalNovoPlanoAberta(false)
+                }
+            />
+        </main>
     );
 }

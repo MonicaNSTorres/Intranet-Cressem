@@ -272,7 +272,7 @@ export function JuntarPdfForm() {
     return (
         <>
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div className="border-b border-slate-100 bg-gradient-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/20 px-6 py-5 sm:px-8">
+                <div className="border-b border-slate-100 bg-linear-to-r from-[#00AE9D]/10 via-white to-[#C7D300]/20 px-6 py-5 sm:px-8">
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                         <div className="min-w-0">
                             <div>
