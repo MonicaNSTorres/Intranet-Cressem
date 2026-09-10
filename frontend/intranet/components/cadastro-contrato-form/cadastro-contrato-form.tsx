@@ -1035,7 +1035,7 @@ export function CadastroContratoForm({
                 value={observacao}
                 onChange={(e) => setObservacao(e.target.value)}
                 className={textareaBase}
-                maxLength={250}
+                maxLength={720}
                 rows={4}
                 placeholder="Digite uma observação"
               />
