@@ -905,7 +905,7 @@ async function buscarResumoSolicitacaoParaEmail(
   };
 }
 
-async function enviarEmailPendenciaProximoAprovador(
+export async function enviarEmailPendenciaProximoAprovador(
   connection: oracledb.Connection,
   params: {
     idSolicitacao: number;
@@ -913,6 +913,7 @@ async function enviarEmailPendenciaProximoAprovador(
     idAprovGerencia: number;
     idAprovGerenciaSup: number;
     idAprovDiretoria: number;
+    introducao?: string;
   }
 ) {
   let idDestino = 0;
@@ -971,7 +972,9 @@ async function enviarEmailPendenciaProximoAprovador(
     justificativa: String(resumo.DESC_JTF_EVENTO || ""),
     despesas: resumo.DESPESAS || [],
     titulo: "Solicitação de reembolso aguardando sua aprovação",
-    introducao: `Uma solicitação avançou no fluxo e está aguardando sua análise na etapa "${params.etapaAtual}".`,
+    introducao:
+      params.introducao ||
+      `Uma solicitação avançou no fluxo e está aguardando sua análise na etapa "${params.etapaAtual}".`,
   });
 
   await sendEmail(destinatarios, subject, html);

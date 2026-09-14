@@ -120,11 +120,16 @@ export type EmailAttachment = {
   contentType?: string;
 };
 
+export type SendEmailOptions = {
+  cc?: string | string[];
+};
+
 export async function sendEmail(
   to: string | string[],
   subject: string,
   html: string,
-  attachments: EmailAttachment[] = []
+  attachments: EmailAttachment[] = [],
+  options: SendEmailOptions = {}
 ) {
   const accessToken = await getAccessToken();
   const departmentalMailbox = getEnv("DEPARTAMENTBOX");
@@ -135,6 +140,10 @@ export async function sendEmail(
   const recipients = emailModoTeste
     ? normalizeRecipients(emailDestinoTeste)
     : normalizeRecipients(to);
+
+  const ccRecipients = emailModoTeste
+    ? []
+    : normalizeRecipients(options.cc || []);
 
   if (!recipients.length) {
     throw new Error("Nenhum destinatário informado para envio do e-mail.");
@@ -159,6 +168,14 @@ export async function sendEmail(
       },
     },
   };
+
+  if (ccRecipients.length) {
+    message.ccRecipients = ccRecipients.map((email) => ({
+      emailAddress: {
+        address: email,
+      },
+    }));
+  }
 
   const validAttachments = attachments.filter(
     (attachment) => attachment?.name && attachment?.contentBytes

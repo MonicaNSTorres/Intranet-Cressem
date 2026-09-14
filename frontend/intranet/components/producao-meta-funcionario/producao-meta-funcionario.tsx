@@ -883,14 +883,13 @@ export function ProducaoMetaFuncionarioForm() {
       ? "Este relatório de consórcio possui atualização mensal."
       : "";
 
-  const mesesComInconsistenciaSisbr = new Set(["2", "3", "4"]);
+  const mesesComInconsistenciaSisbr = new Set(["6", "7", "8"]);
   const mesDoPeriodoSelecionado = extrairMesDoPeriodo(periodoSelecionado);
 
   const mostrarAvisoInconsistenciaSisbr =
     tema === "seguro_gerais_novo" ||
     (tema === "seguro_venda_nova" &&
-      (mesSelecionado === "__ANO__" ||
-        mesesComInconsistenciaSisbr.has(mesSelecionado) ||
+      (mesesComInconsistenciaSisbr.has(mesSelecionado) ||
         mesesComInconsistenciaSisbr.has(mesDoPeriodoSelecionado)));
 
   const mostrarMes =

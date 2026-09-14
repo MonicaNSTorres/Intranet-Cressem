@@ -1071,7 +1071,7 @@ export function ProducaoMetaCooperativaPAForm() {
         tema === "seguro_gerais_novo" ||
         tema === "seguro_gerais_renovado" ||
         (tema === "liquidacao_baixa" && mesSelecionado === "4") ||
-        (tema === "seguro_venda_nova" && ["3", "4"].includes(mesSelecionado));
+        (tema === "seguro_venda_nova" && ["6", "7", "8"].includes(mesSelecionado));
 
     const avisoTema =
         tema && TEMAS_PERIODO_MENSAL.has(tema)
