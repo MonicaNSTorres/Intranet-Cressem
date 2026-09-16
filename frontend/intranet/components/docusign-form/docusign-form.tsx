@@ -28,7 +28,7 @@ type MissingDocRow = {
 };
 
 export function GrDocumentMissingForm() {
-    const itensPorPagina = 20;
+    const [itensPorPagina, setItensPorPagina] = useState(10);
 
     const [error, setError] = useState<string | null>(null);
 
@@ -116,14 +116,24 @@ export function GrDocumentMissingForm() {
             1,
             Math.ceil(rowsFiltradas.length / itensPorPagina)
         );
-    }, [rowsFiltradas.length]);
+    }, [rowsFiltradas.length, itensPorPagina]);
 
     const rowsPaginadas = useMemo(() => {
         const inicio = (paginaAtual - 1) * itensPorPagina;
         const fim = paginaAtual * itensPorPagina;
 
         return rowsFiltradas.slice(inicio, fim);
-    }, [rowsFiltradas, paginaAtual]);
+    }, [rowsFiltradas, paginaAtual, itensPorPagina]);
+
+    const primeiroRegistro =
+        rowsFiltradas.length === 0
+            ? 0
+            : (paginaAtual - 1) * itensPorPagina + 1;
+
+    const ultimoRegistro = Math.min(
+        paginaAtual * itensPorPagina,
+        rowsFiltradas.length
+    );
 
     const handleBuscar = async () => {
         try {
@@ -403,7 +413,7 @@ export function GrDocumentMissingForm() {
 
                 {rowsFiltradas.length > 0 && (
                     <section className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                        <div className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50/70 px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50/70 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <h3 className="text-lg font-semibold text-(--title)">
                                     Resultados encontrados
@@ -414,58 +424,26 @@ export function GrDocumentMissingForm() {
                                     {fromDate && toDate
                                         ? ` entre ${new Date(
                                             fromDate
-                                        ).toLocaleDateString(
-                                            "pt-BR"
-                                        )} e ${new Date(
+                                        ).toLocaleDateString("pt-BR")} e ${new Date(
                                             toDate
-                                        ).toLocaleDateString(
-                                            "pt-BR"
-                                        )}.`
+                                        ).toLocaleDateString("pt-BR")}.`
                                         : "."}
                                 </p>
                             </div>
 
-                            <div className="flex items-center justify-between gap-2 sm:justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        setPaginaAtual((prev) =>
-                                            Math.max(prev - 1, 1)
-                                        )
-                                    }
-                                    disabled={paginaAtual === 1}
-                                    aria-label="Página anterior"
-                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-(--title) transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                    <span className="hidden sm:inline">
-                                        Anterior
-                                    </span>
-                                </button>
-
-                                <span className="whitespace-nowrap rounded-xl bg-white px-3 py-2 text-sm font-medium text-(--paragraph) shadow-sm ring-1 ring-slate-200">
-                                    Página {paginaAtual} de {totalPaginas}
-                                </span>
-
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        setPaginaAtual((prev) =>
-                                            prev < totalPaginas
-                                                ? prev + 1
-                                                : prev
-                                        )
-                                    }
-                                    disabled={paginaAtual >= totalPaginas}
-                                    aria-label="Próxima página"
-                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-(--title) transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                    <span className="hidden sm:inline">
-                                        Próxima
-                                    </span>
-                                    <ChevronRight className="h-4 w-4" />
-                                </button>
-                            </div>
+                            <select
+                                value={itensPorPagina}
+                                onChange={(e) => {
+                                    setItensPorPagina(Number(e.target.value));
+                                    setPaginaAtual(1);
+                                }}
+                                className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10 sm:w-auto"
+                            >
+                                <option value={10}>10 por página</option>
+                                <option value={20}>20 por página</option>
+                                <option value={50}>50 por página</option>
+                                <option value={100}>100 por página</option>
+                            </select>
                         </div>
 
                         <div className="overflow-x-auto">
@@ -611,6 +589,55 @@ export function GrDocumentMissingForm() {
                                     })}
                                 </tbody>
                             </table>
+                        </div>
+                        <div className="mx-5 mt-6 flex flex-col gap-4 border-t border-slate-100 pt-5 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-sm text-slate-500">
+                                Mostrando{" "}
+                                <span className="font-semibold text-slate-700">
+                                    {primeiroRegistro}
+                                </span>{" "}
+                                até{" "}
+                                <span className="font-semibold text-slate-700">
+                                    {ultimoRegistro}
+                                </span>{" "}
+                                de{" "}
+                                <span className="font-semibold text-slate-700">
+                                    {rowsFiltradas.length}
+                                </span>{" "}
+                                documentos
+                            </p>
+
+                            <div className="flex items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setPaginaAtual((old) => Math.max(old - 1, 1))
+                                    }
+                                    disabled={paginaAtual <= 1}
+                                    className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    Anterior
+                                </button>
+
+                                <span className="rounded-2xl bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                                    Página {paginaAtual} de {totalPaginas}
+                                </span>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setPaginaAtual((old) =>
+                                            Math.min(old + 1, totalPaginas)
+                                        )
+                                    }
+                                    disabled={paginaAtual >= totalPaginas}
+                                    className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Próxima
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
                     </section>
                 )}

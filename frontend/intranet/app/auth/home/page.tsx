@@ -212,6 +212,14 @@ export default function HomePage() {
         async function loadUserGroups() {
             try {
                 const me = await getMeAdUser();
+
+                console.log("USUÁRIO AD:", me);
+                console.log("GRUPOS RETORNADOS PELO AD:", me?.grupos);
+                console.log(
+                    "TEM GG_INTRANET_FULL?",
+                    me?.grupos?.includes("GG_INTRANET_FULL")
+                );
+
                 setUserGroups(Array.isArray(me?.grupos) ? me.grupos : []);
             } catch (error) {
                 console.error("Erro ao carregar grupos do usuário:", error);

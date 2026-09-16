@@ -8,7 +8,9 @@ import {
     FaCalendarAlt,
     FaUserTie,
     FaPencilAlt,
-    FaDownload
+    FaDownload,
+    FaChevronLeft,
+    FaChevronRight,
 } from "react-icons/fa";
 import { buscarNotebooks } from "@/services/consulta_notebook.service";
 import ModalEditarNotebook from "@/components/modal-editar-notebook/modal-editar-notebook";
@@ -43,7 +45,8 @@ export default function ConsultaNotebookPage() {
     const [rows, setRows] = useState<NotebookRow[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
-
+    const [paginaAtual, setPaginaAtual] = useState(1);
+    const [itensPorPagina, setItensPorPagina] = useState(10);
     const [openEditModal, setOpenEditModal] = useState(false);
     const [selectedNotebook, setSelectedNotebook] = useState<NotebookRow | null>(null);
 
@@ -69,6 +72,28 @@ export default function ConsultaNotebookPage() {
     }, [debouncedQ, refreshKey]);
 
     const total = useMemo(() => rows.length, [rows]);
+
+    const totalPaginas = Math.max(
+        Math.ceil(rows.length / itensPorPagina),
+        1
+    );
+
+    const rowsPaginadas = useMemo(() => {
+        const inicio = (paginaAtual - 1) * itensPorPagina;
+        const fim = inicio + itensPorPagina;
+
+        return rows.slice(inicio, fim);
+    }, [rows, paginaAtual, itensPorPagina]);
+
+    const primeiroRegistro =
+        rows.length === 0
+            ? 0
+            : (paginaAtual - 1) * itensPorPagina + 1;
+
+    const ultimoRegistro = Math.min(
+        paginaAtual * itensPorPagina,
+        rows.length
+    );
 
     const totalAtivos = useMemo(
         () =>
@@ -200,13 +225,19 @@ export default function ConsultaNotebookPage() {
                     <div className="mt-1 flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
                         <input
                             value={q}
-                            onChange={(e) => setQ(e.target.value)}
+                            onChange={(e) => {
+                                setQ(e.target.value);
+                                setPaginaAtual(1);
+                            }}
                             placeholder="Ex: notebook, modelo, patrimônio, IP, MAC, funcionário..."
                             className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
                         />
                         {q ? (
                             <button
-                                onClick={() => setQ("")}
+                                onClick={() => {
+                                    setQ("");
+                                    setPaginaAtual(1);
+                                }}
                                 className="rounded-lg border border-gray-200 px-2 py-1 text-xs hover:bg-gray-50"
                             >
                                 Limpar
@@ -267,15 +298,31 @@ export default function ConsultaNotebookPage() {
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={handleDownloadRelatorio}
-                        disabled={loading || rows.length === 0}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-                    >
-                        <FaDownload size={16} />
-                        Baixar Relatório
-                    </button>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <select
+                            value={itensPorPagina}
+                            onChange={(e) => {
+                                setItensPorPagina(Number(e.target.value));
+                                setPaginaAtual(1);
+                            }}
+                            className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+                        >
+                            <option value={10}>10 por página</option>
+                            <option value={20}>20 por página</option>
+                            <option value={50}>50 por página</option>
+                            <option value={100}>100 por página</option>
+                        </select>
+
+                        <button
+                            type="button"
+                            onClick={handleDownloadRelatorio}
+                            disabled={loading || rows.length === 0}
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                        >
+                            <FaDownload size={16} />
+                            Baixar Relatório
+                        </button>
+                    </div>
                 </div>
 
                 {error ? (
@@ -309,7 +356,7 @@ export default function ConsultaNotebookPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {rows.map((r) => (
+                                {rowsPaginadas.map((r) => (
                                     <tr
                                         key={String(r.ID_NOTEBOOKS_SICOOB)}
                                         className="border-t border-gray-100 hover:bg-gray-50/60"
@@ -380,6 +427,59 @@ export default function ConsultaNotebookPage() {
                         </table>
                     </div>
                 )}
+                <div className="mt-6 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm text-slate-500">
+                        Mostrando{" "}
+                        <span className="font-semibold text-slate-700">
+                            {primeiroRegistro}
+                        </span>{" "}
+                        até{" "}
+                        <span className="font-semibold text-slate-700">
+                            {ultimoRegistro}
+                        </span>{" "}
+                        de{" "}
+                        <span className="font-semibold text-slate-700">
+                            {rows.length}
+                        </span>{" "}
+                        notebooks
+                    </p>
+
+                    <div className="flex items-center justify-end gap-2">
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setPaginaAtual((old) =>
+                                    Math.max(old - 1, 1)
+                                )
+                            }
+                            disabled={paginaAtual <= 1 || loading}
+                            className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <FaChevronLeft />
+                            Anterior
+                        </button>
+
+                        <span className="rounded-2xl bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                            Página {paginaAtual} de {totalPaginas}
+                        </span>
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setPaginaAtual((old) =>
+                                    Math.min(old + 1, totalPaginas)
+                                )
+                            }
+                            disabled={
+                                paginaAtual >= totalPaginas || loading
+                            }
+                            className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            Próxima
+                            <FaChevronRight />
+                        </button>
+                    </div>
+                </div>
 
                 <p className="mt-3 text-xs text-gray-500">
                     * Dados carregados do Oracle via intranet-api. Ordenação mostrando os últimos cadastrados primeiro.

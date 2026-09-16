@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FaCheck,
+  FaChevronLeft,
+  FaChevronRight,
   FaDownload,
   FaEdit,
   FaEye,
@@ -188,63 +190,6 @@ function formatarDataHoraBR(value?: string | null) {
   return formatarDataBR(texto);
 }
 
-function Pagination({
-  currentPage,
-  totalPages,
-  onChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  onChange: (page: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-
-  const pages: number[] = [];
-  const start = Math.max(1, currentPage - 2);
-  const end = Math.min(totalPages, currentPage + 2);
-
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-
-  return (
-    <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-      <button
-        type="button"
-        onClick={() => onChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage === 1}
-        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Anterior
-      </button>
-
-      {pages.map((page) => (
-        <button
-          key={page}
-          type="button"
-          onClick={() => onChange(page)}
-          className={`inline-flex h-10 min-w-10 items-center justify-center rounded-xl px-4 text-sm font-semibold shadow-sm transition ${
-            page === currentPage
-              ? "bg-primary text-white"
-              : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-          }`}
-        >
-          {page}
-        </button>
-      ))}
-
-      <button
-        type="button"
-        onClick={() => onChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
-        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Próxima
-      </button>
-    </div>
-  );
-}
-
 export function GerenciamentoSubsidioAuditivoForm() {
   const router = useRouter();
 
@@ -259,6 +204,7 @@ export function GerenciamentoSubsidioAuditivoForm() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [itensPorPagina, setItensPorPagina] = useState(10);
   const [rows, setRows] = useState<SubsidioAuditivoListaItem[]>([]);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -328,7 +274,10 @@ export function GerenciamentoSubsidioAuditivoForm() {
     }
   }
 
-  async function carregarLista() {
+  async function carregarLista(
+    pagina = page,
+    limite = itensPorPagina
+  ) {
     try {
       setLoading(true);
       setErro("");
@@ -336,13 +285,14 @@ export function GerenciamentoSubsidioAuditivoForm() {
       const data = await buscarSolicitacoesSubsidioAuditivoPaginado({
         pesquisa,
         status,
-        page,
-        limit: 10,
+        page: pagina,
+        limit: limite,
       });
 
       setRows(data.rows || []);
       setTotalPages(data.totalPages || 1);
       setTotal(data.total || 0);
+      setPage(pagina);
     } catch (e: any) {
       setErro(e?.response?.data?.error || e?.message || "Falha ao carregar solicitações.");
     } finally {
@@ -491,6 +441,16 @@ export function GerenciamentoSubsidioAuditivoForm() {
     return usuarioEhSolicitanteAtual(usuario, item);
   }
 
+  const primeiroRegistro =
+    total === 0
+      ? 0
+      : (page - 1) * itensPorPagina + 1;
+
+  const ultimoRegistro = Math.min(
+    page * itensPorPagina,
+    total
+  );
+
   return (
     <div className="space-y-5">
       <div className={cardClass}>
@@ -505,11 +465,13 @@ export function GerenciamentoSubsidioAuditivoForm() {
                 className={`${inputClass} pl-9`}
                 placeholder="Solicitante, associado ou prestador"
                 value={pesquisa}
-                onChange={(e) => setPesquisa(e.target.value)}
+                onChange={(e) => {
+                  setPesquisa(e.target.value);
+                  setPage(1);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    setPage(1);
-                    carregarLista();
+                    carregarLista(1);
                   }
                 }}
               />
@@ -536,10 +498,7 @@ export function GerenciamentoSubsidioAuditivoForm() {
           <div className="flex items-end gap-3">
             <button
               type="button"
-              onClick={() => {
-                setPage(1);
-                carregarLista();
-              }}
+              onClick={() => carregarLista(1)}
               className="rounded-xl bg-secondary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary"
             >
               Buscar
@@ -580,6 +539,24 @@ export function GerenciamentoSubsidioAuditivoForm() {
               Total localizado: {total}
             </p>
           </div>
+
+          <select
+            value={itensPorPagina}
+            onChange={(e) => {
+              const novoLimite = Number(e.target.value);
+
+              setItensPorPagina(novoLimite);
+              setPage(1);
+              carregarLista(1, novoLimite);
+            }}
+            disabled={loading}
+            className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value={10}>10 por página</option>
+            <option value={20}>20 por página</option>
+            <option value={50}>50 por página</option>
+            <option value={100}>100 por página</option>
+          </select>
         </div>
 
         <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
@@ -626,10 +603,10 @@ export function GerenciamentoSubsidioAuditivoForm() {
                         <button
                           type="button"
                           onClick={() => abrirDetalhes(item.ID_SUBSIDIO_AUDITIVO)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700"
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
                         >
-                          <FaEye size={11} />
-                          Ver
+                          <FaEye size={13} />
+                          Visualizar
                         </button>
                       </div>
                     </td>
@@ -646,120 +623,482 @@ export function GerenciamentoSubsidioAuditivoForm() {
           </table>
         </div>
 
-        <Pagination currentPage={page} totalPages={totalPages} onChange={setPage} />
+        <div className="mt-6 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-500">
+            Mostrando{" "}
+            <span className="font-semibold text-slate-700">
+              {primeiroRegistro}
+            </span>{" "}
+            até{" "}
+            <span className="font-semibold text-slate-700">
+              {ultimoRegistro}
+            </span>{" "}
+            de{" "}
+            <span className="font-semibold text-slate-700">
+              {total}
+            </span>{" "}
+            solicitações
+          </p>
+
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                carregarLista(Math.max(page - 1, 1))
+              }
+              disabled={page <= 1 || loading}
+              className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <FaChevronLeft />
+              Anterior
+            </button>
+
+            <span className="rounded-2xl bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+              Página {page} de {totalPages}
+            </span>
+
+            <button
+              type="button"
+              onClick={() =>
+                carregarLista(Math.min(page + 1, totalPages))
+              }
+              disabled={page >= totalPages || loading}
+              className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Próxima
+              <FaChevronRight />
+            </button>
+          </div>
+        </div>
       </div>
 
       {modalOpen && detalhe ? (
-        <div className="fixed inset-0 z-90 flex items-center justify-center bg-slate-950/45 p-4">
-          <div className="max-h-[90vh] w-full max-w-5xl overflow-auto rounded-3xl bg-white shadow-2xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
-              <div>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  Solicitação de subsídio auditivo
-                </h3>
-                <p className="text-sm text-slate-500">{statusLabel(detalhe)}</p>
+        <div className="fixed inset-0 z-90 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[94vh] w-full max-w-5xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+            <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                    Gestão de subsídio auditivo
+                  </p>
+
+                  <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                    Solicitação de subsídio auditivo
+                  </h2>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusBadgeClass(
+                        detalhe
+                      )}`}
+                    >
+                      {statusLabel(detalhe)}
+                    </span>
+
+                    {detalhe.ID_SUBSIDIO_AUDITIVO ? (
+                      <span className="text-xs font-medium text-slate-400">
+                        Solicitação #{detalhe.ID_SUBSIDIO_AUDITIVO}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  disabled={submitting}
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Fechar"
+                >
+                  <FaTimes size={18} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-              >
-                <FaTimes />
-              </button>
             </div>
 
-            <div className="space-y-5 p-6">
+            <div className="max-h-[78vh] space-y-5 overflow-y-auto p-6">
               {erro ? (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {erro}
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                  <p className="text-sm font-medium text-red-700">
+                    {erro}
+                  </p>
+                </div>
+              ) : null}
+
+              {mensagem ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <p className="text-sm font-medium text-emerald-800">
+                    {mensagem}
+                  </p>
                 </div>
               ) : null}
 
               <div className="grid gap-5 lg:grid-cols-2">
-                <div className={cardClass}>
-                  <h4 className="text-base font-semibold text-slate-900">Associado solicitante</h4>
-                  <div className="mt-3 space-y-2 text-sm text-slate-600">
-                    <div><span className="font-semibold text-slate-800">Nome:</span> {detalhe.NM_ASSOCIADO}</div>
-                    <div><span className="font-semibold text-slate-800">CPF:</span> {formatCpfView(detalhe.NR_CPF_ASSOCIADO || "")}</div>
-                    <div><span className="font-semibold text-slate-800">Matrícula:</span> {detalhe.NR_MATRICULA_ASSOCIADO || "-"}</div>
-                    <div><span className="font-semibold text-slate-800">Local:</span> {detalhe.NM_ORGAO_ASSOCIADO || "-"}</div>
-                    <div><span className="font-semibold text-slate-800">Cargo:</span> {detalhe.DS_FUNCAO_ASSOCIADO || "-"}</div>
-                    <div><span className="font-semibold text-slate-800">Celular:</span> {detalhe.NR_CELULAR || "-"}</div>
-                    <div><span className="font-semibold text-slate-800">Telefone residencial:</span> {detalhe.NR_TELEFONE_RESIDENCIAL || "-"}</div>
-                    <div><span className="font-semibold text-slate-800">Data de associação:</span> {formatarDataBR(detalhe.DT_ASSOCIACAO)}</div>
+                <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                      Associado
+                    </p>
+
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      Associado solicitante
+                    </h3>
+
+                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                      Informações cadastrais e profissionais do associado.
+                    </p>
+                  </div>
+
+                  <div className="mt-5 space-y-3 text-sm">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400">
+                        Nome
+                      </p>
+                      <p className="mt-0.5 font-medium text-slate-800">
+                        {detalhe.NM_ASSOCIADO || "-"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400">
+                        CPF
+                      </p>
+                      <p className="mt-0.5 text-slate-700">
+                        {formatCpfView(
+                          detalhe.NR_CPF_ASSOCIADO || ""
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-400">
+                          Matrícula
+                        </p>
+                        <p className="mt-0.5 text-slate-700">
+                          {detalhe.NR_MATRICULA_ASSOCIADO || "-"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-400">
+                          Data de associação
+                        </p>
+                        <p className="mt-0.5 text-slate-700">
+                          {formatarDataBR(detalhe.DT_ASSOCIACAO)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400">
+                        Órgão / Local
+                      </p>
+                      <p className="mt-0.5 text-slate-700">
+                        {detalhe.NM_ORGAO_ASSOCIADO || "-"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400">
+                        Cargo / Função
+                      </p>
+                      <p className="mt-0.5 text-slate-700">
+                        {detalhe.DS_FUNCAO_ASSOCIADO || "-"}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-400">
+                          Celular
+                        </p>
+                        <p className="mt-0.5 text-slate-700">
+                          {detalhe.NR_CELULAR || "-"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-400">
+                          Telefone residencial
+                        </p>
+                        <p className="mt-0.5 text-slate-700">
+                          {detalhe.NR_TELEFONE_RESIDENCIAL || "-"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className={cardClass}>
-                  <h4 className="text-base font-semibold text-slate-900">Análise do subsídio</h4>
-                  <div className="mt-3 space-y-2 text-sm text-slate-600">
-                    <div><span className="font-semibold text-slate-800">Nível de integralização:</span> {fmtBRL(Number(detalhe.VL_NIVEL_INTEGRALIZACAO || 0))}</div>
-                    <div><span className="font-semibold text-slate-800">Capital:</span> {fmtBRL(Number(detalhe.VL_CAPITAL || 0))}</div>
-                    <div><span className="font-semibold text-slate-800">Custo do aparelho:</span> {fmtBRL(Number(detalhe.VL_CUSTO_APARELHO || 0))}</div>
-                    <div><span className="font-semibold text-slate-800">Liberado:</span> {fmtBRL(Number(detalhe.VL_SUBSIDIO_APROVADO || 0))}</div>
-                    <div><span className="font-semibold text-slate-800">Prestador:</span> {detalhe.NM_PRESTADOR_SERVICO || "-"}</div>
-                    <div><span className="font-semibold text-slate-800">CPF/CNPJ prestador:</span> {detalhe.NR_CPF_CNPJ_PRESTADOR || "-"}</div>
-                    <div><span className="font-semibold text-slate-800">Banco:</span> {detalhe.NM_BANCO || detalhe.CD_BANCO || "-"}</div>
-                    <div><span className="font-semibold text-slate-800">Agência:</span> {detalhe.CD_AGENCIA || "-"}</div>
-                    <div><span className="font-semibold text-slate-800">Conta:</span> {detalhe.NR_CONTA || "-"}</div>
-                    <div><span className="font-semibold text-slate-800">Tipo de conta:</span> {detalhe.TP_CONTA || "-"}</div>
+                <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                      Subsídio
+                    </p>
+
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      Análise do subsídio
+                    </h3>
+
+                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                      Valores considerados para análise e liberação do benefício.
+                    </p>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-semibold text-slate-400">
+                        Nível de integralização
+                      </p>
+
+                      <p className="mt-1 text-lg font-bold text-slate-800">
+                        {fmtBRL(
+                          Number(
+                            detalhe.VL_NIVEL_INTEGRALIZACAO || 0
+                          )
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-semibold text-slate-400">
+                        Capital
+                      </p>
+
+                      <p className="mt-1 text-lg font-bold text-slate-800">
+                        {fmtBRL(Number(detalhe.VL_CAPITAL || 0))}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-semibold text-slate-400">
+                        Custo do aparelho
+                      </p>
+
+                      <p className="mt-1 text-lg font-bold text-slate-800">
+                        {fmtBRL(
+                          Number(detalhe.VL_CUSTO_APARELHO || 0)
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
+                      <p className="text-xs font-semibold text-primary">
+                        Valor liberado
+                      </p>
+
+                      <p className="mt-1 text-lg font-bold text-primary">
+                        {fmtBRL(
+                          Number(
+                            detalhe.VL_SUBSIDIO_APROVADO || 0
+                          )
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {String(detalhe.DS_MOTIVO_DEVOLUCAO || "").trim() ? (
-                <div className={cardClass}>
-                  <h4 className="text-base font-semibold text-slate-900">Motivo da devolução</h4>
-                  <div className="mt-3 text-sm text-slate-600">
-                    {detalhe.DS_MOTIVO_DEVOLUCAO}
+              <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Financeiro
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Dados para pagamento
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Prestador do serviço e informações bancárias relacionadas à solicitação.
+                  </p>
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">
+                      Prestador
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-slate-700">
+                      {detalhe.NM_PRESTADOR_SERVICO || "-"}
+                    </p>
                   </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">
+                      CPF/CNPJ do prestador
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-slate-700">
+                      {detalhe.NR_CPF_CNPJ_PRESTADOR || "-"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">
+                      Banco
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-slate-700">
+                      {detalhe.NM_BANCO ||
+                        detalhe.CD_BANCO ||
+                        "-"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">
+                      Agência
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-slate-700">
+                      {detalhe.CD_AGENCIA || "-"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">
+                      Conta
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-slate-700">
+                      {detalhe.NR_CONTA || "-"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">
+                      Tipo de conta
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-slate-700">
+                      {detalhe.TP_CONTA || "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {String(
+                detalhe.DS_MOTIVO_DEVOLUCAO || ""
+              ).trim() ? (
+                <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-700">
+                    Atenção
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-amber-950">
+                    Motivo da devolução
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-6 text-amber-900">
+                    {detalhe.DS_MOTIVO_DEVOLUCAO}
+                  </p>
                 </div>
               ) : null}
 
-              <div className={cardClass}>
-                <h4 className="text-base font-semibold text-slate-900">Anexos</h4>
-                <div className="mt-3 space-y-3">
-                  {Array.isArray(detalhe.ANEXOS) && detalhe.ANEXOS.length ? (
-                    detalhe.ANEXOS.map((item: any, index: number) => (
-                      <div key={`${item.NM_ARQUIVO_ORIGINAL}-${index}`} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                          <div className="font-medium text-slate-800">{item.NM_ARQUIVO_ORIGINAL}</div>
-                          <div className="text-xs text-slate-500">{labelTipoAnexo(item.TP_ANEXO)}</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => baixarAnexo(item.DS_CAMINHO_ARQUIVO, item.NM_ARQUIVO_ORIGINAL)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700"
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Documentos
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Anexos
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Documentos vinculados à solicitação de subsídio auditivo.
+                  </p>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  {Array.isArray(detalhe.ANEXOS) &&
+                    detalhe.ANEXOS.length ? (
+                    detalhe.ANEXOS.map(
+                      (item: any, index: number) => (
+                        <div
+                          key={`${item.NM_ARQUIVO_ORIGINAL}-${index}`}
+                          className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
                         >
-                          <FaDownload size={11} />
-                          Baixar
-                        </button>
-                      </div>
-                    ))
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-800">
+                              {item.NM_ARQUIVO_ORIGINAL}
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-500">
+                              {labelTipoAnexo(item.TP_ANEXO)}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              baixarAnexo(
+                                item.DS_CAMINHO_ARQUIVO,
+                                item.NM_ARQUIVO_ORIGINAL
+                              )
+                            }
+                            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs font-semibold text-primary transition hover:bg-primary/10"
+                          >
+                            <FaDownload size={11} />
+                            Baixar
+                          </button>
+                        </div>
+                      )
+                    )
                   ) : (
-                    <div className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
-                      Nenhum anexo disponível.
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center">
+                      <p className="text-sm text-slate-500">
+                        Nenhum anexo disponível.
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className={cardClass}>
-                <h4 className="text-base font-semibold text-slate-900">Andamento</h4>
+              <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                    Fluxo
+                  </p>
 
-                {String(detalhe.ST_SOLICITACAO || "") === "DEVOLVIDO_AO_ATENDIMENTO" && podeEditarCadastro(detalhe) ? (
-                  <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Andamento da solicitação
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Ações disponíveis conforme o status atual e seu perfil.
+                  </p>
+                </div>
+
+                {String(detalhe.ST_SOLICITACAO || "") ===
+                  "DEVOLVIDO_AO_ATENDIMENTO" &&
+                  podeEditarCadastro(detalhe) ? (
+                  <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <div className="font-semibold text-amber-900">Solicitação devolvida ao atendimento</div>
-                        <div className="mt-1">
-                          Revise o motivo da devolução e clique em <span className="font-semibold">Editar cadastro</span> para corrigir a documentação antes de reenviar ao financeiro.
-                        </div>
+                        <p className="font-semibold text-amber-900">
+                          Solicitação devolvida ao atendimento
+                        </p>
+
+                        <p className="mt-1 text-sm leading-5 text-amber-800">
+                          Revise o motivo da devolução e clique em{" "}
+                          <span className="font-semibold">
+                            Editar cadastro
+                          </span>{" "}
+                          para corrigir a documentação antes de reenviar
+                          ao financeiro.
+                        </p>
                       </div>
+
                       <button
                         type="button"
-                        onClick={() => router.push(`/auth/cadastro_subsidio_auditivo?id=${detalhe.ID_SUBSIDIO_AUDITIVO}`)}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                        onClick={() =>
+                          router.push(
+                            `/auth/cadastro_subsidio_auditivo?id=${detalhe.ID_SUBSIDIO_AUDITIVO}`
+                          )
+                        }
+                        className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary"
                       >
                         <FaEdit size={12} />
                         Editar cadastro
@@ -768,89 +1107,177 @@ export function GerenciamentoSubsidioAuditivoForm() {
                   </div>
                 ) : acoesDisponiveis.length ? (
                   <>
-                    {String(detalhe.ST_SOLICITACAO || "") === "AGUARDANDO_ASSINATURA_SOLICITANTE" &&
-                    podeAtuarComoSolicitante ? (
-                      <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
-                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                    {String(detalhe.ST_SOLICITACAO || "") ===
+                      "AGUARDANDO_ASSINATURA_SOLICITANTE" &&
+                      podeAtuarComoSolicitante ? (
+                      <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
                           Termo assinado pelo solicitante
                         </label>
+
                         <input
                           type="file"
-                          className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium`}
-                          onChange={(e) => setTermoSolicitanteFile(e.target.files?.[0] || null)}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                          onChange={(e) =>
+                            setTermoSolicitanteFile(
+                              e.target.files?.[0] || null
+                            )
+                          }
                         />
-                        <p className="mt-2 text-xs text-emerald-700">
-                          Anexe aqui a solicitação impressa e assinada. Ao confirmar, o sistema envia para conferência do financeiro.
+
+                        <p className="mt-2 text-xs leading-5 text-slate-500">
+                          Anexe aqui a solicitação impressa e assinada.
+                          Ao confirmar, o sistema envia para conferência
+                          do financeiro.
                         </p>
                       </div>
                     ) : null}
 
-                    {String(detalhe.ST_SOLICITACAO || "") === "AGUARDANDO_FINANCEIRO" &&
-                    podeAtuarComoFinanceiro ? (
-                      <div className="mt-3">
-                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {String(detalhe.ST_SOLICITACAO || "") ===
+                      "AGUARDANDO_FINANCEIRO" &&
+                      podeAtuarComoFinanceiro ? (
+                      <div className="mt-5">
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
                           Documento faltante / motivo da devolução
                         </label>
+
                         <textarea
-                          className={`${inputClass} min-h-27.5`}
                           value={observacaoAcao}
-                          onChange={(e) => setObservacaoAcao(e.target.value)}
+                          onChange={(e) =>
+                            setObservacaoAcao(e.target.value)
+                          }
                           placeholder="Preencha somente se for recusar, informando qual documento falta."
+                          rows={4}
+                          className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
                         />
                       </div>
                     ) : null}
 
-                    <div className="mt-4 flex flex-wrap gap-3">
+                    <div className="mt-5 flex flex-wrap gap-3">
                       {acoesDisponiveis.map((item) => {
                         const Icon = item.icon;
+
                         const className =
                           item.style === "danger"
                             ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                            : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100";
+                            : "border-secondary bg-secondary text-white hover:border-primary hover:bg-primary";
 
                         return (
                           <button
                             key={item.acao}
                             type="button"
-                            disabled={submitting || !podeExecutarAcao(item.acao)}
-                            onClick={() => executarAcao(item.acao)}
-                            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${className} disabled:cursor-not-allowed disabled:opacity-60`}
+                            disabled={
+                              submitting ||
+                              !podeExecutarAcao(item.acao)
+                            }
+                            onClick={() =>
+                              executarAcao(item.acao)
+                            }
+                            className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-sm font-semibold shadow-sm transition ${className} disabled:cursor-not-allowed disabled:opacity-60`}
                           >
                             <Icon size={12} />
-                            {submitting ? "Processando..." : item.label}
+
+                            {submitting
+                              ? "Processando..."
+                              : item.label}
                           </button>
                         );
                       })}
                     </div>
                   </>
                 ) : (
-                  <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                    Não há ação pendente para o seu perfil neste status.
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                    <p className="text-sm text-slate-500">
+                      Não há ação pendente para o seu perfil neste status.
+                    </p>
                   </div>
                 )}
               </div>
 
-              <div className={cardClass}>
-                <h4 className="text-base font-semibold text-slate-900">Histórico</h4>
-                <div className="mt-3 space-y-3">
-                  {Array.isArray(detalhe.HISTORICO) && detalhe.HISTORICO.length ? (
-                    detalhe.HISTORICO.map((item: any, index: number) => (
-                      <div key={`${item.ID_SUBSIDIO_AUDITIVO_HIST || index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex flex-col gap-1 text-sm text-slate-600">
-                          <div className="font-semibold text-slate-800">{item.DS_ACAO}</div>
-                          <div>Status: {item.ST_ANTERIOR || "-"} → {item.ST_NOVO || "-"}</div>
-                          <div>Usuário: {item.NM_USUARIO || "-"}</div>
-                          <div>Data: {formatarDataHoraBR(item.DT_ACAO)}</div>
-                          <div>Observação: {item.DS_OBSERVACAO || "-"}</div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Auditoria
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Histórico
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Registro das movimentações realizadas nesta solicitação.
+                  </p>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  {Array.isArray(detalhe.HISTORICO) &&
+                    detalhe.HISTORICO.length ? (
+                    detalhe.HISTORICO.map(
+                      (item: any, index: number) => (
+                        <div
+                          key={`${item.ID_SUBSIDIO_AUDITIVO_HIST ||
+                            index
+                            }`}
+                          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                        >
+                          <div className="flex flex-col gap-2 text-sm text-slate-600">
+                            <p className="font-semibold text-slate-800">
+                              {item.DS_ACAO}
+                            </p>
+
+                            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                              <div>
+                                <span className="font-semibold text-slate-700">
+                                  Status:
+                                </span>{" "}
+                                {item.ST_ANTERIOR || "-"} →{" "}
+                                {item.ST_NOVO || "-"}
+                              </div>
+
+                              <div>
+                                <span className="font-semibold text-slate-700">
+                                  Usuário:
+                                </span>{" "}
+                                {item.NM_USUARIO || "-"}
+                              </div>
+
+                              <div>
+                                <span className="font-semibold text-slate-700">
+                                  Data:
+                                </span>{" "}
+                                {formatarDataHoraBR(item.DT_ACAO)}
+                              </div>
+
+                              <div>
+                                <span className="font-semibold text-slate-700">
+                                  Observação:
+                                </span>{" "}
+                                {item.DS_OBSERVACAO || "-"}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      )
+                    )
                   ) : (
-                    <div className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
-                      Ainda não há histórico registrado.
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 px-4 py-8 text-center">
+                      <p className="text-sm text-slate-500">
+                        Ainda não há histórico registrado.
+                      </p>
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  disabled={submitting}
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Fechar
+                </button>
               </div>
             </div>
           </div>

@@ -218,102 +218,157 @@ export default function ModalEditarNotebook({
     if (!open || !notebook) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="max-h-[95vh] w-full max-w-5xl overflow-auto rounded-3xl bg-white shadow-2xl">
-                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                            Editar notebook
-                        </h2>
-                        <p className="text-sm text-gray-500">
-                            Altere os campos abaixo e salve as informações.
-                        </p>
-                    </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+            <div className="max-h-[94vh] w-full max-w-5xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+                <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+                    <div className="flex items-start justify-between gap-4">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                                Gestão de notebooks
+                            </p>
 
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-xl border border-gray-200 p-2 text-gray-500 hover:bg-gray-50 cursor-pointer"
-                    >
-                        <FaTimes size={14} className="hover:text-secondary" />
-                    </button>
+                            <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                                Editar notebook
+                            </h2>
+
+                            <p className="mt-1 text-sm text-slate-500">
+                                Atualize os dados do equipamento, responsável e demais informações.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={loading}
+                            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:opacity-60"
+                            title="Fechar"
+                        >
+                            <FaTimes size={18} />
+                        </button>
+                    </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6 p-6">
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                        <h3 className="text-base font-semibold text-gray-900">
-                            Dados do equipamento
-                        </h3>
+                <form
+                    onSubmit={handleSubmit}
+                    className="max-h-[78vh] space-y-5 overflow-y-auto p-6"
+                >
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                                Equipamento
+                            </p>
 
-                        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                Dados do equipamento
+                            </h3>
+
+                            <p className="mt-1 text-sm leading-5 text-slate-500">
+                                Atualize as informações de identificação, rede, segurança
+                                e período de operação do notebook.
+                            </p>
+                        </div>
+
+                        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                             <Field
                                 label="Nome do notebook *"
                                 value={form.NM_NOTEBOOK}
-                                onChange={(v) => handleChange("NM_NOTEBOOK", v)}
+                                onChange={(v) =>
+                                    handleChange("NM_NOTEBOOK", v)
+                                }
                                 required
                             />
 
                             <Field
                                 label="Modelo"
                                 value={form.NM_MODELO}
-                                onChange={(v) => handleChange("NM_MODELO", v)}
+                                onChange={(v) =>
+                                    handleChange("NM_MODELO", v)
+                                }
                             />
 
                             <Field
                                 label="Patrimônio"
                                 value={form.CD_PATRIMONIO}
-                                onChange={(v) => handleChange("CD_PATRIMONIO", v)}
+                                onChange={(v) =>
+                                    handleChange("CD_PATRIMONIO", v)
+                                }
                                 type="number"
                             />
 
                             <Field
                                 label="IP"
                                 value={form.NR_IP}
-                                onChange={(v) => handleChange("NR_IP", v)}
+                                onChange={(v) =>
+                                    handleChange("NR_IP", v)
+                                }
                             />
 
                             <Field
                                 label="MAC"
                                 value={form.NR_MAC}
-                                onChange={(v) => handleChange("NR_MAC", v)}
+                                onChange={(v) =>
+                                    handleChange("NR_MAC", v)
+                                }
                             />
 
                             <Field
                                 label="BitLocker"
                                 value={form.NR_BITLOCKER}
-                                onChange={(v) => handleChange("NR_BITLOCKER", v)}
+                                onChange={(v) =>
+                                    handleChange("NR_BITLOCKER", v)
+                                }
                             />
 
                             <Field
                                 label="Início da operação"
                                 value={form.DT_INICIO_OPERACAO}
-                                onChange={(v) => handleChange("DT_INICIO_OPERACAO", v)}
+                                onChange={(v) =>
+                                    handleChange("DT_INICIO_OPERACAO", v)
+                                }
                                 type="date"
                             />
 
                             <Field
                                 label="Garantia"
                                 value={form.DT_GARANTIA}
-                                onChange={(v) => handleChange("DT_GARANTIA", v)}
+                                onChange={(v) =>
+                                    handleChange("DT_GARANTIA", v)
+                                }
                                 type="date"
                             />
 
                             <Field
                                 label="Situação"
                                 value={form.DESC_SITUACAO}
-                                onChange={(v) => handleChange("DESC_SITUACAO", v)}
+                                onChange={(v) =>
+                                    handleChange("DESC_SITUACAO", v)
+                                }
                             />
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                        <h3 className="text-base font-semibold text-gray-900">
-                            Responsável / vínculo
-                        </h3>
+                    <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                                Responsável
+                            </p>
 
-                        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            <div className="relative" ref={funcionarioBoxRef}>
-                                <label className="text-xs font-medium text-gray-600">
+                            <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                Responsável / vínculo
+                            </h3>
+
+                            <p className="mt-1 text-sm leading-5 text-slate-500">
+                                Informe o funcionário responsável pelo equipamento e
+                                confira o responsável da TI pelo cadastro.
+                            </p>
+                        </div>
+
+                        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div
+                                className="relative"
+                                ref={funcionarioBoxRef}
+                            >
+                                <label className="mb-1 block text-xs font-semibold text-slate-600">
                                     Funcionário que recebeu
                                 </label>
 
@@ -321,8 +376,16 @@ export default function ModalEditarNotebook({
                                     <input
                                         value={form.NM_FUNCIONARIO}
                                         onChange={(e) => {
-                                            handleChange("NM_FUNCIONARIO", e.target.value);
-                                            handleChange("ID_FUNCIONARIO", "");
+                                            handleChange(
+                                                "NM_FUNCIONARIO",
+                                                e.target.value
+                                            );
+
+                                            handleChange(
+                                                "ID_FUNCIONARIO",
+                                                ""
+                                            );
+
                                             setShowFuncionarios(true);
                                         }}
                                         onFocus={() => {
@@ -331,38 +394,50 @@ export default function ModalEditarNotebook({
                                             }
                                         }}
                                         placeholder="Digite o nome do funcionário que recebeu"
-                                        className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 pr-10 text-sm text-gray-900 outline-none shadow-sm placeholder:text-gray-400"
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
                                     />
 
-                                    <FaUser className="absolute right-3 top-1/2 mt-0.5 -translate-y-1/2 text-gray-400" />
+                                    <FaUser className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
                                 </div>
 
-                                {showFuncionarios && form.NM_FUNCIONARIO.trim() ? (
-                                    <div className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
+                                {showFuncionarios &&
+                                    form.NM_FUNCIONARIO.trim() ? (
+                                    <div className="absolute z-30 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-xl">
                                         {loadingFuncionarios ? (
-                                            <div className="px-3 py-3 text-sm text-gray-500">
+                                            <div className="px-4 py-3 text-sm text-slate-500">
                                                 Buscando funcionários...
                                             </div>
                                         ) : funcionarios.length === 0 ? (
-                                            <div className="px-3 py-3 text-sm text-gray-500">
+                                            <div className="px-4 py-3 text-sm text-slate-500">
                                                 Nenhum funcionário encontrado.
                                             </div>
                                         ) : (
-                                            funcionarios.map((funcionario) => (
-                                                <button
-                                                    key={`${funcionario.ID_FUNCIONARIO}-${funcionario.NM_FUNCIONARIO}`}
-                                                    type="button"
-                                                    onClick={() => handleSelectFuncionario(funcionario)}
-                                                    className="flex w-full flex-col items-start px-3 py-3 text-left hover:bg-gray-50"
-                                                >
-                                                    <span className="text-sm font-medium text-gray-900">
-                                                        {funcionario.NM_FUNCIONARIO}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        ID: {funcionario.ID_FUNCIONARIO ?? "-"}
-                                                    </span>
-                                                </button>
-                                            ))
+                                            funcionarios.map(
+                                                (funcionario) => (
+                                                    <button
+                                                        key={`${funcionario.ID_FUNCIONARIO}-${funcionario.NM_FUNCIONARIO}`}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleSelectFuncionario(
+                                                                funcionario
+                                                            )
+                                                        }
+                                                        className="flex w-full cursor-pointer flex-col items-start rounded-xl px-3 py-3 text-left transition hover:bg-slate-50"
+                                                    >
+                                                        <span className="text-sm font-semibold text-slate-800">
+                                                            {
+                                                                funcionario.NM_FUNCIONARIO
+                                                            }
+                                                        </span>
+
+                                                        <span className="mt-0.5 text-xs text-slate-400">
+                                                            ID:{" "}
+                                                            {funcionario.ID_FUNCIONARIO ??
+                                                                "-"}
+                                                        </span>
+                                                    </button>
+                                                )
+                                            )
                                         )}
                                     </div>
                                 ) : null}
@@ -371,47 +446,73 @@ export default function ModalEditarNotebook({
                             <Field
                                 label="Funcionário TI que cadastrou"
                                 value={form.NM_FUNCIONARIO_TI}
-                                onChange={(v) => handleChange("NM_FUNCIONARIO_TI", v)}
+                                onChange={(v) =>
+                                    handleChange(
+                                        "NM_FUNCIONARIO_TI",
+                                        v
+                                    )
+                                }
                             />
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                        <h3 className="text-base font-semibold text-gray-900">
-                            Observações
-                        </h3>
+                    <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                                Informações adicionais
+                            </p>
 
-                        <div className="mt-4">
-                            <label className="text-xs font-medium text-gray-600">
+                            <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                Observações
+                            </h3>
+
+                            <p className="mt-1 text-sm leading-5 text-slate-500">
+                                Registre informações complementares relacionadas ao equipamento.
+                            </p>
+                        </div>
+
+                        <div className="mt-5">
+                            <label className="mb-1 block text-xs font-semibold text-slate-600">
                                 Observação
                             </label>
+
                             <textarea
                                 value={form.OBS_NOTEBOOKS_SICOOB}
                                 onChange={(e) =>
-                                    handleChange("OBS_NOTEBOOKS_SICOOB", e.target.value)
+                                    handleChange(
+                                        "OBS_NOTEBOOKS_SICOOB",
+                                        e.target.value
+                                    )
                                 }
-                                className="mt-1 min-h-30 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none shadow-sm placeholder:text-gray-400"
+                                rows={4}
+                                placeholder="Digite uma observação, se necessário."
+                                className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
                             />
                         </div>
                     </div>
 
                     {success ? (
-                        <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-                            {success}
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                            <p className="text-sm font-medium text-emerald-800">
+                                {success}
+                            </p>
                         </div>
                     ) : null}
 
                     {error ? (
-                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                            {error}
+                        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                            <p className="text-sm font-medium text-red-700">
+                                {error}
+                            </p>
                         </div>
                     ) : null}
 
-                    <div className="flex justify-end gap-3">
+                    <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="rounded-2xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer"
+                            disabled={loading}
+                            className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Cancelar
                         </button>
@@ -419,10 +520,13 @@ export default function ModalEditarNotebook({
                         <button
                             type="submit"
                             disabled={loading}
-                            className="inline-flex items-center gap-2 bg-secondary hover:bg-primary cursor-pointer text-white font-semibold px-5 py-2 rounded shadow"
+                            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            <FaSave size={14} />
-                            {loading ? "Salvando..." : "Salvar alterações"}
+                            <FaSave size={16} />
+
+                            {loading
+                                ? "Salvando..."
+                                : "Salvar alterações"}
                         </button>
                     </div>
                 </form>

@@ -2,8 +2,10 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  FaChevronLeft,
+  FaChevronRight,
   FaDownload,
   FaEdit,
   FaPlus,
@@ -86,6 +88,7 @@ export function GerenciamentoFuncionarioForm() {
 
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [itensPorPagina, setItensPorPagina] = useState(10);
 
   const [loading, setLoading] = useState(false);
   const [loadingTabela, setLoadingTabela] = useState(false);
@@ -202,7 +205,10 @@ export function GerenciamentoFuncionarioForm() {
     }
   }
 
-  async function carregarFuncionarios(page = 1) {
+  async function carregarFuncionarios(
+    page = 1,
+    limit = itensPorPagina
+  ) {
     try {
       setLoadingTabela(true);
       setErro("");
@@ -212,7 +218,7 @@ export function GerenciamentoFuncionarioForm() {
         await buscarFuncionariosPaginados({
           nome: busca || " ",
           page,
-          limit: 10,
+          limit,
         });
 
       setFuncionarios(response.items || []);
@@ -223,7 +229,9 @@ export function GerenciamentoFuncionarioForm() {
     } catch (e) {
       console.error(e);
       setFuncionarios([]);
-      setErro("Funcionário não encontrado ou falha ao carregar a listagem.");
+      setErro(
+        "Funcionário não encontrado ou falha ao carregar a listagem."
+      );
     } finally {
       setLoadingTabela(false);
     }
@@ -620,17 +628,15 @@ export function GerenciamentoFuncionarioForm() {
     }
   }
 
-  const paginasVisiveis = useMemo(() => {
-    const range = 2;
-    const inicio = Math.max(1, paginaAtual - range);
-    const fim = Math.min(totalPages, paginaAtual + range);
+  const primeiroRegistro =
+    totais.total === 0
+      ? 0
+      : (paginaAtual - 1) * itensPorPagina + 1;
 
-    const paginas: number[] = [];
-    for (let i = inicio; i <= fim; i++) {
-      paginas.push(i);
-    }
-    return paginas;
-  }, [paginaAtual, totalPages]);
+  const ultimoRegistro = Math.min(
+    paginaAtual * itensPorPagina,
+    totais.total
+  );
 
   return (
     <>
@@ -646,7 +652,10 @@ export function GerenciamentoFuncionarioForm() {
               <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
                 <input
                   value={busca}
-                  onChange={(e) => setBusca(removerEspacoInicial(e.target.value))}
+                  onChange={(e) => {
+                    setBusca(removerEspacoInicial(e.target.value));
+                    setPaginaAtual(1);
+                  }}
                   placeholder="Digite o nome do funcionário"
                   className="rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
                 />
@@ -699,7 +708,27 @@ export function GerenciamentoFuncionarioForm() {
 
           {(funcionarios.length > 0 || loadingTabela) && (
             <>
-              <div className="mt-6 overflow-x-auto rounded-xl border">
+              <div className="mt-6 flex justify-end">
+                <select
+                  value={itensPorPagina}
+                  onChange={(e) => {
+                    const novoLimite = Number(e.target.value);
+
+                    setItensPorPagina(novoLimite);
+                    setPaginaAtual(1);
+                    carregarFuncionarios(1, novoLimite);
+                  }}
+                  disabled={loadingTabela}
+                  className="h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value={10}>10 por página</option>
+                  <option value={20}>20 por página</option>
+                  <option value={50}>50 por página</option>
+                  <option value={100}>100 por página</option>
+                </select>
+              </div>
+
+              <div className="mt-4 overflow-x-auto rounded-xl border">
                 <table className="min-w-full divide-y divide-slate-200 text-sm">
                   <thead className="bg-slate-50">
                     <tr>
@@ -792,62 +821,59 @@ export function GerenciamentoFuncionarioForm() {
                 </table>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                {paginaAtual > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => carregarFuncionarios(1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      1
-                    </button>
+              <div className="mt-6 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500">
+                  Mostrando{" "}
+                  <span className="font-semibold text-slate-700">
+                    {primeiroRegistro}
+                  </span>{" "}
+                  até{" "}
+                  <span className="font-semibold text-slate-700">
+                    {ultimoRegistro}
+                  </span>{" "}
+                  de{" "}
+                  <span className="font-semibold text-slate-700">
+                    {totais.total}
+                  </span>{" "}
+                  funcionários
+                </p>
 
-                    <button
-                      type="button"
-                      onClick={() => carregarFuncionarios(paginaAtual - 1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Anterior
-                    </button>
-                  </>
-                )}
-
-                {paginasVisiveis.map((page) => (
+                <div className="flex items-center justify-end gap-2">
                   <button
-                    key={page}
                     type="button"
-                    onClick={() => carregarFuncionarios(page)}
-                    className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
-                      ? "bg-emerald-600 text-white"
-                      : "border text-slate-700 hover:bg-slate-50"
-                      }`}
+                    onClick={() =>
+                      carregarFuncionarios(
+                        Math.max(paginaAtual - 1, 1)
+                      )
+                    }
+                    disabled={paginaAtual <= 1 || loadingTabela}
+                    className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {page}
+                    <FaChevronLeft />
+                    Anterior
                   </button>
-                ))}
 
-                {paginaAtual < totalPages && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => carregarFuncionarios(paginaAtual + 1)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Próxima
-                    </button>
+                  <span className="rounded-2xl bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                    Página {paginaAtual} de {totalPages}
+                  </span>
 
-                    <button
-                      type="button"
-                      onClick={() => carregarFuncionarios(totalPages)}
-                      className="rounded border px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      {totalPages}
-                    </button>
-                  </>
-                )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      carregarFuncionarios(
+                        Math.min(paginaAtual + 1, totalPages)
+                      )
+                    }
+                    disabled={
+                      paginaAtual >= totalPages || loadingTabela
+                    }
+                    className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Próxima
+                    <FaChevronRight />
+                  </button>
+                </div>
               </div>
-
               <div className="mt-6 grid grid-cols-1 gap-3 border-t pt-5 md:grid-cols-[1fr_1fr_1fr_auto]">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-gray-600">
@@ -899,502 +925,662 @@ export function GerenciamentoFuncionarioForm() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
-          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-6 py-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {modalModo === "cadastrar"
-                  ? "Cadastro Funcionário"
-                  : "Editar Funcionário"}
-              </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[94vh] w-full max-w-5xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+            <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                    Gestão de funcionários
+                  </p>
 
-              <button
-                type="button"
-                onClick={fecharModal}
-                className="rounded p-2 text-slate-500 hover:bg-slate-100"
-              >
-                <FaTimes />
-              </button>
+                  <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                    {modalModo === "cadastrar"
+                      ? "Cadastrar funcionário"
+                      : "Editar funcionário"}
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    {modalModo === "cadastrar"
+                      ? "Preencha os dados pessoais, profissionais e documentos do novo funcionário."
+                      : "Atualize os dados pessoais, profissionais e documentos do funcionário."}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fecharModal}
+                  disabled={loading}
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <FaTimes size={18} />
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-4 overflow-y-auto px-6 py-5">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="md:col-span-2">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Nome
-                  </label>
-                  <input
-                    value={inputNome}
-                    onChange={(e) => setInputNome(removerEspacoInicial(e.target.value))}
-                    className="w-full rounded border px-3 py-2"
-                    placeholder="Digite o nome"
-                  />
-                </div>
-
+            <div className="max-h-[78vh] space-y-5 overflow-y-auto p-6">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    CPF
-                  </label>
-                  <input
-                    value={inputCPF}
-                    onChange={(e) => setInputCPF(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                    className="w-full rounded border px-3 py-2"
-                    placeholder="Digite o CPF"
-                  />
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Funcionário
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Dados pessoais
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Informe os dados de identificação e contato do funcionário.
+                  </p>
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    RG
-                  </label>
-                  <input
-                    value={inputRG}
-                    onChange={(e) => setInputRG(removerEspacoInicial(e.target.value))}
-                    className="w-full rounded border px-3 py-2"
-                    placeholder="Digite o RG"
-                  />
-                </div>
+                <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Nome
+                    </label>
+                    <input
+                      value={inputNome}
+                      onChange={(e) =>
+                        setInputNome(removerEspacoInicial(e.target.value))
+                      }
+                      placeholder="Digite o nome"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Celular
-                  </label>
-                  <input
-                    value={inputCelular}
-                    onChange={(e) =>
-                      setInputCelular(formatPhone(removerEspacoInicial(e.target.value)))
-                    }
-                    className="w-full rounded border px-3 py-2"
-                    placeholder="Digite o celular"
-                  />
-                </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      CPF
+                    </label>
+                    <input
+                      value={inputCPF}
+                      onChange={(e) =>
+                        setInputCPF(
+                          e.target.value.replace(/\D/g, "").slice(0, 11)
+                        )
+                      }
+                      placeholder="Digite o CPF"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Sexo
-                  </label>
-                  <select
-                    value={secSexo}
-                    onChange={(e) => setSecSexo(e.target.value)}
-                    className="w-full rounded border px-3 py-2"
-                  >
-                    <option value=""></option>
-                    <option value="F">Feminino</option>
-                    <option value="M">Masculino</option>
-                  </select>
-                </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      RG
+                    </label>
+                    <input
+                      value={inputRG}
+                      onChange={(e) =>
+                        setInputRG(removerEspacoInicial(e.target.value))
+                      }
+                      placeholder="Digite o RG"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Email
-                  </label>
-                  <input
-                    value={inputEmail}
-                    onChange={(e) => setInputEmail(removerEspacoInicial(e.target.value))}
-                    className="w-full rounded border px-3 py-2"
-                    placeholder="Digite o email"
-                  />
-                </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Celular
+                    </label>
+                    <input
+                      value={inputCelular}
+                      onChange={(e) =>
+                        setInputCelular(
+                          formatPhone(
+                            removerEspacoInicial(e.target.value)
+                          )
+                        )
+                      }
+                      placeholder="Digite o celular"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Nascimento
-                  </label>
-                  <input
-                    type="date"
-                    value={inputNascimento}
-                    onChange={(e) => setInputNascimento(e.target.value)}
-                    className="w-full rounded border px-3 py-2"
-                  />
-                </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Sexo
+                    </label>
+                    <select
+                      value={secSexo}
+                      onChange={(e) => setSecSexo(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="F">Feminino</option>
+                      <option value="M">Masculino</option>
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Conta Corrente
-                  </label>
-                  <input
-                    value={inputCC}
-                    onChange={(e) => setInputCC(removerEspacoInicial(e.target.value))}
-                    className="w-full rounded border px-3 py-2"
-                    placeholder="Digite a conta corrente"
-                  />
-                </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      E-mail
+                    </label>
+                    <input
+                      value={inputEmail}
+                      onChange={(e) =>
+                        setInputEmail(removerEspacoInicial(e.target.value))
+                      }
+                      placeholder="Digite o e-mail"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Ramal
-                  </label>
-                  <input
-                    value={inputRamal}
-                    onChange={(e) => setInputRamal(removerEspacoInicial(e.target.value))}
-                    className="w-full rounded border px-3 py-2"
-                    placeholder="Digite o ramal"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Matrícula
-                  </label>
-                  <input
-                    value={inputMatricula}
-                    onChange={(e) =>
-                      setInputMatricula(removerEspacoInicial(e.target.value))
-                    }
-                    className="w-full rounded border px-3 py-2"
-                    placeholder="Digite a matrícula"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Admissão
-                  </label>
-                  <input
-                    type="date"
-                    value={inputAdmissao}
-                    onChange={(e) => setInputAdmissao(e.target.value)}
-                    className="w-full rounded border px-3 py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Demissão
-                  </label>
-                  <input
-                    type="date"
-                    value={inputDemissao}
-                    onChange={(e) => setInputDemissao(e.target.value)}
-                    className="w-full rounded border px-3 py-2"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Setor
-                  </label>
-                  <select
-                    value={secSetor}
-                    onChange={(e) => setSecSetor(e.target.value)}
-                    className="w-full rounded border px-3 py-2"
-                  >
-                    <option value=""></option>
-                    {setores.map((setor) => (
-                      <option key={setor.ID_SETOR} value={setor.ID_SETOR}>
-                        {setor.NM_SETOR}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Cargo
-                  </label>
-                  <select
-                    value={secCargo}
-                    onChange={(e) => setSecCargo(e.target.value)}
-                    className="w-full rounded border px-3 py-2"
-                  >
-                    <option value=""></option>
-                    {cargos.map((cargo) => (
-                      <option key={cargo.ID_CARGO} value={cargo.ID_CARGO}>
-                        {cargo.NM_CARGO}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
-                    Gerência
-                  </label>
-                  <select
-                    value={secGerencia}
-                    onChange={(e) => setSecGerencia(e.target.value)}
-                    className="w-full rounded border px-3 py-2"
-                  >
-                    <option value=""></option>
-                    <option value="0">Sem Gerência</option>
-                    {gerencias.map((gerencia) => (
-                      <option
-                        key={gerencia.ID_FUNCIONARIO}
-                        value={gerencia.ID_FUNCIONARIO}
-                      >
-                        {gerencia.NM_FUNCIONARIO}
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Data de nascimento
+                    </label>
+                    <input
+                      type="date"
+                      value={inputNascimento}
+                      onChange={(e) => setInputNascimento(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="rounded border p-4">
-                <h3 className="mb-4 text-sm font-semibold text-gray-800">
-                  Documentos
-                </h3>
+              <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                    Vínculo
+                  </p>
 
-                <div className="space-y-4">
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Dados profissionais
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Informe os dados relacionados ao vínculo do funcionário com a instituição.
+                  </p>
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Conta Corrente
+                    </label>
+                    <input
+                      value={inputCC}
+                      onChange={(e) =>
+                        setInputCC(removerEspacoInicial(e.target.value))
+                      }
+                      placeholder="Digite a conta corrente"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Ramal
+                    </label>
+                    <input
+                      value={inputRamal}
+                      onChange={(e) =>
+                        setInputRamal(removerEspacoInicial(e.target.value))
+                      }
+                      placeholder="Digite o ramal"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Matrícula
+                    </label>
+                    <input
+                      value={inputMatricula}
+                      onChange={(e) =>
+                        setInputMatricula(
+                          removerEspacoInicial(e.target.value)
+                        )
+                      }
+                      placeholder="Digite a matrícula"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Admissão
+                    </label>
+                    <input
+                      type="date"
+                      value={inputAdmissao}
+                      onChange={(e) => setInputAdmissao(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Demissão
+                    </label>
+                    <input
+                      type="date"
+                      value={inputDemissao}
+                      onChange={(e) => setInputDemissao(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Setor
+                    </label>
+                    <select
+                      value={secSetor}
+                      onChange={(e) => setSecSetor(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    >
+                      <option value="">Selecione o setor</option>
+                      {setores.map((setor) => (
+                        <option
+                          key={setor.ID_SETOR}
+                          value={setor.ID_SETOR}
+                        >
+                          {setor.NM_SETOR}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Cargo
+                    </label>
+                    <select
+                      value={secCargo}
+                      onChange={(e) => setSecCargo(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    >
+                      <option value="">Selecione o cargo</option>
+                      {cargos.map((cargo) => (
+                        <option
+                          key={cargo.ID_CARGO}
+                          value={cargo.ID_CARGO}
+                        >
+                          {cargo.NM_CARGO}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Gerência
+                    </label>
+                    <select
+                      value={secGerencia}
+                      onChange={(e) => setSecGerencia(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    >
+                      <option value="">Selecione a gerência</option>
+                      <option value="0">Sem Gerência</option>
+
+                      {gerencias.map((gerencia) => (
+                        <option
+                          key={gerencia.ID_FUNCIONARIO}
+                          value={gerencia.ID_FUNCIONARIO}
+                        >
+                          {gerencia.NM_FUNCIONARIO}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Arquivos
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Documentos
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Anexe os documentos do funcionário em formato PDF.
+                  </p>
+                </div>
+
+                <div className="mt-5 space-y-5">
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
                       Documento pessoal com foto
                     </label>
+
                     {modalModo === "editar" && (
-                      <div className="mb-2 flex gap-2">
+                      <div className="mb-2 flex flex-col gap-2 sm:flex-row">
                         <input
                           readOnly
-                          value={getNomeArquivo(funcionarioSelecionado?.DOC_INDENTIDADE)}
-                          className="w-full rounded border bg-gray-50 px-3 py-2 text-sm"
+                          value={getNomeArquivo(
+                            funcionarioSelecionado?.DOC_INDENTIDADE
+                          )}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
                         />
+
                         {funcionarioSelecionado?.DOC_INDENTIDADE && (
                           <button
                             type="button"
                             onClick={() =>
-                              baixarArquivo(funcionarioSelecionado.DOC_INDENTIDADE!)
+                              baixarArquivo(
+                                funcionarioSelecionado.DOC_INDENTIDADE!
+                              )
                             }
-                            className="rounded bg-secondary px-3 py-2 text-xs font-semibold text-white"
+                            className="cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
                           >
                             Consultar
                           </button>
                         )}
                       </div>
                     )}
+
                     <input
                       type="file"
                       accept=".pdf"
                       onChange={(e) =>
-                        setArquivoDocIdentidade(e.target.files?.[0] || null)
+                        setArquivoDocIdentidade(
+                          e.target.files?.[0] || null
+                        )
                       }
-                      className="w-full rounded border px-3 py-2"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
                       Comprovante de Endereço
                     </label>
+
                     {modalModo === "editar" && (
-                      <div className="mb-2 flex gap-2">
+                      <div className="mb-2 flex flex-col gap-2 sm:flex-row">
                         <input
                           readOnly
-                          value={getNomeArquivo(funcionarioSelecionado?.COMP_ENDERECO)}
-                          className="w-full rounded border bg-gray-50 px-3 py-2 text-sm"
+                          value={getNomeArquivo(
+                            funcionarioSelecionado?.COMP_ENDERECO
+                          )}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
                         />
+
                         {funcionarioSelecionado?.COMP_ENDERECO && (
                           <button
                             type="button"
                             onClick={() =>
-                              baixarArquivo(funcionarioSelecionado.COMP_ENDERECO!)
+                              baixarArquivo(
+                                funcionarioSelecionado.COMP_ENDERECO!
+                              )
                             }
-                            className="rounded bg-secondary px-3 py-2 text-xs font-semibold text-white"
+                            className="cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
                           >
                             Consultar
                           </button>
                         )}
                       </div>
                     )}
+
                     <input
                       type="file"
                       accept=".pdf"
                       onChange={(e) =>
-                        setArquivoCompEndereco(e.target.files?.[0] || null)
+                        setArquivoCompEndereco(
+                          e.target.files?.[0] || null
+                        )
                       }
-                      className="w-full rounded border px-3 py-2"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
                       Ficha cadastral do RH
                     </label>
+
                     {modalModo === "editar" && (
-                      <div className="mb-2 flex gap-2">
+                      <div className="mb-2 flex flex-col gap-2 sm:flex-row">
                         <input
                           readOnly
-                          value={getNomeArquivo(funcionarioSelecionado?.FICHA_RH)}
-                          className="w-full rounded border bg-gray-50 px-3 py-2 text-sm"
+                          value={getNomeArquivo(
+                            funcionarioSelecionado?.FICHA_RH
+                          )}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
                         />
+
                         {funcionarioSelecionado?.FICHA_RH && (
                           <button
                             type="button"
-                            onClick={() => baixarArquivo(funcionarioSelecionado.FICHA_RH!)}
-                            className="rounded bg-secondary px-3 py-2 text-xs font-semibold text-white"
+                            onClick={() =>
+                              baixarArquivo(
+                                funcionarioSelecionado.FICHA_RH!
+                              )
+                            }
+                            className="cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
                           >
                             Consultar
                           </button>
                         )}
                       </div>
                     )}
+
                     <input
                       type="file"
                       accept=".pdf"
-                      onChange={(e) => setArquivoFichaRh(e.target.files?.[0] || null)}
-                      className="w-full rounded border px-3 py-2"
+                      onChange={(e) =>
+                        setArquivoFichaRh(
+                          e.target.files?.[0] || null
+                        )
+                      }
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700"
                     />
                   </div>
 
-                  <div>
-                    <label className="mb-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <label className="inline-flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-700">
                       <input
                         type="checkbox"
                         checked={anexarCertNascimento}
-                        onChange={(e) => setAnexarCertNascimento(e.target.checked)}
+                        onChange={(e) =>
+                          setAnexarCertNascimento(e.target.checked)
+                        }
+                        className="h-4 w-4 accent-primary"
                       />
                       Certidão de Nascimento
                     </label>
 
                     {anexarCertNascimento && (
-                      <>
+                      <div className="mt-4">
                         {modalModo === "editar" && (
-                          <div className="mb-2 flex gap-2">
+                          <div className="mb-2 flex flex-col gap-2 sm:flex-row">
                             <input
                               readOnly
-                              value={getNomeArquivo(funcionarioSelecionado?.CERT_NASCIMENTO)}
-                              className="w-full rounded border bg-gray-50 px-3 py-2 text-sm"
+                              value={getNomeArquivo(
+                                funcionarioSelecionado?.CERT_NASCIMENTO
+                              )}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"
                             />
+
                             {funcionarioSelecionado?.CERT_NASCIMENTO && (
                               <button
                                 type="button"
                                 onClick={() =>
-                                  baixarArquivo(funcionarioSelecionado.CERT_NASCIMENTO!)
+                                  baixarArquivo(
+                                    funcionarioSelecionado.CERT_NASCIMENTO!
+                                  )
                                 }
-                                className="rounded bg-secondary px-3 py-2 text-xs font-semibold text-white"
+                                className="cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
                               >
                                 Consultar
                               </button>
                             )}
                           </div>
                         )}
+
                         <input
                           type="file"
                           accept=".pdf"
                           onChange={(e) =>
-                            setArquivoCertNascimento(e.target.files?.[0] || null)
+                            setArquivoCertNascimento(
+                              e.target.files?.[0] || null
+                            )
                           }
-                          className="w-full rounded border px-3 py-2"
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700"
                         />
-                      </>
+                      </div>
                     )}
                   </div>
 
-                  <div>
-                    <label className="mb-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <label className="inline-flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-700">
                       <input
                         type="checkbox"
                         checked={anexarCertCasamento}
-                        onChange={(e) => setAnexarCertCasamento(e.target.checked)}
+                        onChange={(e) =>
+                          setAnexarCertCasamento(e.target.checked)
+                        }
+                        className="h-4 w-4 accent-primary"
                       />
                       Certidão de Casamento
                     </label>
 
                     {anexarCertCasamento && (
-                      <>
+                      <div className="mt-4">
                         {modalModo === "editar" && (
-                          <div className="mb-2 flex gap-2">
+                          <div className="mb-2 flex flex-col gap-2 sm:flex-row">
                             <input
                               readOnly
-                              value={getNomeArquivo(funcionarioSelecionado?.CERT_CASAMENTO)}
-                              className="w-full rounded border bg-gray-50 px-3 py-2 text-sm"
+                              value={getNomeArquivo(
+                                funcionarioSelecionado?.CERT_CASAMENTO
+                              )}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"
                             />
+
                             {funcionarioSelecionado?.CERT_CASAMENTO && (
                               <button
                                 type="button"
                                 onClick={() =>
-                                  baixarArquivo(funcionarioSelecionado.CERT_CASAMENTO!)
+                                  baixarArquivo(
+                                    funcionarioSelecionado.CERT_CASAMENTO!
+                                  )
                                 }
-                                className="rounded bg-secondary px-3 py-2 text-xs font-semibold text-white"
+                                className="cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
                               >
                                 Consultar
                               </button>
                             )}
                           </div>
                         )}
+
                         <input
                           type="file"
                           accept=".pdf"
                           onChange={(e) =>
-                            setArquivoCertCasamento(e.target.files?.[0] || null)
+                            setArquivoCertCasamento(
+                              e.target.files?.[0] || null
+                            )
                           }
-                          className="w-full rounded border px-3 py-2"
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700"
                         />
-                      </>
+                      </div>
                     )}
                   </div>
 
-                  <div>
-                    <label className="mb-2 inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <label className="inline-flex cursor-pointer items-center gap-3 text-sm font-semibold text-slate-700">
                       <input
                         type="checkbox"
                         checked={anexarDocConjuge}
-                        onChange={(e) => setAnexarDocConjuge(e.target.checked)}
+                        onChange={(e) =>
+                          setAnexarDocConjuge(e.target.checked)
+                        }
+                        className="h-4 w-4 accent-primary"
                       />
                       Documento do cônjuge com foto e CPF
                     </label>
 
                     {anexarDocConjuge && (
-                      <>
+                      <div className="mt-4">
                         {modalModo === "editar" && (
-                          <div className="mb-2 flex gap-2">
+                          <div className="mb-2 flex flex-col gap-2 sm:flex-row">
                             <input
                               readOnly
-                              value={getNomeArquivo(funcionarioSelecionado?.DOC_IDENTIDADE_CONJ)}
-                              className="w-full rounded border bg-gray-50 px-3 py-2 text-sm"
+                              value={getNomeArquivo(
+                                funcionarioSelecionado?.DOC_IDENTIDADE_CONJ
+                              )}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"
                             />
+
                             {funcionarioSelecionado?.DOC_IDENTIDADE_CONJ && (
                               <button
                                 type="button"
                                 onClick={() =>
-                                  baixarArquivo(funcionarioSelecionado.DOC_IDENTIDADE_CONJ!)
+                                  baixarArquivo(
+                                    funcionarioSelecionado.DOC_IDENTIDADE_CONJ!
+                                  )
                                 }
-                                className="rounded bg-secondary px-3 py-2 text-xs font-semibold text-white"
+                                className="cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
                               >
                                 Consultar
                               </button>
                             )}
                           </div>
                         )}
+
                         <input
                           type="file"
                           accept=".pdf"
                           onChange={(e) =>
-                            setArquivoDocConjuge(e.target.files?.[0] || null)
+                            setArquivoDocConjuge(
+                              e.target.files?.[0] || null
+                            )
                           }
-                          className="w-full rounded border px-3 py-2"
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700"
                         />
-                      </>
+                      </div>
                     )}
                   </div>
 
                   {modalModo === "editar" && (
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">
+                      <label className="mb-1 block text-xs font-semibold text-slate-600">
                         Ficha de Desimpedimento
                       </label>
-                      <div className="mb-2 flex gap-2">
+
+                      <div className="mb-2 flex flex-col gap-2 sm:flex-row">
                         <input
                           readOnly
-                          value={getNomeArquivo(funcionarioSelecionado?.FICHA_DESIMPEDIMENTO)}
-                          className="w-full rounded border bg-gray-50 px-3 py-2 text-sm"
+                          value={getNomeArquivo(
+                            funcionarioSelecionado?.FICHA_DESIMPEDIMENTO
+                          )}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
                         />
+
                         {funcionarioSelecionado?.FICHA_DESIMPEDIMENTO && (
                           <button
                             type="button"
                             onClick={() =>
-                              baixarArquivo(funcionarioSelecionado.FICHA_DESIMPEDIMENTO!)
+                              baixarArquivo(
+                                funcionarioSelecionado.FICHA_DESIMPEDIMENTO!
+                              )
                             }
-                            className="rounded bg-secondary px-3 py-2 text-xs font-semibold text-white"
+                            className="cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
                           >
                             Consultar
                           </button>
                         )}
                       </div>
+
                       <input
                         type="file"
                         accept=".pdf"
                         onChange={(e) =>
-                          setArquivoFichaDesimpedimento(e.target.files?.[0] || null)
+                          setArquivoFichaDesimpedimento(
+                            e.target.files?.[0] || null
+                          )
                         }
-                        className="w-full rounded border px-3 py-2"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700"
                       />
                     </div>
                   )}
@@ -1402,26 +1588,36 @@ export function GerenciamentoFuncionarioForm() {
               </div>
 
               {modalModo === "cadastrar" && (
-                <div>
-                  <label className="mb-2 block text-xs font-medium text-gray-600">
-                    Deseja enviar e-mail às partes responsáveis?
-                  </label>
+                <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                    Comunicação
+                  </p>
 
-                  <div className="flex gap-6 text-sm">
-                    <label className="inline-flex items-center gap-2">
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Notificação de admissão
+                  </h3>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Deseja enviar e-mail às partes responsáveis?
+                  </p>
+
+                  <div className="mt-4 flex gap-6">
+                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
                       <input
                         type="radio"
                         checked={enviarEmailAdmissao === true}
                         onChange={() => setEnviarEmailAdmissao(true)}
+                        className="h-4 w-4 accent-primary"
                       />
                       Sim
                     </label>
 
-                    <label className="inline-flex items-center gap-2">
+                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
                       <input
                         type="radio"
                         checked={enviarEmailAdmissao === false}
                         onChange={() => setEnviarEmailAdmissao(false)}
+                        className="h-4 w-4 accent-primary"
                       />
                       Não
                     </label>
@@ -1429,235 +1625,282 @@ export function GerenciamentoFuncionarioForm() {
                 </div>
               )}
 
-              {(erro || info) && (
-                <div>
-                  {erro ? (
-                    <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                      {erro}
-                    </div>
-                  ) : (
-                    <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-                      {info}
-                    </div>
-                  )}
+              {erro && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  {erro}
                 </div>
               )}
-            </div>
 
-            <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
-              <button
-                type="button"
-                onClick={fecharModal}
-                className="rounded bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700"
-              >
-                Fechar
-              </button>
+              {!erro && info && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                  {info}
+                </div>
+              )}
 
-              <button
-                type="button"
-                onClick={salvarModal}
-                disabled={loading}
-                className={`rounded px-4 py-2 font-semibold text-white ${modalModo === "cadastrar"
-                  ? "bg-emerald-600 hover:bg-emerald-700"
-                  : "bg-blue-600 hover:bg-blue-700"
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
-              >
-                {loading
-                  ? "Salvando..."
-                  : modalModo === "cadastrar"
-                    ? "Cadastrar"
-                    : "Editar"}
-              </button>
+              <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={fecharModal}
+                  disabled={loading}
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={salvarModal}
+                  disabled={loading}
+                  className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading
+                    ? "Salvando..."
+                    : modalModo === "cadastrar"
+                      ? "Cadastrar funcionário"
+                      : "Salvar alterações"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {modalStatusOpen && funcionarioStatus && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
-          <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-6 py-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {Number(funcionarioStatus.SN_ATIVO) === 1
-                    ? "Confirmar inativação"
-                    : "Confirmar ativação"}
-                </h2>
-                <p className="text-sm text-slate-500">
-                  {funcionarioStatus.NM_FUNCIONARIO}
-                </p>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[94vh] w-full max-w-3xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+            <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                    Gestão de funcionários
+                  </p>
 
-              <button
-                type="button"
-                onClick={fecharModalStatus}
-                className="rounded p-2 text-slate-500 hover:bg-slate-100"
-              >
-                <FaTimes />
-              </button>
+                  <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                    {Number(funcionarioStatus.SN_ATIVO) === 1
+                      ? "Inativar funcionário"
+                      : "Ativar funcionário"}
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    {funcionarioStatus.NM_FUNCIONARIO}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fecharModalStatus}
+                  disabled={statusLoading}
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <FaTimes size={18} />
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-4 px-6 py-5">
-              <div
-                className={`rounded border p-4 text-sm ${Number(funcionarioStatus.SN_ATIVO) === 1
-                    ? "border-amber-200 bg-amber-50 text-amber-900"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-900"
-                  }`}
-              >
-                {Number(funcionarioStatus.SN_ATIVO) === 1 ? (
-                  <p>
+            <div className="max-h-[78vh] space-y-5 overflow-y-auto p-6">
+              {Number(funcionarioStatus.SN_ATIVO) === 1 ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p className="text-sm leading-6 text-amber-900">
                     Para inativar, informe a data de desligamento e anexe a
                     ficha de desimpedimento. Se o envio de e-mail estiver
                     marcado, o sistema avisará automaticamente os destinatários
                     configurados do RH e a gerência vinculada.
                   </p>
-                ) : (
-                  <p>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <p className="text-sm leading-6 text-emerald-900">
                     Ao confirmar, o funcionário será reativado e a data de
                     desligamento será limpa.
                   </p>
-                )}
-              </div>
+                </div>
+              )}
 
               {Number(funcionarioStatus.SN_ATIVO) === 1 && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Data de desligamento
-                    </label>
-                    <input
-                      type="date"
-                      value={statusDataDesligamento}
-                      onChange={(e) => setStatusDataDesligamento(e.target.value)}
-                      className="w-full rounded border px-3 py-2"
-                    />
+                <>
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                      Desligamento
+                    </p>
+
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      Dados da inativação
+                    </h3>
+
+                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                      Informe os dados obrigatórios para concluir a inativação.
+                    </p>
+
+                    <div className="mt-5 space-y-4">
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                          Data de desligamento
+                        </label>
+
+                        <input
+                          type="date"
+                          value={statusDataDesligamento}
+                          onChange={(e) =>
+                            setStatusDataDesligamento(e.target.value)
+                          }
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                          Ficha de desimpedimento
+                        </label>
+
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={(e) =>
+                            setStatusFichaDesimpedimento(
+                              e.target.files?.[0] || null
+                            )
+                          }
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700"
+                        />
+
+                        {funcionarioStatus.FICHA_DESIMPEDIMENTO && (
+                          <p className="mt-2 text-xs text-slate-500">
+                            Arquivo salvo atualmente:{" "}
+                            <span className="font-semibold text-slate-700">
+                              {getNomeArquivo(
+                                funcionarioStatus.FICHA_DESIMPEDIMENTO
+                              )}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Ficha de desimpedimento
-                    </label>
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) =>
-                        setStatusFichaDesimpedimento(e.target.files?.[0] || null)
-                      }
-                      className="w-full rounded border px-3 py-2"
-                    />
-                    {funcionarioStatus.FICHA_DESIMPEDIMENTO && (
-                      <p className="mt-1 text-xs text-slate-500">
-                        Arquivo salvo atualmente:{" "}
-                        {getNomeArquivo(funcionarioStatus.FICHA_DESIMPEDIMENTO)}
-                      </p>
-                    )}
-                  </div>
+                  <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                      Comunicação
+                    </p>
 
-                  <div className="rounded border border-slate-200 p-4">
-                    <label className="mb-2 block text-xs font-medium text-gray-600">
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      Notificações de desligamento
+                    </h3>
+
+                    <p className="mt-1 text-sm text-slate-500">
                       Deseja enviar e-mail às partes responsáveis?
-                    </label>
+                    </p>
 
-                    <div className="flex flex-wrap gap-5 text-sm">
-                      <label className="inline-flex items-center gap-2">
+                    <div className="mt-4 flex flex-wrap gap-6">
+                      <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
                         <input
                           type="radio"
                           checked={statusEnviarEmails === true}
                           onChange={() => setStatusEnviarEmails(true)}
+                          className="h-4 w-4 accent-primary"
                         />
                         Sim
                       </label>
 
-                      <label className="inline-flex items-center gap-2">
+                      <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
                         <input
                           type="radio"
                           checked={statusEnviarEmails === false}
                           onChange={() => setStatusEnviarEmails(false)}
+                          className="h-4 w-4 accent-primary"
                         />
                         Não
                       </label>
                     </div>
 
                     {statusEnviarEmails && (
-                      <div className="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-                        <label className="inline-flex items-center gap-2">
+                      <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
                           <input
                             type="checkbox"
                             checked={statusEfetivacaoEstagiario}
                             onChange={(e) =>
-                              setStatusEfetivacaoEstagiario(e.target.checked)
+                              setStatusEfetivacaoEstagiario(
+                                e.target.checked
+                              )
                             }
+                            className="h-4 w-4 accent-primary"
                           />
                           Efetivação de estagiário
                         </label>
 
-                        <label className="inline-flex items-center gap-2">
+                        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
                           <input
                             type="checkbox"
                             checked={statusEnviarEmailGeral}
                             onChange={(e) =>
                               setStatusEnviarEmailGeral(e.target.checked)
                             }
+                            className="h-4 w-4 accent-primary"
                           />
                           Avisar lista geral
                         </label>
 
-                        <label className="inline-flex items-center gap-2">
+                        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
                           <input
                             type="checkbox"
                             checked={statusEnviarAssem}
-                            onChange={(e) => setStatusEnviarAssem(e.target.checked)}
+                            onChange={(e) =>
+                              setStatusEnviarAssem(e.target.checked)
+                            }
+                            className="h-4 w-4 accent-primary"
                           />
                           ASSEM
                         </label>
 
-                        <label className="inline-flex items-center gap-2">
+                        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
                           <input
                             type="checkbox"
                             checked={statusEnviarGremio}
                             onChange={(e) =>
                               setStatusEnviarGremio(e.target.checked)
                             }
+                            className="h-4 w-4 accent-primary"
                           />
                           Grêmio
                         </label>
                       </div>
                     )}
                   </div>
-                </div>
+                </>
               )}
 
               {statusErro && (
-                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
                   {statusErro}
                 </div>
               )}
-            </div>
 
-            <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
-              <button
-                type="button"
-                onClick={fecharModalStatus}
-                className="rounded bg-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-300"
-              >
-                Cancelar
-              </button>
+              <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={fecharModalStatus}
+                  disabled={statusLoading}
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
 
-              <button
-                type="button"
-                onClick={confirmarStatus}
-                disabled={statusLoading}
-                className={`rounded px-4 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 ${Number(funcionarioStatus.SN_ATIVO) === 1
+                <button
+                  type="button"
+                  onClick={confirmarStatus}
+                  disabled={statusLoading}
+                  className={`inline-flex cursor-pointer items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${Number(funcionarioStatus.SN_ATIVO) === 1
                     ? "bg-red-600 hover:bg-red-700"
-                    : "bg-emerald-600 hover:bg-emerald-700"
-                  }`}
-              >
-                {statusLoading
-                  ? "Processando..."
-                  : Number(funcionarioStatus.SN_ATIVO) === 1
-                    ? "Inativar funcionário"
-                    : "Ativar funcionário"}
-              </button>
+                    : "bg-secondary hover:bg-primary"
+                    }`}
+                >
+                  {statusLoading
+                    ? "Processando..."
+                    : Number(funcionarioStatus.SN_ATIVO) === 1
+                      ? "Inativar funcionário"
+                      : "Ativar funcionário"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

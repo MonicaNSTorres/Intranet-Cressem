@@ -949,414 +949,607 @@ export function GerenciamentoReembolsoDespesaForm() {
       </div>
 
       {modalOpen && solicitacaoAtual && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[95vh] w-full max-w-6xl overflow-hidden rounded-xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Solicitação #{solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="rounded p-2 text-gray-500 hover:bg-gray-100"
-              >
-                <FaTimes />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[94vh] w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+            <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                    Reembolso de despesas
+                  </p>
+
+                  <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                    Solicitação #{solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA}
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Consulte os dados da solicitação, despesas e pareceres do fluxo de aprovação.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  disabled={saving}
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:opacity-60"
+                >
+                  <FaTimes size={18} />
+                </button>
+              </div>
             </div>
 
-            <div className="max-h-[calc(95vh-140px)] overflow-y-auto px-5 py-5">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-                <div className="md:col-span-9">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Funcionário</label>
-                  <input
-                    value={solicitacaoAtual.NM_FUNCIONARIO || ""}
-                    readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
+            <div className="max-h-[calc(94vh-105px)] space-y-5 overflow-y-auto p-6">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Solicitação
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Dados do funcionário
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Informações do solicitante, período da despesa e dados para reembolso.
+                  </p>
                 </div>
 
-                <div className="md:col-span-3">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">CPF</label>
-                  <input
-                    value={formatCpfView(solicitacaoAtual.NR_CPF_FUNCIONARIO || "")}
-                    readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
+                <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-12">
+                  <div className="md:col-span-9">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Funcionário
+                    </label>
 
-                <div className="md:col-span-3">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Ida</label>
-                  <input
-                    value={formatDateBR(solicitacaoAtual.DT_IDA)}
-                    readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
+                    <input
+                      value={solicitacaoAtual.NM_FUNCIONARIO || ""}
+                      readOnly
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none"
+                    />
+                  </div>
 
-                <div className="md:col-span-3">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Volta</label>
-                  <input
-                    value={formatDateBR(solicitacaoAtual.DT_VOLTA)}
-                    readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
+                  <div className="md:col-span-3">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      CPF
+                    </label>
 
-                <div className="md:col-span-6">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Cidade</label>
-                  <input
-                    value={solicitacaoAtual.NM_CIDADE || ""}
-                    readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
+                    <input
+                      value={formatCpfView(
+                        solicitacaoAtual.NR_CPF_FUNCIONARIO || ""
+                      )}
+                      readOnly
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none"
+                    />
+                  </div>
 
-                <div className="md:col-span-12">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Justificativa</label>
-                  <textarea
-                    value={solicitacaoAtual.DESC_JTF_EVENTO || ""}
-                    readOnly
-                    rows={3}
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
+                  <div className="md:col-span-3">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Ida
+                    </label>
 
-                <div className="md:col-span-4">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Nº Banco</label>
-                  <input
-                    value={solicitacaoAtual.NR_BANCO || ""}
-                    readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
+                    <input
+                      value={formatDateBR(solicitacaoAtual.DT_IDA)}
+                      readOnly
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none"
+                    />
+                  </div>
 
-                <div className="md:col-span-4">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Agência</label>
-                  <input
-                    value={solicitacaoAtual.CD_AGENCIA || ""}
-                    readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
-                </div>
+                  <div className="md:col-span-3">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Volta
+                    </label>
 
-                <div className="md:col-span-4">
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Nº Conta</label>
-                  <input
-                    value={solicitacaoAtual.NR_CONTA || ""}
-                    readOnly
-                    className="w-full rounded border bg-gray-50 px-3 py-2"
-                  />
+                    <input
+                      value={formatDateBR(solicitacaoAtual.DT_VOLTA)}
+                      readOnly
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none"
+                    />
+                  </div>
+
+                  <div className="md:col-span-6">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Cidade
+                    </label>
+
+                    <input
+                      value={solicitacaoAtual.NM_CIDADE || ""}
+                      readOnly
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none"
+                    />
+                  </div>
+
+                  <div className="md:col-span-12">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Justificativa
+                    </label>
+
+                    <textarea
+                      value={solicitacaoAtual.DESC_JTF_EVENTO || ""}
+                      readOnly
+                      rows={3}
+                      className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none"
+                    />
+                  </div>
+
+                  <div className="md:col-span-4">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Nº Banco
+                    </label>
+
+                    <input
+                      value={solicitacaoAtual.NR_BANCO || ""}
+                      readOnly
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none"
+                    />
+                  </div>
+
+                  <div className="md:col-span-4">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Agência
+                    </label>
+
+                    <input
+                      value={solicitacaoAtual.CD_AGENCIA || ""}
+                      readOnly
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none"
+                    />
+                  </div>
+
+                  <div className="md:col-span-4">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Nº Conta
+                    </label>
+
+                    <input
+                      value={solicitacaoAtual.NR_CONTA || ""}
+                      readOnly
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm outline-none"
+                    />
+                  </div>
                 </div>
               </div>
+              <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                    Reembolso
+                  </p>
 
-              <div className="mt-6 rounded-xl border border-gray-200 p-4">
-                <h4 className="mb-4 text-sm font-semibold text-gray-800">Despesas</h4>
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Despesas
+                  </h3>
 
-                <div className="space-y-4">
-                  {(solicitacaoAtual.DESPESAS || solicitacaoAtual.despesas || []).map((despesa: any, index: number) => (
-                    <div key={index} className="grid grid-cols-1 gap-4 rounded-lg border border-gray-200 p-4 md:grid-cols-2">
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                          <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">Tipo</label>
-                            <input
-                              value={capitalizeWords(despesa.TP_DESPESA || "")}
-                              readOnly
-                              className="w-full rounded border bg-gray-50 px-3 py-2"
-                            />
-                          </div>
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Consulte os valores informados e os comprovantes anexados pelo funcionário.
+                  </p>
+                </div>
 
-                          <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">Valor</label>
-                            <input
-                              value={fmtBRL(despesa.VALOR || 0)}
-                              readOnly
-                              className="w-full rounded border bg-gray-50 px-3 py-2"
-                            />
-                          </div>
+                <div className="mt-5 space-y-4">
+                  {(
+                    solicitacaoAtual.DESPESAS ||
+                    solicitacaoAtual.despesas ||
+                    []
+                  ).map((despesa: any, index: number) => (
+                    <div
+                      key={index}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                    >
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                        <div className="md:col-span-3">
+                          <label className="mb-1 block text-xs font-semibold text-slate-600">
+                            Tipo
+                          </label>
+
+                          <input
+                            value={capitalizeWords(despesa.TP_DESPESA || "")}
+                            readOnly
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                          />
                         </div>
 
-                        <button
-                          type="button"
-                          disabled={!despesa.COMPROVANTE}
-                          onClick={() => baixarArquivo(despesa.COMPROVANTE)}
-                          className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {despesa.COMPROVANTE
-                            ? String(despesa.COMPROVANTE).split(/[/\\]/).pop()
-                            : "Sem comprovante"}
-                        </button>
-                      </div>
+                        <div className="md:col-span-3">
+                          <label className="mb-1 block text-xs font-semibold text-slate-600">
+                            Valor
+                          </label>
 
-                      <div>
-                        <label className="mb-1 block text-xs font-medium text-gray-600">Descrição</label>
-                        <textarea
-                          value={despesa.DESC_DESPESA || ""}
-                          readOnly
-                          rows={4}
-                          className="w-full rounded border bg-gray-50 px-3 py-2"
-                        />
+                          <input
+                            value={fmtBRL(despesa.VALOR || 0)}
+                            readOnly
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800"
+                          />
+                        </div>
+
+                        <div className="md:col-span-6">
+                          <label className="mb-1 block text-xs font-semibold text-slate-600">
+                            Comprovante
+                          </label>
+
+                          <button
+                            type="button"
+                            disabled={!despesa.COMPROVANTE}
+                            onClick={() =>
+                              baixarArquivo(despesa.COMPROVANTE)
+                            }
+                            className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <FaFilePdf size={15} />
+
+                            <span className="truncate">
+                              {despesa.COMPROVANTE
+                                ? String(despesa.COMPROVANTE)
+                                  .split(/[/\\]/)
+                                  .pop()
+                                : "Sem comprovante"}
+                            </span>
+                          </button>
+                        </div>
+
+                        <div className="md:col-span-12">
+                          <label className="mb-1 block text-xs font-semibold text-slate-600">
+                            Descrição
+                          </label>
+
+                          <textarea
+                            value={despesa.DESC_DESPESA || ""}
+                            readOnly
+                            rows={3}
+                            className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
 
-                  <div className="grid grid-cols-1 md:grid-cols-[280px]">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">Total de Despesas</label>
-                      <input
-                        value={fmtBRL(
-                          (solicitacaoAtual.DESPESAS || solicitacaoAtual.despesas || []).reduce(
-                            (acc: number, item: any) => acc + Number(item.VALOR || 0),
+                  <div className="flex justify-end pt-1">
+                    <div className="w-full rounded-2xl border border-primary/20 bg-white p-4 sm:w-72">
+                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                        Total de despesas
+                      </p>
+
+                      <p className="mt-1 text-2xl font-bold text-primary">
+                        {fmtBRL(
+                          (
+                            solicitacaoAtual.DESPESAS ||
+                            solicitacaoAtual.despesas ||
+                            []
+                          ).reduce(
+                            (acc: number, item: any) =>
+                              acc + Number(item.VALOR || 0),
                             0
                           )
                         )}
-                        readOnly
-                        className="w-full rounded border bg-gray-50 px-3 py-2"
-                      />
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {isAndamento(
-                solicitacaoAtual.DESC_ANDAMENTO || "",
-                "Pendente Financeiro"
-              ) &&
-                isFinanceiroAD && (
-                  <div className="mt-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Parecer Financeiro
-                    </label>
-                    <select
-                      value={parecerFinanceiroSelect}
-                      onChange={(e) => setParecerFinanceiroSelect(e.target.value)}
-                      className="w-full rounded border px-3 py-2"
-                    >
-                      <option value="">Selecione</option>
-                      <option value="Solicitação Divergente">Solicitação Divergente</option>
-                      <option value="Solicitação OK">Solicitação OK</option>
-                    </select>
-                  </div>
-                )}
+              <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Aprovação
+                  </p>
 
-              <div className="mt-3">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Parecer Financeiro Escrito
-                </label>
-                <textarea
-                  value={parecerFinanceiroTexto}
-                  onChange={(e) => setParecerFinanceiroTexto(e.target.value)}
-                  disabled={!(
-                    isAndamento(
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Pareceres da solicitação
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Acompanhe as análises realizadas em cada etapa do fluxo de aprovação.
+                  </p>
+                </div>
+
+                <div className="mt-5 space-y-5">
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <p className="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                      Financeiro
+                    </p>
+
+                    {isAndamento(
                       solicitacaoAtual.DESC_ANDAMENTO || "",
                       "Pendente Financeiro"
                     ) &&
-                    isFinanceiroAD
-                  )}
-                  rows={3}
-                  className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
-                />
-              </div>
+                      isFinanceiroAD && (
+                        <div className="mb-4">
+                          <label className="mb-1 block text-xs font-semibold text-slate-600">
+                            Parecer Financeiro
+                          </label>
 
-              {isAndamento(
-                solicitacaoAtual.DESC_ANDAMENTO || "",
-                "Pendente Financeiro"
-              ) &&
-                isFinanceiroAD && (
-                  <div className="mt-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Financeiro
-                    </label>
-                    <input
-                      value={solicitacaoAtual.NM_FNC_FINANCEIRO || ""}
-                      readOnly
-                      className="w-full rounded border bg-gray-50 px-3 py-2"
-                    />
-                  </div>
-                )}
-
-              {!!solicitacaoAtual.HAS_GERENCIA && (
-                <>
-                  <div className="mt-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Parecer Gerência
-                    </label>
-                    <textarea
-                      value={parecerGerenciaTexto}
-                      onChange={(e) => setParecerGerenciaTexto(e.target.value)}
-                      disabled={!(
-                        solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia" &&
-                        podeAtuarEtapaGerencia
+                          <select
+                            value={parecerFinanceiroSelect}
+                            onChange={(e) =>
+                              setParecerFinanceiroSelect(e.target.value)
+                            }
+                            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                          >
+                            <option value="">Selecione</option>
+                            <option value="Solicitação Divergente">
+                              Solicitação Divergente
+                            </option>
+                            <option value="Solicitação OK">
+                              Solicitação OK
+                            </option>
+                          </select>
+                        </div>
                       )}
-                      rows={3}
-                      className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
-                    />
-                  </div>
 
-                  <div className="mt-3">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">Gerência</label>
-                    <input
-                      value={
-                        solicitacaoAtual.APROV_GERENCIA_NOME ||
-                        solicitacaoAtual.NM_FNC_GERENCIA ||
-                        ""
-                      }
-                      readOnly
-                      className="w-full rounded border bg-gray-50 px-3 py-2"
-                    />
-                  </div>
-                </>
-              )}
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-slate-600">
+                        Parecer Financeiro Escrito
+                      </label>
 
-              {!!solicitacaoAtual.HAS_GERENCIA_SUP && (
-                <>
-                  <div className="mt-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Parecer Gerência Superior
-                    </label>
-                    <textarea
-                      value={parecerGerenciaSupTexto}
-                      onChange={(e) => setParecerGerenciaSupTexto(e.target.value)}
-                      disabled={!(
-                        solicitacaoAtual.DESC_ANDAMENTO === "Pendente Gerencia Superior" &&
-                        podeAtuarEtapaGerenciaSup
+                      <textarea
+                        value={parecerFinanceiroTexto}
+                        onChange={(e) =>
+                          setParecerFinanceiroTexto(e.target.value)
+                        }
+                        disabled={
+                          !(
+                            isAndamento(
+                              solicitacaoAtual.DESC_ANDAMENTO || "",
+                              "Pendente Financeiro"
+                            ) && isFinanceiroAD
+                          )
+                        }
+                        rows={3}
+                        className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100"
+                      />
+                    </div>
+
+                    {isAndamento(
+                      solicitacaoAtual.DESC_ANDAMENTO || "",
+                      "Pendente Financeiro"
+                    ) &&
+                      isFinanceiroAD && (
+                        <div className="mt-4">
+                          <label className="mb-1 block text-xs font-semibold text-slate-600">
+                            Financeiro
+                          </label>
+
+                          <input
+                            value={solicitacaoAtual.NM_FNC_FINANCEIRO || ""}
+                            readOnly
+                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                          />
+                        </div>
                       )}
-                      rows={3}
-                      className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
-                    />
                   </div>
 
-                  <div className="mt-3">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Gerência Superior
-                    </label>
-                    <input
-                      value={
-                        solicitacaoAtual.APROV_GERENCIA_SUP_NOME ||
-                        solicitacaoAtual.NM_FNC_GERENCIA_SUP ||
-                        ""
-                      }
-                      readOnly
-                      className="w-full rounded border bg-gray-50 px-3 py-2"
-                    />
-                  </div>
-                </>
-              )}
+                  {!!solicitacaoAtual.HAS_GERENCIA && (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                      <p className="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                        Gerência
+                      </p>
 
-              <div className="mt-5">
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Parecer Diretoria
-                </label>
-                <textarea
-                  value={parecerDiretoriaTexto}
-                  onChange={(e) => setParecerDiretoriaTexto(e.target.value)}
-                  disabled={!(
-                    solicitacaoAtual.DESC_ANDAMENTO === "Pendente Diretoria" &&
-                    podeAtuarEtapaDiretoria
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                          Parecer Gerência
+                        </label>
+
+                        <textarea
+                          value={parecerGerenciaTexto}
+                          onChange={(e) =>
+                            setParecerGerenciaTexto(e.target.value)
+                          }
+                          disabled={
+                            !(
+                              solicitacaoAtual.DESC_ANDAMENTO ===
+                              "Pendente Gerencia" &&
+                              podeAtuarEtapaGerencia
+                            )
+                          }
+                          rows={3}
+                          className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100"
+                        />
+                      </div>
+
+                      <div className="mt-4">
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                          Gerência
+                        </label>
+
+                        <input
+                          value={
+                            solicitacaoAtual.APROV_GERENCIA_NOME ||
+                            solicitacaoAtual.NM_FNC_GERENCIA ||
+                            ""
+                          }
+                          readOnly
+                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                        />
+                      </div>
+                    </div>
                   )}
-                  rows={3}
-                  className="w-full rounded border px-3 py-2 disabled:bg-gray-50"
-                />
-              </div>
 
-              <div className="mt-3">
-                <label className="mb-1 block text-xs font-medium text-gray-600">Diretoria</label>
-                <input
-                  value={
-                    solicitacaoAtual.NM_FNC_DIRETORIA ||
+                  {!!solicitacaoAtual.HAS_GERENCIA_SUP && (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                      <p className="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                        Gerência Superior
+                      </p>
+
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                          Parecer Gerência Superior
+                        </label>
+
+                        <textarea
+                          value={parecerGerenciaSupTexto}
+                          onChange={(e) =>
+                            setParecerGerenciaSupTexto(e.target.value)
+                          }
+                          disabled={
+                            !(
+                              solicitacaoAtual.DESC_ANDAMENTO ===
+                              "Pendente Gerencia Superior" &&
+                              podeAtuarEtapaGerenciaSup
+                            )
+                          }
+                          rows={3}
+                          className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100"
+                        />
+                      </div>
+
+                      <div className="mt-4">
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                          Gerência Superior
+                        </label>
+
+                        <input
+                          value={
+                            solicitacaoAtual.APROV_GERENCIA_SUP_NOME ||
+                            solicitacaoAtual.NM_FNC_GERENCIA_SUP ||
+                            ""
+                          }
+                          readOnly
+                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <p className="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                      Diretoria
+                    </p>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-slate-600">
+                        Parecer Diretoria
+                      </label>
+
+                      <textarea
+                        value={parecerDiretoriaTexto}
+                        onChange={(e) =>
+                          setParecerDiretoriaTexto(e.target.value)
+                        }
+                        disabled={
+                          !(
+                            solicitacaoAtual.DESC_ANDAMENTO ===
+                            "Pendente Diretoria" &&
+                            podeAtuarEtapaDiretoria
+                          )
+                        }
+                        rows={3}
+                        className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="mb-1 block text-xs font-semibold text-slate-600">
+                        Diretoria
+                      </label>
+
+                      <input
+                        value={
+                          solicitacaoAtual.NM_FNC_DIRETORIA ||
+                          (isAndamento(
+                            solicitacaoAtual.DESC_ANDAMENTO || "",
+                            "Pendente Diretoria"
+                          ) && podeAtuarEtapaDiretoria
+                            ? diretoriaCompleto?.NM_FUNCIONARIO ||
+                            nomeUsuarioLogado ||
+                            nomeResponsavelAD ||
+                            ""
+                            : "")
+                        }
+                        readOnly
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                      />
+                    </div>
+                  </div>
+
+                  {((isAndamento(
+                    solicitacaoAtual.DESC_ANDAMENTO || "",
+                    "Pendente Gerencia"
+                  ) &&
+                    podeAtuarEtapaGerencia) ||
+                    (isAndamento(
+                      solicitacaoAtual.DESC_ANDAMENTO || "",
+                      "Pendente Gerencia Superior"
+                    ) &&
+                      podeAtuarEtapaGerenciaSup) ||
                     (isAndamento(
                       solicitacaoAtual.DESC_ANDAMENTO || "",
                       "Pendente Diretoria"
                     ) &&
-                      podeAtuarEtapaDiretoria
-                      ? diretoriaCompleto?.NM_FUNCIONARIO ||
-                      nomeUsuarioLogado ||
-                      nomeResponsavelAD ||
-                      ""
-                      : "")
-                  }
-                  readOnly
-                  className="w-full rounded border bg-gray-50 px-3 py-2"
-                />
+                      podeAtuarEtapaDiretoria)) && (
+                      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                          Parecer Final
+                        </label>
+
+                        <select
+                          value={parecerFinal}
+                          onChange={(e) =>
+                            setParecerFinal(e.target.value)
+                          }
+                          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                        >
+                          <option value="">Selecione</option>
+                          <option value="Aprovado">Aprovado</option>
+                          <option value="Reprovado">Reprovado</option>
+                        </select>
+                      </div>
+                    )}
+                </div>
               </div>
 
-              {((isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Gerencia") &&
-                podeAtuarEtapaGerencia) ||
-                (isAndamento(
-                  solicitacaoAtual.DESC_ANDAMENTO || "",
-                  "Pendente Gerencia Superior"
-                ) &&
-                  podeAtuarEtapaGerenciaSup) ||
-                (isAndamento(solicitacaoAtual.DESC_ANDAMENTO || "", "Pendente Diretoria") &&
-                  podeAtuarEtapaDiretoria)) && (
-                  <div className="mt-5">
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Parecer Final
-                    </label>
-                    <select
-                      value={parecerFinal}
-                      onChange={(e) => setParecerFinal(e.target.value)}
-                      className="w-full rounded border px-3 py-2"
-                    >
-                      <option value="">Selecione</option>
-                      <option value="Aprovado">Aprovado</option>
-                      <option value="Reprovado">Reprovado</option>
-                    </select>
-                  </div>
-                )}
-            </div>
+              <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 lg:flex-row lg:items-center lg:justify-between">
 
-            <div className="flex flex-wrap justify-end gap-3 border-t px-5 py-4">
-              <button
-                type="button"
-                disabled={!podeConcluir() || saving}
-                onClick={concluirSolicitacaoAtual}
-                className="inline-flex items-center gap-2 rounded bg-yellow-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <FaCheck size={12} />
-                Concluído
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Fechar
+                </button>
 
-              <button
-                type="button"
-                disabled={!podeGerarRelatorio()}
-                onClick={imprimirSolicitacao}
-                className="inline-flex items-center gap-2 rounded bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <FaFilePdf size={12} />
-                Gerar Relatório
-              </button>
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
+                  <button
+                    type="button"
+                    disabled={!podeConcluir() || saving}
+                    onClick={concluirSolicitacaoAtual}
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <FaCheck size={14} />
+                    Concluído
+                  </button>
 
-              <button
-                type="button"
-                disabled={!podeEditarSolicitacao()}
-                onClick={() =>
-                  mudarTelaEditar(solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA)
-                }
-                className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <FaEdit size={12} />
-                Editar Solicitação
-              </button>
+                  <button
+                    type="button"
+                    disabled={!podeGerarRelatorio()}
+                    onClick={imprimirSolicitacao}
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <FaFilePdf size={14} />
+                    Gerar Relatório
+                  </button>
 
-              <button
-                type="button"
-                disabled={!podeSalvarParecer() || saving}
-                onClick={salvarParecer}
-                className="inline-flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <FaSave size={12} />
-                Salvar
-              </button>
+                  <button
+                    type="button"
+                    disabled={!podeEditarSolicitacao()}
+                    onClick={() =>
+                      mudarTelaEditar(
+                        solicitacaoAtual.ID_SOLICITACAO_REEMBOLSO_DESPESA
+                      )
+                    }
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <FaEdit size={14} />
+                    Editar Solicitação
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-              >
-                <FaTimes size={12} />
-                Fechar
-              </button>
+                  <button
+                    type="button"
+                    disabled={!podeSalvarParecer() || saving}
+                    onClick={salvarParecer}
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <FaSave size={14} />
+
+                    {saving ? "Salvando..." : "Salvar"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

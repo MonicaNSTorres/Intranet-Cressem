@@ -861,138 +861,251 @@ export function CadastroReembolsoDespesaForm() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-5 py-4">
-              <h3 className="text-lg font-semibold text-gray-900">Despesa</h3>
-              <button
-                type="button"
-                onClick={fecharModal}
-                className="rounded p-2 text-gray-500 hover:bg-gray-100"
-              >
-                <FaTimes />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[94vh] w-full max-w-3xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+
+            <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                    Reembolso de despesas
+                  </p>
+
+                  <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                    {modoEdicao ? "Editar despesa" : "Nova despesa"}
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Informe os dados da despesa e anexe o comprovante correspondente.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fecharModal}
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500"
+                >
+                  <FaTimes size={18} />
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-4 px-5 py-5">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Tipo</label>
-                <select
-                  value={tipoDespesa}
-                  onChange={(e) => setTipoDespesa(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
-                >
-                  <option value="">Selecione</option>
-                  {tiposDespesa.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Descrição</label>
-                <textarea
-                  value={descricaoDespesa}
-                  onChange={(e) => setDescricaoDespesa(e.target.value)}
-                  className="w-full rounded border px-3 py-2"
-                  rows={3}
-                  maxLength={200}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="max-h-[78vh] space-y-5 overflow-y-auto p-6">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Valor</label>
-                  <input
-                    value={valorDespesa}
-                    onChange={(e) => setValorDespesa(monetizarDigitacao(e.target.value))}
-                    className={`w-full rounded border px-3 py-2 ${isKms ? "bg-gray-50" : ""}`}
-                    readOnly={isKms}
-                    placeholder="R$ 0,00"
-                  />
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Despesa
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Dados da despesa
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Informe o tipo, a descrição e o valor referente à despesa.
+                  </p>
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Tipo *
+                    </label>
+
+                    <select
+                      value={tipoDespesa}
+                      onChange={(e) => setTipoDespesa(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    >
+                      <option value="">Selecione</option>
+
+                      {tiposDespesa.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Descrição *
+                    </label>
+
+                    <textarea
+                      value={descricaoDespesa}
+                      onChange={(e) => setDescricaoDespesa(e.target.value)}
+                      rows={3}
+                      maxLength={200}
+                      placeholder="Descreva a despesa."
+                      className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                    />
+                  </div>
+
+                  <div className={isKms ? "" : "md:col-span-2"}>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Valor *
+                    </label>
+
+                    <input
+                      value={valorDespesa}
+                      onChange={(e) =>
+                        setValorDespesa(
+                          monetizarDigitacao(e.target.value)
+                        )
+                      }
+                      readOnly={isKms}
+                      placeholder="R$ 0,00"
+                      className={`w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 ${isKms
+                          ? "cursor-not-allowed bg-slate-100"
+                          : "bg-white"
+                        }`}
+                    />
+                  </div>
+
+                  {isKms && (
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-slate-600">
+                        Total KMs (x 0,77) *
+                      </label>
+
+                      <input
+                        value={multiplicador}
+                        onChange={(e) =>
+                          setMultiplicador(e.target.value)
+                        }
+                        onBlur={calcularKms}
+                        placeholder="Informe a quilometragem"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {isKms && (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
-                      Total KMs (x 0,77)
-                    </label>
-                    <input
-                      value={multiplicador}
-                      onChange={(e) => setMultiplicador(e.target.value)}
-                      onBlur={calcularKms}
-                      className="w-full rounded border px-3 py-2"
-                    />
+                  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p className="text-xs leading-5 text-amber-800">
+                      <strong>Reembolso por quilometragem:</strong>{" "}
+                      o valor será calculado automaticamente com base
+                      na distância informada, utilizando R$ 0,77 por KM.
+                    </p>
                   </div>
                 )}
               </div>
 
-              <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
-                <p className="mb-2 text-sm font-medium text-gray-700">
-                  Adicione somente 1 comprovante por despesa.
-                </p>
+              <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                    Comprovante
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Anexo da despesa
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Adicione somente 1 comprovante em PDF para esta despesa.
+                  </p>
+                </div>
 
                 {isKms && (
-                  <p className="mb-3 text-xs text-amber-700">
-                    Para reembolso por distância percorrida, anexe uma captura do Google Maps mostrando a rota entre origem e destino, com o total em quilômetros visível.
-                  </p>
+                  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p className="text-xs leading-5 text-amber-800">
+                      <strong>Comprovante de quilometragem:</strong>{" "}
+                      anexe uma captura do Google Maps mostrando a rota
+                      entre origem e destino, com o total em quilômetros
+                      visível.
+                    </p>
+                  </div>
                 )}
 
-                <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                  <label className="inline-flex cursor-pointer items-center justify-center rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary">
-                    Selecionar comprovante
-                    <input
-                      type="file"
-                      accept="application/pdf,.pdf"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-
-                        if (
-                          file &&
-                          file.type !== "application/pdf" &&
-                          !file.name.toLowerCase().endsWith(".pdf")
-                        ) {
-                          alert("Selecione apenas arquivo PDF.");
-                          e.currentTarget.value = "";
-                          setComprovanteFile(null);
-                          setComprovanteNome("Nenhum arquivo selecionado");
-                          setComprovantePath(null);
-                          return;
-                        }
-
-                        setComprovanteFile(file);
-                        setComprovanteNome(file?.name || "Nenhum arquivo selecionado");
-                        setComprovantePath(null);
-                      }}
-                    />
+                <div className="mt-5">
+                  <label className="mb-1 block text-xs font-semibold text-slate-600">
+                    Arquivo PDF *
                   </label>
 
-                  <span className="text-sm text-gray-600">{comprovanteNome}</span>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <label className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary">
+                      Selecionar comprovante
+
+                      <input
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file =
+                            e.target.files?.[0] || null;
+
+                          if (
+                            file &&
+                            file.type !== "application/pdf" &&
+                            !file.name
+                              .toLowerCase()
+                              .endsWith(".pdf")
+                          ) {
+                            alert(
+                              "Selecione apenas arquivo PDF."
+                            );
+
+                            e.currentTarget.value = "";
+
+                            setComprovanteFile(null);
+                            setComprovanteNome(
+                              "Nenhum arquivo selecionado"
+                            );
+                            setComprovantePath(null);
+
+                            return;
+                          }
+
+                          setComprovanteFile(file);
+
+                          setComprovanteNome(
+                            file?.name ||
+                            "Nenhum arquivo selecionado"
+                          );
+
+                          setComprovantePath(null);
+                        }}
+                      />
+                    </label>
+
+                    <div className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                      <p
+                        className={`truncate text-sm ${comprovanteNome ===
+                            "Nenhum arquivo selecionado"
+                            ? "text-slate-400"
+                            : "font-medium text-slate-700"
+                          }`}
+                      >
+                        {comprovanteNome}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-end gap-3 border-t px-5 py-4">
-              <button
-                type="button"
-                onClick={fecharModal}
-                className="inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                <FaTimes size={12} />
-                Fechar
-              </button>
+              <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={fecharModal}
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
 
-              <button
-                type="button"
-                onClick={salvarDespesa}
-                className="inline-flex items-center gap-2 rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary"
-              >
-                <FaSave size={12} />
-                Salvar despesa
-              </button>
+                <button
+                  type="button"
+                  onClick={salvarDespesa}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary"
+                >
+                  <FaSave size={16} />
+
+                  {modoEdicao
+                    ? "Salvar alterações"
+                    : "Adicionar despesa"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

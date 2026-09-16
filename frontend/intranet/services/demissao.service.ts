@@ -162,22 +162,25 @@ export async function buscarConvenioDemissaoPorCpf(
 }
 
 export async function desativarConvenioDemissao(
-  cpf: string,
-  atendente: string
+  idBeneficiario: number,
+  dados: {
+    nomeUsuario: string;
+    loginUsuario: string;
+    observacao?: string | null;
+  }
 ) {
-  const cpfLimpo = onlyCpfCnpjChars(cpf);
-
-  if (cpfLimpo.length !== 11 && cpfLimpo.length !== 14) {
+  if (
+    !Number.isInteger(idBeneficiario) ||
+    idBeneficiario <= 0
+  ) {
     throw new Error(
-      "CPF/CNPJ inválido para desativação do convênio."
+      "Beneficiário inválido para inativação do convênio."
     );
   }
 
-  const response = await api.post(
-    `/v1/demissao/convenio/${cpfLimpo}/desativacao`,
-    {
-      atendente,
-    },
+  const response = await api.patch(
+    `/v1/convenio-odontologico/beneficiarios/${idBeneficiario}/inativar`,
+    dados,
     {
       headers: getAuditoriaHeaders(),
     }
