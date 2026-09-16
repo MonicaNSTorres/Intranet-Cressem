@@ -95,6 +95,7 @@ import { cnab240CcoController } from "../controllers/cnab240-cco.controller";
 import { bancoImagensController } from "../controllers/banco-imagens.controller";
 import { convenioOdontologicoController } from "../controllers/convenio-odontologico.controller";
 import { assinaturaEmailController } from "../controllers/assinatura-email.controller";
+import { odontoInformeRendimentosController } from "../controllers/odonto-informe-rendimentos.controller";
 
 const routes = Router();
 
@@ -1652,6 +1653,11 @@ routes.get(
   convenioOdontologicoController.buscarValorVigentePlano
 );
 
+routes.get(
+  "/v1/convenio-odontologico/relatorios/beneficiarios",
+  authMiddleware,
+  convenioOdontologicoController.relatorioBeneficiarios
+);
 
 //Beneficiarios
 routes.get(
@@ -1670,6 +1676,12 @@ routes.get(
   "/v1/convenio-odontologico/beneficiarios/:id",
   authMiddleware,
   convenioOdontologicoController.buscarBeneficiarioPorId
+);
+
+routes.get(
+  "/v1/convenio-odontologico/beneficiarios/:id/historico-empresas",
+  authMiddleware,
+  convenioOdontologicoController.listarHistoricoEmpresasBeneficiario
 );
 
 routes.post(
@@ -1721,21 +1733,46 @@ routes.post(
 );
 
 routes.put(
-    "/v1/convenio-odontologico/gestao/planos/:id",
-    authMiddleware,
-    convenioOdontologicoController.atualizarPlano
+  "/v1/convenio-odontologico/gestao/planos/:id",
+  authMiddleware,
+  convenioOdontologicoController.atualizarPlano
 );
 
 routes.patch(
-    "/v1/convenio-odontologico/gestao/planos/:id/status",
-    authMiddleware,
-    convenioOdontologicoController.alterarStatusPlano
+  "/v1/convenio-odontologico/gestao/planos/:id/status",
+  authMiddleware,
+  convenioOdontologicoController.alterarStatusPlano
 );
 
 routes.get(
   "/v1/assinatura-email/dados-usuario",
   authMiddleware,
   assinaturaEmailController.dadosUsuario
+);
+
+//informe de rendimentos - convenio odontologico
+routes.post(
+  "/v1/convenio-odontologico/informes/importar",
+  authMiddleware,
+  odontoInformeRendimentosController.importar
+);
+
+routes.get(
+  "/v1/convenio-odontologico/informes/importacoes",
+  authMiddleware,
+  odontoInformeRendimentosController.listarImportacoes
+);
+
+routes.get(
+  "/v1/convenio-odontologico/informes/importacoes/:id",
+  authMiddleware,
+  odontoInformeRendimentosController.buscarImportacaoPorId
+);
+
+routes.get(
+  "/v1/convenio-odontologico/informes/consolidado",
+  authMiddleware,
+  odontoInformeRendimentosController.consolidarAno
 );
 
 export { routes };

@@ -180,7 +180,19 @@ export const convenioOdontologicoController = {
           ON P.ID_PLANO = PV.ID_PLANO
 
         WHERE PV.ID_PLANO = :idPlano
-          AND PV.SN_ATIVO = 1
+
+        AND TRUNC(SYSDATE) >=
+            TRUNC(PV.DT_VIGENCIA_INICIO)
+
+        AND (
+            PV.DT_VIGENCIA_FIM IS NULL
+            OR SYSDATE <= PV.DT_VIGENCIA_FIM
+        )
+
+        ORDER BY
+            PV.DT_VIGENCIA_INICIO DESC
+
+        FETCH FIRST 1 ROWS ONLY
       `;
 
             const result = await oracleExecute(
@@ -211,7 +223,10 @@ export const convenioOdontologicoController = {
     async listarBeneficiarios(req: Request, res: Response) {
         try {
             const somenteAtivos =
-                String(req.query.somenteAtivos || "1") === "1";
+                String(req.query.somenteAtivos || "0") === "1";
+
+            const somenteInativos =
+                String(req.query.somenteInativos || "0") === "1";
 
             const sql = `
         SELECT
@@ -272,7 +287,19 @@ export const convenioOdontologicoController = {
         LEFT JOIN DBACRESSEM.VW_ODONTO_BENEF_CONTA_CAPITAL CC
           ON CC.ID_BENEFICIARIO = B.ID_BENEFICIARIO
 
-        WHERE (:somenteAtivos = 0 OR B.SN_ATIVO = 1)
+        WHERE (
+            (:somenteAtivos = 0 AND :somenteInativos = 0)
+
+            OR (
+                :somenteAtivos = 1
+                AND B.SN_ATIVO = 1
+            )
+
+            OR (
+                :somenteInativos = 1
+                AND B.SN_ATIVO = 0
+            )
+        )
 
         ORDER BY B.NM_BENEFICIARIO
       `;
@@ -281,6 +308,7 @@ export const convenioOdontologicoController = {
                 sql,
                 {
                     somenteAtivos: somenteAtivos ? 1 : 0,
+                    somenteInativos: somenteInativos ? 1 : 0,
                 },
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
             );
@@ -293,6 +321,820 @@ export const convenioOdontologicoController = {
                 error: "Erro ao listar beneficiários.",
                 details: error.message,
             });
+        }
+    },
+
+    async relatorioBeneficiarios(
+        req: Request,
+        res: Response
+    ) {
+        try {
+            const idEmpresa =
+                req.query.idEmpresa
+                    ? Number(
+                        req.query.idEmpresa
+                    )
+                    : null;
+
+            const idOperadora =
+                req.query.idOperadora
+                    ? Number(
+                        req.query.idOperadora
+                    )
+                    : null;
+
+            const idPlano =
+                req.query.idPlano
+                    ? Number(
+                        req.query.idPlano
+                    )
+                    : null;
+
+            const cpf =
+                req.query.cpf
+                    ? somenteNumeros(
+                        req.query.cpf
+                    )
+                    : null;
+
+            const valor =
+                req.query.valor !==
+                    undefined &&
+                    req.query.valor !== ""
+                    ? Number(
+                        String(
+                            req.query.valor
+                        ).replace(",", ".")
+                    )
+                    : null;
+
+            const status =
+                req.query.status
+                    ? String(
+                        req.query.status
+                    )
+                        .trim()
+                        .toUpperCase()
+                    : null;
+
+            const tipoCobranca =
+                req.query.tipoCobranca
+                    ? String(
+                        req.query.tipoCobranca
+                    )
+                        .trim()
+                        .toUpperCase()
+                    : null;
+
+            const idTipoBeneficiario =
+                req.query.idTipoBeneficiario
+                    ? Number(
+                        req.query
+                            .idTipoBeneficiario
+                    )
+                    : null;
+
+            const matricula =
+                req.query.matricula
+                    ? String(
+                        req.query.matricula
+                    ).trim()
+                    : null;
+
+            const titular =
+                req.query.titular
+                    ? String(
+                        req.query.titular
+                    ).trim()
+                    : null;
+
+            const titularNumerosBruto =
+                titular
+                    ? somenteNumeros(
+                        titular
+                    )
+                    : "";
+
+            const titularNumeros =
+                titularNumerosBruto
+                    ? titularNumerosBruto
+                    : null;
+
+            const dataInclusaoDe =
+                req.query.dataInclusaoDe
+                    ? String(
+                        req.query.dataInclusaoDe
+                    ).trim()
+                    : null;
+
+            const dataInclusaoAte =
+                req.query.dataInclusaoAte
+                    ? String(
+                        req.query.dataInclusaoAte
+                    ).trim()
+                    : null;
+
+            const dataExclusaoDe =
+                req.query.dataExclusaoDe
+                    ? String(
+                        req.query.dataExclusaoDe
+                    ).trim()
+                    : null;
+
+            const dataExclusaoAte =
+                req.query.dataExclusaoAte
+                    ? String(
+                        req.query.dataExclusaoAte
+                    ).trim()
+                    : null;
+
+            const possuiContaCapital =
+                req.query.possuiContaCapital
+                    ? String(
+                        req.query
+                            .possuiContaCapital
+                    )
+                        .trim()
+                        .toUpperCase()
+                    : null;
+
+            const integralizacaoIndeterminada =
+                req.query
+                    .integralizacaoIndeterminada
+                    ? String(
+                        req.query
+                            .integralizacaoIndeterminada
+                    )
+                        .trim()
+                        .toUpperCase()
+                    : null;
+
+            if (
+                idEmpresa !== null &&
+                (
+                    !Number.isInteger(
+                        idEmpresa
+                    ) ||
+                    idEmpresa <= 0
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Empresa inválida.",
+                    });
+            }
+
+            if (
+                idOperadora !== null &&
+                (
+                    !Number.isInteger(
+                        idOperadora
+                    ) ||
+                    idOperadora <= 0
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Operadora inválida.",
+                    });
+            }
+
+            if (
+                idPlano !== null &&
+                (
+                    !Number.isInteger(
+                        idPlano
+                    ) ||
+                    idPlano <= 0
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Plano inválido.",
+                    });
+            }
+
+            if (
+                idTipoBeneficiario !==
+                null &&
+                (
+                    !Number.isInteger(
+                        idTipoBeneficiario
+                    ) ||
+                    idTipoBeneficiario <= 0
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Tipo de beneficiário inválido.",
+                    });
+            }
+
+            if (
+                cpf !== null &&
+                cpf.length !== 11
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "CPF inválido. Informe 11 dígitos.",
+                    });
+            }
+
+            if (
+                valor !== null &&
+                (
+                    !Number.isFinite(
+                        valor
+                    ) ||
+                    valor < 0
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Valor do plano inválido.",
+                    });
+            }
+
+            if (
+                status !== null &&
+                status !== "ATIVO" &&
+                status !== "INATIVO"
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Status inválido. Utilize ATIVO ou INATIVO.",
+                    });
+            }
+
+            if (
+                tipoCobranca !== null &&
+                tipoCobranca !==
+                "POR_PESSOA" &&
+                tipoCobranca !==
+                "POR_PLANO"
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Tipo de cobrança inválido.",
+                    });
+            }
+
+            if (
+                possuiContaCapital !==
+                null &&
+                possuiContaCapital !==
+                "SIM" &&
+                possuiContaCapital !==
+                "NAO"
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Filtro de Conta Capital inválido. Utilize SIM ou NAO.",
+                    });
+            }
+
+            {/*if (
+                integralizacaoIndeterminada !==
+                null &&
+                integralizacaoIndeterminada !==
+                "S" &&
+                integralizacaoIndeterminada !==
+                "N"
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Filtro de integralização indeterminada inválido. Utilize S ou N.",
+                    });
+            }*/}
+
+            if (
+                integralizacaoIndeterminada !== null &&
+                integralizacaoIndeterminada !== "SIM" &&
+                integralizacaoIndeterminada !== "NAO"
+            ) {
+                return res.status(400).json({
+                    error:
+                        "Filtro de integralização indeterminada inválido. Utilize SIM ou NAO.",
+                });
+            }
+
+            const regexData =
+                /^\d{4}-\d{2}-\d{2}$/;
+
+            if (
+                dataInclusaoDe &&
+                !regexData.test(
+                    dataInclusaoDe
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Data inicial de inclusão inválida.",
+                    });
+            }
+
+            if (
+                dataInclusaoAte &&
+                !regexData.test(
+                    dataInclusaoAte
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Data final de inclusão inválida.",
+                    });
+            }
+
+            if (
+                dataExclusaoDe &&
+                !regexData.test(
+                    dataExclusaoDe
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Data inicial de exclusão inválida.",
+                    });
+            }
+
+            if (
+                dataExclusaoAte &&
+                !regexData.test(
+                    dataExclusaoAte
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Data final de exclusão inválida.",
+                    });
+            }
+
+            const sql = `
+            SELECT
+                B.ID_BENEFICIARIO,
+                B.NM_BENEFICIARIO,
+                B.NR_CPF,
+                B.DT_NASCIMENTO,
+
+                TB.ID_TIPO_BENEFICIARIO,
+                TB.CD_TIPO_BENEFICIARIO,
+                TB.NM_TIPO_BENEFICIARIO,
+
+                E.ID_EMPRESA,
+                E.NM_EMPRESA,
+
+                O.ID_OPERADORA,
+                O.NM_OPERADORA,
+
+                P.ID_PLANO,
+                P.NM_PLANO,
+                P.TP_COBRANCA,
+
+                PV.ID_PLANO_VALOR,
+                PV.VL_MENSALIDADE,
+
+                PV.DT_VIGENCIA_INICIO
+                    AS DT_VIGENCIA_INICIO_VALOR,
+
+                PV.DT_VIGENCIA_FIM
+                    AS DT_VIGENCIA_FIM_VALOR,
+
+                B.ID_TITULAR,
+
+                T.NM_BENEFICIARIO
+                    AS NM_TITULAR,
+
+                T.NR_CPF
+                    AS NR_CPF_TITULAR,
+
+                B.NR_MATRICULA,
+
+                B.DT_INCLUSAO_PLANO,
+
+                B.DT_EXCLUSAO_PLANO,
+
+                B.SN_ATIVO,
+
+                CC.NR_CONTA_CAPITAL,
+
+                CC.SN_CONTA_CAPITAL,
+
+                CC.SN_INDICADOR_POSSUI_INTEGRALIZACAO_INDETERMINADA,
+
+                CC.DT_MATRICULA_CONTA_CAPITAL,
+
+                CC.DT_SAIDA_CONTA_CAPITAL,
+
+                CC.DT_MOVIMENTO_CONTA_CAPITAL,
+
+                CC.DT_ATUALIZACAO_CONTA_CAPITAL
+
+            FROM
+                DBACRESSEM.ODONTO_BENEFICIARIO B
+
+            INNER JOIN
+                DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+                ON TB.ID_TIPO_BENEFICIARIO =
+                   B.ID_TIPO_BENEFICIARIO
+
+            INNER JOIN
+                DBACRESSEM.ODONTO_EMPRESA E
+                ON E.ID_EMPRESA =
+                   B.ID_EMPRESA
+
+            INNER JOIN
+                DBACRESSEM.ODONTO_PLANO P
+                ON P.ID_PLANO =
+                   B.ID_PLANO
+
+            INNER JOIN
+                DBACRESSEM.ODONTO_OPERADORA O
+                ON O.ID_OPERADORA =
+                   P.ID_OPERADORA
+
+            LEFT JOIN
+                DBACRESSEM.ODONTO_BENEFICIARIO T
+                ON T.ID_BENEFICIARIO =
+                   B.ID_TITULAR
+
+            LEFT JOIN
+                DBACRESSEM.ODONTO_PLANO_VALOR PV
+                ON PV.ID_PLANO =
+                   B.ID_PLANO
+
+               AND TRUNC(SYSDATE) >=
+                   TRUNC(
+                       PV.DT_VIGENCIA_INICIO
+                   )
+
+               AND (
+                    PV.DT_VIGENCIA_FIM
+                        IS NULL
+
+                    OR SYSDATE <=
+                       PV.DT_VIGENCIA_FIM
+               )
+
+            LEFT JOIN
+                DBACRESSEM.VW_ODONTO_BENEF_CONTA_CAPITAL CC
+                ON CC.ID_BENEFICIARIO =
+                   B.ID_BENEFICIARIO
+
+            WHERE 1 = 1
+
+                AND (
+                    :idEmpresa IS NULL
+
+                    OR B.ID_EMPRESA =
+                       :idEmpresa
+                )
+
+                AND (
+                    :cpf IS NULL
+
+                    OR REGEXP_REPLACE(
+                        B.NR_CPF,
+                        '[^0-9]',
+                        ''
+                    ) = :cpf
+                )
+
+                AND (
+                    :idTipoBeneficiario
+                        IS NULL
+
+                    OR
+                    B.ID_TIPO_BENEFICIARIO =
+                    :idTipoBeneficiario
+                )
+
+                AND (
+                    :idOperadora IS NULL
+
+                    OR O.ID_OPERADORA =
+                       :idOperadora
+                )
+
+                AND (
+                    :idPlano IS NULL
+
+                    OR P.ID_PLANO =
+                       :idPlano
+                )
+
+                AND (
+                    :valor IS NULL
+
+                    OR ROUND(
+                        PV.VL_MENSALIDADE,
+                        2
+                    ) =
+                    ROUND(
+                        :valor,
+                        2
+                    )
+                )
+
+                AND (
+                    :tipoCobranca IS NULL
+
+                    OR P.TP_COBRANCA =
+                       :tipoCobranca
+                )
+
+                AND (
+                    :status IS NULL
+
+                    OR (
+                        :status =
+                            'ATIVO'
+
+                        AND B.SN_ATIVO =
+                            1
+                    )
+
+                    OR (
+                        :status =
+                            'INATIVO'
+
+                        AND B.SN_ATIVO =
+                            0
+                    )
+                )
+
+                AND (
+                    :matricula IS NULL
+
+                    OR UPPER(
+                        NVL(
+                            B.NR_MATRICULA,
+                            ''
+                        )
+                    )
+                    LIKE
+                        '%' ||
+                        UPPER(
+                            :matricula
+                        ) ||
+                        '%'
+                )
+
+                AND (
+                    :titular IS NULL
+
+                    OR (
+                        TB.CD_TIPO_BENEFICIARIO =
+                            'TITULAR'
+
+                        AND (
+                            UPPER(
+                                B.NM_BENEFICIARIO
+                            )
+                            LIKE
+                                '%' ||
+                                UPPER(
+                                    :titular
+                                ) ||
+                                '%'
+
+                            OR (
+                                :titularNumeros
+                                    IS NOT NULL
+
+                                AND
+                                REGEXP_REPLACE(
+                                    B.NR_CPF,
+                                    '[^0-9]',
+                                    ''
+                                ) =
+                                :titularNumeros
+                            )
+                        )
+                    )
+
+                    OR (
+                        B.ID_TITULAR
+                            IS NOT NULL
+
+                        AND (
+                            UPPER(
+                                T.NM_BENEFICIARIO
+                            )
+                            LIKE
+                                '%' ||
+                                UPPER(
+                                    :titular
+                                ) ||
+                                '%'
+
+                            OR (
+                                :titularNumeros
+                                    IS NOT NULL
+
+                                AND
+                                REGEXP_REPLACE(
+                                    T.NR_CPF,
+                                    '[^0-9]',
+                                    ''
+                                ) =
+                                :titularNumeros
+                            )
+                        )
+                    )
+                )
+
+                AND (
+                    :dataInclusaoDe
+                        IS NULL
+
+                    OR
+                    B.DT_INCLUSAO_PLANO >=
+                    TO_DATE(
+                        :dataInclusaoDe,
+                        'YYYY-MM-DD'
+                    )
+                )
+
+                AND (
+                    :dataInclusaoAte
+                        IS NULL
+
+                    OR
+                    B.DT_INCLUSAO_PLANO <
+                    TO_DATE(
+                        :dataInclusaoAte,
+                        'YYYY-MM-DD'
+                    ) + 1
+                )
+
+                AND (
+                    :dataExclusaoDe
+                        IS NULL
+
+                    OR
+                    B.DT_EXCLUSAO_PLANO >=
+                    TO_DATE(
+                        :dataExclusaoDe,
+                        'YYYY-MM-DD'
+                    )
+                )
+
+                AND (
+                    :dataExclusaoAte
+                        IS NULL
+
+                    OR
+                    B.DT_EXCLUSAO_PLANO <
+                    TO_DATE(
+                        :dataExclusaoAte,
+                        'YYYY-MM-DD'
+                    ) + 1
+                )
+
+                AND (
+                    :possuiContaCapital
+                        IS NULL
+
+                    OR (
+                        :possuiContaCapital =
+                            'SIM'
+
+                        AND
+                        CC.NR_CONTA_CAPITAL
+                            IS NOT NULL
+                    )
+
+                    OR (
+                        :possuiContaCapital =
+                            'NAO'
+
+                        AND
+                        CC.NR_CONTA_CAPITAL
+                            IS NULL
+                    )
+                )
+
+                AND (
+                :integralizacaoIndeterminada IS NULL
+
+                OR (
+                    :integralizacaoIndeterminada = 'SIM'
+                    AND UPPER(
+                        NVL(
+                            CC.SN_INDICADOR_POSSUI_INTEGRALIZACAO_INDETERMINADA,
+                            'NAO'
+                        )
+                    ) IN ('SIM', 'S')
+                )
+
+                OR (
+                    :integralizacaoIndeterminada = 'NAO'
+                    AND UPPER(
+                        NVL(
+                            CC.SN_INDICADOR_POSSUI_INTEGRALIZACAO_INDETERMINADA,
+                            'NAO'
+                        )
+                    ) IN ('NAO', 'N')
+                )
+            )
+
+            ORDER BY
+                B.NM_BENEFICIARIO
+        `;
+
+            const result =
+                await oracleExecute(
+                    sql,
+                    {
+                        idEmpresa,
+
+                        cpf,
+
+                        idTipoBeneficiario,
+
+                        idOperadora,
+
+                        idPlano,
+
+                        valor,
+
+                        status,
+
+                        tipoCobranca,
+
+                        matricula,
+
+                        titular,
+
+                        titularNumeros,
+
+                        dataInclusaoDe,
+
+                        dataInclusaoAte,
+
+                        dataExclusaoDe,
+
+                        dataExclusaoAte,
+
+                        possuiContaCapital,
+
+                        integralizacaoIndeterminada,
+                    },
+                    {
+                        outFormat:
+                            oracledb
+                                .OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            return res
+                .status(200)
+                .json(
+                    result.rows || []
+                );
+        } catch (error: any) {
+            console.error(
+                "Erro ao gerar relatório de beneficiários odontológicos:",
+                error
+            );
+
+            return res
+                .status(500)
+                .json({
+                    error:
+                        "Erro ao consultar relatório de beneficiários.",
+
+                    details:
+                        error.message,
+                });
         }
     },
 
@@ -462,6 +1304,124 @@ export const convenioOdontologicoController = {
             return res.status(500).json({
                 error: "Erro ao buscar beneficiário por ID.",
                 details: error.message,
+            });
+        }
+    },
+
+    async listarHistoricoEmpresasBeneficiario(
+        req: Request,
+        res: Response
+    ) {
+        try {
+            const idBeneficiario = Number(
+                req.params.id
+            );
+
+            if (
+                !Number.isInteger(idBeneficiario) ||
+                idBeneficiario <= 0
+            ) {
+                return res.status(400).json({
+                    error:
+                        "ID do beneficiário inválido.",
+                });
+            }
+
+            const beneficiarioResult =
+                await oracleExecute(
+                    `
+                SELECT
+                    ID_BENEFICIARIO,
+                    NM_BENEFICIARIO,
+                    NR_CPF
+                FROM DBACRESSEM.ODONTO_BENEFICIARIO
+                WHERE ID_BENEFICIARIO =
+                      :idBeneficiario
+                `,
+                    {
+                        idBeneficiario,
+                    },
+                    {
+                        outFormat:
+                            oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            const beneficiario =
+                beneficiarioResult.rows?.[0];
+
+            if (!beneficiario) {
+                return res.status(404).json({
+                    error:
+                        "Beneficiário não encontrado.",
+                });
+            }
+
+            const historicoResult =
+                await oracleExecute(
+                    `
+                SELECT
+                    H.ID_HISTORICO,
+                    H.ID_BENEFICIARIO,
+                    H.ID_EMPRESA,
+
+                    E.NM_EMPRESA,
+                    E.NR_CNPJ,
+
+                    H.DT_INICIO,
+                    H.DT_FIM,
+
+                    H.NM_USUARIO_CRIACAO,
+                    H.LOGIN_USUARIO_CRIACAO,
+                    H.DT_CRIACAO,
+
+                    CASE
+                        WHEN H.DT_FIM IS NULL
+                        THEN 'ATUAL'
+                        ELSE 'ENCERRADO'
+                    END AS STATUS_VINCULO
+
+                FROM
+                    DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST H
+
+                INNER JOIN
+                    DBACRESSEM.ODONTO_EMPRESA E
+                    ON E.ID_EMPRESA =
+                       H.ID_EMPRESA
+
+                WHERE
+                    H.ID_BENEFICIARIO =
+                    :idBeneficiario
+
+                ORDER BY
+                    H.DT_INICIO DESC,
+                    H.ID_HISTORICO DESC
+                `,
+                    {
+                        idBeneficiario,
+                    },
+                    {
+                        outFormat:
+                            oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            return res.status(200).json({
+                beneficiario,
+                historico:
+                    historicoResult.rows || [],
+            });
+        } catch (error: any) {
+            console.error(
+                "Erro ao listar histórico de empresas do beneficiário:",
+                error
+            );
+
+            return res.status(500).json({
+                error:
+                    "Erro ao consultar histórico de empresas do beneficiário.",
+                details:
+                    error.message,
             });
         }
     },
@@ -821,14 +1781,52 @@ export const convenioOdontologicoController = {
                 }
             );
 
-            await conn.commit();
-
             const outBinds: any = result.outBinds;
 
             const idBeneficiario =
                 Array.isArray(outBinds?.idBeneficiario)
                     ? outBinds.idBeneficiario[0]
                     : outBinds?.idBeneficiario;
+
+            if (!idBeneficiario) {
+                throw new Error(
+                    "Não foi possível obter o ID do beneficiário cadastrado."
+                );
+            }
+
+            await conn.execute(
+                `
+          INSERT INTO DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST (
+            ID_BENEFICIARIO,
+            ID_EMPRESA,
+            DT_INICIO,
+            DT_FIM,
+            NM_USUARIO_CRIACAO,
+            LOGIN_USUARIO_CRIACAO,
+            DT_CRIACAO
+          )
+          VALUES (
+            :idBeneficiario,
+            :idEmpresa,
+            SYSDATE,
+            NULL,
+            :nomeUsuario,
+            :loginUsuario,
+            SYSDATE
+          )
+        `,
+                {
+                    idBeneficiario: Number(idBeneficiario),
+                    idEmpresa: Number(idEmpresa),
+                    nomeUsuario: nomeUsuario || null,
+                    loginUsuario: loginUsuario || null,
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            await conn.commit();
 
             return res.status(201).json({
                 success: true,
@@ -913,15 +1911,16 @@ export const convenioOdontologicoController = {
 
             await setAuditoriaContext(conn, req);
 
-            //verifica se o beneficiario existe
             const existenteResult = await conn.execute(
                 `
-        SELECT
-          ID_BENEFICIARIO,
-          SN_ATIVO
-        FROM DBACRESSEM.ODONTO_BENEFICIARIO
-        WHERE ID_BENEFICIARIO = :id
-      `,
+            SELECT
+                ID_BENEFICIARIO,
+                ID_EMPRESA,
+                SN_ATIVO
+            FROM DBACRESSEM.ODONTO_BENEFICIARIO
+            WHERE ID_BENEFICIARIO = :id
+            FOR UPDATE
+            `,
                 { id },
                 {
                     outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -936,16 +1935,24 @@ export const convenioOdontologicoController = {
                 });
             }
 
-            //verifica conflito de CPF com outro beneficiario ativo
+            const idEmpresaAnterior =
+                Number(existente.ID_EMPRESA);
+
+            const idEmpresaNova =
+                Number(idEmpresa);
+
+            const empresaFoiAlterada =
+                idEmpresaAnterior !== idEmpresaNova;
+
             const cpfResult = await conn.execute(
                 `
-        SELECT ID_BENEFICIARIO
-        FROM DBACRESSEM.ODONTO_BENEFICIARIO
-        WHERE NR_CPF = :cpf
-          AND SN_ATIVO = 1
-          AND ID_BENEFICIARIO <> :id
-        FETCH FIRST 1 ROWS ONLY
-      `,
+            SELECT ID_BENEFICIARIO
+            FROM DBACRESSEM.ODONTO_BENEFICIARIO
+            WHERE NR_CPF = :cpf
+              AND SN_ATIVO = 1
+              AND ID_BENEFICIARIO <> :id
+            FETCH FIRST 1 ROWS ONLY
+            `,
                 {
                     cpf: cpfLimpo,
                     id,
@@ -957,22 +1964,23 @@ export const convenioOdontologicoController = {
 
             if (cpfResult.rows?.length) {
                 return res.status(409).json({
-                    error: "Já existe outro beneficiário ativo cadastrado com este CPF.",
+                    error:
+                        "Já existe outro beneficiário ativo cadastrado com este CPF.",
                 });
             }
 
-            //valida o tipo
             const tipoResult = await conn.execute(
                 `
-        SELECT
-          ID_TIPO_BENEFICIARIO,
-          CD_TIPO_BENEFICIARIO
-        FROM DBACRESSEM.ODONTO_TIPO_BENEFICIARIO
-        WHERE ID_TIPO_BENEFICIARIO = :idTipoBeneficiario
-          AND SN_ATIVO = 1
-      `,
+            SELECT
+                ID_TIPO_BENEFICIARIO,
+                CD_TIPO_BENEFICIARIO
+            FROM DBACRESSEM.ODONTO_TIPO_BENEFICIARIO
+            WHERE ID_TIPO_BENEFICIARIO = :idTipoBeneficiario
+              AND SN_ATIVO = 1
+            `,
                 {
-                    idTipoBeneficiario: Number(idTipoBeneficiario),
+                    idTipoBeneficiario:
+                        Number(idTipoBeneficiario),
                 },
                 {
                     outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -983,20 +1991,20 @@ export const convenioOdontologicoController = {
 
             if (!tipo) {
                 return res.status(400).json({
-                    error: "Tipo de beneficiário não encontrado ou inativo.",
+                    error:
+                        "Tipo de beneficiário não encontrado ou inativo.",
                 });
             }
 
-            //valida a empresa
             const empresaResult = await conn.execute(
                 `
-        SELECT ID_EMPRESA
-        FROM DBACRESSEM.ODONTO_EMPRESA
-        WHERE ID_EMPRESA = :idEmpresa
-          AND SN_ATIVO = 1
-      `,
+            SELECT ID_EMPRESA
+            FROM DBACRESSEM.ODONTO_EMPRESA
+            WHERE ID_EMPRESA = :idEmpresa
+              AND SN_ATIVO = 1
+            `,
                 {
-                    idEmpresa: Number(idEmpresa),
+                    idEmpresa: idEmpresaNova,
                 },
                 {
                     outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -1005,18 +2013,18 @@ export const convenioOdontologicoController = {
 
             if (!empresaResult.rows?.length) {
                 return res.status(400).json({
-                    error: "Empresa não encontrada ou inativa.",
+                    error:
+                        "Empresa não encontrada ou inativa.",
                 });
             }
 
-            //valida o plano
             const planoResult = await conn.execute(
                 `
-        SELECT ID_PLANO
-        FROM DBACRESSEM.ODONTO_PLANO
-        WHERE ID_PLANO = :idPlano
-          AND SN_ATIVO = 1
-      `,
+            SELECT ID_PLANO
+            FROM DBACRESSEM.ODONTO_PLANO
+            WHERE ID_PLANO = :idPlano
+              AND SN_ATIVO = 1
+            `,
                 {
                     idPlano: Number(idPlano),
                 },
@@ -1027,19 +2035,19 @@ export const convenioOdontologicoController = {
 
             if (!planoResult.rows?.length) {
                 return res.status(400).json({
-                    error: "Plano não encontrado ou inativo.",
+                    error:
+                        "Plano não encontrado ou inativo.",
                 });
             }
 
-            //valida o valor vigente
             const valorResult = await conn.execute(
                 `
-        SELECT ID_PLANO_VALOR
-        FROM DBACRESSEM.ODONTO_PLANO_VALOR
-        WHERE ID_PLANO = :idPlano
-          AND SN_ATIVO = 1
-        FETCH FIRST 1 ROWS ONLY
-      `,
+            SELECT ID_PLANO_VALOR
+            FROM DBACRESSEM.ODONTO_PLANO_VALOR
+            WHERE ID_PLANO = :idPlano
+              AND SN_ATIVO = 1
+            FETCH FIRST 1 ROWS ONLY
+            `,
                 {
                     idPlano: Number(idPlano),
                 },
@@ -1050,105 +2058,204 @@ export const convenioOdontologicoController = {
 
             if (!valorResult.rows?.length) {
                 return res.status(400).json({
-                    error: "O plano selecionado não possui valor vigente cadastrado.",
+                    error:
+                        "O plano selecionado não possui valor vigente cadastrado.",
                 });
             }
 
             let idTitularFinal: number | null = null;
 
-            if (tipo.CD_TIPO_BENEFICIARIO === "DEPENDENTE") {
-                const idTitularNumero = Number(idTitular);
+            if (
+                tipo.CD_TIPO_BENEFICIARIO ===
+                "DEPENDENTE"
+            ) {
+                const idTitularNumero =
+                    Number(idTitular);
 
-                if (!Number.isInteger(idTitularNumero) || idTitularNumero <= 0) {
+                if (
+                    !Number.isInteger(
+                        idTitularNumero
+                    ) ||
+                    idTitularNumero <= 0
+                ) {
                     return res.status(400).json({
-                        error: "Beneficiário dependente deve possuir um titular vinculado.",
+                        error:
+                            "Beneficiário dependente deve possuir um titular vinculado.",
                     });
                 }
 
                 if (idTitularNumero === id) {
                     return res.status(400).json({
-                        error: "O beneficiário não pode ser titular de si mesmo.",
+                        error:
+                            "O beneficiário não pode ser titular de si mesmo.",
                     });
                 }
 
-                const titularResult = await conn.execute(
-                    `
-          SELECT
-            B.ID_BENEFICIARIO,
-            B.SN_ATIVO,
-            TB.CD_TIPO_BENEFICIARIO
-          FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+                const titularResult =
+                    await conn.execute(
+                        `
+                    SELECT
+                        B.ID_BENEFICIARIO,
+                        B.SN_ATIVO,
+                        TB.CD_TIPO_BENEFICIARIO
+                    FROM DBACRESSEM.ODONTO_BENEFICIARIO B
 
-          INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
-            ON TB.ID_TIPO_BENEFICIARIO = B.ID_TIPO_BENEFICIARIO
+                    INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+                        ON TB.ID_TIPO_BENEFICIARIO =
+                           B.ID_TIPO_BENEFICIARIO
 
-          WHERE B.ID_BENEFICIARIO = :idTitular
-            AND B.SN_ATIVO = 1
-        `,
-                    {
-                        idTitular: idTitularNumero,
-                    },
-                    {
-                        outFormat: oracledb.OUT_FORMAT_OBJECT,
-                    }
-                );
+                    WHERE B.ID_BENEFICIARIO = :idTitular
+                      AND B.SN_ATIVO = 1
+                    `,
+                        {
+                            idTitular:
+                                idTitularNumero,
+                        },
+                        {
+                            outFormat:
+                                oracledb.OUT_FORMAT_OBJECT,
+                        }
+                    );
 
-                const titular: any = titularResult.rows?.[0];
+                const titular: any =
+                    titularResult.rows?.[0];
 
                 if (!titular) {
                     return res.status(400).json({
-                        error: "Titular informado não foi encontrado ou está inativo.",
+                        error:
+                            "Titular informado não foi encontrado ou está inativo.",
                     });
                 }
 
-                if (titular.CD_TIPO_BENEFICIARIO !== "TITULAR") {
+                if (
+                    titular.CD_TIPO_BENEFICIARIO !==
+                    "TITULAR"
+                ) {
                     return res.status(400).json({
-                        error: "O beneficiário informado não possui o tipo TITULAR.",
+                        error:
+                            "O beneficiário informado não possui o tipo TITULAR.",
                     });
                 }
 
-                idTitularFinal = idTitularNumero;
+                idTitularFinal =
+                    idTitularNumero;
             }
 
             await conn.execute(
                 `
-        UPDATE DBACRESSEM.ODONTO_BENEFICIARIO
-        SET
-          NM_BENEFICIARIO = :nome,
-          NR_CPF = :cpf,
-          DT_NASCIMENTO = TO_DATE(:dataNascimento, 'YYYY-MM-DD'),
-          ID_TIPO_BENEFICIARIO = :idTipoBeneficiario,
-          ID_EMPRESA = :idEmpresa,
-          ID_PLANO = :idPlano,
-          ID_TITULAR = :idTitular,
-          NR_MATRICULA = :nrMatricula,
-          DS_OBSERVACAO = :observacao,
-          NM_USUARIO_ATUALIZACAO = :nomeUsuario,
-          LOGIN_USUARIO_ATUALIZACAO = :loginUsuario,
-          DT_ATUALIZACAO = SYSDATE
-        WHERE ID_BENEFICIARIO = :id
-      `,
+            UPDATE DBACRESSEM.ODONTO_BENEFICIARIO
+            SET
+                NM_BENEFICIARIO = :nome,
+                NR_CPF = :cpf,
+                DT_NASCIMENTO =
+                    TO_DATE(
+                        :dataNascimento,
+                        'YYYY-MM-DD'
+                    ),
+                ID_TIPO_BENEFICIARIO =
+                    :idTipoBeneficiario,
+                ID_EMPRESA = :idEmpresa,
+                ID_PLANO = :idPlano,
+                ID_TITULAR = :idTitular,
+                NR_MATRICULA = :nrMatricula,
+                DS_OBSERVACAO = :observacao,
+                NM_USUARIO_ATUALIZACAO =
+                    :nomeUsuario,
+                LOGIN_USUARIO_ATUALIZACAO =
+                    :loginUsuario,
+                DT_ATUALIZACAO = SYSDATE
+            WHERE ID_BENEFICIARIO = :id
+            `,
                 {
                     id,
-                    nome: String(nome).trim(),
-                    cpf: cpfLimpo,
+                    nome:
+                        String(nome).trim(),
+                    cpf:
+                        cpfLimpo,
                     dataNascimento,
-                    idTipoBeneficiario: Number(idTipoBeneficiario),
-                    idEmpresa: Number(idEmpresa),
-                    idPlano: Number(idPlano),
-                    idTitular: idTitularFinal,
-                    nrMatricula: nrMatricula || null,
-                    observacao: observacao || null,
-                    nomeUsuario: nomeUsuario || null,
-                    loginUsuario: loginUsuario || null,
+                    idTipoBeneficiario:
+                        Number(
+                            idTipoBeneficiario
+                        ),
+                    idEmpresa:
+                        idEmpresaNova,
+                    idPlano:
+                        Number(idPlano),
+                    idTitular:
+                        idTitularFinal,
+                    nrMatricula:
+                        nrMatricula || null,
+                    observacao:
+                        observacao || null,
+                    nomeUsuario:
+                        nomeUsuario || null,
+                    loginUsuario:
+                        loginUsuario || null,
+                },
+                {
+                    autoCommit: false,
                 }
             );
+
+            if (empresaFoiAlterada) {
+                await conn.execute(
+                    `
+                UPDATE DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST
+                SET
+                    DT_FIM = SYSDATE
+                WHERE ID_BENEFICIARIO = :idBeneficiario
+                  AND DT_FIM IS NULL
+                `,
+                    {
+                        idBeneficiario: id,
+                    },
+                    {
+                        autoCommit: false,
+                    }
+                );
+
+                await conn.execute(
+                    `
+                INSERT INTO DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST (
+                    ID_BENEFICIARIO,
+                    ID_EMPRESA,
+                    DT_INICIO,
+                    DT_FIM,
+                    NM_USUARIO_CRIACAO,
+                    LOGIN_USUARIO_CRIACAO,
+                    DT_CRIACAO
+                )
+                VALUES (
+                    :idBeneficiario,
+                    :idEmpresa,
+                    SYSDATE,
+                    NULL,
+                    :nomeUsuario,
+                    :loginUsuario,
+                    SYSDATE
+                )
+                `,
+                    {
+                        idBeneficiario: id,
+                        idEmpresa:
+                            idEmpresaNova,
+                        nomeUsuario:
+                            nomeUsuario || null,
+                        loginUsuario:
+                            loginUsuario || null,
+                    },
+                    {
+                        autoCommit: false,
+                    }
+                );
+            }
 
             await conn.commit();
 
             return res.json({
                 success: true,
-                message: "Beneficiário atualizado com sucesso.",
+                message:
+                    "Beneficiário atualizado com sucesso.",
             });
         } catch (error: any) {
             if (conn) {
@@ -1157,17 +2264,23 @@ export const convenioOdontologicoController = {
                 } catch { }
             }
 
-            console.error("Erro ao editar beneficiário:", error);
+            console.error(
+                "Erro ao editar beneficiário:",
+                error
+            );
 
             if (error?.errorNum === 1) {
                 return res.status(409).json({
-                    error: "Já existe outro beneficiário ativo cadastrado com este CPF.",
+                    error:
+                        "Já existe outro beneficiário ativo cadastrado com este CPF.",
                 });
             }
 
             return res.status(500).json({
-                error: "Erro ao atualizar beneficiário.",
-                details: error.message,
+                error:
+                    "Erro ao atualizar beneficiário.",
+                details:
+                    error.message,
             });
         } finally {
             if (conn) {
@@ -1235,6 +2348,57 @@ export const convenioOdontologicoController = {
                 });
             }
 
+            /*
+             * Se for titular, fecha primeiro o histórico de empresa
+             * dos dependentes que serão inativados.
+             *
+             * Fazemos isso antes de alterar SN_ATIVO para 0 porque
+             * utilizamos SN_ATIVO = 1 para identificar exatamente
+             * os dependentes afetados pela inativação.
+             */
+            if (beneficiario.CD_TIPO_BENEFICIARIO === "TITULAR") {
+                await conn.execute(
+                    `
+          UPDATE DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST H
+          SET
+            H.DT_FIM = SYSDATE
+          WHERE H.DT_FIM IS NULL
+            AND H.ID_BENEFICIARIO IN (
+              SELECT B.ID_BENEFICIARIO
+              FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+              WHERE B.ID_TITULAR = :idTitular
+                AND B.SN_ATIVO = 1
+            )
+        `,
+                    {
+                        idTitular: id,
+                    },
+                    {
+                        autoCommit: false,
+                    }
+                );
+            }
+
+            /*
+             * Fecha o vínculo atual de empresa do próprio
+             * beneficiário que está sendo inativado.
+             */
+            await conn.execute(
+                `
+        UPDATE DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST
+        SET
+          DT_FIM = SYSDATE
+        WHERE ID_BENEFICIARIO = :id
+          AND DT_FIM IS NULL
+      `,
+                {
+                    id,
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
             await conn.execute(
                 `
         UPDATE DBACRESSEM.ODONTO_BENEFICIARIO
@@ -1258,6 +2422,9 @@ export const convenioOdontologicoController = {
                     nomeUsuario: nomeUsuario || null,
                     loginUsuario: loginUsuario || null,
                     observacao: observacao || null,
+                },
+                {
+                    autoCommit: false,
                 }
             );
 
@@ -1280,6 +2447,9 @@ export const convenioOdontologicoController = {
                         idTitular: id,
                         nomeUsuario: nomeUsuario || null,
                         loginUsuario: loginUsuario || null,
+                    },
+                    {
+                        autoCommit: false,
                     }
                 );
 
@@ -2573,7 +3743,6 @@ export const convenioOdontologicoController = {
                         });
                 }
 
-                //verifica se existe pelo menos um valor cadastrado
                 const valorResult =
                     await conn.execute(
                         `
