@@ -46,7 +46,6 @@ function scoreItem(q: string, item: ScreenItem) {
   if (k.includes(nq)) score += 35;
   if (d.includes(nq)) score += 20;
 
-  // Só dá bônus para favorito SE já encontrou alguma coisa
   if (score > 0 && item.pinned) score += 8;
 
   return score;

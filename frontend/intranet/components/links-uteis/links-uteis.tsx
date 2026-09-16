@@ -32,6 +32,11 @@ import {
     FaGavel,
     FaRegMoneyBillAlt,
     FaMoneyBill,
+    FaImages,
+    FaHeadphones,
+    FaHeart,
+    FaTv,
+    FaLevelUpAlt
 } from "react-icons/fa";
 import { useMe } from "@/hooks/use-me";
 
@@ -49,6 +54,7 @@ const AD_GROUPS = {
     ESTOQUE: "GG_USERS_ALMO",
 
     GERENCIA_DIRETORIA: "GG_USERS_GERENCIA_DIRETORIA",
+    CCONV: "GG_USERS_CCONV",
     TODO_MUNDO: "GG_INTRANET_FULL",
     CHEQUE_ESPCIAL: "GG_INTRANET_CHEQUE_ESPECIAL",
     CONSULTA_ANALISE_LIMITE: "GG_INTRANET_CONSULTA_ANALISE",
@@ -63,6 +69,7 @@ const AD_GROUPS = {
     MIGRACAO_CONTRATO: "GG_INTRANET_MIGRACAO_CONTRATO",
     SOLICITACAO_CREDITO: "GG_INTRANET_SOLICITACAO_CRED",
     TERMOS_MENSAIS_CAIXA: "GG_INTRANET_TERMOS_MENSAIS_CX",
+    CNAB240: "GG_INTRANET_CNAB240",
 } as const;
 
 type AccessRule = {
@@ -166,26 +173,18 @@ const links: LinkItem[] = [
         allowedGroups: [AD_GROUPS.TODO_MUNDO, AD_GROUPS.SUPORTE],
     },
     {
-        title: "Estoque de Consumíveis",
-        description: "Acesse rapidamente a tela de estoque de consumíveis.",
-        href: "/auth/estoque_consumiveis",
-        icon: FaArchive,
-        category: "Estoque",
-        allowedGroups: [AD_GROUPS.SUPORTE],
-    },
-    {
-        title: "Painel GLPI",
-        description: "Acesse rapidamente e acompanhe os chamados que chegam para o estoque.",
-        href: "/auth/painel_glpi_estoque",
-        icon: FaDesktop,
-        category: "Estoque",
-        allowedGroups: [AD_GROUPS.SUPORTE],
-    },
-    {
         title: "Monitor Meta Alerta",
         description: "Monitoramento de metas para rastreamento e consistencia dos dados.",
         href: "/auth/monitor_alertas_meta",
         icon: FaBell,
+        category: "Dados",
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+    {
+        title: "Monitor Atendimento Blip",
+        description: "Acompanhar atrasos de primeira resposta e espera nas filas do Blip.",
+        href: "/auth/monitor_atendimento_blip",
+        icon: FaTv,
         category: "Dados",
         allowedGroups: [AD_GROUPS.SUPORTE],
     },
@@ -195,7 +194,23 @@ const links: LinkItem[] = [
         href: "/auth/cnab240",
         icon: FaBarcode,
         category: "Financeiro",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
+    },
+    {
+        title: "Contatos Não Perturbe",
+        description: "Consultar contatos cadastrados na lista de Não Perturbe do Blip.",
+        href: "/auth/contatos_nao_pertube",
+        icon: FaBarcode,
+        category: "Utilidades",
         allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+    {
+        title: "Gerenciar Favorecidos",
+        description: "Adicione ou edite favorecidos vinculados a geração do cnab240.",
+        href: "/auth/cnab240_favorecidos",
+        icon: FaBarcode,
+        category: "Financeiro",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CNAB240],
     },
     {
         title: "Pagamento de Fornecedores",
@@ -262,6 +277,14 @@ const links: LinkItem[] = [
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.SOLICITACAO_CREDITO],
     },
     {
+        title: "Simulador de Investimento",
+        description: "Simule valores de investimento.",
+        href: "/auth/simulador_investimento",
+        icon: FaLevelUpAlt,
+        category: "Financeiro",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    },
+    {
         title: "Docusign",
         description: "Acesse rapidamente a tela da docusign.",
         href: "/auth/docusign",
@@ -316,6 +339,14 @@ const links: LinkItem[] = [
         icon: FaBookReader,
         category: "Informativo",
         allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+    },
+    {
+        title: "Notificação",
+        description: "Cadastre o aviso que será exibido ao usuário após o login.",
+        href: "/auth/popup_aviso",
+        icon: FaBell,
+        category: "Marketing",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.NOTIFICACAO],
     },
     {
         title: "Sala de Reunião",
@@ -484,8 +515,13 @@ const links: LinkItem[] = [
         category: "Utilidades",
         children: [
             {
-                title: "Aplicar marca d'água",
+                title: "Aplicar Marca d'água",
                 href: "/auth/aplica_marca_dagua",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+            },
+            {
+                title: "Gerador Assinatura E-mail",
+                href: "/auth/assinatura_email",
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
             },
             {
@@ -574,6 +610,63 @@ const links: LinkItem[] = [
         ],
     },
     {
+        title: "Subsídio Auditivo",
+        description: "Cadastre e gerencie o subsídio auditivo.",
+        icon: FaHeadphones,
+        category: "Financeiro",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+        children: [
+            {
+                title: "Cadastro de Subsídio Auditivo",
+                href: "/auth/cadastro_subsidio_auditivo",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+            },
+            {
+                title: "Gerenciamento de Subsídio Auditivo",
+                href: "/auth/gerenciamento_subsidio_auditivo",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+            },
+        ],
+    },
+    {
+        title: "Subsídio Funeral",
+        description: "Cadastre e gerencie o subsídio funeral.",
+        icon: FaHeart,
+        category: "Financeiro",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+        children: [
+            {
+                title: "Cadastro de Subsídio Funeral",
+                href: "/auth/cadastro_subsidio_funeral",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+            },
+            {
+                title: "Gerenciamento de Subsídio Funeral",
+                href: "/auth/gerenciamento_subsidio_funeral",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CCONV, AD_GROUPS.GERENCIA_DIRETORIA],
+            },
+        ],
+    },
+    {
+        title: "Banco de Imagens",
+        description: "Cadastre e consulte imagens disponiveis.",
+        icon: FaImages,
+        category: "Ferramentas",
+        allowedGroups: [AD_GROUPS.SUPORTE],
+        children: [
+            {
+                title: "Banco de Imagens",
+                href: "/auth/banco_imagens",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+            },
+            {
+                title: "Banco de Imagens Administração",
+                href: "/auth/banco_imagens_administracao",
+                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.MARKETING],
+            },
+        ],
+    },
+    {
         title: "Gerenciador de Contratos",
         description: "Cadastre e consulte contratos em um só lugar.",
         icon: FaHandshake,
@@ -589,6 +682,30 @@ const links: LinkItem[] = [
                 title: "Gerenciador de Empresa Conveniada",
                 href: "/auth/consulta_contratos",
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO_CONVENIADA],
+            },
+        ],
+    },
+    {
+        title: "Estoque",
+        description: "Cadastre, acompanhe e gerencie o estoque",
+        icon: FaArchive,
+        category: "Estoque",
+        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.CADASTRO_CONVENIADA],
+        children: [
+            {
+                title: "Estoque de Consumíveis",
+                href: "/auth/estoque_consumiveis",
+                allowedGroups: [AD_GROUPS.SUPORTE],
+            },
+            {
+                title: "Painel GLPI",
+                href: "/auth/painel_glpi_estoque",
+                allowedGroups: [AD_GROUPS.SUPORTE],
+            },
+            {
+                title: "Balanço",
+                href: "/auth/balanco",
+                allowedGroups: [AD_GROUPS.SUPORTE],
             },
         ],
     },
@@ -718,11 +835,6 @@ const links: LinkItem[] = [
                 title: "Solicitação de Subsídio",
                 href: "/auth/solicitacao_participacao",
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
-            },
-            {
-                title: "Notificação",
-                href: "/auth/popup_aviso",
-                allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.NOTIFICACAO],
             },
             {
                 title: "Gerenciador de Subsídio",
