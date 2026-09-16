@@ -61,9 +61,12 @@ const initialForm: FichaFormData = {
 
 export default function ConsultaFichaDesimpedimentoPage() {
   const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [loadingAccess, setLoadingAccess] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [rows, setRows] = useState<FichaRow[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const [limitePorPagina, setLimitePorPagina] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -135,6 +138,28 @@ export default function ConsultaFichaDesimpedimentoPage() {
         (r) => !!r.RESPONSAVEL && String(r.RESPONSAVEL).trim() !== ""
       ).length,
     [rows]
+  );
+
+  const totalPaginas = Math.max(
+    Math.ceil(rows.length / limitePorPagina),
+    1
+  );
+
+  const rowsPaginadas = useMemo(() => {
+    const inicio = (pagina - 1) * limitePorPagina;
+    const fim = inicio + limitePorPagina;
+
+    return rows.slice(inicio, fim);
+  }, [rows, pagina, limitePorPagina]);
+
+  const primeiroRegistro =
+    rows.length === 0
+      ? 0
+      : (pagina - 1) * limitePorPagina + 1;
+
+  const ultimoRegistro = Math.min(
+    pagina * limitePorPagina,
+    rows.length
   );
 
   function handleChange(
@@ -407,19 +432,21 @@ export default function ConsultaFichaDesimpedimentoPage() {
       try {
         const user = (await getMeAdUser()) as AuthUserLike;
 
-        setAllowed(canAccess(user, PAGE_ACCESS.consultaFichaDesempedimento));
+        setAllowed(
+          canAccess(user, PAGE_ACCESS.consultaFichaDesempedimento)
+        );
       } catch (error) {
         console.error(error);
         setAllowed(false);
       } finally {
-        setLoading(false);
+        setLoadingAccess(false);
       }
     }
 
     validarAcesso();
   }, []);
 
-  if (loading) {
+  if (loadingAccess) {
     return (
       <div className="p-6 text-sm text-gray-500">
         Carregando...
@@ -520,13 +547,19 @@ export default function ConsultaFichaDesimpedimentoPage() {
           <div className="mt-1 flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
             <input
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPagina(1);
+              }}
               placeholder="Ex: nome, CPF, empresa, sequencial, responsável..."
               className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
             />
             {q ? (
               <button
-                onClick={() => setQ("")}
+                onClick={() => {
+                  setQ("");
+                  setPagina(1);
+                }}
                 className="rounded-lg border border-gray-200 px-2 py-1 text-xs hover:bg-gray-50"
               >
                 Limpar
@@ -624,7 +657,7 @@ export default function ConsultaFichaDesimpedimentoPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {rowsPaginadas.map((r) => (
                   <tr
                     key={String(r.ID_FICHAS)}
                     className="border-t border-gray-100 hover:bg-gray-50/60"
@@ -718,6 +751,96 @@ export default function ConsultaFichaDesimpedimentoPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {rows.length > 0 && (
+          <div className="mt-4 flex flex-col gap-4 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+
+              <p className="text-xs text-gray-500">
+                Exibindo{" "}
+                <strong className="font-semibold text-gray-700">
+                  {primeiroRegistro}
+                </strong>
+                {" "}a{" "}
+                <strong className="font-semibold text-gray-700">
+                  {ultimoRegistro}
+                </strong>
+                {" "}de{" "}
+                <strong className="font-semibold text-gray-700">
+                  {rows.length}
+                </strong>
+                {" "}ficha(s).
+              </p>
+
+              <div className="flex items-center gap-2">
+
+                <span className="text-xs text-gray-500">
+                  Exibir
+                </span>
+
+                <select
+                  value={limitePorPagina}
+                  onChange={(e) => {
+                    setLimitePorPagina(
+                      Number(e.target.value)
+                    );
+
+                    setPagina(1);
+                  }}
+                  className="h-9 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={30}>30</option>
+                  <option value={50}>50</option>
+                </select>
+
+                <span className="text-xs text-gray-500">
+                  por página
+                </span>
+
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPagina((atual) =>
+                    Math.max(atual - 1, 1)
+                  )
+                }
+                disabled={pagina <= 1}
+                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Anterior
+              </button>
+
+              <span className="rounded-xl bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-700">
+                Página {pagina} de {totalPaginas}
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPagina((atual) =>
+                    Math.min(
+                      atual + 1,
+                      totalPaginas
+                    )
+                  )
+                }
+                disabled={pagina >= totalPaginas}
+                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Próxima
+              </button>
+
+            </div>
           </div>
         )}
 

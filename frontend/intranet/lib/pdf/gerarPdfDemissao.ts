@@ -17,6 +17,8 @@ export type GerarPdfDemissaoData = {
 
   saldoCapital: string;
   possuiConvenioOdontologico?: string;
+  inativarConvenioOdontologico?: boolean;
+  tipoBeneficiarioConvenio?: string;
   debitoConta: string;
   debitoEmprestimo: string;
   debitoCartao: string;
@@ -411,6 +413,25 @@ export async function gerarPdfDemissao(data: GerarPdfDemissaoData) {
       width: contentW / 2,
     },
   ]);
+
+  if (data.possuiConvenioOdontologico === "Sim") {
+    let situacaoConvenio = "Não";
+
+    if (data.inativarConvenioOdontologico) {
+      situacaoConvenio =
+        data.tipoBeneficiarioConvenio === "TITULAR"
+          ? "Sim - titular e dependentes vinculados"
+          : "Sim - benefício deste associado";
+    }
+
+    drawFieldsRow([
+      {
+        label: "Inativacao do convenio nesta demissao",
+        value: situacaoConvenio,
+        width: contentW,
+      },
+    ]);
+  }
 
   if (data.tipoFormulario === "CREDOR") {
     drawSectionHeader("Dados bancarios e devolucao");

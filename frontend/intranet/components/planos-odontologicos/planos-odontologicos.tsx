@@ -113,6 +113,12 @@ export function PlanosOdontologicos({
     const [busca, setBusca] =
         useState("");
 
+    const [somenteAtivos, setSomenteAtivos] =
+        useState(false);
+
+    const [somenteInativos, setSomenteInativos] =
+        useState(false);
+
     const [
         historico,
         setHistorico,
@@ -170,43 +176,57 @@ export function PlanosOdontologicos({
         carregarPlanos();
     }, []);
 
-    const planosFiltrados =
-        useMemo(() => {
-            const termo = busca
-                .trim()
-                .toLowerCase();
+    const planosFiltrados = useMemo(() => {
+        const termo = busca
+            .trim()
+            .toLowerCase();
 
-            if (!termo) {
-                return planos;
+        return planos.filter((item) => {
+            // Filtro por status
+            if (
+                somenteAtivos &&
+                item.SN_PLANO_ATIVO !== 1
+            ) {
+                return false;
             }
 
-            return planos.filter(
-                (item) => {
-                    const plano = String(
-                        item.NM_PLANO || ""
-                    ).toLowerCase();
+            if (
+                somenteInativos &&
+                item.SN_PLANO_ATIVO === 1
+            ) {
+                return false;
+            }
 
-                    const operadora = String(
-                        item.NM_OPERADORA || ""
-                    ).toLowerCase();
+            // Se não houver pesquisa, mantém o item
+            if (!termo) {
+                return true;
+            }
 
-                    const cobranca =
-                        formatarCobranca(
-                            item.TP_COBRANCA
-                        ).toLowerCase();
+            const plano = String(
+                item.NM_PLANO || ""
+            ).toLowerCase();
 
-                    return (
-                        plano.includes(termo) ||
-                        operadora.includes(
-                            termo
-                        ) ||
-                        cobranca.includes(
-                            termo
-                        )
-                    );
-                }
+            const operadora = String(
+                item.NM_OPERADORA || ""
+            ).toLowerCase();
+
+            const cobranca =
+                formatarCobranca(
+                    item.TP_COBRANCA
+                ).toLowerCase();
+
+            return (
+                plano.includes(termo) ||
+                operadora.includes(termo) ||
+                cobranca.includes(termo)
             );
-        }, [planos, busca]);
+        });
+    }, [
+        planos,
+        busca,
+        somenteAtivos,
+        somenteInativos,
+    ]);
 
     async function handleHistorico(
         item: PlanoGestaoOdonto
@@ -305,20 +325,72 @@ export function PlanosOdontologicos({
                         </div>
                     )}
 
-                    <div className="relative">
-                        <Search
-                            size={17}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                        />
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                        <div className="relative flex-1">
+                            <Search
+                                size={17}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                            />
 
-                        <input
-                            value={busca}
-                            onChange={(e) =>
-                                setBusca(e.target.value)
-                            }
-                            placeholder="Pesquisar por operadora, plano ou cobrança"
-                            className="h-10 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/15"
-                        />
+                            <input
+                                value={busca}
+                                onChange={(e) =>
+                                    setBusca(e.target.value)
+                                }
+                                placeholder="Pesquisar por operadora, plano ou cobrança"
+                                className="h-10 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 text-sm text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/15"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <label className="flex h-10 cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
+                                <input
+                                    type="checkbox"
+                                    checked={somenteAtivos}
+                                    onChange={(e) => {
+                                        const checked =
+                                            e.target.checked;
+
+                                        setSomenteAtivos(
+                                            checked
+                                        );
+
+                                        if (checked) {
+                                            setSomenteInativos(
+                                                false
+                                            );
+                                        }
+                                    }}
+                                    className="h-4 w-4 cursor-pointer accent-blue-600"
+                                />
+
+                                Somente ativos
+                            </label>
+
+                            <label className="flex h-10 cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
+                                <input
+                                    type="checkbox"
+                                    checked={somenteInativos}
+                                    onChange={(e) => {
+                                        const checked =
+                                            e.target.checked;
+
+                                        setSomenteInativos(
+                                            checked
+                                        );
+
+                                        if (checked) {
+                                            setSomenteAtivos(
+                                                false
+                                            );
+                                        }
+                                    }}
+                                    className="h-4 w-4 cursor-pointer accent-blue-600"
+                                />
+
+                                Somente inativos
+                            </label>
+                        </div>
                     </div>
 
                     <div className="overflow-x-auto rounded-2xl border border-gray-200">

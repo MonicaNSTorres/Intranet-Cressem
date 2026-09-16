@@ -110,6 +110,97 @@ export interface InativarBeneficiarioPayload {
     observacao?: string | null;
 }
 
+export interface FiltrosRelatorioOdonto {
+    idEmpresa?: number;
+    cpf?: string;
+    idTipoBeneficiario?: number;
+    idOperadora?: number;
+    idPlano?: number;
+    valor?: number;
+    status?: "ATIVO" | "INATIVO";
+    tipoCobranca?:
+        | "POR_PESSOA"
+        | "POR_PLANO";
+
+    matricula?: string;
+    titular?: string;
+    dataInclusaoDe?: string;
+    dataInclusaoAte?: string;
+    dataExclusaoDe?: string;
+    dataExclusaoAte?: string;
+    possuiContaCapital?:
+        | "SIM"
+        | "NAO";
+
+    integralizacaoIndeterminada?:
+        | "S"
+        | "N";
+}
+
+export interface InformeCompetencia {
+    MES_REFERENCIA: number;
+    NM_ARQUIVO: string;
+    NR_TOTAL_REGISTROS: number;
+    SN_PROCESSADO: number;
+}
+
+export interface InformeDependente {
+    cpf: string;
+    nome: string;
+    parentesco?: string | null;
+    valorAnual: number;
+    mesesPresente: number;
+}
+
+export interface InformeFamilia {
+    matricula?: string | null;
+    cpfTitular: string;
+    nomeTitular: string;
+    valorProprioTitular: number;
+    valorTotalFamilia: number;
+    mesesTitular: number;
+    dependentes: InformeDependente[];
+}
+
+export interface InformeConsolidadoResponse {
+    anoCalendario: number;
+    totalCompetencias: number;
+    competencias: InformeCompetencia[];
+    resumo: {
+        totalFamilias: number;
+        totalFamiliasComTitular: number;
+        totalFamiliasSemTitular: number;
+        totalPessoas: number;
+    };
+    familias: InformeFamilia[];
+    inconsistencias: {
+        familiasSemTitular: any[];
+    };
+}
+
+export interface HistoricoEmpresaBeneficiario {
+    ID_HISTORICO: number;
+    ID_BENEFICIARIO: number;
+    ID_EMPRESA: number;
+    NM_EMPRESA: string;
+    NR_CNPJ?: string | null;
+    DT_INICIO: string;
+    DT_FIM?: string | null;
+    NM_USUARIO_CRIACAO?: string | null;
+    LOGIN_USUARIO_CRIACAO?: string | null;
+    DT_CRIACAO: string;
+    STATUS_VINCULO: "ATUAL" | "ENCERRADO";
+}
+
+export interface HistoricoEmpresasBeneficiarioResponse {
+    beneficiario: {
+        ID_BENEFICIARIO: number;
+        NM_BENEFICIARIO: string;
+        NR_CPF: string;
+    };
+    historico: HistoricoEmpresaBeneficiario[];
+}
+
 export async function listarTiposBeneficiario(): Promise<
     TipoBeneficiario[]
 > {
@@ -164,13 +255,15 @@ export async function buscarValorVigentePlano(
 }
 
 export async function listarBeneficiarios(
-    somenteAtivos = true
+    somenteAtivos = false,
+    somenteInativos = false
 ): Promise<BeneficiarioOdonto[]> {
     const { data } = await api.get<BeneficiarioOdonto[]>(
         "/v1/convenio-odontologico/beneficiarios",
         {
             params: {
                 somenteAtivos: somenteAtivos ? 1 : 0,
+                somenteInativos: somenteInativos ? 1 : 0,
             },
         }
     );
@@ -252,4 +345,92 @@ export async function criarBeneficiario(
     );
 
     return data;
+}
+
+export async function buscarRelatorioBeneficiarios(
+    filtros: FiltrosRelatorioOdonto
+): Promise<BeneficiarioOdonto[]> {
+    const { data } = await api.get<
+        BeneficiarioOdonto[]
+    >(
+        "/v1/convenio-odontologico/relatorios/beneficiarios",
+        {
+            params: filtros,
+        }
+    );
+
+    return Array.isArray(data)
+        ? data
+        : [];
+}
+
+export async function buscarInformeConsolidado(
+    ano: number
+): Promise<InformeConsolidadoResponse> {
+    const { data } =
+        await api.get<InformeConsolidadoResponse>(
+            "/v1/convenio-odontologico/informes/consolidado",
+            {
+                params: {
+                    ano,
+                },
+            }
+        );
+
+    return data;
+}
+
+export async function listarImportacoesInforme(
+    ano: number
+) {
+    const { data } = await api.get(
+        "/v1/convenio-odontologico/informes/importacoes",
+        {
+            params: {
+                ano,
+            },
+        }
+    );
+
+    return Array.isArray(data)
+        ? data
+        : [];
+}
+
+export async function importarInformeOdontologico(
+    anoCalendario: number,
+    mesReferencia: number,
+    arquivo: File
+) {
+    const { data } = await api.postForm(
+        "/v1/convenio-odontologico/informes/importar",
+        {
+            anoCalendario: String(anoCalendario),
+            mesReferencia: String(mesReferencia),
+            file: arquivo,
+        },
+        {
+            headers: {
+                ...getAuditoriaHeaders(),
+            },
+        }
+    );
+
+    return data;
+}
+
+export async function listarHistoricoEmpresasBeneficiario(
+    id: number
+): Promise<HistoricoEmpresasBeneficiarioResponse> {
+    const { data } =
+        await api.get<HistoricoEmpresasBeneficiarioResponse>(
+            `/v1/convenio-odontologico/beneficiarios/${id}/historico-empresas`
+        );
+
+    return {
+        beneficiario: data.beneficiario,
+        historico: Array.isArray(data.historico)
+            ? data.historico
+            : [],
+    };
 }

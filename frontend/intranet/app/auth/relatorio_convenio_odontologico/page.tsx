@@ -1,25 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FaTooth } from "react-icons/fa";
-import { useRouter } from "next/navigation";
-
+import { FaFileAlt } from "react-icons/fa";
 import BackButton from "@/components/back-button/back-button";
-import { ConvenioOdontologicoForm } from "@/components/convenio-odontologico-form/convenio-odontologico-form";
-
+import RelatorioConvenioOdontologico from "@/components/relatorio-convenio-odontologico/relatorio-convenio-odontologico";
 import {
   canAccess,
   PAGE_ACCESS,
   type AuthUserLike,
 } from "@/lib/access-control";
-
 import { getMeAdUser } from "@/services/auth.service";
 
-export default function ConvenioOdontologicoPage() {
+export default function RelatoriosConvenioOdontologicoPage() {
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
-
-  const router = useRouter();
 
   useEffect(() => {
     async function validarAcesso() {
@@ -42,10 +36,6 @@ export default function ConvenioOdontologicoPage() {
 
     validarAcesso();
   }, []);
-
-  const handlePlanosOdontologicos = () => {
-    router.push("/auth/planos_odontologicos");
-  };
 
   if (loading) {
     return (
@@ -75,46 +65,25 @@ export default function ConvenioOdontologicoPage() {
 
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-2xl bg-[#C7D300] border-[#C7D300] border flex items-center justify-center text-emerald-700 shadow">
-              <FaTooth size={16} />
+              <FaFileAlt size={16} />
             </div>
 
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold text-gray-900 truncate">
-                Convênio Odontológico
+                Relatórios do Convênio Odontológico
               </h1>
 
               <p className="text-sm text-gray-600 mt-1">
-                Gestão dos beneficiários e planos odontológicos.
+                Consulte beneficiários por empresa, CPF, plano, valor,
+                operadora e status.
               </p>
             </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() =>
-              router.push(
-                "/auth/relatorio_convenio_odontologico"
-              )
-            }
-            className="rounded-lg border border-fourth bg-fourth px-6 py-2 text-md font-semibold text-white transition hover:bg-primary hover:border-primary cursor-pointer"
-          >
-            Relatórios
-          </button>
-
-          <button
-            type="button"
-            onClick={handlePlanosOdontologicos}
-            className="rounded-lg bg-secondary px-6 py-2 text-md font-semibold text-white hover:bg-primary cursor-pointer"
-          >
-            Planos e valores
-          </button>
-        </div>
       </div>
 
       <div className="mt-6">
-        <ConvenioOdontologicoForm />
+        <RelatorioConvenioOdontologico />
       </div>
     </main>
   );

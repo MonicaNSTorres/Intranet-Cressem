@@ -10,7 +10,6 @@ import {
   X,
 } from "lucide-react";
 import { FaSave } from "react-icons/fa";
-
 import {
   listarBeneficiarios,
   buscarBeneficiarioPorId,
@@ -22,15 +21,15 @@ import {
   editarBeneficiario,
   criarBeneficiario,
   inativarBeneficiario,
+  listarHistoricoEmpresasBeneficiario,
+  type HistoricoEmpresaBeneficiario,
   type BeneficiarioOdonto,
   type TipoBeneficiario,
   type EmpresaOdonto,
   type Operadora,
   type PlanoOdonto,
 } from "@/services/convenio_odontologico.service";
-
 import { buscarFuncionarioPorCpf } from "@/services/associado.service";
-
 import { getMeAdUser } from "@/services/auth.service";
 
 function formatarCpf(valor?: string | null) {
@@ -135,6 +134,8 @@ export function ConvenioOdontologicoForm() {
 
   const [somenteAtivos, setSomenteAtivos] = useState(true);
 
+  const [somenteInativos, setSomenteInativos] = useState(false);
+
   const [beneficiarioEditando, setBeneficiarioEditando] =
     useState<BeneficiarioOdonto | null>(null);
 
@@ -145,7 +146,10 @@ export function ConvenioOdontologicoForm() {
     try {
       setLoading(true);
 
-      const data = await listarBeneficiarios(somenteAtivos);
+      const data = await listarBeneficiarios(
+        somenteAtivos,
+        somenteInativos
+      );
 
       setBeneficiarios(data);
     } catch (error) {
@@ -162,7 +166,7 @@ export function ConvenioOdontologicoForm() {
 
   useEffect(() => {
     carregarBeneficiarios();
-  }, [somenteAtivos]);
+  }, [somenteAtivos, somenteInativos]);
 
   const beneficiariosFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -346,19 +350,53 @@ export function ConvenioOdontologicoForm() {
               />
             </div>
 
-            <label className="flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm">
-              <input
-                type="checkbox"
-                checked={somenteAtivos}
-                onChange={(e) =>
-                  setSomenteAtivos(
-                    e.target.checked
-                  )
-                }
-              />
+            <div className="flex items-center gap-3">
+              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm">
+                <input
+                  type="checkbox"
+                  checked={somenteAtivos}
+                  onChange={(e) => {
+                    const checked =
+                      e.target.checked;
 
-              Somente ativos
-            </label>
+                    setSomenteAtivos(
+                      checked
+                    );
+
+                    if (checked) {
+                      setSomenteInativos(
+                        false
+                      );
+                    }
+                  }}
+                />
+
+                Somente ativos
+              </label>
+
+              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm">
+                <input
+                  type="checkbox"
+                  checked={somenteInativos}
+                  onChange={(e) => {
+                    const checked =
+                      e.target.checked;
+
+                    setSomenteInativos(
+                      checked
+                    );
+
+                    if (checked) {
+                      setSomenteAtivos(
+                        false
+                      );
+                    }
+                  }}
+                />
+
+                Somente inativos
+              </label>
+            </div>
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-gray-200">
@@ -678,6 +716,12 @@ function ModalNovoBeneficiario({
   const [titulares, setTitulares] =
     useState<BeneficiarioOdonto[]>([]);
 
+  const [buscaTitular, setBuscaTitular] =
+    useState("");
+
+  const [listaTitularesAberta, setListaTitularesAberta] =
+    useState(false);
+
   const [valorPlano, setValorPlano] =
     useState<number | null>(null);
 
@@ -702,6 +746,44 @@ function ModalNovoBeneficiario({
   const dependente =
     tipoSelecionado?.CD_TIPO_BENEFICIARIO ===
     "DEPENDENTE";
+
+  const titularesFiltrados = useMemo(() => {
+    const termo = buscaTitular
+      .trim()
+      .toLowerCase();
+
+    const numeros = buscaTitular.replace(
+      /\D/g,
+      ""
+    );
+
+    if (!termo) {
+      return [];
+    }
+
+    return titulares
+      .filter((item) => {
+        const nome = String(
+          item.NM_BENEFICIARIO || ""
+        ).toLowerCase();
+
+        const cpf = String(
+          item.NR_CPF || ""
+        ).replace(/\D/g, "");
+
+        const matricula = String(
+          item.NR_MATRICULA || ""
+        ).toLowerCase();
+
+        return (
+          nome.includes(termo) ||
+          matricula.includes(termo) ||
+          (numeros !== "" &&
+            cpf.includes(numeros))
+        );
+      })
+      .slice(0, 8);
+  }, [titulares, buscaTitular]);
 
   useEffect(() => {
     if (!open) return;
@@ -741,6 +823,9 @@ function ModalNovoBeneficiario({
 
         setPlanos([]);
         setValorPlano(null);
+
+        setBuscaTitular("");
+        setListaTitularesAberta(false);
 
         setForm(
           initialNovoBeneficiarioForm
@@ -1140,9 +1225,15 @@ function ModalNovoBeneficiario({
                     Dados do beneficiário
                   </h3>
 
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
                     Informe os dados básicos da pessoa que será incluída no
                     convênio odontológico.
+                  </p>
+
+                  <p className="mt-1 text-sm leading-5 text-fourth">
+                    Ao informar o CPF, os dados serão preenchidos automaticamente
+                    quando disponíveis. Caso não sejam encontrados, preencha os
+                    campos manualmente para continuar o cadastro.
                   </p>
                 </div>
 
@@ -1312,7 +1403,7 @@ function ModalNovoBeneficiario({
                     Plano e vínculo
                   </h3>
 
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
                     Escolha a operadora e o plano. O valor vigente será
                     carregado automaticamente.
                   </p>
@@ -1396,44 +1487,144 @@ function ModalNovoBeneficiario({
 
                   {dependente && (
                     <div className="md:col-span-2 xl:col-span-3">
-                      <SelectField
-                        label="Titular responsável *"
-                        value={
-                          form.idTitular
-                        }
-                        onChange={(value) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            idTitular:
-                              value,
-                          }))
-                        }
-                      >
-                        <option value="">
-                          Selecione o titular responsável
-                        </option>
+                      <label className="mb-1 block text-xs font-semibold text-slate-600">
+                        Titular responsável *
+                      </label>
 
-                        {titulares.map(
-                          (item) => (
-                            <option
-                              key={
-                                item.ID_BENEFICIARIO
-                              }
-                              value={
-                                item.ID_BENEFICIARIO
-                              }
-                            >
-                              {
-                                item.NM_BENEFICIARIO
-                              }{" "}
-                              -{" "}
-                              {formatarCpf(
-                                item.NR_CPF
-                              )}
-                            </option>
-                          )
+                      <div className="relative">
+                        <Search
+                          size={17}
+                          className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                          type="text"
+                          value={buscaTitular}
+                          onChange={(e) => {
+                            setBuscaTitular(
+                              e.target.value
+                            );
+
+                            setListaTitularesAberta(
+                              true
+                            );
+
+                            setForm((prev) => ({
+                              ...prev,
+                              idTitular: "",
+                            }));
+                          }}
+                          onFocus={() =>
+                            setListaTitularesAberta(
+                              true
+                            )
+                          }
+                          placeholder="Digite o nome, CPF ou matrícula do titular"
+                          autoComplete="off"
+                          className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-10 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                        />
+
+                        {buscaTitular && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBuscaTitular("");
+                              setListaTitularesAberta(
+                                false
+                              );
+
+                              setForm((prev) => ({
+                                ...prev,
+                                idTitular: "",
+                              }));
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                            title="Limpar titular"
+                          >
+                            <X size={16} />
+                          </button>
                         )}
-                      </SelectField>
+
+                        {listaTitularesAberta &&
+                          buscaTitular.trim() !== "" && (
+                            <div className="absolute left-0 right-0 top-full z-30 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+                              {titularesFiltrados.length >
+                                0 ? (
+                                titularesFiltrados.map(
+                                  (item) => (
+                                    <button
+                                      key={
+                                        item.ID_BENEFICIARIO
+                                      }
+                                      type="button"
+                                      onClick={() => {
+                                        setForm(
+                                          (prev) => ({
+                                            ...prev,
+                                            idTitular:
+                                              String(
+                                                item.ID_BENEFICIARIO
+                                              ),
+                                          })
+                                        );
+
+                                        setBuscaTitular(
+                                          item.NM_BENEFICIARIO ||
+                                          ""
+                                        );
+
+                                        setListaTitularesAberta(
+                                          false
+                                        );
+                                      }}
+                                      className="flex w-full cursor-pointer flex-col rounded-xl px-3 py-3 text-left transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+                                    >
+                                      <span className="text-sm font-semibold text-slate-800">
+                                        {item.NM_BENEFICIARIO}
+                                      </span>
+
+                                      <span className="mt-1 text-xs text-slate-500">
+                                        CPF:{" "}
+                                        {formatarCpf(
+                                          item.NR_CPF
+                                        )}
+
+                                        {item.NR_MATRICULA
+                                          ? ` • Matrícula: ${item.NR_MATRICULA}`
+                                          : ""}
+                                      </span>
+                                    </button>
+                                  )
+                                )
+                              ) : (
+                                <div className="px-3 py-5 text-center">
+                                  <p className="text-sm font-medium text-slate-600">
+                                    Nenhum titular encontrado
+                                  </p>
+
+                                  <p className="mt-1 text-xs text-slate-400">
+                                    Tente pesquisar pelo nome,
+                                    CPF ou matrícula.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                      </div>
+
+                      {form.idTitular && (
+                        <p className="mt-2 text-xs font-medium text-emerald-600">
+                          Titular selecionado.
+                        </p>
+                      )}
+
+                      {!form.idTitular &&
+                        buscaTitular.trim() === "" && (
+                          <p className="mt-2 text-xs text-slate-500">
+                            Pesquise e selecione o titular
+                            responsável pelo dependente.
+                          </p>
+                        )}
                     </div>
                   )}
                 </div>
@@ -1463,7 +1654,7 @@ function ModalNovoBeneficiario({
                 </div>
 
                 <div className="mt-4">
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">
+                  <label className="mb-1 block text-sm font-semibold text-slate-600">
                     Observação
                   </label>
 
@@ -1945,7 +2136,7 @@ function ModalEditarBeneficiario({
                     Dados do beneficiário
                   </h3>
 
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
                     Informações principais utilizadas para identificação do
                     beneficiário no convênio odontológico.
                   </p>
@@ -2051,7 +2242,7 @@ function ModalEditarBeneficiario({
                     Plano e vínculo
                   </h3>
 
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
                     Selecione a operadora e o plano. O valor vigente será
                     carregado automaticamente.
                   </p>
@@ -2147,9 +2338,9 @@ function ModalEditarBeneficiario({
                 )}
               </div>
 
-              <div className="rounded-3xl border border-blue-200 bg-blue-50/60 p-5">
+              <div className="rounded-3xl border border-fourth bg-blue-50/60 p-5">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-600">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-fourth">
                     Integração
                   </p>
 
@@ -2157,7 +2348,7 @@ function ModalEditarBeneficiario({
                     Conta Capital
                   </h3>
 
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
                     Dados consultados automaticamente na Conta Capital. Estas
                     informações não podem ser alteradas por esta tela.
                   </p>
@@ -2182,21 +2373,21 @@ function ModalEditarBeneficiario({
                   />
 
                   <ReadOnlyField
-                    label="Matrícula Conta Capital"
+                    label="Data de matrícula"
                     value={formatarData(
                       beneficiario.DT_MATRICULA_CONTA_CAPITAL
                     )}
                   />
 
                   <ReadOnlyField
-                    label="Saída Conta Capital"
+                    label="Data de saída"
                     value={formatarData(
                       beneficiario.DT_SAIDA_CONTA_CAPITAL
                     )}
                   />
 
                   <ReadOnlyField
-                    label="Posição"
+                    label="Data da posição"
                     value={formatarData(
                       beneficiario.DT_MOVIMENTO_CONTA_CAPITAL
                     )}
@@ -2216,7 +2407,7 @@ function ModalEditarBeneficiario({
                 </div>
 
                 <div className="mt-4">
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">
+                  <label className="mb-1 block text-sm font-semibold text-slate-600">
                     Observação
                   </label>
 
@@ -2284,6 +2475,55 @@ function ModalVisualizarBeneficiario({
   beneficiario: BeneficiarioOdonto | null;
   onClose: () => void;
 }) {
+  const [historicoEmpresas, setHistoricoEmpresas] = useState<
+    HistoricoEmpresaBeneficiario[]
+  >([]);
+
+  const [loadingHistoricoEmpresas, setLoadingHistoricoEmpresas] =
+    useState(false);
+
+  const [erroHistoricoEmpresas, setErroHistoricoEmpresas] =
+    useState<string | null>(null);
+
+  useEffect(() => {
+    if (!beneficiario) {
+      setHistoricoEmpresas([]);
+      setErroHistoricoEmpresas(null);
+      return;
+    }
+
+    const idBeneficiario = beneficiario.ID_BENEFICIARIO;
+
+    async function carregarHistoricoEmpresas() {
+      try {
+        setLoadingHistoricoEmpresas(true);
+        setErroHistoricoEmpresas(null);
+
+        const data =
+          await listarHistoricoEmpresasBeneficiario(
+            idBeneficiario
+          );
+
+        setHistoricoEmpresas(data.historico);
+      } catch (error) {
+        console.error(
+          "Erro ao carregar histórico de empresas:",
+          error
+        );
+
+        setHistoricoEmpresas([]);
+
+        setErroHistoricoEmpresas(
+          "Não foi possível carregar o histórico de empresas."
+        );
+      } finally {
+        setLoadingHistoricoEmpresas(false);
+      }
+    }
+
+    carregarHistoricoEmpresas();
+  }, [beneficiario]);
+
   if (!beneficiario) return null;
 
   return (
@@ -2327,7 +2567,7 @@ function ModalVisualizarBeneficiario({
                 Dados do beneficiário
               </h3>
 
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-sm leading-5 text-slate-500">
                 Informações principais do beneficiário no convênio odontológico.
               </p>
             </div>
@@ -2393,7 +2633,7 @@ function ModalVisualizarBeneficiario({
                 Plano odontológico
               </h3>
 
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-sm leading-5 text-slate-500">
                 Dados do plano atualmente vinculado ao beneficiário.
               </p>
             </div>
@@ -2437,9 +2677,114 @@ function ModalVisualizarBeneficiario({
             </div>
           </div>
 
-          <div className="rounded-3xl border border-blue-200 bg-blue-50/60 p-5">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-600">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                Histórico
+              </p>
+
+              <h3 className="mt-1 text-base font-semibold text-slate-900">
+                Histórico de empresas
+              </h3>
+
+              <p className="mt-1 text-sm leading-5 text-slate-500">
+                Consulte as empresas às quais o beneficiário esteve
+                vinculado ao longo do tempo.
+              </p>
+            </div>
+
+            <div className="mt-5 overflow-x-auto rounded-2xl border border-slate-200">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-50">
+                  <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-4 py-3">
+                      Empresa
+                    </th>
+
+                    <th className="px-4 py-3">
+                      Início
+                    </th>
+
+                    <th className="px-4 py-3">
+                      Fim
+                    </th>
+
+                    <th className="px-4 py-3">
+                      Situação
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-100">
+                  {loadingHistoricoEmpresas ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-8 text-center text-sm text-slate-500"
+                      >
+                        Carregando histórico de empresas...
+                      </td>
+                    </tr>
+                  ) : erroHistoricoEmpresas ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-8 text-center text-sm text-red-600"
+                      >
+                        {erroHistoricoEmpresas}
+                      </td>
+                    </tr>
+                  ) : historicoEmpresas.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-8 text-center text-sm text-slate-500"
+                      >
+                        Nenhum histórico de empresa encontrado.
+                      </td>
+                    </tr>
+                  ) : (
+                    historicoEmpresas.map((item) => (
+                      <tr
+                        key={item.ID_HISTORICO}
+                        className="bg-white"
+                      >
+                        <td className="px-4 py-3 font-medium text-slate-800">
+                          {item.NM_EMPRESA || "—"}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                          {formatarData(item.DT_INICIO)}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                          {item.DT_FIM
+                            ? formatarData(item.DT_FIM)
+                            : "—"}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-3">
+                          {item.STATUS_VINCULO === "ATUAL" ? (
+                            <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                              Atual
+                            </span>
+                          ) : (
+                            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                              Encerrado
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-fourth bg-blue-50/60 p-5">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-fourth">
                 Integração
               </p>
 
@@ -2447,7 +2792,7 @@ function ModalVisualizarBeneficiario({
                 Conta Capital
               </h3>
 
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-sm leading-5 text-slate-500">
                 Informações consultadas automaticamente na Conta Capital.
               </p>
             </div>
@@ -2471,21 +2816,21 @@ function ModalVisualizarBeneficiario({
               />
 
               <ReadOnlyField
-                label="Matrícula Conta Capital"
+                label="Entrada na Conta Capital"
                 value={formatarData(
                   beneficiario.DT_MATRICULA_CONTA_CAPITAL
                 )}
               />
 
               <ReadOnlyField
-                label="Saída Conta Capital"
+                label="Saída da Conta Capital"
                 value={formatarData(
                   beneficiario.DT_SAIDA_CONTA_CAPITAL
                 )}
               />
 
               <ReadOnlyField
-                label="Posição"
+                label="Última posição"
                 value={formatarData(
                   beneficiario.DT_MOVIMENTO_CONTA_CAPITAL
                 )}

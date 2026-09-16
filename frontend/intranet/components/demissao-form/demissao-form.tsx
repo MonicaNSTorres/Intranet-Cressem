@@ -176,20 +176,30 @@ export function DemissaoForm() {
     | "INATIVO"
     | "NAO_ENCONTRADO";
 
+    idBeneficiario?: number;
+
     operadora?: string;
     plano?: string;
     tipoBeneficiario?: string;
     nomeTipoBeneficiario?: string;
+
     tipoCobranca?:
     | "POR_PESSOA"
     | "POR_PLANO";
 
     valorMensalidade?: number | null;
+
     dataInclusaoPlano?: string | null;
     dataExclusaoPlano?: string | null;
   } | null>(null);
   const [loadingGerar, setLoadingGerar] = useState(false);
   const [nomeAtendente, setNomeAtendente] = useState("Atendente");
+  const [loginAtendente, setLoginAtendente] =
+    useState("");
+  const [
+    inativarConvenioAoSalvar,
+    setInativarConvenioAoSalvar,
+  ] = useState(false);
 
   useEffect(() => {
     async function carregarDados() {
@@ -213,10 +223,24 @@ export function DemissaoForm() {
     async function carregarAtendente() {
       try {
         const me = await getMeAdUser();
-        const nome = String(me?.nome_completo || me?.username || "").trim();
-        if (nome) setNomeAtendente(nome);
+
+        const nome = String(
+          me?.nome_completo ||
+          me?.username ||
+          ""
+        ).trim();
+
+        const login = String(
+          me?.username || ""
+        ).trim();
+
+        if (nome) {
+          setNomeAtendente(nome);
+        }
+
+        setLoginAtendente(login);
       } catch {
-        // Mantém fallback.
+        //mantem fallback.
       }
     }
 
@@ -312,6 +336,7 @@ export function DemissaoForm() {
     setReciboDebitoConta("");
     setPossuiConvenio("Não");
     setValorConvenio("");
+    setInativarConvenioAoSalvar(false);
     setErro("");
     setInfo("");
     setConvenioOdontologico(null);
@@ -529,6 +554,8 @@ export function DemissaoForm() {
       setErro("");
       setInfo("");
 
+      setInativarConvenioAoSalvar(false);
+
       const data = await buscarAssociadoDemissaoPorCpf(cpf);
 
       if (!data) {
@@ -592,6 +619,11 @@ export function DemissaoForm() {
 
       saldoCapital: fmtBRL(saldoCapitalNum),
       possuiConvenioOdontologico: possuiConvenio,
+      inativarConvenioOdontologico:
+        inativarConvenioAoSalvar,
+
+      tipoBeneficiarioConvenio:
+        convenioOdontologico?.tipoBeneficiario || "",
       debitoConta: fmtBRL(debitoContaNum),
       debitoEmprestimo: fmtBRL(debitoEmprestimoNum),
       debitoCartao: fmtBRL(debitoCartaoNum),
@@ -636,43 +668,105 @@ export function DemissaoForm() {
       setErro("");
       setInfo("");
 
-      const valido = validarAntesDeGerar();
+      const valido =
+        validarAntesDeGerar();
+
       if (!valido) return;
 
       setLoadingGerar(true);
-      let falhaConvenio = "";
 
-      if (possuiConvenio === "Sim") {
-        try {
-          await desativarConvenioDemissao(cpf, nomeAtendente || "Atendente");
-        } catch (error: any) {
-          falhaConvenio =
-            error?.response?.data?.error ||
-            error?.response?.data?.details ||
-            error?.message ||
-            "Falha ao desativar convênio odontológico.";
-          console.error("Falha ao desativar convênio na demissão:", error);
-        }
+      const deveInativarConvenio =
+        convenioOdontologico?.situacao ===
+        "ATIVO" &&
+        inativarConvenioAoSalvar;
+
+      if (
+        deveInativarConvenio &&
+        !convenioOdontologico
+          ?.idBeneficiario
+      ) {
+        setErro(
+          "Não foi possível identificar o beneficiário do Convênio Odontológico para realizar a inativação."
+        );
+
+        return;
       }
 
       await gerarPdfAtual();
 
-      if (falhaConvenio) {
-        setInfo(`PDF gerado com sucesso. Atenção: ${falhaConvenio}`);
-      } else {
-        setInfo(
-          possuiConvenio === "Sim"
-            ? "PDF gerado e convênio odontológico desativado com envio de e-mail."
-            : "PDF gerado com sucesso."
-        );
+      let falhaConvenio = "";
+
+      if (
+        deveInativarConvenio &&
+        convenioOdontologico
+          ?.idBeneficiario
+      ) {
+        try {
+          await desativarConvenioDemissao(
+            convenioOdontologico.idBeneficiario,
+            {
+              nomeUsuario:
+                nomeAtendente ||
+                "Atendente",
+
+              loginUsuario:
+                loginAtendente || "",
+
+              observacao:
+                "Benefício odontológico inativado através do Formulário de Demissão.",
+            }
+          );
+
+          setInativarConvenioAoSalvar(
+            false
+          );
+        } catch (error: any) {
+          falhaConvenio =
+            error?.response?.data
+              ?.error ||
+            error?.response?.data
+              ?.details ||
+            error?.message ||
+            "Falha ao inativar o benefício odontológico.";
+
+          console.error(
+            "Falha ao inativar convênio na demissão:",
+            error
+          );
+        }
       }
+
+      if (falhaConvenio) {
+        setInfo(
+          `PDF gerado com sucesso. Atenção: ${falhaConvenio}`
+        );
+
+        return;
+      }
+
+      if (deveInativarConvenio) {
+        setInfo(
+          "PDF gerado e benefício odontológico inativado com sucesso."
+        );
+
+        return;
+      }
+
+      setInfo(
+        "PDF gerado com sucesso. O benefício odontológico não foi alterado."
+      );
     } catch (error: any) {
-      console.error("Erro ao gerar PDF da demissão:", error);
+      console.error(
+        "Erro ao gerar PDF da demissão:",
+        error
+      );
+
       setErro(
         error?.response?.data?.error ||
-        error?.response?.data?.detail ||
+        error?.response?.data
+          ?.detail ||
         error?.message ||
-        "Erro ao gerar PDF ou desativar convênio."
+        "Erro ao gerar PDF da demissão."
       );
     } finally {
       setLoadingGerar(false);
@@ -796,100 +890,131 @@ export function DemissaoForm() {
 
         {convenioOdontologico?.situacao ===
           "ATIVO" && (
-            <div className="mt-4 overflow-hidden rounded-2xl border border-amber-300 bg-amber-50 shadow-sm">
-              <div className="flex gap-4 border-l-[7px] border-amber-500 p-5">
+            <>
+              <div className="mt-4 overflow-hidden rounded-2xl border border-amber-300 bg-amber-50 shadow-sm">
+                <div className="flex gap-4 border-l-[7px] border-amber-500 p-5">
 
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-                  <FaExclamationTriangle
-                    size={23}
-                  />
-                </div>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                    <FaExclamationTriangle
+                      size={23}
+                    />
+                  </div>
 
-                <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1">
 
-                  <p className="text-base font-extrabold uppercase tracking-wide text-amber-800">
-                    Atenção - Benefício odontológico ativo
-                  </p>
+                    <p className="text-base font-extrabold uppercase tracking-wide text-amber-800">
+                      Atenção - Benefício odontológico ativo
+                    </p>
 
-                  <p className="mt-1 text-lg font-medium text-amber-900">
-                    Esta pessoa possui convênio odontológico ativo.
-                    Os dados abaixo foram preenchidos automaticamente.
-                  </p>
+                    <p className="mt-1 text-lg font-medium text-amber-900">
+                      Esta pessoa possui convênio odontológico ativo.
+                      Os dados abaixo foram preenchidos automaticamente.
+                    </p>
 
-                  <div className="mt-4 rounded-2xl border border-amber-200 bg-white/80 p-4">
+                    <div className="mt-4 rounded-2xl border border-amber-200 bg-white/80 p-4">
 
-                    <h3 className="text-lg font-bold text-slate-900">
-                      {convenioOdontologico.operadora ||
-                        "Operadora não informada"}
+                      <h3 className="text-lg font-bold text-slate-900">
+                        {convenioOdontologico.operadora ||
+                          "Operadora não informada"}
 
-                      {convenioOdontologico.plano
-                        ? ` - ${convenioOdontologico.plano}`
-                        : ""}
-                    </h3>
+                        {convenioOdontologico.plano
+                          ? ` - ${convenioOdontologico.plano}`
+                          : ""}
+                      </h3>
 
-                    <div className="mt-3 flex flex-wrap gap-x-8 gap-y-3">
+                      <div className="mt-3 flex flex-wrap gap-x-8 gap-y-3">
 
-                      {(convenioOdontologico
-                        .nomeTipoBeneficiario ||
-                        convenioOdontologico
-                          .tipoBeneficiario) && (
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                              Beneficiário
-                            </p>
+                        {(convenioOdontologico
+                          .nomeTipoBeneficiario ||
+                          convenioOdontologico
+                            .tipoBeneficiario) && (
+                            <div>
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                Beneficiário
+                              </p>
 
-                            <p className="text-md font-bold text-slate-900">
-                              {convenioOdontologico
-                                .nomeTipoBeneficiario ||
-                                convenioOdontologico
-                                  .tipoBeneficiario}
-                            </p>
-                          </div>
-                        )}
-
-                      {convenioOdontologico
-                        .tipoCobranca && (
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                              Cobrança
-                            </p>
-
-                            <p className="text-md font-bold text-slate-900">
-                              {convenioOdontologico
-                                .tipoCobranca ===
-                                "POR_PESSOA"
-                                ? "Por pessoa"
-                                : "Por plano"}
-                            </p>
-                          </div>
-                        )}
-
-                      {convenioOdontologico
-                        .valorMensalidade !==
-                        null &&
-                        convenioOdontologico
-                          .valorMensalidade !==
-                        undefined && (
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                              Valor vigente
-                            </p>
-
-                            <p className="text-md font-extrabold text-amber-800">
-                              {fmtBRL(
-                                Number(
+                              <p className="text-md font-bold text-slate-900">
+                                {convenioOdontologico
+                                  .nomeTipoBeneficiario ||
                                   convenioOdontologico
-                                    .valorMensalidade
-                                )
-                              )}
-                            </p>
-                          </div>
-                        )}
+                                    .tipoBeneficiario}
+                              </p>
+                            </div>
+                          )}
+
+                        {convenioOdontologico
+                          .tipoCobranca && (
+                            <div>
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                Cobrança
+                              </p>
+
+                              <p className="text-md font-bold text-slate-900">
+                                {convenioOdontologico
+                                  .tipoCobranca ===
+                                  "POR_PESSOA"
+                                  ? "Por pessoa"
+                                  : "Por plano"}
+                              </p>
+                            </div>
+                          )}
+
+                        {convenioOdontologico
+                          .valorMensalidade !==
+                          null &&
+                          convenioOdontologico
+                            .valorMensalidade !==
+                          undefined && (
+                            <div>
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                Valor vigente
+                              </p>
+
+                              <p className="text-md font-extrabold text-amber-800">
+                                {fmtBRL(
+                                  Number(
+                                    convenioOdontologico
+                                      .valorMensalidade
+                                  )
+                                )}
+                              </p>
+                            </div>
+                          )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+
+              <div className="mt-4">
+
+                <p className="mb-2 text-lg font-semibold text-red-700">
+                  ATENÇÃO: ao marcar esta opção, o benefício odontológico
+                  deste associado será inativado ao clicar em
+                  {" "}
+                  <strong>Salvar e imprimir</strong>.
+                  {convenioOdontologico.tipoBeneficiario ===
+                    "TITULAR" &&
+                    " Os dependentes ativos vinculados a este titular também serão inativados."}
+                </p>
+
+                <label className="flex h-10 w-fit cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-gray-200 bg-white px-3 text-md font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={inativarConvenioAoSalvar}
+                    onChange={(e) =>
+                      setInativarConvenioAoSalvar(
+                        e.target.checked
+                      )
+                    }
+                    className="h-4 w-4 cursor-pointer accent-blue-600"
+                  />
+
+                  Inativar benefício odontológico
+                </label>
+
+              </div>
+            </>
           )}
 
         {convenioOdontologico?.situacao ===
