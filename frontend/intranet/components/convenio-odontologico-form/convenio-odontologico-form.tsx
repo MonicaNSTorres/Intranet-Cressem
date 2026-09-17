@@ -334,22 +334,22 @@ export function ConvenioOdontologicoForm() {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={handleNovaEmpresa}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-secondary cursor-pointer"
-              >
-                <Building2 size={17} />
-
-                Nova empresa
-              </button>
-
-              <button
-                type="button"
                 onClick={handleNovo}
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
               >
                 <UserPlus size={17} />
 
                 Novo beneficiário
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNovaEmpresa}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-secondary cursor-pointer"
+              >
+                <Building2 size={17} />
+
+                Nova empresa
               </button>
             </div>
           </div>
