@@ -19,6 +19,12 @@ export interface EmpresaOdonto {
     NR_CNPJ?: string | null;
 }
 
+export interface CriarEmpresaOdontoPayload {
+    nomeEmpresa: string;
+    cnpj: string | null;
+    cidade: string;
+}
+
 export interface PlanoOdonto {
     ID_PLANO: number;
     ID_OPERADORA: number;
@@ -225,6 +231,20 @@ export async function listarEmpresasOdonto(): Promise<EmpresaOdonto[]> {
     );
 
     return Array.isArray(data) ? data : [];
+}
+
+export async function criarEmpresaOdonto(
+    payload: CriarEmpresaOdontoPayload
+) {
+    const { data } = await api.post(
+        "/v1/convenio-odontologico/empresas",
+        payload,
+        {
+            headers: getAuditoriaHeaders(),
+        }
+    );
+
+    return data;
 }
 
 export async function listarPlanos(

@@ -110,6 +110,18 @@ export default function ConvenioOdontologicoPage() {
           >
             Planos e valores
           </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                "/auth/informe_rendimentos_odontologico"
+              )
+            }
+            className="rounded-lg bg-third px-6 py-2 text-md font-semibold text-white hover:bg-primary cursor-pointer"
+          >
+            Informe de rendimentos
+          </button>
         </div>
       </div>
 

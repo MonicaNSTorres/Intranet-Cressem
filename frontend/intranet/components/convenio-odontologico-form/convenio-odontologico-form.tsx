@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  Building2,
   Eye,
   Pencil,
   Search,
@@ -15,6 +16,7 @@ import {
   buscarBeneficiarioPorId,
   listarTiposBeneficiario,
   listarEmpresasOdonto,
+  criarEmpresaOdonto,
   listarOperadoras,
   listarPlanos,
   buscarValorVigentePlano,
@@ -132,6 +134,9 @@ export function ConvenioOdontologicoForm() {
 
   const [modalNovoAberta, setModalNovoAberta] = useState(false);
 
+  const [modalNovaEmpresaAberta, setModalNovaEmpresaAberta] =
+    useState(false);
+
   const [somenteAtivos, setSomenteAtivos] = useState(true);
 
   const [somenteInativos, setSomenteInativos] = useState(false);
@@ -206,6 +211,10 @@ export function ConvenioOdontologicoForm() {
 
   function handleNovo() {
     setModalNovoAberta(true);
+  }
+
+  function handleNovaEmpresa() {
+    setModalNovaEmpresaAberta(true);
   }
 
   async function handleVisualizar(
@@ -322,15 +331,27 @@ export function ConvenioOdontologicoForm() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={handleNovo}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
-            >
-              <UserPlus size={17} />
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleNovaEmpresa}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-secondary cursor-pointer"
+              >
+                <Building2 size={17} />
 
-              Novo beneficiário
-            </button>
+                Nova empresa
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNovo}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary cursor-pointer"
+              >
+                <UserPlus size={17} />
+
+                Novo beneficiário
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
@@ -599,6 +620,13 @@ export function ConvenioOdontologicoForm() {
         </div>
       </div>
 
+      <ModalNovaEmpresa
+        open={modalNovaEmpresaAberta}
+        onClose={() =>
+          setModalNovaEmpresaAberta(false)
+        }
+      />
+
       <ModalEditarBeneficiario
         open={!!beneficiarioEditando}
         beneficiario={
@@ -629,6 +657,338 @@ export function ConvenioOdontologicoForm() {
         }
       />
     </>
+  );
+}
+
+function ModalNovaEmpresa({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [nomeEmpresa, setNomeEmpresa] =
+    useState("");
+
+  const [cnpj, setCnpj] =
+    useState("");
+
+  const [cidade, setCidade] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [success, setSuccess] =
+    useState<string | null>(null);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    setNomeEmpresa("");
+    setCnpj("");
+    setCidade("");
+    setSuccess(null);
+    setError(null);
+    setLoading(false);
+  }, [open]);
+
+  function formatarCnpj(
+    valor: string
+  ) {
+    const digits = valor
+      .replace(/\D/g, "")
+      .slice(0, 14);
+
+    if (digits.length <= 2) {
+      return digits;
+    }
+
+    if (digits.length <= 5) {
+      return `${digits.slice(
+        0,
+        2
+      )}.${digits.slice(2)}`;
+    }
+
+    if (digits.length <= 8) {
+      return `${digits.slice(
+        0,
+        2
+      )}.${digits.slice(
+        2,
+        5
+      )}.${digits.slice(5)}`;
+    }
+
+    if (digits.length <= 12) {
+      return `${digits.slice(
+        0,
+        2
+      )}.${digits.slice(
+        2,
+        5
+      )}.${digits.slice(
+        5,
+        8
+      )}/${digits.slice(8)}`;
+    }
+
+    return `${digits.slice(
+      0,
+      2
+    )}.${digits.slice(
+      2,
+      5
+    )}.${digits.slice(
+      5,
+      8
+    )}/${digits.slice(
+      8,
+      12
+    )}-${digits.slice(12)}`;
+  }
+
+  async function handleSubmit(
+    e: React.FormEvent
+  ) {
+    e.preventDefault();
+
+    setSuccess(null);
+    setError(null);
+
+    const nomeLimpo =
+      nomeEmpresa.trim();
+
+    const cnpjLimpo =
+      cnpj.replace(/\D/g, "");
+
+    const cidadeLimpa =
+      cidade.trim();
+
+    if (!nomeLimpo) {
+      setError(
+        "Informe o nome da empresa."
+      );
+      return;
+    }
+
+    if (
+      cnpjLimpo &&
+      cnpjLimpo.length !== 14
+    ) {
+      setError(
+        "Informe um CNPJ válido com 14 dígitos."
+      );
+      return;
+    }
+
+    if (!cidadeLimpa) {
+      setError(
+        "Informe a cidade da empresa."
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await criarEmpresaOdonto({
+        nomeEmpresa: nomeLimpo,
+        cnpj:
+          cnpjLimpo || null,
+        cidade: cidadeLimpa,
+      });
+
+      setSuccess(
+        "Empresa cadastrada com sucesso."
+      );
+
+      setTimeout(() => {
+        onClose();
+      }, 700);
+    } catch (err: any) {
+      console.error(
+        "Erro ao cadastrar empresa:",
+        err
+      );
+
+      setError(
+        err?.response?.data?.error ||
+        err?.response?.data?.details ||
+        err?.message ||
+        "Erro ao cadastrar empresa."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+        <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                Gestão de empresas
+              </p>
+
+              <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                Nova empresa
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Cadastre uma nova empresa para
+                vinculá-la aos beneficiários do
+                convênio odontológico.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:opacity-60"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5 p-6"
+        >
+          <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                Cadastro
+              </p>
+
+              <h3 className="mt-1 text-base font-semibold text-slate-900">
+                Dados da empresa
+              </h3>
+
+              <p className="mt-1 text-sm leading-5 text-slate-500">
+                Informe os dados da empresa que
+                será disponibilizada para vínculo
+                com os beneficiários.
+              </p>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <Field
+                label="Nome da empresa *"
+                value={nomeEmpresa}
+                onChange={
+                  setNomeEmpresa
+                }
+                required
+              />
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">
+                  CNPJ
+                </label>
+
+                <input
+                  type="text"
+                  value={formatarCnpj(
+                    cnpj
+                  )}
+                  onChange={(e) =>
+                    setCnpj(
+                      e.target.value.replace(
+                        /\D/g,
+                        ""
+                      )
+                    )
+                  }
+                  inputMode="numeric"
+                  maxLength={18}
+                  placeholder="00.000.000/0000-00"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">
+                  Cidade *
+                </label>
+
+                <select
+                  value={cidade}
+                  onChange={(e) =>
+                    setCidade(e.target.value)
+                  }
+                  required
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                >
+                  <option value="">
+                    Selecione
+                  </option>
+
+                  <option value="SÃO JOSÉ DOS CAMPOS">
+                    SÃO JOSÉ DOS CAMPOS
+                  </option>
+
+                  <option value="CAMPOS DO JORDÃO">
+                    CAMPOS DO JORDÃO
+                  </option>
+
+                  <option value="JACAREÍ">
+                    JACAREÍ
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {success && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+              {success}
+            </div>
+          )}
+
+          {error && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Building2 size={16} />
+
+              {loading
+                ? "Cadastrando..."
+                : "Cadastrar empresa"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -707,6 +1067,12 @@ function ModalNovoBeneficiario({
   const [empresas, setEmpresas] =
     useState<EmpresaOdonto[]>([]);
 
+  const [buscaEmpresa, setBuscaEmpresa] =
+    useState("");
+
+  const [listaEmpresasAberta, setListaEmpresasAberta] =
+    useState(false);
+
   const [operadoras, setOperadoras] =
     useState<Operadora[]>([]);
 
@@ -746,6 +1112,24 @@ function ModalNovoBeneficiario({
   const dependente =
     tipoSelecionado?.CD_TIPO_BENEFICIARIO ===
     "DEPENDENTE";
+
+  const empresasFiltradas = useMemo(() => {
+    const termo = buscaEmpresa
+      .trim()
+      .toLowerCase();
+
+    if (!termo) {
+      return empresas.slice(0, 10);
+    }
+
+    return empresas
+      .filter((item) =>
+        String(item.NM_EMPRESA || "")
+          .toLowerCase()
+          .includes(termo)
+      )
+      .slice(0, 10);
+  }, [empresas, buscaEmpresa]);
 
   const titularesFiltrados = useMemo(() => {
     const termo = buscaTitular
@@ -826,6 +1210,9 @@ function ModalNovoBeneficiario({
 
         setBuscaTitular("");
         setListaTitularesAberta(false);
+
+        setBuscaEmpresa("");
+        setListaEmpresasAberta(false);
 
         setForm(
           initialNovoBeneficiarioForm
@@ -979,7 +1366,7 @@ function ModalNovoBeneficiario({
 
     if (!form.idEmpresa) {
       setError(
-        "Selecione a empresa."
+        "Selecione uma empresa."
       );
       return;
     }
@@ -1126,9 +1513,11 @@ function ModalNovoBeneficiario({
         );
 
         if (empresaEncontrada) {
-          idEmpresaEncontrada = String(
-            empresaEncontrada.ID_EMPRESA
+          setBuscaEmpresa(
+            empresaEncontrada.NM_EMPRESA
           );
+
+          setListaEmpresasAberta(false);
         }
       }
 
@@ -1359,37 +1748,84 @@ function ModalNovoBeneficiario({
                     )}
                   </SelectField>
 
-                  <SelectField
-                    label="Empresa *"
-                    value={form.idEmpresa}
-                    onChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        idEmpresa: value,
-                      }))
-                    }
-                  >
-                    <option value="">
-                      Selecione
-                    </option>
+                  <div className="relative">
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Empresa *
+                    </label>
 
-                    {empresas.map(
-                      (item) => (
-                        <option
-                          key={
-                            item.ID_EMPRESA
-                          }
-                          value={
-                            item.ID_EMPRESA
-                          }
-                        >
-                          {
-                            item.NM_EMPRESA
-                          }
-                        </option>
-                      )
+                    <div className="relative">
+                      <Search
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+
+                      <input
+                        type="text"
+                        value={buscaEmpresa}
+                        placeholder="Pesquise a empresa"
+                        autoComplete="off"
+                        onFocus={() =>
+                          setListaEmpresasAberta(true)
+                        }
+                        onChange={(e) => {
+                          const value =
+                            e.target.value.toLocaleUpperCase("pt-BR");
+
+                          setBuscaEmpresa(value);
+                          setListaEmpresasAberta(true);
+
+                          setForm((prev) => ({
+                            ...prev,
+                            idEmpresa: "",
+                          }));
+                        }}
+                        className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                      />
+                    </div>
+
+                    {listaEmpresasAberta && (
+                      <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                        {empresasFiltradas.length > 0 ? (
+                          empresasFiltradas.map((item) => (
+                            <button
+                              key={item.ID_EMPRESA}
+                              type="button"
+                              onClick={() => {
+                                setForm((prev) => ({
+                                  ...prev,
+                                  idEmpresa: String(
+                                    item.ID_EMPRESA
+                                  ),
+                                }));
+
+                                setBuscaEmpresa(
+                                  item.NM_EMPRESA
+                                );
+
+                                setListaEmpresasAberta(false);
+                              }}
+                              className="block w-full cursor-pointer border-b border-slate-100 px-4 py-3 text-left text-sm text-slate-700 transition last:border-b-0 hover:bg-primary/5 hover:text-primary"
+                            >
+                              {item.NM_EMPRESA}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-4">
+                            <p className="text-sm text-slate-500">
+                              Nenhuma empresa encontrada.
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </SelectField>
+
+                    {form.idEmpresa && (
+                      <p className="mt-1 text-xs text-emerald-600">
+                        Empresa selecionada.
+                      </p>
+                    )}
+
+                  </div>
                 </div>
               </div>
 
@@ -1502,7 +1938,7 @@ function ModalNovoBeneficiario({
                           value={buscaTitular}
                           onChange={(e) => {
                             setBuscaTitular(
-                              e.target.value
+                              e.target.value.toLocaleUpperCase("pt-BR")
                             );
 
                             setListaTitularesAberta(
@@ -1666,7 +2102,7 @@ function ModalNovoBeneficiario({
                       setForm((prev) => ({
                         ...prev,
                         observacao:
-                          e.target.value,
+                          e.target.value.toLocaleUpperCase("pt-BR"),
                       }))
                     }
                     rows={4}
@@ -2416,7 +2852,8 @@ function ModalEditarBeneficiario({
                     onChange={(e) =>
                       setForm((prev) => ({
                         ...prev,
-                        observacao: e.target.value,
+                        observacao:
+                          e.target.value.toLocaleUpperCase("pt-BR"),
                       }))
                     }
                     rows={4}
@@ -2892,7 +3329,13 @@ function Field({
 
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) =>
+          onChange(
+            type === "text"
+              ? e.target.value.toLocaleUpperCase("pt-BR")
+              : e.target.value
+          )
+        }
         type={type}
         required={required}
         className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"

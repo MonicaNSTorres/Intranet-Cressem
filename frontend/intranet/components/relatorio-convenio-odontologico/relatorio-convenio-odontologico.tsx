@@ -1091,21 +1091,21 @@ export default function RelatorioConvenioOdontologico() {
             ];
 
             worksheet["!cols"] = [
-                { wch: 32 }, // Nome
-                { wch: 16 }, // CPF
-                { wch: 16 }, // Tipo
-                { wch: 14 }, // Matrícula
-                { wch: 38 }, // Empresa
-                { wch: 24 }, // Operadora
-                { wch: 28 }, // Plano
-                { wch: 20 }, // Cobrança
-                { wch: 14 }, // Valor
-                { wch: 12 }, // Status
-                { wch: 32 }, // Titular
-                { wch: 18 }, // Inclusão
-                { wch: 18 }, // Exclusão
-                { wch: 18 }, // Conta Capital
-                { wch: 28 }, // Integralização
+                { wch: 32 }, //nome
+                { wch: 16 }, //cpf
+                { wch: 16 }, //tipo
+                { wch: 14 }, //matricula
+                { wch: 38 }, //empresa
+                { wch: 24 }, //operadora
+                { wch: 28 }, //plano
+                { wch: 20 }, //cobranca
+                { wch: 14 }, //valor
+                { wch: 12 }, //status
+                { wch: 32 }, //titular
+                { wch: 18 }, //inclusao
+                { wch: 18 }, //exclusao
+                { wch: 18 }, //conta capital
+                { wch: 28 }, //integralizacao
             ];
 
             const linhaCabecalho =
@@ -1667,7 +1667,6 @@ export default function RelatorioConvenioOdontologico() {
                                 </p>
                             </div>
 
-                            {/* COBRANÇA */}
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-slate-600">
                                     Forma de cobrança
@@ -2033,7 +2032,6 @@ export default function RelatorioConvenioOdontologico() {
                         </div>
                     )}
 
-                    {/* BOTÕES */}
                     <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
                         <div className="text-xs leading-5 text-slate-500">
                             {quantidadeFiltros ===
@@ -2184,7 +2182,6 @@ export default function RelatorioConvenioOdontologico() {
                             </div>
                         ) : (
                             <>
-                                {/* TABELA */}
                                 <div className="overflow-x-auto rounded-2xl border border-gray-200">
                                     <table className="min-w-full text-sm">
                                         <thead className="bg-gray-50">
@@ -2387,7 +2384,6 @@ export default function RelatorioConvenioOdontologico() {
                                                                             </div>
 
                                                                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                                                                {/* MATRÍCULA */}
                                                                                 <div>
                                                                                     <p className="text-xs font-semibold text-slate-500">
                                                                                         Matrícula
@@ -2399,7 +2395,6 @@ export default function RelatorioConvenioOdontologico() {
                                                                                     </p>
                                                                                 </div>
 
-                                                                                {/* TITULAR */}
                                                                                 <div>
                                                                                     <p className="text-xs font-semibold text-slate-500">
                                                                                         Titular responsável
@@ -2414,7 +2409,6 @@ export default function RelatorioConvenioOdontologico() {
                                                                                     </p>
                                                                                 </div>
 
-                                                                                {/* CONTA CAPITAL */}
                                                                                 <div>
                                                                                     <p className="text-xs font-semibold text-slate-500">
                                                                                         Conta Capital

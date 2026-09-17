@@ -182,7 +182,6 @@ export function PlanosOdontologicos({
             .toLowerCase();
 
         return planos.filter((item) => {
-            // Filtro por status
             if (
                 somenteAtivos &&
                 item.SN_PLANO_ATIVO !== 1
@@ -197,7 +196,6 @@ export function PlanosOdontologicos({
                 return false;
             }
 
-            // Se não houver pesquisa, mantém o item
             if (!termo) {
                 return true;
             }
@@ -1441,8 +1439,6 @@ function ModalNovoPlano({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
             <div className="max-h-[94vh] w-full max-w-3xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
-
-                {/* CABEÇALHO */}
                 <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
                     <div className="flex items-start justify-between gap-4">
                         <div>
@@ -1470,25 +1466,20 @@ function ModalNovoPlano({
                     </div>
                 </div>
 
-                {/* CONTEÚDO */}
                 <div className="max-h-[78vh] space-y-5 overflow-y-auto p-6">
 
-                    {/* ERRO */}
                     {erro && (
                         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
                             {erro}
                         </div>
                     )}
 
-                    {/* DADOS DO PLANO */}
                     <div className="rounded-3xl border border-slate-200 bg-slate-50/50 p-5">
                         <p className="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-primary">
                             Dados do plano
                         </p>
 
                         <div className="grid gap-4 md:grid-cols-2">
-
-                            {/* OPERADORA */}
                             <div>
                                 <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                                     Operadora *
@@ -1548,7 +1539,7 @@ function ModalNovoPlano({
                                     }
                                     onChange={(e) =>
                                         setNomePlano(
-                                            e.target.value
+                                            e.target.value.toLocaleUpperCase("pt-BR")
                                         )
                                     }
                                     placeholder="Ex.: Uniodonto Nova Adesão"
@@ -1624,7 +1615,7 @@ function ModalNovoPlano({
                                     }
                                     onChange={(e) =>
                                         setDescricao(
-                                            e.target.value
+                                            e.target.value.toLocaleUpperCase("pt-BR")
                                         )
                                     }
                                     rows={3}
@@ -1921,8 +1912,6 @@ function ModalEditarPlano({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
             <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
-
-                {/* CABEÇALHO */}
                 <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
                     <div className="flex items-start justify-between gap-4">
                         <div>
@@ -1958,7 +1947,6 @@ function ModalEditarPlano({
                         </div>
                     )}
 
-                    {/* OPERADORA */}
                     <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
                         <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
                             Operadora
@@ -1975,7 +1963,6 @@ function ModalEditarPlano({
                         </p>
                     </div>
 
-                    {/* CAMPOS */}
                     <div className="grid gap-4 md:grid-cols-2">
 
                         <div>
@@ -1992,7 +1979,7 @@ function ModalEditarPlano({
                                 }
                                 onChange={(e) =>
                                     setNomePlano(
-                                        e.target.value
+                                        e.target.value.toLocaleUpperCase("pt-BR")
                                     )
                                 }
                                 className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:bg-slate-50"
@@ -2079,7 +2066,7 @@ function ModalEditarPlano({
                                 }
                                 onChange={(e) =>
                                     setDescricao(
-                                        e.target.value
+                                        e.target.value.toLocaleUpperCase("pt-BR")
                                     )
                                 }
                                 rows={3}
