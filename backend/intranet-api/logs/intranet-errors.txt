@@ -8147,3 +8147,444 @@ ERRO AO SALVAR NO ORACLE:
 NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
 ==============================
 
+
+==============================
+DATA: 2026-09-10T16:39:34.979Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20100101 Firefox/154.0
+ERRO: Network Error
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4190:25
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-10T16:40:57.829Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20100101 Firefox/154.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-10T16:41:26.420Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20100101 Firefox/154.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-10T16:41:35.166Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20100101 Firefox/154.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-064: connection pool is closing
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:24:04.832Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:24:34.948Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:25:05.454Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:25:34.643Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:26:05.540Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:26:35.080Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:27:05.094Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:27:35.106Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:28:05.120Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:28:33.871Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:29:02.913Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:29:32.943Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:30:03.024Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:30:33.060Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:31:03.142Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:31:33.185Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-14T11:32:03.248Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/node_modules_3dbfb572._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+

@@ -105,6 +105,268 @@ export const convenioOdontologicoController = {
         }
     },
 
+    async criarEmpresa(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
+        try {
+            const {
+                nomeEmpresa,
+                cnpj,
+                cidade,
+            } = req.body || {};
+
+            const nomeEmpresaLimpo =
+                String(nomeEmpresa || "")
+                    .trim()
+                    .replace(/\s+/g, " ");
+
+            const cnpjLimpo =
+                cnpj
+                    ? somenteNumeros(cnpj)
+                    : null;
+
+            const cidadeLimpa =
+                String(cidade || "")
+                    .trim()
+                    .replace(/\s+/g, " ");
+
+            if (!nomeEmpresaLimpo) {
+                return res.status(400).json({
+                    error:
+                        "Informe o nome da empresa.",
+                });
+            }
+
+            if (
+                cnpjLimpo &&
+                cnpjLimpo.length !== 14
+            ) {
+                return res.status(400).json({
+                    error:
+                        "CNPJ inválido. Informe 14 dígitos.",
+                });
+            }
+
+            if (!cidadeLimpa) {
+                return res.status(400).json({
+                    error:
+                        "Informe a cidade da empresa.",
+                });
+            }
+
+            conn = await getConnection();
+
+            await setAuditoriaContext(
+                conn,
+                req
+            );
+
+            const empresaExistenteResult =
+                await conn.execute(
+                    `
+                SELECT
+                    ID_EMPRESA,
+                    NM_EMPRESA,
+                    NR_CNPJ,
+                    SN_ATIVO
+
+                FROM DBACRESSEM.ODONTO_EMPRESA
+
+                WHERE
+                    UPPER(TRIM(NM_EMPRESA)) =
+                    UPPER(TRIM(:nomeEmpresa))
+
+                FETCH FIRST 1 ROWS ONLY
+                `,
+                    {
+                        nomeEmpresa:
+                            nomeEmpresaLimpo,
+                    },
+                    {
+                        outFormat:
+                            oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            const empresaExistente: any =
+                empresaExistenteResult.rows?.[0];
+
+            if (empresaExistente) {
+                if (
+                    Number(
+                        empresaExistente.SN_ATIVO
+                    ) === 1
+                ) {
+                    return res.status(409).json({
+                        error:
+                            "Já existe uma empresa ativa cadastrada com este nome.",
+                    });
+                }
+
+                return res.status(409).json({
+                    error:
+                        "Já existe uma empresa inativa cadastrada com este nome.",
+                });
+            }
+
+            if (cnpjLimpo) {
+                const empresaCnpjResult =
+                    await conn.execute(
+                        `
+                    SELECT
+                        ID_EMPRESA,
+                        NM_EMPRESA,
+                        SN_ATIVO
+
+                    FROM DBACRESSEM.ODONTO_EMPRESA
+
+                    WHERE
+                        REGEXP_REPLACE(
+                            NR_CNPJ,
+                            '[^0-9]',
+                            ''
+                        ) = :cnpj
+
+                    FETCH FIRST 1 ROWS ONLY
+                    `,
+                        {
+                            cnpj:
+                                cnpjLimpo,
+                        },
+                        {
+                            outFormat:
+                                oracledb.OUT_FORMAT_OBJECT,
+                        }
+                    );
+
+                const empresaCnpj: any =
+                    empresaCnpjResult.rows?.[0];
+
+                if (empresaCnpj) {
+                    return res.status(409).json({
+                        error:
+                            `Já existe uma empresa cadastrada com este CNPJ: ${empresaCnpj.NM_EMPRESA}.`,
+                    });
+                }
+            }
+
+            const result =
+                await conn.execute(
+                    `
+                INSERT INTO DBACRESSEM.ODONTO_EMPRESA (
+                    NM_EMPRESA,
+                    NR_CNPJ,
+                    NM_CIDADE,
+                    DT_CRIACAO,
+                    DT_ATUALIZACAO,
+                    SN_ATIVO
+                )
+                VALUES (
+                    :nomeEmpresa,
+                    :cnpj,
+                    :cidade,
+                    SYSDATE,
+                    NULL,
+                    1
+                )
+                RETURNING ID_EMPRESA
+                INTO :idEmpresa
+                `,
+                    {
+                        nomeEmpresa:
+                            nomeEmpresaLimpo,
+
+                        cnpj:
+                            cnpjLimpo,
+
+                        cidade:
+                            cidadeLimpa,
+
+                        idEmpresa: {
+                            dir:
+                                oracledb.BIND_OUT,
+                            type:
+                                oracledb.NUMBER,
+                        },
+                    },
+                    {
+                        autoCommit: false,
+                    }
+                );
+
+            const outBinds: any =
+                result.outBinds;
+
+            const idEmpresa =
+                Array.isArray(
+                    outBinds?.idEmpresa
+                )
+                    ? outBinds.idEmpresa[0]
+                    : outBinds?.idEmpresa;
+
+            if (!idEmpresa) {
+                throw new Error(
+                    "Não foi possível obter o ID da empresa cadastrada."
+                );
+            }
+
+            await conn.commit();
+
+            return res.status(201).json({
+                success: true,
+
+                message:
+                    "Empresa cadastrada com sucesso.",
+
+                empresa: {
+                    idEmpresa:
+                        Number(idEmpresa),
+
+                    nomeEmpresa:
+                        nomeEmpresaLimpo,
+
+                    cnpj:
+                        cnpjLimpo,
+
+                    cidade:
+                        cidadeLimpa,
+                },
+            });
+        } catch (error: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch { }
+            }
+
+            console.error(
+                "Erro ao cadastrar empresa odontológica:",
+                error
+            );
+
+            if (error?.errorNum === 1) {
+                return res.status(409).json({
+                    error:
+                        "Já existe uma empresa com os dados informados.",
+                });
+            }
+
+            return res.status(500).json({
+                error:
+                    "Erro ao cadastrar empresa.",
+
+                details:
+                    error.message,
+            });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch { }
+            }
+        }
+    },
+
     async listarPlanos(req: Request, res: Response) {
         try {
             const idOperadora = req.query.idOperadora
@@ -610,22 +872,6 @@ export const convenioOdontologicoController = {
                             "Filtro de Conta Capital inválido. Utilize SIM ou NAO.",
                     });
             }
-
-            {/*if (
-                integralizacaoIndeterminada !==
-                null &&
-                integralizacaoIndeterminada !==
-                "S" &&
-                integralizacaoIndeterminada !==
-                "N"
-            ) {
-                return res
-                    .status(400)
-                    .json({
-                        error:
-                            "Filtro de integralização indeterminada inválido. Utilize S ou N.",
-                    });
-            }*/}
 
             if (
                 integralizacaoIndeterminada !== null &&
@@ -1522,9 +1768,12 @@ export const convenioOdontologicoController = {
                 });
             }
 
-            if (!Number.isInteger(Number(idEmpresa))) {
+            if (
+                !Number.isInteger(Number(idEmpresa)) ||
+                Number(idEmpresa) <= 0
+            ) {
                 return res.status(400).json({
-                    error: "Empresa inválida.",
+                    error: "Selecione uma empresa válida.",
                 });
             }
 
@@ -1608,6 +1857,8 @@ export const convenioOdontologicoController = {
                     error: "Empresa não encontrada ou inativa.",
                 });
             }
+
+            const idEmpresaFinal = Number(idEmpresa);
 
             const planoResult = await conn.execute(
                 `
@@ -1763,7 +2014,7 @@ export const convenioOdontologicoController = {
                     cpf: cpfLimpo,
                     dataNascimento,
                     idTipoBeneficiario: Number(idTipoBeneficiario),
-                    idEmpresa: Number(idEmpresa),
+                    idEmpresa: idEmpresaFinal,
                     idPlano: Number(idPlano),
                     idTitular: idTitularFinal,
                     nrMatricula: nrMatricula || null,
@@ -1817,7 +2068,7 @@ export const convenioOdontologicoController = {
         `,
                 {
                     idBeneficiario: Number(idBeneficiario),
-                    idEmpresa: Number(idEmpresa),
+                    idEmpresa: idEmpresaFinal,
                     nomeUsuario: nomeUsuario || null,
                     loginUsuario: loginUsuario || null,
                 },
@@ -2348,14 +2599,6 @@ export const convenioOdontologicoController = {
                 });
             }
 
-            /*
-             * Se for titular, fecha primeiro o histórico de empresa
-             * dos dependentes que serão inativados.
-             *
-             * Fazemos isso antes de alterar SN_ATIVO para 0 porque
-             * utilizamos SN_ATIVO = 1 para identificar exatamente
-             * os dependentes afetados pela inativação.
-             */
             if (beneficiario.CD_TIPO_BENEFICIARIO === "TITULAR") {
                 await conn.execute(
                     `
@@ -2379,10 +2622,6 @@ export const convenioOdontologicoController = {
                 );
             }
 
-            /*
-             * Fecha o vínculo atual de empresa do próprio
-             * beneficiário que está sendo inativado.
-             */
             await conn.execute(
                 `
         UPDATE DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST

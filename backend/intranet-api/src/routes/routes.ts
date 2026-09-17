@@ -1775,5 +1775,11 @@ routes.get(
   odontoInformeRendimentosController.consolidarAno
 );
 
+routes.post(
+  "/v1/convenio-odontologico/empresas",
+  authMiddleware,
+  convenioOdontologicoController.criarEmpresa
+);
+
 export { routes };
 

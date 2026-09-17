@@ -57,10 +57,6 @@ function normalizarCabecalho(valor: string) {
         .replace(/\s+/g, "_")
         .replace(/[^\w]/g, "");
 
-    /*
-     * Alguns arquivos enviados pela operadora
-     * possuem pequenas variações de cabeçalho.
-     */
     const aliases: Record<string, string> = {
         empa: "empresa",
         mae: "nome_mae",
@@ -76,15 +72,6 @@ function normalizarCabecalho(valor: string) {
 function limparValorCsv(valor: unknown) {
     let texto = String(valor ?? "").trim();
 
-    /*
-     * Arquivos da Hapvida/São Francisco podem vir assim:
-     *
-     * ="0ARQX"
-     *
-     * Queremos armazenar:
-     *
-     * 0ARQX
-     */
     if (
         texto.startsWith('="') &&
         texto.endsWith('"')
@@ -116,13 +103,6 @@ function converterCentavos(
         return 0;
     }
 
-    /*
-     * O arquivo trabalha em centavos:
-     *
-     * 7416 -> R$ 74,16
-     * 1483 -> R$ 14,83
-     * 5933 -> R$ 59,33
-     */
     const valorLimpo =
         texto.replace(/[^\d-]/g, "");
 
@@ -177,10 +157,6 @@ function converterData(
         return null;
     }
 
-    /*
-     * Meio-dia evita deslocamentos de data
-     * por timezone.
-     */
     return new Date(
         ano,
         mes - 1,
@@ -194,11 +170,6 @@ function converterData(
 function extrairAnoGeracao(
     conteudo: string
 ): number | null {
-    /*
-     * Exemplo real:
-     *
-     * Geracao em 22/01/2025 11:16
-     */
     const match = conteudo.match(
         /Geracao\s+em\s+\d{2}\/\d{2}\/(\d{4})/i
     );
@@ -266,9 +237,6 @@ function interpretarCsv(
     let conteudo =
         buffer.toString("utf8");
 
-    /*
-     * Remove BOM UTF-8 caso exista.
-     */
     conteudo =
         conteudo.replace(
             /^\uFEFF/,
@@ -321,23 +289,10 @@ function interpretarCsv(
         const linha =
             linhaOriginal.trim();
 
-        /*
-         * Linhas vazias no final da tabela
-         * não são registros.
-         */
         if (!linha) {
             if (
                 iniciouBeneficiarios
             ) {
-                /*
-                 * No arquivo real, após a última
-                 * pessoa existe uma linha vazia
-                 * antes de:
-                 *
-                 * "Descontos e Acréscimos"
-                 *
-                 * Podemos encerrar aqui.
-                 */
                 break;
             }
 
@@ -347,13 +302,6 @@ function interpretarCsv(
         const valores =
             linhaOriginal.split(";");
 
-        /*
-         * A tabela de beneficiários possui
-         * exatamente 19 colunas.
-         *
-         * Quando começa outra seção,
-         * a estrutura deixa de possuir 19.
-         */
         if (
             valores.length !==
             totalColunas
@@ -396,10 +344,6 @@ function interpretarCsv(
                 registro.beneficiario
             );
 
-        /*
-         * Uma linha da tabela deve possuir,
-         * pelo menos, CPF e nome.
-         */
         if (
             !cpf &&
             !beneficiario
@@ -622,15 +566,6 @@ export const odontoInformeRendimentosController = {
                     bufferArquivo
                 );
 
-            /*
-             * Conferimos o ano da geração
-             * do arquivo com o ano escolhido
-             * na tela.
-             *
-             * Não usamos o mês do vencimento,
-             * pois o CSV de janeiro, por exemplo,
-             * possui vencimento em fevereiro.
-             */
             const anoGeracao =
                 extrairAnoGeracao(
                     conteudo
@@ -649,10 +584,6 @@ export const odontoInformeRendimentosController = {
                     });
             }
 
-            /*
-             * Validação dos registros antes de
-             * abrir transação no banco.
-             */
             const registrosPreparados =
                 registros.map(
                     (
@@ -1653,10 +1584,6 @@ export const odontoInformeRendimentosController = {
             conn =
                 await getConnection();
 
-            /*
-             * Verifica quantas competências
-             * já existem para o ano.
-             */
             const competenciasResult =
                 await conn.execute(
                     `
@@ -1684,13 +1611,6 @@ export const odontoInformeRendimentosController = {
             const competencias =
                 competenciasResult.rows || [];
 
-            /*
-             * Primeiro consolidamos cada CPF
-             * individualmente ao longo do ano.
-             *
-             * VL_COBRADO é o valor que será
-             * utilizado no informe.
-             */
             const pessoasResult =
                 await conn.execute(
                     `
@@ -1758,9 +1678,6 @@ export const odontoInformeRendimentosController = {
                 (pessoasResult.rows ||
                     []) as any[];
 
-            /*
-             * Agrupa as pessoas por matrícula.
-             */
             const familiasMap =
                 new Map<string, any>();
 
@@ -1771,11 +1688,6 @@ export const odontoInformeRendimentosController = {
                         ""
                     ).trim();
 
-                /*
-                 * Matrícula é nossa chave de família.
-                 * Não queremos juntar pessoas sem
-                 * matrícula numa família única.
-                 */
                 const chaveFamilia =
                     matricula ||
                     `SEM_MATRICULA_${pessoa.NR_CPF}`;
@@ -1855,10 +1767,6 @@ export const odontoInformeRendimentosController = {
                 }
             }
 
-            /*
-             * Transforma o Map no formato
-             * que o frontend e o PDF utilizarão.
-             */
             const familias =
                 Array.from(
                     familiasMap.values()
@@ -1927,10 +1835,6 @@ export const odontoInformeRendimentosController = {
                     };
                 });
 
-            /*
-             * Famílias válidas para o informe:
-             * possuem titular identificado.
-             */
             const familiasComTitular =
                 familias.filter(
                     (familia) =>
@@ -1939,13 +1843,6 @@ export const odontoInformeRendimentosController = {
                         )
                 );
 
-            /*
-             * Casos para conferência.
-             *
-             * Não descartamos silenciosamente
-             * famílias onde o CSV não trouxe
-             * o titular.
-             */
             const familiasSemTitular =
                 familias.filter(
                     (familia) =>
