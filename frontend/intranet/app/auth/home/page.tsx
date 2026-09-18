@@ -35,9 +35,9 @@ import {
     buscarPaginasMaisAcessadas,
     type PaginaMaisAcessada,
 } from "@/services/dashboard.service";
-import {
+/*import {
     QUICK_ACCESS_MAP,
-} from "@/config/quick-access";
+} from "@/config/quick-access";*/
 import UserInfo from "@/components/user-info/user-info";
 import {
     buscarPopupPendenteMe,
@@ -587,6 +587,10 @@ export default function HomePage() {
         []
     );
 
+    const screensPermitidas = useMemo(() => {
+        return filterScreensByGroups(SCREENS, userGroups);
+    }, [userGroups]);
+
     {/*const acessosRapidos = useMemo<QuickAccessItem[]>(
         () => [
             {
@@ -631,62 +635,28 @@ export default function HomePage() {
     );*/}
 
     const acessosRapidos = useMemo<QuickAccessItem[]>(() => {
-        const atalhosPadrao: PaginaMaisAcessada[] = [
-            { href: "/auth/links_uteis", quantidadeAcessos: 0 },
-            { href: "/auth/aniversariantes", quantidadeAcessos: 0 },
-            {
-                href: "/auth/cadastro_reembolso_despesa",
-                quantidadeAcessos: 0,
-            },
-            {
-                href: "/auth/conversor_arquivos",
-                quantidadeAcessos: 0,
-            },
-            {
-                href: "/auth/gerenciamento_convenio_odonto",
-                quantidadeAcessos: 0,
-            },
-            { href: "/auth/ramais", quantidadeAcessos: 0 },
-        ];
+        const lista: QuickAccessItem[] = [];
 
-        function montarAtalhos(
-            paginas: PaginaMaisAcessada[]
-        ): QuickAccessItem[] {
-            return paginas.reduce<QuickAccessItem[]>(
-                (lista, pagina) => {
-                    const config = QUICK_ACCESS_MAP[pagina.href];
-
-                    if (!config) {
-                        return lista;
-                    }
-
-                    const item: QuickAccessItem = {
-                        title: config.title,
-                        desc: config.desc,
-                        href: pagina.href,
-                        icon: config.icon,
-                        quantidadeAcessos: pagina.quantidadeAcessos,
-                    };
-
-                    if (config.badge) {
-                        item.badge = config.badge;
-                    }
-
-                    lista.push(item);
-
-                    return lista;
-                },
-                []
+        paginasMaisAcessadas.forEach((pagina) => {
+            const screen = screensPermitidas.find(
+                (item) => item.href === pagina.href
             );
-        }
 
-        const atalhosPersonalizados =
-            montarAtalhos(paginasMaisAcessadas);
+            if (!screen) {
+                return;
+            }
 
-        return atalhosPersonalizados.length > 0
-            ? atalhosPersonalizados
-            : montarAtalhos(atalhosPadrao);
-    }, [paginasMaisAcessadas]);
+            lista.push({
+                title: screen.title,
+                desc: screen.desc ?? "",
+                href: screen.href,
+                icon: <FaMapSigns className="h-5 w-5" />,
+                quantidadeAcessos: pagina.quantidadeAcessos,
+            });
+        });
+
+        return lista.slice(0, 6);
+    }, [paginasMaisAcessadas, screensPermitidas]);
 
     {/*const ultimosAcessos = [
         {
@@ -716,9 +686,7 @@ export default function HomePage() {
         { dia: "Dom", acessos: 54 },
     ];*/}
 
-    const screensPermitidas = useMemo(() => {
-        return filterScreensByGroups(SCREENS, userGroups);
-    }, [userGroups]);
+
 
     const totalSemanal = acessosDiarios.reduce(
         (acc, item) => acc + item.acessos,
@@ -1093,7 +1061,7 @@ export default function HomePage() {
                                 )}
                             </div>
                         </div>*/}
-                        
+
                     </div>
 
                     <div className="space-y-6">
@@ -1373,9 +1341,9 @@ export default function HomePage() {
                                         </div>
                                     </div>
 
-                                    <div className="hidden shrink-0 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-900 shadow-lg sm:block">
+                                    {/*<div className="hidden shrink-0 rounded-full bg-amber-400 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-900 shadow-lg sm:block">
                                         🔥 Novidade
-                                    </div>
+                                    </div>*/}
                                 </div>
 
                                 <p className="max-w-130 text-sm leading-6 text-white/90">
@@ -1423,7 +1391,7 @@ export default function HomePage() {
                 </section>
 
                 <div className="px-1 text-xs text-(--text-darken)">
-                    * Dados reais — integrados via API.
+                    * Dados reais - integrados via API.
                 </div>
 
                 {modalPopupAberta && popupConteudo && (
