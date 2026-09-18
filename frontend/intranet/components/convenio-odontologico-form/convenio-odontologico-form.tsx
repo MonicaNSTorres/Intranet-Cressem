@@ -1607,6 +1607,10 @@ function ModalNovoBeneficiario({
         );
 
         if (empresaEncontrada) {
+          idEmpresaEncontrada = String(
+            empresaEncontrada.ID_EMPRESA
+          );
+
           setBuscaEmpresa(
             empresaEncontrada.NM_EMPRESA
           );
