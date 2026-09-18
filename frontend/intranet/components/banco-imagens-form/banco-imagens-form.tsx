@@ -581,7 +581,7 @@ export default function BancoImagensForm({
             formulario.dtInicio &&
             formulario.dtFim &&
             formulario.dtFim <
-                formulario.dtInicio
+            formulario.dtInicio
         ) {
             setMensagem({
                 tipo: "erro",
@@ -607,13 +607,13 @@ export default function BancoImagensForm({
                 formulario.orientacao,
             largura: formulario.largura
                 ? Number(
-                      formulario.largura
-                  )
+                    formulario.largura
+                )
                 : null,
             altura: formulario.altura
                 ? Number(
-                      formulario.altura
-                  )
+                    formulario.altura
+                )
                 : null,
             stAtivo:
                 formulario.stAtivo,
@@ -856,16 +856,15 @@ export default function BancoImagensForm({
         <>
             {mensagem && (
                 <div
-                    className={`mb-6 flex items-start justify-between gap-4 rounded-2xl border px-4 py-3 text-sm ${
-                        mensagem.tipo ===
+                    className={`mb-6 flex items-start justify-between gap-4 rounded-2xl border px-4 py-3 text-sm ${mensagem.tipo ===
                         "sucesso"
-                            ? "border-[#79B729]/25 bg-[#79B729]/10 text-[#41640F]"
-                            : "border-red-200 bg-red-50 text-red-700"
-                    }`}
+                        ? "border-[#79B729]/25 bg-[#79B729]/10 text-[#41640F]"
+                        : "border-red-200 bg-red-50 text-red-700"
+                        }`}
                 >
                     <div className="flex items-start gap-3">
                         {mensagem.tipo ===
-                        "sucesso" ? (
+                            "sucesso" ? (
                             <FaCheck className="mt-0.5 h-4 w-4 shrink-0" />
                         ) : (
                             <FaXmark className="mt-0.5 h-4 w-4 shrink-0" />
@@ -945,9 +944,9 @@ export default function BancoImagensForm({
                             setIdCategoria(
                                 event.target.value
                                     ? Number(
-                                          event.target
-                                              .value
-                                      )
+                                        event.target
+                                            .value
+                                    )
                                     : null
                             );
                             setPagina(1);
@@ -1184,12 +1183,11 @@ export default function BancoImagensForm({
                                         key={
                                             imagem.ID_IMAGEM
                                         }
-                                        className={`group overflow-hidden rounded-[26px] border bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(16,24,40,0.11)] ${
-                                            imagem.ST_ATIVO ===
+                                        className={`group overflow-hidden rounded-[26px] border bg-white shadow-[0_10px_30px_rgba(16,24,40,0.05)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(16,24,40,0.11)] ${imagem.ST_ATIVO ===
                                             "N"
-                                                ? "border-red-200 opacity-75"
-                                                : "border-slate-200"
-                                        }`}
+                                            ? "border-red-200 opacity-75"
+                                            : "border-slate-200"
+                                            }`}
                                     >
                                         <div className="relative aspect-4/3 overflow-hidden bg-[#F2F4F7]">
                                             <img
@@ -1223,18 +1221,18 @@ export default function BancoImagensForm({
                                             <div className="absolute left-3 top-3 flex flex-wrap gap-2">
                                                 {imagem.ST_DESTAQUE ===
                                                     "S" && (
-                                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-[11px] font-bold text-amber-950 shadow">
-                                                        <FaStar />
-                                                        Destaque
-                                                    </span>
-                                                )}
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-[11px] font-bold text-amber-950 shadow">
+                                                            <FaStar />
+                                                            Destaque
+                                                        </span>
+                                                    )}
 
                                                 {imagem.ST_ATIVO ===
                                                     "N" && (
-                                                    <span className="rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white shadow">
-                                                        Inativa
-                                                    </span>
-                                                )}
+                                                        <span className="rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white shadow">
+                                                            Inativa
+                                                        </span>
+                                                    )}
                                             </div>
 
                                             <span className="absolute bottom-3 left-3 rounded-lg bg-black/60 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur">
@@ -1328,13 +1326,13 @@ export default function BancoImagensForm({
                                                             className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-amber-500 transition hover:bg-amber-50 disabled:opacity-50 cursor-pointer"
                                                             aria-label={
                                                                 imagem.ST_DESTAQUE ===
-                                                                "S"
+                                                                    "S"
                                                                     ? "Remover destaque"
                                                                     : "Destacar imagem"
                                                             }
                                                         >
                                                             {imagem.ST_DESTAQUE ===
-                                                            "S" ? (
+                                                                "S" ? (
                                                                 <FaStar />
                                                             ) : (
                                                                 <FaRegStar />
@@ -1384,15 +1382,14 @@ export default function BancoImagensForm({
                                                                 imagem
                                                             )
                                                         }
-                                                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${
-                                                            imagem.ST_ATIVO ===
+                                                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${imagem.ST_ATIVO ===
                                                             "S"
-                                                                ? "bg-red-50 text-red-600 hover:bg-red-100"
-                                                                : "bg-[#79B729]/10 text-[#527D16] hover:bg-[#79B729]/20"
-                                                        }`}
+                                                            ? "bg-red-50 text-red-600 hover:bg-red-100"
+                                                            : "bg-[#79B729]/10 text-[#527D16] hover:bg-[#79B729]/20"
+                                                            }`}
                                                     >
                                                         {imagem.ST_ATIVO ===
-                                                        "S"
+                                                            "S"
                                                             ? "Desativar"
                                                             : "Ativar"}
                                                     </button>
@@ -1430,7 +1427,7 @@ export default function BancoImagensForm({
                                                 Math.max(
                                                     1,
                                                     valor -
-                                                        1
+                                                    1
                                                 )
                                         )
                                     }
@@ -1452,7 +1449,7 @@ export default function BancoImagensForm({
                                                 Math.min(
                                                     totalPaginas,
                                                     valor +
-                                                        1
+                                                    1
                                                 )
                                         )
                                     }
@@ -1469,312 +1466,389 @@ export default function BancoImagensForm({
 
             {modalVisualizacaoAberto &&
                 imagemSelecionada && (
-                    <div className="fixed inset-0 z-100 flex items-center justify-center bg-[#101828]/70 p-4 backdrop-blur-sm">
-                        <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
-                            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
-                                <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                                        {imagemSelecionada.NM_CATEGORIA ||
-                                            "Banco de Imagens"}
-                                    </p>
-                                    <h2 className="mt-1 text-xl font-semibold text-[#101828]">
-                                        {
-                                            imagemSelecionada.NM_TITULO
-                                        }
-                                    </h2>
-                                </div>
+                    <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+                        <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+                            <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                                            Banco de imagens
+                                        </p>
 
-                                <button
-                                    type="button"
-                                    onClick={
-                                        fecharVisualizacao
-                                    }
-                                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-[#475467] transition hover:bg-slate-50"
-                                    aria-label="Fechar visualização"
-                                >
-                                    <FaXmark />
-                                </button>
+                                        <h2 className="mt-1 truncate text-2xl font-bold text-slate-800">
+                                            {imagemSelecionada.NM_TITULO}
+                                        </h2>
+
+                                        <p className="mt-1 text-sm text-slate-500">
+                                            {imagemSelecionada.NM_CATEGORIA ||
+                                                "Sem categoria"}
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={fecharVisualizacao}
+                                        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500"
+                                        aria-label="Fechar visualização"
+                                        title="Fechar"
+                                    >
+                                        <FaXmark />
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
-                                <div className="flex min-h-90 items-center justify-center bg-[#F2F4F7] p-4 sm:p-6">
-                                    <img
-                                        src={obterUrlPreviewBancoImagem(
-                                            imagemSelecionada.ID_IMAGEM
+                            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+                                <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
+
+                                    <div className="flex min-h-105 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:p-6">
+                                        <img
+                                            src={obterUrlPreviewBancoImagem(
+                                                imagemSelecionada.ID_IMAGEM
+                                            )}
+                                            alt={imagemSelecionada.NM_TITULO}
+                                            className="max-h-[65vh] max-w-full rounded-2xl object-contain shadow-lg"
+                                        />
+                                    </div>
+
+                                    <aside className="space-y-5">
+                                        {imagemSelecionada.DS_DESCRICAO && (
+                                            <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                                                <div>
+                                                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                                                        Material
+                                                    </p>
+
+                                                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                                        Descrição
+                                                    </h3>
+                                                </div>
+
+                                                <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-600">
+                                                    {imagemSelecionada.DS_DESCRICAO}
+                                                </p>
+                                            </div>
                                         )}
-                                        alt={
-                                            imagemSelecionada.NM_TITULO
-                                        }
-                                        className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-lg"
-                                    />
+
+                                        <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                                                    Arquivo
+                                                </p>
+
+                                                <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                                    Informações técnicas
+                                                </h3>
+
+                                                <p className="mt-1 text-sm leading-5 text-slate-500">
+                                                    Detalhes do arquivo disponibilizado para download.
+                                                </p>
+                                            </div>
+
+                                            <dl className="mt-5 grid grid-cols-2 gap-3">
+                                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                    <dt className="text-xs font-semibold text-slate-400">
+                                                        Formato
+                                                    </dt>
+
+                                                    <dd className="mt-1 text-sm font-semibold text-slate-800">
+                                                        {formatarExtensao(
+                                                            imagemSelecionada
+                                                        )}
+                                                    </dd>
+                                                </div>
+
+                                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                    <dt className="text-xs font-semibold text-slate-400">
+                                                        Tamanho
+                                                    </dt>
+
+                                                    <dd className="mt-1 text-sm font-semibold text-slate-800">
+                                                        {formatarTamanho(
+                                                            imagemSelecionada.NR_TAMANHO_BYTES
+                                                        )}
+                                                    </dd>
+                                                </div>
+
+                                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                    <dt className="text-xs font-semibold text-slate-400">
+                                                        Dimensões
+                                                    </dt>
+
+                                                    <dd className="mt-1 text-sm font-semibold text-slate-800">
+                                                        {obterDimensoes(
+                                                            imagemSelecionada
+                                                        )}
+                                                    </dd>
+                                                </div>
+
+                                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                    <dt className="text-xs font-semibold text-slate-400">
+                                                        Orientação
+                                                    </dt>
+
+                                                    <dd className="mt-1 text-sm font-semibold text-slate-800">
+                                                        {obterRotuloOrientacao(
+                                                            imagemSelecionada.TP_ORIENTACAO
+                                                        )}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                        </div>
+
+                                        {imagemSelecionada.DS_INSTRUCOES_USO && (
+                                            <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                                                <div>
+                                                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                                                        Orientações
+                                                    </p>
+
+                                                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                                        Instruções de uso
+                                                    </h3>
+                                                </div>
+
+                                                <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-600">
+                                                    {
+                                                        imagemSelecionada.DS_INSTRUCOES_USO
+                                                    }
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {imagemSelecionada.DS_PALAVRAS_CHAVE && (
+                                            <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                                                <div>
+                                                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                                                        Identificação
+                                                    </p>
+
+                                                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                                        Palavras-chave
+                                                    </h3>
+                                                </div>
+
+                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                    {imagemSelecionada.DS_PALAVRAS_CHAVE.split(
+                                                        /[,;]/
+                                                    )
+                                                        .map((palavra) =>
+                                                            palavra.trim()
+                                                        )
+                                                        .filter(Boolean)
+                                                        .map((palavra) => (
+                                                            <span
+                                                                key={palavra}
+                                                                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600"
+                                                            >
+                                                                {palavra}
+                                                            </span>
+                                                        ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </aside>
                                 </div>
 
-                                <aside className="space-y-6 p-5 sm:p-6">
-                                    {imagemSelecionada.DS_DESCRICAO && (
-                                        <div>
-                                            <h3 className="mb-2 text-sm font-semibold text-[#101828]">
-                                                Descrição
-                                            </h3>
-                                            <p className="whitespace-pre-line text-sm leading-6 text-[#667085]">
-                                                {
-                                                    imagemSelecionada.DS_DESCRICAO
-                                                }
-                                            </p>
-                                        </div>
-                                    )}
+                                <div className="mt-5 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={fecharVisualizacao}
+                                        className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                    >
+                                        Fechar
+                                    </button>
 
-                                    <div>
-                                        <h3 className="mb-3 text-sm font-semibold text-[#101828]">
-                                            Informações do arquivo
-                                        </h3>
-
-                                        <dl className="grid grid-cols-2 gap-3">
-                                            <div className="rounded-xl bg-[#F8FAFC] p-3">
-                                                <dt className="text-xs text-[#98A2B3]">
-                                                    Formato
-                                                </dt>
-                                                <dd className="mt-1 text-sm font-semibold text-[#344054]">
-                                                    {formatarExtensao(
-                                                        imagemSelecionada
-                                                    )}
-                                                </dd>
-                                            </div>
-
-                                            <div className="rounded-xl bg-[#F8FAFC] p-3">
-                                                <dt className="text-xs text-[#98A2B3]">
-                                                    Tamanho
-                                                </dt>
-                                                <dd className="mt-1 text-sm font-semibold text-[#344054]">
-                                                    {formatarTamanho(
-                                                        imagemSelecionada.NR_TAMANHO_BYTES
-                                                    )}
-                                                </dd>
-                                            </div>
-
-                                            <div className="rounded-xl bg-[#F8FAFC] p-3">
-                                                <dt className="text-xs text-[#98A2B3]">
-                                                    Dimensões
-                                                </dt>
-                                                <dd className="mt-1 text-sm font-semibold text-[#344054]">
-                                                    {obterDimensoes(
-                                                        imagemSelecionada
-                                                    )}
-                                                </dd>
-                                            </div>
-
-                                            <div className="rounded-xl bg-[#F8FAFC] p-3">
-                                                <dt className="text-xs text-[#98A2B3]">
-                                                    Orientação
-                                                </dt>
-                                                <dd className="mt-1 text-sm font-semibold text-[#344054]">
-                                                    {obterRotuloOrientacao(
-                                                        imagemSelecionada.TP_ORIENTACAO
-                                                    )}
-                                                </dd>
-                                            </div>
-                                        </dl>
-                                    </div>
-
-                                    {imagemSelecionada.DS_INSTRUCOES_USO && (
-                                        <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
-                                            <h3 className="mb-2 text-sm font-semibold text-primary">
-                                                Instruções de uso
-                                            </h3>
-                                            <p className="whitespace-pre-line text-sm leading-6 text-[#475467]">
-                                                {
-                                                    imagemSelecionada.DS_INSTRUCOES_USO
-                                                }
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {imagemSelecionada.DS_PALAVRAS_CHAVE && (
-                                        <div>
-                                            <h3 className="mb-2 text-sm font-semibold text-[#101828]">
-                                                Palavras-chave
-                                            </h3>
-                                            <div className="flex flex-wrap gap-2">
-                                                {imagemSelecionada.DS_PALAVRAS_CHAVE.split(
-                                                    /[,;]/
-                                                )
-                                                    .map(
-                                                        (
-                                                            palavra
-                                                        ) =>
-                                                            palavra.trim()
-                                                    )
-                                                    .filter(
-                                                        Boolean
-                                                    )
-                                                    .map(
-                                                        (
-                                                            palavra
-                                                        ) => (
-                                                            <span
-                                                                key={
-                                                                    palavra
-                                                                }
-                                                                className="rounded-full bg-[#F2F4F7] px-3 py-1.5 text-xs font-medium text-[#475467]"
-                                                            >
-                                                                {
-                                                                    palavra
-                                                                }
-                                                            </span>
-                                                        )
-                                                    )}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="border-t border-slate-100 pt-5">
-                                        <button
-                                            type="button"
-                                            disabled={
-                                                processandoId ===
-                                                imagemSelecionada.ID_IMAGEM
-                                            }
-                                            onClick={() =>
-                                                realizarDownload(
-                                                    imagemSelecionada
-                                                )
-                                            }
-                                            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-secondary px-5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(0,174,157,0.22)] transition hover:bg-primary disabled:opacity-60 cursor-pointer"
-                                        >
-                                            <FaArrowDown />
-                                            Baixar imagem
-                                        </button>
-                                    </div>
-                                </aside>
+                                    <button
+                                        type="button"
+                                        disabled={
+                                            processandoId ===
+                                            imagemSelecionada.ID_IMAGEM
+                                        }
+                                        onClick={() =>
+                                            realizarDownload(
+                                                imagemSelecionada
+                                            )
+                                        }
+                                        className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <FaArrowDown />
+                                        {processandoId ===
+                                            imagemSelecionada.ID_IMAGEM
+                                            ? "Baixando..."
+                                            : "Baixar imagem"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
 
             {modalFormularioAberto && (
-                <div className="fixed inset-0 z-110 flex items-end justify-center bg-[#101828]/75 p-0 backdrop-blur-sm sm:items-center sm:p-4 lg:p-6">
+                <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
                     <form
                         onSubmit={salvarFormulario}
-                        className="flex h-dvh w-full flex-col overflow-hidden rounded-none border border-white/50 bg-white shadow-[0_30px_90px_rgba(16,24,40,0.35)] sm:h-auto sm:max-h-[94dvh] sm:max-w-6xl sm:rounded-[30px]"
+                        className="max-h-[94vh] w-full max-w-5xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl"
                     >
-                        <header className="relative shrink-0 overflow-hidden border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5 lg:px-7">
-                            <div className="absolute -right-14 -top-20 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
-                            <div className="absolute right-24 top-0 h-32 w-32 rounded-full bg-secondary/10 blur-3xl" />
+                        <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                                        Banco de imagens
+                                    </p>
 
-                            <div className="relative flex items-start justify-between gap-3 sm:gap-4">
-                                <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-[0_12px_28px_rgba(0,174,157,0.25)] sm:h-12 sm:w-12 sm:rounded-2xl">
-                                        <FaFileImage className="h-5 w-5" />
-                                    </div>
+                                    <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                                        {imagemEmEdicao
+                                            ? "Editar imagem"
+                                            : "Cadastrar nova imagem"}
+                                    </h2>
 
-                                    <div>
-                                        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-                                            Banco de Imagens
-                                        </p>
-
-                                        <h2 className="text-lg font-bold tracking-tight text-[#101828] sm:text-2xl">
-                                            {imagemEmEdicao
-                                                ? "Editar imagem"
-                                                : "Cadastrar nova imagem"}
-                                        </h2>
-
-                                        <p className="mt-1 max-w-2xl text-xs leading-5 text-[#667085] sm:text-sm">
-                                            Preencha apenas as informações do material. Os dados técnicos da imagem serão identificados automaticamente.
-                                        </p>
-                                    </div>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Preencha as informações do material e selecione a imagem que ficará disponível no banco.
+                                    </p>
                                 </div>
 
                                 <button
                                     type="button"
                                     onClick={fecharFormulario}
                                     disabled={salvando}
-                                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#475467] transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
                                     aria-label="Fechar formulário"
                                 >
                                     <FaXmark />
                                 </button>
                             </div>
-                        </header>
+                        </div>
 
-                        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                            <div className="grid gap-0 xl:grid-cols-[380px_minmax(0,1fr)]">
-                                <aside className="border-b border-slate-100 bg-[#F8FAFC] p-4 sm:p-5 lg:p-6 xl:border-b-0 xl:border-r xl:p-7">
-                                    <div className="xl:sticky xl:top-0">
-                                        <div className="mb-3 flex items-center justify-between gap-3">
-                                            <label className="text-sm font-semibold text-[#344054]">
-                                                Arquivo da imagem
-                                                {!imagemEmEdicao && (
-                                                    <span className="text-red-500">
-                                                        {" "}*
-                                                    </span>
+                        <div className="max-h-[78vh] space-y-5 overflow-y-auto p-6">
+                            <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                                        Arquivo
+                                    </p>
+
+                                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                        Imagem do material
+                                    </h3>
+
+                                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                                        Selecione a imagem que será disponibilizada no banco. São aceitos PNG, JPG, JPEG, WebP e GIF com até 20 MB.
+                                    </p>
+                                </div>
+
+                                <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+                                    <label className="group relative flex min-h-64 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-slate-300 bg-white p-5 text-center transition hover:border-primary hover:bg-primary/5">
+                                        {previewArquivo ? (
+                                            <img
+                                                src={previewArquivo}
+                                                alt="Pré-visualização da imagem"
+                                                className="max-h-80 w-full rounded-2xl object-contain"
+                                            />
+                                        ) : imagemEmEdicao ? (
+                                            <img
+                                                src={obterUrlPreviewBancoImagem(
+                                                    imagemEmEdicao.ID_IMAGEM
                                                 )}
-                                            </label>
+                                                alt={imagemEmEdicao.NM_TITULO}
+                                                className="max-h-80 w-full rounded-2xl object-contain"
+                                            />
+                                        ) : (
+                                            <>
+                                                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                                    <FaImage className="h-6 w-6" />
+                                                </div>
 
-                                            <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[#667085] shadow-sm">
-                                                Máx. 20 MB
+                                                <p className="text-sm font-semibold text-slate-800">
+                                                    Clique para selecionar uma imagem
+                                                </p>
+
+                                                <p className="mt-1 text-xs text-slate-500">
+                                                    PNG, JPG, JPEG, WebP ou GIF
+                                                </p>
+                                            </>
+                                        )}
+
+                                        {(previewArquivo || imagemEmEdicao) && (
+                                            <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-lg opacity-0 transition group-hover:opacity-100">
+                                                Clique para trocar a imagem
                                             </span>
+                                        )}
+
+                                        <input
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/webp,image/gif"
+                                            onChange={selecionarArquivo}
+                                            className="hidden"
+                                        />
+                                    </label>
+
+                                    <div className="space-y-3">
+                                        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                                                Automático
+                                            </p>
+
+                                            <h4 className="mt-1 text-sm font-semibold text-slate-900">
+                                                Dados técnicos
+                                            </h4>
+
+                                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                                                O sistema identifica automaticamente orientação, largura e altura ao selecionar a imagem.
+                                            </p>
                                         </div>
 
-                                        <label className="group relative flex min-h-55 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[22px] border-2 border-dashed border-[#D0D5DD] bg-white p-4 text-center transition hover:border-primary hover:shadow-[0_12px_30px_rgba(16,24,40,0.08)] sm:min-h-65 xl:min-h-77.5 xl:rounded-3xl">
-                                            {(previewArquivo || imagemEmEdicao) && (
-                                                <div className="absolute inset-0 bg-linear-to-t from-black/55 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
-                                            )}
+                                        <div className="grid gap-3">
+                                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                <p className="text-xs font-semibold text-slate-400">
+                                                    Orientação
+                                                </p>
 
-                                            {previewArquivo ? (
-                                                <img
-                                                    src={previewArquivo}
-                                                    alt="Pré-visualização da imagem"
-                                                    className="max-h-55 w-full rounded-2xl object-contain sm:max-h-70 xl:max-h-90"
-                                                />
-                                            ) : imagemEmEdicao ? (
-                                                <img
-                                                    src={obterUrlPreviewBancoImagem(
-                                                        imagemEmEdicao.ID_IMAGEM
+                                                <p className="mt-1 text-sm font-semibold text-slate-800">
+                                                    {obterRotuloOrientacao(
+                                                        formulario.orientacao
                                                     )}
-                                                    alt={imagemEmEdicao.NM_TITULO}
-                                                    className="max-h-55 w-full rounded-2xl object-contain sm:max-h-70 xl:max-h-90"
-                                                />
-                                            ) : (
-                                                <>
-                                                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary transition group-hover:scale-105">
-                                                        <FaImage className="h-7 w-7" />
-                                                    </div>
+                                                </p>
+                                            </div>
 
-                                                    <p className="text-base font-semibold text-[#344054]">
-                                                        Clique para selecionar
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                    <p className="text-xs font-semibold text-slate-400">
+                                                        Largura
                                                     </p>
 
-                                                    <p className="mt-2 max-w-xs text-xs leading-5 text-[#667085]">
-                                                        PNG, JPG, JPEG, WebP ou GIF
+                                                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                                                        {formulario.largura
+                                                            ? `${formulario.largura}px`
+                                                            : "—"}
                                                     </p>
-                                                </>
-                                            )}
+                                                </div>
 
-                                            {(previewArquivo || imagemEmEdicao) && (
-                                                <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-xl bg-white/95 px-4 py-2 text-xs font-semibold text-[#344054] opacity-0 shadow-lg backdrop-blur transition group-hover:opacity-100">
-                                                    Clique para trocar a imagem
-                                                </span>
-                                            )}
+                                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                    <p className="text-xs font-semibold text-slate-400">
+                                                        Altura
+                                                    </p>
 
-                                            <input
-                                                type="file"
-                                                accept="image/png,image/jpeg,image/webp,image/gif"
-                                                onChange={selecionarArquivo}
-                                                className="hidden"
-                                            />
-                                        </label>
+                                                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                                                        {formulario.altura
+                                                            ? `${formulario.altura}px`
+                                                            : "—"}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
 
                                         {formulario.file && (
-                                            <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm">
+                                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                                         <FaFileImage />
                                                     </div>
 
                                                     <div className="min-w-0">
-                                                        <p className="truncate text-sm font-semibold text-[#344054]">
+                                                        <p className="truncate text-sm font-semibold text-slate-800">
                                                             {formulario.file.name}
                                                         </p>
-                                                        <p className="mt-0.5 text-xs text-[#667085]">
+
+                                                        <p className="mt-0.5 text-xs text-slate-500">
                                                             {formatarTamanho(
                                                                 formulario.file.size
                                                             )}
@@ -1783,324 +1857,273 @@ export default function BancoImagensForm({
                                                 </div>
                                             </div>
                                         )}
-
-                                        <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                                            <div className="flex items-start gap-3">
-                                                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
-                                                    <FaCheck className="h-3.5 w-3.5" />
-                                                </div>
-
-                                                <div>
-                                                    <p className="text-sm font-semibold text-primary">
-                                                        Preenchimento automático
-                                                    </p>
-
-                                                    <p className="mt-1 text-xs leading-5 text-[#475467]">
-                                                        Você não precisa alterar a orientação, a largura ou a altura. O sistema identifica essas informações assim que a imagem é selecionada.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {(formulario.largura ||
-                                            formulario.altura) && (
-                                            <div className="mt-4 grid grid-cols-1 gap-2 xs:grid-cols-3 sm:grid-cols-3">
-                                                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-                                                        Orientação
-                                                    </p>
-                                                    <p className="mt-1 text-xs font-bold text-[#344054]">
-                                                        {obterRotuloOrientacao(
-                                                            formulario.orientacao
-                                                        )}
-                                                    </p>
-                                                </div>
-
-                                                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-                                                        Largura
-                                                    </p>
-                                                    <p className="mt-1 text-xs font-bold text-[#344054]">
-                                                        {formulario.largura
-                                                            ? `${formulario.largura}px`
-                                                            : "—"}
-                                                    </p>
-                                                </div>
-
-                                                <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
-                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#98A2B3]">
-                                                        Altura
-                                                    </p>
-                                                    <p className="mt-1 text-xs font-bold text-[#344054]">
-                                                        {formulario.altura
-                                                            ? `${formulario.altura}px`
-                                                            : "—"}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
-                                </aside>
+                                </div>
+                            </div>
 
-                                <section className="p-4 sm:p-5 lg:p-6 xl:p-7">
-                                    <div className="grid gap-4 sm:gap-5">
-                                        <div>
-                                            <label className="mb-2 block text-sm font-semibold text-[#344054]">
-                                                Título
-                                                <span className="text-red-500">
-                                                    {" "}*
-                                                </span>
-                                            </label>
+                            <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                                        Informações
+                                    </p>
 
-                                            <input
-                                                type="text"
-                                                value={formulario.titulo}
-                                                onChange={(event) =>
-                                                    atualizarCampoFormulario(
-                                                        "titulo",
-                                                        event.target.value
-                                                    )
-                                                }
-                                                maxLength={200}
-                                                className="h-12 w-full rounded-2xl border border-[#D0D5DD] bg-white px-4 text-sm text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-primary focus:ring-4 focus:ring-primary/10"
-                                                placeholder="Ex.: Campanha de Cooperativismo 2026"
-                                            />
-                                        </div>
+                                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                        Dados da imagem
+                                    </h3>
 
-                                        <div>
-                                            <label className="mb-2 block text-sm font-semibold text-[#344054]">
-                                                Categoria
-                                                <span className="text-red-500">
-                                                    {" "}*
-                                                </span>
-                                            </label>
+                                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                                        Informe como este material será identificado e localizado pelos usuários.
+                                    </p>
+                                </div>
 
-                                            <select
-                                                value={formulario.idCategoria}
-                                                onChange={(event) =>
-                                                    atualizarCampoFormulario(
-                                                        "idCategoria",
-                                                        event.target.value
-                                                    )
-                                                }
-                                                className="h-12 w-full rounded-2xl border border-[#D0D5DD] bg-white px-4 text-sm text-[#344054] outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
-                                            >
-                                                <option value="">
-                                                    Selecione uma categoria
+                                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                            Título
+                                            <span className="text-red-500"> *</span>
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={formulario.titulo}
+                                            onChange={(event) =>
+                                                atualizarCampoFormulario(
+                                                    "titulo",
+                                                    event.target.value
+                                                )
+                                            }
+                                            maxLength={200}
+                                            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                            placeholder="Ex.: Campanha de Cooperativismo 2026"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                            Categoria
+                                            <span className="text-red-500"> *</span>
+                                        </label>
+
+                                        <select
+                                            value={formulario.idCategoria}
+                                            onChange={(event) =>
+                                                atualizarCampoFormulario(
+                                                    "idCategoria",
+                                                    event.target.value
+                                                )
+                                            }
+                                            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                        >
+                                            <option value="">
+                                                Selecione uma categoria
+                                            </option>
+
+                                            {categorias.map((categoria) => (
+                                                <option
+                                                    key={categoria.ID_CATEGORIA}
+                                                    value={categoria.ID_CATEGORIA}
+                                                >
+                                                    {categoria.NM_CATEGORIA}
                                                 </option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                                                {categorias.map((categoria) => (
-                                                    <option
-                                                        key={
-                                                            categoria.ID_CATEGORIA
-                                                        }
-                                                        value={
-                                                            categoria.ID_CATEGORIA
-                                                        }
-                                                    >
-                                                        {categoria.NM_CATEGORIA}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                    <div className="md:col-span-2">
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                            Descrição
+                                        </label>
 
+                                        <textarea
+                                            value={formulario.descricao}
+                                            onChange={(event) =>
+                                                atualizarCampoFormulario(
+                                                    "descricao",
+                                                    event.target.value
+                                                )
+                                            }
+                                            rows={4}
+                                            className="w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                            placeholder="Explique brevemente o conteúdo e a finalidade da imagem."
+                                        />
+                                    </div>
+
+                                    <div className="md:col-span-2">
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                            Palavras-chave
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            value={formulario.palavrasChave}
+                                            onChange={(event) =>
+                                                atualizarCampoFormulario(
+                                                    "palavrasChave",
+                                                    event.target.value
+                                                )
+                                            }
+                                            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                            placeholder="Ex.: cooperativismo, campanha, institucional"
+                                        />
+
+                                        <p className="mt-1.5 text-xs text-slate-500">
+                                            Separe as palavras por vírgula.
+                                        </p>
+                                    </div>
+
+                                    <div className="md:col-span-2">
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                            Instruções de uso
+                                        </label>
+
+                                        <textarea
+                                            value={formulario.instrucoesUso}
+                                            onChange={(event) =>
+                                                atualizarCampoFormulario(
+                                                    "instrucoesUso",
+                                                    event.target.value
+                                                )
+                                            }
+                                            rows={3}
+                                            className="w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm leading-6 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                            placeholder="Ex.: utilizar apenas em comunicações internas e não alterar a identidade visual."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                                        Disponibilidade
+                                    </p>
+
+                                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                        Período de exibição
+                                    </h3>
+
+                                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                                        Defina opcionalmente o período em que a imagem ficará disponível.
+                                    </p>
+                                </div>
+
+                                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                            Exibir a partir de
+                                        </label>
+
+                                        <input
+                                            type="date"
+                                            value={formulario.dtInicio}
+                                            onChange={(event) =>
+                                                atualizarCampoFormulario(
+                                                    "dtInicio",
+                                                    event.target.value
+                                                )
+                                            }
+                                            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">
+                                            Exibir até
+                                        </label>
+
+                                        <input
+                                            type="date"
+                                            value={formulario.dtFim}
+                                            onChange={(event) =>
+                                                atualizarCampoFormulario(
+                                                    "dtFim",
+                                                    event.target.value
+                                                )
+                                            }
+                                            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                                        Configurações
+                                    </p>
+
+                                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                                        Visibilidade da imagem
+                                    </h3>
+                                </div>
+
+                                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                                    <label
+                                        className={`flex cursor-pointer items-center justify-between gap-4 rounded-2xl border p-4 transition ${formulario.stAtivo === "S"
+                                            ? "border-primary/30 bg-primary/5"
+                                            : "border-slate-200 bg-white"
+                                            }`}
+                                    >
                                         <div>
-                                            <label className="mb-2 block text-sm font-semibold text-[#344054]">
-                                                Descrição
-                                            </label>
+                                            <p className="text-sm font-semibold text-slate-800">
+                                                Imagem ativa
+                                            </p>
 
-                                            <textarea
-                                                value={formulario.descricao}
-                                                onChange={(event) =>
-                                                    atualizarCampoFormulario(
-                                                        "descricao",
-                                                        event.target.value
-                                                    )
-                                                }
-                                                rows={4}
-                                                className="w-full resize-y rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm leading-6 text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-primary focus:ring-4 focus:ring-primary/10"
-                                                placeholder="Explique brevemente o conteúdo e a finalidade da imagem."
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="mb-2 block text-sm font-semibold text-[#344054]">
-                                                Palavras-chave
-                                            </label>
-
-                                            <input
-                                                type="text"
-                                                value={formulario.palavrasChave}
-                                                onChange={(event) =>
-                                                    atualizarCampoFormulario(
-                                                        "palavrasChave",
-                                                        event.target.value
-                                                    )
-                                                }
-                                                className="h-12 w-full rounded-2xl border border-[#D0D5DD] bg-white px-4 text-sm text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-primary focus:ring-4 focus:ring-primary/10"
-                                                placeholder="Ex.: cooperativismo, campanha, institucional"
-                                            />
-
-                                            <p className="mt-1.5 text-xs text-[#98A2B3]">
-                                                Separe as palavras por vírgula.
+                                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                                                Disponível na galeria dos funcionários.
                                             </p>
                                         </div>
 
+                                        <input
+                                            type="checkbox"
+                                            checked={formulario.stAtivo === "S"}
+                                            onChange={(event) =>
+                                                atualizarCampoFormulario(
+                                                    "stAtivo",
+                                                    event.target.checked ? "S" : "N"
+                                                )
+                                            }
+                                            className="h-5 w-5 accent-primary"
+                                        />
+                                    </label>
+
+                                    <label
+                                        className={`flex cursor-pointer items-center justify-between gap-4 rounded-2xl border p-4 transition ${formulario.stDestaque === "S"
+                                            ? "border-amber-300 bg-amber-50"
+                                            : "border-slate-200 bg-white"
+                                            }`}
+                                    >
                                         <div>
-                                            <label className="mb-2 block text-sm font-semibold text-[#344054]">
-                                                Instruções de uso
-                                            </label>
+                                            <p className="text-sm font-semibold text-slate-800">
+                                                Destacar imagem
+                                            </p>
 
-                                            <textarea
-                                                value={formulario.instrucoesUso}
-                                                onChange={(event) =>
-                                                    atualizarCampoFormulario(
-                                                        "instrucoesUso",
-                                                        event.target.value
-                                                    )
-                                                }
-                                                rows={3}
-                                                className="w-full resize-y rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm leading-6 text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-primary focus:ring-4 focus:ring-primary/10"
-                                                placeholder="Ex.: utilizar apenas em comunicações internas e não alterar a identidade visual."
-                                            />
+                                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                                                Exibe o material antes das demais imagens.
+                                            </p>
                                         </div>
 
-                                        <div className="rounded-2xl border border-slate-200 bg-[#F8FAFC] p-4">
-                                            <div className="mb-4">
-                                                <h3 className="text-sm font-semibold text-[#344054]">
-                                                    Período de disponibilidade
-                                                </h3>
-                                                <p className="mt-1 text-xs text-[#667085]">
-                                                    Opcional. Deixe em branco para manter a imagem disponível sem limite de data.
-                                                </p>
-                                            </div>
-
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <div>
-                                                    <label className="mb-2 block text-xs font-semibold text-[#475467]">
-                                                        Exibir a partir de
-                                                    </label>
-
-                                                    <input
-                                                        type="date"
-                                                        value={formulario.dtInicio}
-                                                        onChange={(event) =>
-                                                            atualizarCampoFormulario(
-                                                                "dtInicio",
-                                                                event.target.value
-                                                            )
-                                                        }
-                                                        className="h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 text-sm text-[#344054] outline-none focus:border-primary"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="mb-2 block text-xs font-semibold text-[#475467]">
-                                                        Exibir até
-                                                    </label>
-
-                                                    <input
-                                                        type="date"
-                                                        value={formulario.dtFim}
-                                                        onChange={(event) =>
-                                                            atualizarCampoFormulario(
-                                                                "dtFim",
-                                                                event.target.value
-                                                            )
-                                                        }
-                                                        className="h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 text-sm text-[#344054] outline-none focus:border-primary"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-3 md:grid-cols-2">
-                                            <label
-                                                className={`flex cursor-pointer items-center justify-between gap-4 rounded-2xl border p-4 transition ${
-                                                    formulario.stAtivo === "S"
-                                                        ? "border-primary/30 bg-primary/5"
-                                                        : "border-slate-200 bg-white"
-                                                }`}
-                                            >
-                                                <div>
-                                                    <p className="text-sm font-semibold text-[#344054]">
-                                                        Imagem ativa
-                                                    </p>
-                                                    <p className="mt-1 text-xs leading-5 text-[#667085]">
-                                                        Disponível na galeria dos funcionários.
-                                                    </p>
-                                                </div>
-
-                                                <input
-                                                    type="checkbox"
-                                                    checked={
-                                                        formulario.stAtivo ===
-                                                        "S"
-                                                    }
-                                                    onChange={(event) =>
-                                                        atualizarCampoFormulario(
-                                                            "stAtivo",
-                                                            event.target.checked
-                                                                ? "S"
-                                                                : "N"
-                                                        )
-                                                    }
-                                                    className="h-5 w-5 accent-primary"
-                                                />
-                                            </label>
-
-                                            <label
-                                                className={`flex cursor-pointer items-center justify-between gap-4 rounded-2xl border p-4 transition ${
-                                                    formulario.stDestaque ===
-                                                    "S"
-                                                        ? "border-amber-300 bg-amber-50"
-                                                        : "border-slate-200 bg-white"
-                                                }`}
-                                            >
-                                                <div>
-                                                    <p className="text-sm font-semibold text-[#344054]">
-                                                        Destacar imagem
-                                                    </p>
-                                                    <p className="mt-1 text-xs leading-5 text-[#667085]">
-                                                        Exibe o material antes das demais imagens.
-                                                    </p>
-                                                </div>
-
-                                                <input
-                                                    type="checkbox"
-                                                    checked={
-                                                        formulario.stDestaque ===
-                                                        "S"
-                                                    }
-                                                    onChange={(event) =>
-                                                        atualizarCampoFormulario(
-                                                            "stDestaque",
-                                                            event.target.checked
-                                                                ? "S"
-                                                                : "N"
-                                                        )
-                                                    }
-                                                    className="h-5 w-5 accent-primary"
-                                                />
-                                            </label>
-                                        </div>
-                                    </div>
-                                </section>
+                                        <input
+                                            type="checkbox"
+                                            checked={formulario.stDestaque === "S"}
+                                            onChange={(event) =>
+                                                atualizarCampoFormulario(
+                                                    "stDestaque",
+                                                    event.target.checked ? "S" : "N"
+                                                )
+                                            }
+                                            className="h-5 w-5 accent-primary"
+                                        />
+                                    </label>
+                                </div>
                             </div>
-                        </div>
 
-                        <footer className="shrink-0 border-t border-slate-100 bg-white px-4 py-3 sm:px-6 sm:py-4 lg:px-7">
-                            <div className="flex items-center justify-between gap-4">
-                                <p className="hidden text-xs text-[#98A2B3] lg:block">
-                                    Os campos com * são obrigatórios.
-                                </p>
-
-                                <div className="grid w-full grid-cols-2 gap-3 lg:w-auto">
+                            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
                                 <button
                                     type="button"
                                     onClick={fecharFormulario}
                                     disabled={salvando}
-                                    className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-[#344054] transition hover:bg-slate-50 disabled:opacity-50 sm:px-5"
+                                    className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     Cancelar
                                 </button>
@@ -2108,7 +2131,7 @@ export default function BancoImagensForm({
                                 <button
                                     type="submit"
                                     disabled={salvando}
-                                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(0,174,157,0.22)] transition hover:-translate-y-0.5 hover:bg-[#00998A] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 sm:px-6"
+                                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {salvando ? (
                                         <>
@@ -2124,9 +2147,8 @@ export default function BancoImagensForm({
                                         </>
                                     )}
                                 </button>
-                                </div>
                             </div>
-                        </footer>
+                        </div>
                     </form>
                 </div>
             )}

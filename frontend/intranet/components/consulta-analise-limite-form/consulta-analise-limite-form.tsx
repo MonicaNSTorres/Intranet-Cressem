@@ -585,8 +585,6 @@ export function ConsultaAnaliseLimiteForm() {
 
   useEffect(() => {
     buscarAlteracoes(1, 10);
-    // A busca inicial deve rodar só uma vez ao abrir a consulta.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const ehPJSelecionado = selectedAnalise
@@ -597,16 +595,16 @@ export function ConsultaAnaliseLimiteForm() {
     <div className="mx-auto w-full space-y-5">
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 bg-white px-5 py-4">
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 text-xl font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
-              Consulta de Análise de Limite
-            </h2>
-            <p className="mt-1 text-sm font-medium text-slate-500">
-              Busque análises cadastradas, visualize detalhes e gerencie assinaturas.
-            </p>
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="flex items-center gap-2 text-xl font-black text-slate-950 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
+                Consulta de Análise de Limite
+              </h2>
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                Busque análises cadastradas, visualize detalhes e gerencie assinaturas.
+              </p>
+            </div>
           </div>
-        </div>
         </div>
 
         <div className="grid gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_220px_auto]">
@@ -799,125 +797,359 @@ export function ConsultaAnaliseLimiteForm() {
       </div>
 
       {openInfoModal && selectedAnalise && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4">
-          <div className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
-              <div>
-                <h3 className="text-lg font-black text-slate-950">
-                  Detalhes da Análise
-                </h3>
-                <p className="text-sm font-medium text-slate-500">
-                  Análise feita por{" "}
-                  {primeiroUltimoNome(
-                    capitalizeWords(selectedAnalise.NM_FUNCIONARIO)
-                  )}{" "}
-                  em {formatDateBR(selectedAnalise.DT)}
-                </p>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[94vh] w-full max-w-5xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+            <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                    Análise de limite
+                  </p>
 
-              <button
-                onClick={() => setOpenInfoModal(false)}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#49479D] hover:text-[#49479D]"
-              >
-                Fechar
-              </button>
+                  <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                    Detalhes da análise
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Análise feita por{" "}
+                    <span className="font-semibold text-slate-700">
+                      {primeiroUltimoNome(
+                        capitalizeWords(selectedAnalise.NM_FUNCIONARIO)
+                      )}
+                    </span>{" "}
+                    em {formatDateBR(selectedAnalise.DT)}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setOpenInfoModal(false)}
+                  className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500"
+                  title="Fechar"
+                  aria-label="Fechar"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
-            <div className="max-h-[calc(92vh-84px)] overflow-y-auto p-6">
+            <div className="max-h-[78vh] overflow-y-auto p-6">
               <div className="space-y-5">
-                <Section title="Dados do Associado">
-                  <FieldGrid>
-                    <Field label="CPF/CNPJ" value={selectedAnalise.NR_CPF_CNPJ_ASSOCIADO} />
-                    <Field label="Nome" value={selectedAnalise.NM_ASSOCIADO} colSpan="lg:col-span-2" />
-                    <Field label="Celular" value={selectedAnalise.NR_CELULAR} />
-                    {!ehPJSelecionado && (
-                      <Field label="Empresa" value={selectedAnalise.NM_EMPRESA} colSpan="lg:col-span-2" />
-                    )}
-                  </FieldGrid>
-                </Section>
+                <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                      Associado
+                    </p>
 
-                <Section title="Informações Bancárias e Salariais">
-                  <FieldGrid>
-                    <Field label="Conta Corrente" value={selectedAnalise.NR_CONTA_CORRENTE} />
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      Dados do associado
+                    </h3>
+
+                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                      Informações cadastrais do associado vinculado à análise.
+                    </p>
+                  </div>
+
+                  <div className="mt-5">
+                    <FieldGrid>
+                      <Field
+                        label="CPF/CNPJ"
+                        value={formatCpfCnpjView(
+                          selectedAnalise.NR_CPF_CNPJ_ASSOCIADO
+                        )}
+                      />
+
+                      <Field
+                        label="Nome"
+                        value={selectedAnalise.NM_ASSOCIADO}
+                        colSpan="lg:col-span-2"
+                      />
+
+                      <Field
+                        label="Celular"
+                        value={selectedAnalise.NR_CELULAR}
+                      />
+
+                      {!ehPJSelecionado && (
+                        <Field
+                          label="Empresa"
+                          value={selectedAnalise.NM_EMPRESA}
+                          colSpan="lg:col-span-2"
+                        />
+                      )}
+                    </FieldGrid>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                      Financeiro
+                    </p>
+
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      Informações bancárias e salariais
+                    </h3>
+
+                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                      Dados utilizados para avaliação financeira e definição dos limites.
+                    </p>
+                  </div>
+
+                  <div className="mt-5">
+                    <FieldGrid>
+                      <Field
+                        label="Conta Corrente"
+                        value={selectedAnalise.NR_CONTA_CORRENTE}
+                      />
+
+                      <Field
+                        label={
+                          ehPJSelecionado
+                            ? "Faturamento Mensal"
+                            : "Salário Bruto"
+                        }
+                        value={
+                          ehPJSelecionado
+                            ? formatMoney(
+                              selectedAnalise.VL_FATURAMENTO_MENSAL
+                            )
+                            : formatMoney(selectedAnalise.SL_BRUTO)
+                        }
+                      />
+
+                      <Field
+                        label={
+                          ehPJSelecionado
+                            ? "Faturamento Anual"
+                            : "Salário Líquido"
+                        }
+                        value={
+                          ehPJSelecionado
+                            ? formatMoney(
+                              selectedAnalise.VL_FATURAMENTO_ANUAL
+                            )
+                            : formatMoney(selectedAnalise.SL_LIQUIDO)
+                        }
+                      />
+
+                      {!ehPJSelecionado && (
+                        <>
+                          <Field
+                            label="Possui Portabilidade?"
+                            value={boolToSimNao(
+                              selectedAnalise.PORTABILIDADE
+                            )}
+                          />
+
+                          <Field
+                            label="Funcionário Efetivo?"
+                            value={boolToSimNao(
+                              selectedAnalise.FUNCIONARIO_EFETIVO
+                            )}
+                          />
+                        </>
+                      )}
+
+                      <Field
+                        label="Cessão de Crédito?"
+                        value={boolToSimNao(
+                          selectedAnalise.CESSAO_CREDITO
+                        )}
+                      />
+
+                      {!!selectedAnalise.CESSAO_CREDITO && (
+                        <Field
+                          label="Data de Pagamento"
+                          value={formatDateBR(
+                            selectedAnalise.DT_PAGAMENTO
+                          )}
+                        />
+                      )}
+
+                      <Field
+                        label="Nível Carteira"
+                        value={selectedAnalise.NV_CARTEIRA}
+                      />
+
+                      <Field
+                        label="Números IAP"
+                        value={selectedAnalise.NR_IAP}
+                      />
+                    </FieldGrid>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                      CRM
+                    </p>
+
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      Status CRM e observações
+                    </h3>
+                  </div>
+
+                  <div className="mt-5">
+                    <FieldGrid>
+                      <Field
+                        label="Ocorrência CRM"
+                        value={boolToSimNao(
+                          selectedAnalise.OCORRENCIA_CRM
+                        )}
+                      />
+
+                      <Field
+                        label="Observação"
+                        value={selectedAnalise.OBS_CRM}
+                        colSpan="lg:col-span-2"
+                        multiline
+                      />
+                    </FieldGrid>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                      Análise financeira
+                    </p>
+
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      Indicadores de risco e financeiros
+                    </h3>
+
+                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                      Indicadores considerados na análise de crédito.
+                    </p>
+                  </div>
+
+                  <div className="mt-5">
+                    <FieldGrid>
+                      <Field
+                        label="Risco"
+                        value={selectedAnalise.RISCO}
+                      />
+
+                      <Field
+                        label="PD"
+                        value={selectedAnalise.PD}
+                      />
+
+                      <Field
+                        label="CRL"
+                        value={formatMoney(selectedAnalise.NR_CRL)}
+                      />
+
+                      <Field
+                        label="Capital"
+                        value={formatMoney(selectedAnalise.CAPITAL)}
+                      />
+
+                      <Field
+                        label="Dívida"
+                        value={formatMoney(selectedAnalise.DIVIDA)}
+                      />
+
+                      <Field
+                        label="Restrições?"
+                        value={boolToSimNao(
+                          selectedAnalise.RESTRICAO
+                        )}
+                      />
+
+                      <Field
+                        label="Quais?"
+                        value={selectedAnalise.DESC_RESTRICAO}
+                        colSpan="lg:col-span-3"
+                      />
+                    </FieldGrid>
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                      Limites
+                    </p>
+
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      Sugestão de limite e aprovações
+                    </h3>
+
+                    <p className="mt-1 text-sm leading-5 text-slate-500">
+                      Comparativo entre limites atuais, sugeridos e aprovados.
+                    </p>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <Field
-                      label={ehPJSelecionado ? "Faturamento Mensal" : "Salário Bruto"}
-                      value={
-                        ehPJSelecionado
-                          ? formatMoney(selectedAnalise.VL_FATURAMENTO_MENSAL)
-                          : formatMoney(selectedAnalise.SL_BRUTO)
-                      }
+                      label="Cartão?"
+                      value={boolToSimNao(selectedAnalise.CARTAO)}
                     />
+
                     <Field
-                      label={ehPJSelecionado ? "Faturamento Anual" : "Salário Líquido"}
-                      value={
-                        ehPJSelecionado
-                          ? formatMoney(selectedAnalise.VL_FATURAMENTO_ANUAL)
-                          : formatMoney(selectedAnalise.SL_LIQUIDO)
-                      }
+                      label="Limite Atual Cartão"
+                      value={formatMoney(
+                        selectedAnalise.LT_ATUAL_CARTAO
+                      )}
                     />
 
-                    {!ehPJSelecionado && (
-                      <>
-                        <Field label="Possui Portabilidade?" value={boolToSimNao(selectedAnalise.PORTABILIDADE)} />
-                        <Field label="Funcionário Efetivo?" value={boolToSimNao(selectedAnalise.FUNCIONARIO_EFETIVO)} />
-                      </>
-                    )}
-
-                    <Field label="Cessão de Crédito?" value={boolToSimNao(selectedAnalise.CESSAO_CREDITO)} />
-
-                    {!!selectedAnalise.CESSAO_CREDITO && (
-                      <Field label="Data de Pagamento" value={formatDateBR(selectedAnalise.DT_PAGAMENTO)} />
-                    )}
-
-                    <Field label="Nível Carteira" value={selectedAnalise.NV_CARTEIRA} />
-                    <Field label="Números IAP" value={selectedAnalise.NR_IAP} />
-                  </FieldGrid>
-                </Section>
-
-                <Section title="Status CRM e Observações">
-                  <FieldGrid>
-                    <Field label="Ocorrência CRM" value={boolToSimNao(selectedAnalise.OCORRENCIA_CRM)} />
-                    <Field
-                      label="Observação"
-                      value={selectedAnalise.OBS_CRM}
-                      colSpan="lg:col-span-2"
-                      multiline
-                    />
-                  </FieldGrid>
-                </Section>
-
-                <Section title="Indicadores de Risco / Financeiros">
-                  <FieldGrid>
-                    <Field label="Risco" value={selectedAnalise.RISCO} />
-                    <Field label="PD" value={selectedAnalise.PD} />
-                    <Field label="CRL" value={formatMoney(selectedAnalise.NR_CRL)} />
-                    <Field label="Capital" value={formatMoney(selectedAnalise.CAPITAL)} />
-                    <Field label="Dívida" value={formatMoney(selectedAnalise.DIVIDA)} />
-                    <Field label="Restrições?" value={boolToSimNao(selectedAnalise.RESTRICAO)} />
-                    <Field
-                      label="Quais?"
-                      value={selectedAnalise.DESC_RESTRICAO}
-                      colSpan="lg:col-span-3"
-                    />
-                  </FieldGrid>
-                </Section>
-
-                <Section title="Sugestão de Limite e Aprovações">
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Field label="Cartão?" value={boolToSimNao(selectedAnalise.CARTAO)} />
-                    <Field label="Limite Atual Cartão" value={formatMoney(selectedAnalise.LT_ATUAL_CARTAO)} />
                     <Field
                       label="Sugestão de Limite Cartão"
-                      value={formatMoney(selectedAnalise.SG_LIMITE_CARTAO ?? selectedAnalise.SG_LIMITE)}
+                      value={formatMoney(
+                        selectedAnalise.SG_LIMITE_CARTAO ??
+                        selectedAnalise.SG_LIMITE
+                      )}
                     />
-                    <Field label="Limite Aprovado Cartão" value={formatMoney(selectedAnalise.LT_APROVADO_CARTAO)} />
 
-                    <Field label="Cheque Especial?" value={boolToSimNao(selectedAnalise.CHEQUE_ESPECIAL)} />
-                    <Field label="Limite Atual Cheque" value={formatMoney(selectedAnalise.LT_ATUAL_CH)} />
-                    <Field label="Sugestão de Limite Cheque" value={formatMoney(selectedAnalise.SG_LIMITE)} />
-                    <Field label="Limite Aprovado Cheque" value={formatMoney(selectedAnalise.LT_APROVADO_CH)} />
+                    <Field
+                      label="Limite Aprovado Cartão"
+                      value={formatMoney(
+                        selectedAnalise.LT_APROVADO_CARTAO
+                      )}
+                    />
+
+                    <Field
+                      label="Cheque Especial?"
+                      value={boolToSimNao(
+                        selectedAnalise.CHEQUE_ESPECIAL
+                      )}
+                    />
+
+                    <Field
+                      label="Limite Atual Cheque"
+                      value={formatMoney(
+                        selectedAnalise.LT_ATUAL_CH
+                      )}
+                    />
+
+                    <Field
+                      label="Sugestão de Limite Cheque"
+                      value={formatMoney(
+                        selectedAnalise.SG_LIMITE
+                      )}
+                    />
+
+                    <Field
+                      label="Limite Aprovado Cheque"
+                      value={formatMoney(
+                        selectedAnalise.LT_APROVADO_CH
+                      )}
+                    />
                   </div>
-                </Section>
+                </div>
+
+                <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setOpenInfoModal(false)}
+                    className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Fechar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -925,86 +1157,204 @@ export function ConsultaAnaliseLimiteForm() {
       )}
 
       {openAssinaturaModal && selectedAnalise && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4">
-          <div className="w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
-              <div>
-                <h3 className="text-lg font-black text-slate-950">
-                  Assinatura da Análise
-                </h3>
-                <p className="text-sm font-medium text-slate-500">
-                  Gerencie o arquivo assinado desta análise.
-                </p>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+          <div className="max-h-[94vh] w-full max-w-xl overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+            <div className="bg-linear-to-r from-primary/10 via-white to-secondary/10 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                    Análise de limite
+                  </p>
 
-              <button
-                onClick={() => setOpenAssinaturaModal(false)}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#49479D] hover:text-[#49479D]"
-              >
-                Fechar
-              </button>
+                  <h2 className="mt-1 text-2xl font-bold text-slate-800">
+                    Assinatura da análise
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Gerencie o arquivo assinado desta análise.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setOpenAssinaturaModal(false)}
+                  disabled={salvandoAssinatura}
+                  className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Fechar"
+                  aria-label="Fechar"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-5 p-6">
-              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-                <label className="mb-3 block text-sm font-black text-slate-700">
-                  Upload de Arquivo Assinado
-                </label>
+            <div className="max-h-[78vh] space-y-5 overflow-y-auto p-6">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Solicitação
+                  </p>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <input
-                    ref={assinaturaInputRef}
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) =>
-                      setArquivoAssinatura(e.target.files?.[0] || null)
-                    }
-                    className="hidden"
-                  />
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Dados da análise
+                  </h3>
 
-                  <div className="flex h-10 min-w-0 flex-1 items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <button
-                      type="button"
-                      onClick={() => assinaturaInputRef.current?.click()}
-                      className="ml-1 inline-flex h-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-200"
-                    >
-                      Procurar...
-                    </button>
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Identificação da análise vinculada ao documento assinado.
+                  </p>
+                </div>
 
-                    <span className="min-w-0 truncate px-3 text-sm font-medium text-slate-600">
-                      {arquivoAssinatura?.name || "Nenhum arquivo selecionado."}
-                    </span>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">
+                      Associado
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                      {capitalizeWords(selectedAnalise.NM_ASSOCIADO) || "-"}
+                    </p>
                   </div>
 
-                  <button
-                    onClick={salvarAssinatura}
-                    disabled={salvandoAssinatura}
-                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#79B729] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#00AE9D] disabled:opacity-60"
-                  >
-                    <FaUpload />
-                    {salvandoAssinatura ? "Salvando..." : "Salvar"}
-                  </button>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">
+                      CPF/CNPJ
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                      {formatCpfCnpjView(
+                        selectedAnalise.NR_CPF_CNPJ_ASSOCIADO
+                      ) || "-"}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-                <p className="mb-2 text-sm font-black text-slate-700">
-                  Arquivo atual salvo
-                </p>
-                <p className="text-sm font-medium text-slate-500">
-                  {selectedAnalise.NM_ASSINATURA
-                    ? selectedAnalise.NM_ASSINATURA.split("/").pop()
-                    : "Nenhum arquivo enviado ainda."}
-                </p>
+              <div className="rounded-3xl border border-primary/20 bg-primary/5 p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                    Documento
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Upload de arquivo assinado
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Selecione o documento assinado em formato PDF para vinculá-lo à análise.
+                  </p>
+                </div>
+
+                <input
+                  ref={assinaturaInputRef}
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) =>
+                    setArquivoAssinatura(e.target.files?.[0] || null)
+                  }
+                  className="hidden"
+                />
+
+                <div className="mt-5">
+                  <button
+                    type="button"
+                    onClick={() => assinaturaInputRef.current?.click()}
+                    disabled={salvandoAssinatura}
+                    className="flex w-full cursor-pointer items-center gap-4 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-4 text-left transition hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <FaUpload />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-slate-800">
+                        {arquivoAssinatura
+                          ? "Arquivo selecionado"
+                          : "Selecionar arquivo PDF"}
+                      </p>
+
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {arquivoAssinatura?.name ||
+                          "Clique para procurar o documento assinado."}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+
+                {arquivoAssinatura && (
+                  <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <p className="text-xs font-semibold text-emerald-700">
+                      Arquivo pronto para envio
+                    </p>
+
+                    <p className="mt-1 truncate text-sm font-medium text-emerald-900">
+                      {arquivoAssinatura.name}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-end">
+              <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Arquivo atual
+                  </p>
+
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Documento salvo
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    Documento assinado atualmente vinculado a esta análise.
+                  </p>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <p className="text-xs font-semibold text-slate-400">
+                    Nome do arquivo
+                  </p>
+
+                  <p className="mt-1 break-all text-sm font-semibold text-slate-700">
+                    {selectedAnalise.NM_ASSINATURA
+                      ? selectedAnalise.NM_ASSINATURA.split("/").pop()
+                      : "Nenhum arquivo enviado ainda."}
+                  </p>
+                </div>
+
+                {selectedAnalise.NM_ASSINATURA && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      baixarArquivo(selectedAnalise.NM_ASSINATURA)
+                    }
+                    className="mt-3 inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-primary/10"
+                  >
+                    <FaDownload />
+                    Baixar documento atual
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
                 <button
-                  onClick={() => baixarArquivo(selectedAnalise.NM_ASSINATURA)}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#00AE9D] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#79B729]"
+                  type="button"
+                  onClick={() => setOpenAssinaturaModal(false)}
+                  disabled={salvandoAssinatura}
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <FaDownload />
-                  Baixar Documento
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={salvarAssinatura}
+                  disabled={salvandoAssinatura || !arquivoAssinatura}
+                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-secondary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <FaUpload />
+
+                  {salvandoAssinatura
+                    ? "Salvando..."
+                    : "Salvar assinatura"}
                 </button>
               </div>
             </div>
