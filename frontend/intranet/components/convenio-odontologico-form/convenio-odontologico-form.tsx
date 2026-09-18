@@ -1941,33 +1941,31 @@ function ModalNovoBeneficiario({
 
                 <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <SelectField
-                    label="Plano *"
-                    value={form.idPlano}
-                    onChange={
-                      handlePlanoChange
+                    label="Operadora *"
+                    value={
+                      form.idOperadora
                     }
-                    disabled={
-                      !form.idOperadora ||
-                      dependente
+                    onChange={
+                      handleOperadoraChange
                     }
                   >
                     <option value="">
-                      {form.idOperadora
-                        ? "Selecione"
-                        : "Selecione primeiro a operadora"}
+                      Selecione
                     </option>
 
-                    {planos.map(
+                    {operadoras.map(
                       (item) => (
                         <option
                           key={
-                            item.ID_PLANO
+                            item.ID_OPERADORA
                           }
                           value={
-                            item.ID_PLANO
+                            item.ID_OPERADORA
                           }
                         >
-                          {item.NM_PLANO}
+                          {
+                            item.NM_OPERADORA
+                          }
                         </option>
                       )
                     )}
