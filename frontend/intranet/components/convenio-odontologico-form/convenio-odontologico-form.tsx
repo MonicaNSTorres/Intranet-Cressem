@@ -1289,6 +1289,100 @@ function ModalNovoBeneficiario({
     }
   }
 
+  async function handleTitularSelecionado(
+    titular: BeneficiarioOdonto
+  ) {
+    const idOperadoraTitular =
+      titular.ID_OPERADORA
+        ? String(titular.ID_OPERADORA)
+        : "";
+
+    const idPlanoTitular =
+      titular.ID_PLANO
+        ? String(titular.ID_PLANO)
+        : "";
+
+    setBuscaTitular(
+      titular.NM_BENEFICIARIO || ""
+    );
+
+    setListaTitularesAberta(false);
+
+    setPlanos([]);
+    setValorPlano(null);
+
+    if (!idOperadoraTitular) {
+      setError(
+        "O titular selecionado não possui uma operadora vinculada."
+      );
+      return;
+    }
+
+    if (!idPlanoTitular) {
+      setError(
+        "O titular selecionado não possui um plano vinculado."
+      );
+      return;
+    }
+
+    try {
+      setError(null);
+
+      const data =
+        await listarPlanos(
+          Number(idOperadoraTitular)
+        );
+
+      setPlanos(data);
+
+      setForm((prev) => ({
+        ...prev,
+        idTitular: String(
+          titular.ID_BENEFICIARIO
+        ),
+        idOperadora:
+          idOperadoraTitular,
+        idPlano:
+          idPlanoTitular,
+      }));
+
+      try {
+        const valor =
+          await buscarValorVigentePlano(
+            Number(idPlanoTitular)
+          );
+
+        setValorPlano(
+          Number(
+            valor.VL_MENSALIDADE
+          )
+        );
+      } catch (err) {
+        console.error(
+          "Erro ao buscar valor vigente do plano do titular:",
+          err
+        );
+
+        setValorPlano(null);
+
+        setError(
+          "O plano do titular não possui valor vigente cadastrado."
+        );
+      }
+    } catch (err) {
+      console.error(
+        "Erro ao carregar planos da operadora do titular:",
+        err
+      );
+
+      setPlanos([]);
+
+      setError(
+        "Não foi possível carregar o plano do titular."
+      );
+    }
+  }
+
   async function handlePlanoChange(
     value: string
   ) {
@@ -1847,31 +1941,33 @@ function ModalNovoBeneficiario({
 
                 <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <SelectField
-                    label="Operadora *"
-                    value={
-                      form.idOperadora
-                    }
+                    label="Plano *"
+                    value={form.idPlano}
                     onChange={
-                      handleOperadoraChange
+                      handlePlanoChange
+                    }
+                    disabled={
+                      !form.idOperadora ||
+                      dependente
                     }
                   >
                     <option value="">
-                      Selecione
+                      {form.idOperadora
+                        ? "Selecione"
+                        : "Selecione primeiro a operadora"}
                     </option>
 
-                    {operadoras.map(
+                    {planos.map(
                       (item) => (
                         <option
                           key={
-                            item.ID_OPERADORA
+                            item.ID_PLANO
                           }
                           value={
-                            item.ID_OPERADORA
+                            item.ID_PLANO
                           }
                         >
-                          {
-                            item.NM_OPERADORA
-                          }
+                          {item.NM_PLANO}
                         </option>
                       )
                     )}
@@ -1993,26 +2089,11 @@ function ModalNovoBeneficiario({
                                         item.ID_BENEFICIARIO
                                       }
                                       type="button"
-                                      onClick={() => {
-                                        setForm(
-                                          (prev) => ({
-                                            ...prev,
-                                            idTitular:
-                                              String(
-                                                item.ID_BENEFICIARIO
-                                              ),
-                                          })
-                                        );
-
-                                        setBuscaTitular(
-                                          item.NM_BENEFICIARIO ||
-                                          ""
-                                        );
-
-                                        setListaTitularesAberta(
-                                          false
-                                        );
-                                      }}
+                                      onClick={() =>
+                                        handleTitularSelecionado(
+                                          item
+                                        )
+                                      }
                                       className="flex w-full cursor-pointer flex-col rounded-xl px-3 py-3 text-left transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
                                     >
                                       <span className="text-sm font-semibold text-slate-800">
@@ -2687,8 +2768,13 @@ function ModalEditarBeneficiario({
                 <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <SelectField
                     label="Operadora *"
-                    value={form.idOperadora}
-                    onChange={handleOperadoraChange}
+                    value={
+                      form.idOperadora
+                    }
+                    onChange={
+                      handleOperadoraChange
+                    }
+                    disabled={dependente}
                   >
                     <option value="">Selecione</option>
 
