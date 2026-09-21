@@ -1,11 +1,56 @@
 "use client";
 
-import { Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { FaDoorOpen } from "react-icons/fa";
 import BackButton from "@/components/back-button/back-button";
 import { ConsultaSalaReuniao } from "@/components/consulta-sala-reuniao/consulta-sala-reuniao";
+import {
+  canAccess,
+  PAGE_ACCESS,
+  type AuthUserLike,
+} from "@/lib/access-control";
+import { getMeAdUser } from "@/services/auth.service";
 
 export default function ConsultaSalaReuniaoPage() {
+  const [loading, setLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    async function validarAcesso() {
+      try {
+        const user = (await getMeAdUser()) as AuthUserLike;
+
+        setAllowed(
+          canAccess(user, PAGE_ACCESS.consultaSalaReuniao)
+        );
+      } catch {
+        setAllowed(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    validarAcesso();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-sm text-gray-500">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="p-6">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Você não possui permissão para acessar esta tela.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 lg:p-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -13,10 +58,10 @@ export default function ConsultaSalaReuniaoPage() {
           <BackButton />
 
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-emerald-700">
-              <FaDoorOpen size={20} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#C7D300] bg-[#C7D300] text-emerald-700">
+              <FaDoorOpen size={16} />
             </div>
-
+            
             <div className="min-w-0">
               <h1 className="truncate text-2xl font-semibold text-gray-900">
                 Consulta de Salas e Auditório

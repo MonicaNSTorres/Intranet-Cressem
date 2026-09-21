@@ -405,7 +405,11 @@ export const PAGE_ACCESS = {
     },
 
     reservaSalaReuniao: {
-        allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
+        allowedGroups: [AD_GROUPS.TODO_MUNDO],
+    },
+
+    consultaSalaReuniao: {
+        allowedGroups: [AD_GROUPS.CONSULTA_REUNIAO_AUDITORIO, AD_GROUPS.SUPORTE],
     },
 
     cnab240: {

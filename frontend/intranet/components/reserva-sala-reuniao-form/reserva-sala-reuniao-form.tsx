@@ -132,9 +132,6 @@ export function ReservaSalaReuniaoForm() {
 
     const [checklistAuditorio, setChecklistAuditorio] = useState({
         nomeEvento: "",
-        dataEvento: "",
-        horarioInicio: "",
-        horarioTermino: "",
         responsavelEvento: "",
         quantidadeParticipantes: "",
 
@@ -153,7 +150,6 @@ export function ReservaSalaReuniaoForm() {
 
         observacoesAdicionais: "",
 
-        tecnicoEscalado: "",
         instrucoesEquipeApoio: false,
         responsavelInformadoLimitacoes: false,
     });
@@ -250,18 +246,6 @@ export function ReservaSalaReuniaoForm() {
         if (tipoEspaco === "AUDITORIO") {
             if (!checklistAuditorio.nomeEvento.trim()) {
                 return "Informe o nome do evento.";
-            }
-
-            if (!checklistAuditorio.dataEvento) {
-                return "Informe a data do evento.";
-            }
-
-            if (!checklistAuditorio.horarioInicio) {
-                return "Informe o horário de início do evento.";
-            }
-
-            if (!checklistAuditorio.horarioTermino) {
-                return "Informe o horário de término do evento.";
             }
 
             if (!checklistAuditorio.responsavelEvento.trim()) {
@@ -395,9 +379,6 @@ export function ReservaSalaReuniaoForm() {
 
         return (
             checklistAuditorio.nomeEvento.trim() !== "" &&
-            checklistAuditorio.dataEvento !== "" &&
-            checklistAuditorio.horarioInicio !== "" &&
-            checklistAuditorio.horarioTermino !== "" &&
             checklistAuditorio.responsavelEvento.trim() !== "" &&
             checklistAuditorio.quantidadeParticipantes.trim() !== "" &&
 
@@ -642,20 +623,6 @@ export function ReservaSalaReuniaoForm() {
                                         />
                                     </Field>
 
-                                    <Field label="Data do Evento">
-                                        <input
-                                            type="date"
-                                            value={checklistAuditorio.dataEvento}
-                                            onChange={(e) =>
-                                                setChecklistAuditorio((prev) => ({
-                                                    ...prev,
-                                                    dataEvento: e.target.value,
-                                                }))
-                                            }
-                                            className={inputBase}
-                                        />
-                                    </Field>
-
                                     <Field label="Quantidade de participantes">
                                         <input
                                             type="number"
@@ -678,35 +645,6 @@ export function ReservaSalaReuniaoForm() {
                                         <p className="mt-1 text-xs text-gray-500">
                                             Capacidade máxima do auditório: <strong>136 pessoas</strong>.
                                         </p>
-                                    </Field>
-
-
-                                    <Field label="Horário de Início">
-                                        <input
-                                            type="time"
-                                            value={checklistAuditorio.horarioInicio}
-                                            onChange={(e) =>
-                                                setChecklistAuditorio((prev) => ({
-                                                    ...prev,
-                                                    horarioInicio: e.target.value,
-                                                }))
-                                            }
-                                            className={inputBase}
-                                        />
-                                    </Field>
-
-                                    <Field label="Horário de Término">
-                                        <input
-                                            type="time"
-                                            value={checklistAuditorio.horarioTermino}
-                                            onChange={(e) =>
-                                                setChecklistAuditorio((prev) => ({
-                                                    ...prev,
-                                                    horarioTermino: e.target.value,
-                                                }))
-                                            }
-                                            className={inputBase}
-                                        />
                                     </Field>
 
                                     <Field label="Responsável pelo Evento">
@@ -767,7 +705,7 @@ export function ReservaSalaReuniaoForm() {
                                         />
                                     </Field>
 
-                                    <Field label="Uso de áudio externo">
+                                    <Field label="Uso de áudio externo(palestrante on-line?)">
                                         <select
                                             value={checklistAuditorio.usoAudioExterno}
                                             onChange={(e) =>
@@ -864,22 +802,6 @@ export function ReservaSalaReuniaoForm() {
                                             </Field>
                                         </>
                                     )}
-                                </div>
-
-                                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <Field label="Técnico escalado">
-                                        <input
-                                            value={checklistAuditorio.tecnicoEscalado}
-                                            onChange={(e) =>
-                                                setChecklistAuditorio((prev) => ({
-                                                    ...prev,
-                                                    tecnicoEscalado: e.target.value,
-                                                }))
-                                            }
-                                            className={inputBase}
-                                            placeholder="Nome do técnico"
-                                        />
-                                    </Field>
                                 </div>
 
                                 <div className="mt-4">
