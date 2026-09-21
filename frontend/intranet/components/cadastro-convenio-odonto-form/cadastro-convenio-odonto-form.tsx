@@ -73,6 +73,24 @@ function todayISO() {
     return `${yyyy}-${mm}-${dd}`;
 }
 
+function formatarData(valor?: string | null) {
+    if (!valor) return "—";
+
+    const match = String(valor).match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+    if (match) {
+        return `${match[3]}/${match[2]}/${match[1]}`;
+    }
+
+    const data = new Date(valor);
+
+    if (Number.isNaN(data.getTime())) {
+        return "—";
+    }
+
+    return data.toLocaleDateString("pt-BR");
+}
+
 function associadoAtivo(associado: any) {
     const flagsNumericas = [
         associado?.SN_ATIVO,
@@ -157,6 +175,7 @@ type DependenteForm = {
     nomeMae: string;
     codCartao: string;
     ativo: boolean;
+    dataExclusao: string;
     registroOriginal?: PessoaOdonto | null;
 };
 
@@ -188,6 +207,7 @@ export function CadastroConvenioOdontoForm() {
     const [fatores, setFatores] = useState<FatorAjuste[]>([]);
     const [parentescos, setParentescos] = useState<Parentesco[]>([]);
     const [dependentes, setDependentes] = useState<DependenteForm[]>([]);
+    const [registrosHistoricos, setRegistrosHistoricos] = useState<PessoaOdonto[]>([]);
     const [bloquearNovoCadastro, setBloquearNovoCadastro] = useState(false);
 
     const [modoEdicao, setModoEdicao] = useState(false);
@@ -246,6 +266,8 @@ export function CadastroConvenioOdontoForm() {
                 ?.VL_AJUSTE || 0;
 
         const valorDependentes = dependentes.reduce((acc, dep) => {
+            if (dep.dataExclusao || !dep.ativo) return acc;
+
             const plano = planosDisponiveis.find(
                 (item) => String(item.ID_CONVENIO_FATOR_AJUSTE) === String(dep.planoId)
             );
@@ -272,6 +294,7 @@ export function CadastroConvenioOdontoForm() {
         setEmpresaSelecionada("");
         setCnpjSelecionado("");
         setDependentes([]);
+        setRegistrosHistoricos([]);
         setModoEdicao(false);
         setTitularOriginal(null);
         setBloquearNovoCadastro(false);
@@ -295,6 +318,7 @@ export function CadastroConvenioOdontoForm() {
         setEmpresaSelecionada("");
         setCnpjSelecionado("");
         setDependentes([]);
+        setRegistrosHistoricos([]);
         setModoEdicao(false);
         setTitularOriginal(null);
         setBloquearNovoCadastro(false);
@@ -341,6 +365,7 @@ export function CadastroConvenioOdontoForm() {
             nomeMae: item.NM_MAE || "",
             codCartao: item.CD_CARTAO || "",
             ativo: Number(item.SN_ATIVO || 0) === 1,
+            dataExclusao: item.DT_EXCLUSAO ? String(item.DT_EXCLUSAO).slice(0, 10) : "",
             registroOriginal: item,
         };
     }
@@ -448,11 +473,15 @@ export function CadastroConvenioOdontoForm() {
 
                 const dependentesApi = (todos || []).filter((item) => {
                     const parentesco = String(item.DESC_PARENTESCO || "").toUpperCase();
-                    const ativo = Number(item.SN_ATIVO || 0) === 1;
-                    return parentesco !== "TITULAR" && ativo;
+                    return parentesco !== "TITULAR";
                 });
 
+                const historicosApi = (todos || []).filter((item) =>
+                    Boolean(String(item.DT_EXCLUSAO || "").trim())
+                );
+
                 setDependentes(dependentesApi.map(mapDependenteFromApi));
+                setRegistrosHistoricos(historicosApi);
                 setInfo(
                     associadoAtivoNaBase
                         ? "Registro carregado para alteração."
@@ -463,6 +492,7 @@ export function CadastroConvenioOdontoForm() {
                     setModoEdicao(false);
                     setTitularOriginal(null);
                     setDependentes([]);
+                    setRegistrosHistoricos([]);
                     if (!associadoAtivoNaBase) {
                         setErro(
                             "Associado inativo ou não encontrado na base. Novo cadastro bloqueado; apenas alteração/desligamento de convênio existente é permitido."
@@ -513,6 +543,7 @@ export function CadastroConvenioOdontoForm() {
                 nomeMae: "",
                 codCartao: "",
                 ativo: true,
+                dataExclusao: "",
                 registroOriginal: null,
             },
         ]);
@@ -548,6 +579,8 @@ export function CadastroConvenioOdontoForm() {
         for (let i = 0; i < dependentes.length; i++) {
             const item = dependentes[i];
 
+            if (item.dataExclusao) continue;
+
             if (!item.nome.trim()) return `Nome do dependente ${i + 1} não preenchido.`;
             if (!item.cpf.trim()) return `CPF do dependente ${i + 1} não preenchido.`;
             if (!isValidCpf(item.cpf)) return `CPF do dependente ${i + 1} inválido.`;
@@ -561,7 +594,9 @@ export function CadastroConvenioOdontoForm() {
             }
         }
 
-        const cpfs = dependentes.map((dep) => onlyDigits(dep.cpf));
+        const cpfs = dependentes
+            .filter((dep) => !dep.dataExclusao)
+            .map((dep) => onlyDigits(dep.cpf));
         const duplicado = cpfs.some((cpfAtual, index) => cpfs.indexOf(cpfAtual) !== index);
         if (duplicado) return "Existem CPFs duplicados entre os dependentes.";
 
@@ -687,6 +722,8 @@ export function CadastroConvenioOdontoForm() {
 
     async function salvarDependentes() {
         for (const dep of dependentes) {
+            if (dep.dataExclusao) continue;
+
             const cpfDep = onlyDigits(dep.cpf);
             const nomeDep = dep.nome.trim().toUpperCase();
 
@@ -844,458 +881,604 @@ export function CadastroConvenioOdontoForm() {
         <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
             <div className="space-y-5 p-4 sm:p-6 lg:p-8">
-            <SearchForm onSearch={onBuscar}>
-                <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
-                                Consulta do titular
-                            </h2>
-                            <p className="mt-1 text-sm text-(--paragraph)">
-                                Consulte o CPF para carregar os dados e continuar o cadastro ou alteração.
-                            </p>
-                        </div>
+                <SearchForm onSearch={onBuscar}>
+                    <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-primary">
+                                    Consulta do titular
+                                </h2>
+                                <p className="mt-1 text-sm text-(--paragraph)">
+                                    Consulte o CPF para carregar os dados e continuar o cadastro ou alteração.
+                                </p>
+                            </div>
 
-                        <div className="inline-flex h-10 items-center rounded-xl border border-primary/20 bg-primary/10 px-4 text-sm font-semibold text-primary">
-                            Gasto mensal: {fmtBRL(gastoMensal)}
-                        </div>
-                    </div>
-
-                    <div>
-                        <div className="space-y-1">
-                            <label className="block text-xs font-semibold text-slate-600">
-                                CPF do titular
-                            </label>
-
-                            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto]">
-                                <SearchInput
-                                    value={formatCpf(cpf)}
-                                    onChange={(e) => setCpf(e.target.value)}
-                                    placeholder="Digite o CPF"
-                                    className={inputBase}
-                                    inputMode="numeric"
-                                    maxLength={14}
-                                />
-
-                                <button
-                                    type="submit"
-                                    disabled={loadingBuscar}
-                                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <FaSearch />
-                                    {loadingBuscar ? "Pesquisando..." : "Pesquisar"}
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={limparFormulario}
-                                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-(--text-darken-placeholder) bg-white px-4 text-sm font-semibold text-(--title) shadow-sm transition hover:border-primary hover:bg-primary/10"
-                                >
-                                    Limpar
-                                </button>
+                            <div className="inline-flex h-10 items-center rounded-xl border border-primary/20 bg-primary/10 px-4 text-sm font-semibold text-primary">
+                                Gasto mensal: {fmtBRL(gastoMensal)}
                             </div>
                         </div>
 
-                    </div>
-
-                    {(erro || info) && (
-                        <div className="mt-4">
-                            {erro ? (
-                                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-                                    {erro}
-                                </div>
-                            ) : (
-                                <div className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
-                                    {info}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                <Section title="Dados do Titular">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                        <div className="md:col-span-7">
-                            <Field label="Nome">
-                                <input value={nome} onChange={(e) => setNome(e.target.value)} className={inputBase} />
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-5">
-                            <Field label="Empresa">
-                                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                    {empresas.length === 0 ? (
-                                        <p className="text-sm text-slate-500">Nenhuma empresa carregada.</p>
-                                    ) : (
-                                        empresas.map((empresa) => (
-                                            <label
-                                                key={`${empresa.NR_MATRICULA}-${empresa.NR_CPF_CNPJ_EMPREGADOR}`}
-                                                className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-primary/30 hover:bg-primary/5"
-                                            >
-                                                <input
-                                                    type="radio"
-                                                    name="empresa"
-                                                    checked={matriculaSelecionada === String(empresa.NR_MATRICULA)}
-                                                    onChange={() =>
-                                                        syncEmpresaSelecionada(String(empresa.NR_MATRICULA), empresas)
-                                                    }
-                                                    className="mt-1 h-4 w-4 accent-primary"
-                                                />
-
-                                                <span className="text-sm text-slate-700">
-                                                    <strong>Matrícula:</strong> {empresa.NR_MATRICULA}{" "}
-                                                    <strong>— CNPJ:</strong> {empresa.NR_CPF_CNPJ_EMPREGADOR}{" "}
-                                                    <strong>— Empresa:</strong> {empresa.NM_EMPRESA}
-                                                </span>
-                                            </label>
-                                        ))
-                                    )}
-                                </div>
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-4">
-                            <Field label="Convênio">
-                                <select
-                                    value={convenio}
-                                    onChange={(e) => {
-                                        setConvenio(e.target.value);
-                                        setPlanoTitular("");
-                                        setDependentes((old) =>
-                                            old.map((item) => ({
-                                                ...item,
-                                                planoId: "",
-                                            }))
-                                        );
-                                    }}
-                                    className={inputBase}
-                                >
-                                    <option value=""></option>
-                                    <option value="2">HAPVIDA</option>
-                                    <option value="1">UNIODONTO</option>
-                                </select>
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-4">
-                            <Field label="Plano">
-                                <select
-                                    value={planoTitular}
-                                    onChange={(e) => setPlanoTitular(e.target.value)}
-                                    className={inputBase}
-                                >
-                                    <option value=""></option>
-                                    {planosDisponiveis.map((plano) => (
-                                        <option
-                                            key={plano.ID_CONVENIO_FATOR_AJUSTE}
-                                            value={String(plano.ID_CONVENIO_FATOR_AJUSTE)}
-                                        >
-                                            {plano.NM_FATOR_AJUSTE}
-                                        </option>
-                                    ))}
-                                </select>
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-4">
-                            <Field label="Cidade">
-                                <select value={cidade} onChange={(e) => setCidade(e.target.value)} className={inputBase}>
-                                    <option value=""></option>
-                                    <option value="CAMPOS DO JORDAO">Campos do Jordão</option>
-                                    <option value="JACAREI">Jacareí</option>
-                                    <option value="SAO JOSE DOS CAMPOS">São José dos Campos</option>
-                                </select>
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-4">
-                            <Field label="Cod. Cartão">
-                                <input
-                                    value={codCartao}
-                                    onChange={(e) => setCodCartao(e.target.value)}
-                                    className={inputBase}
-                                />
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-8">
-                            <Field label="Nome da Mãe">
-                                <input
-                                    value={nomeMae}
-                                    onChange={(e) => setNomeMae(e.target.value)}
-                                    className={inputBase}
-                                />
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-4">
-                            <Field label="Cod. Associado">
-                                <input
-                                    value={codAssociado}
-                                    onChange={(e) => setCodAssociado(e.target.value)}
-                                    className={inputBase}
-                                />
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-4">
-                            <Field label="Cod. Plano">
-                                <input
-                                    value={codPlano}
-                                    onChange={(e) => setCodPlano(e.target.value)}
-                                    className={inputBase}
-                                />
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-4">
-                            <Field label="Data de Nascimento">
-                                <input
-                                    type="date"
-                                    value={dataNascimento}
-                                    onChange={(e) => setDataNascimento(e.target.value)}
-                                    className={inputBase}
-                                />
-                            </Field>
-                        </div>
-
-                        <div className="md:col-span-4">
-                            <Field label="Status do Titular">
-                                <button
-                                    type="button"
-                                    onClick={() => setTitularAtivo((old) => !old)}
-                                    className={`inline-flex h-10 w-full cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold shadow-sm transition ${titularAtivo
-                                        ? "border-secondary/30 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white"
-                                        : "border-fourth/30 bg-fourth/10 text-fourth hover:bg-fourth hover:text-white"
-                                        }`}
-                                >
-                                    {titularAtivo ? "Ativo" : "Inativo"}
-                                </button>
-                            </Field>
-                        </div>
-                    </div>
-                </Section>
-
-                <Section title="Dependentes">
-                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h4 className="text-sm font-black text-slate-800">Dados dos Dependentes</h4>
-                            <p className="text-xs text-slate-500">
-                                Adicione, altere ou inative dependentes do convênio odontológico.
-                            </p>
-                        </div>
+                            <div className="space-y-1">
+                                <label className="block text-xs font-semibold text-slate-600">
+                                    CPF do titular
+                                </label>
 
-                        <button
-                            type="button"
-                            onClick={adicionarDependente}
-                            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white"
-                        >
-                            <FaPlus />
-                            Adicionar Dependente
-                        </button>
-                    </div>
+                                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto]">
+                                    <SearchInput
+                                        value={formatCpf(cpf)}
+                                        onChange={(e) => setCpf(e.target.value)}
+                                        placeholder="Digite o CPF"
+                                        className={inputBase}
+                                        inputMode="numeric"
+                                        maxLength={14}
+                                    />
 
-                    {dependentes.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                            Nenhum dependente adicionado.
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {dependentes.map((dep, index) => (
-                                <div
-                                    key={dep.localId}
-                                    className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4"
-                                >
-                                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <h5 className="text-sm font-bold text-slate-700">Dependente {index + 1}</h5>
+                                    <button
+                                        type="submit"
+                                        disabled={loadingBuscar}
+                                        className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <FaSearch />
+                                        {loadingBuscar ? "Pesquisando..." : "Pesquisar"}
+                                    </button>
 
-                                        <div className="flex gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => atualizarDependente(dep.localId, "ativo", !dep.ativo)}
-                                                className={`inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border px-3 text-xs font-semibold shadow-sm transition ${dep.ativo
-                                                    ? "border-secondary/30 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white"
-                                                    : "border-fourth/30 bg-fourth/10 text-fourth hover:bg-fourth hover:text-white"
-                                                    }`}
-                                            >
-                                                {dep.ativo ? "Ativo" : "Inativo"}
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => removerDependente(dep.localId)}
-                                                className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-fourth/30 bg-fourth/10 px-3 text-xs font-semibold text-fourth shadow-sm transition hover:bg-fourth hover:text-white"
-                                            >
-                                                <FaTrash />
-                                                Remover
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                                        <div className="md:col-span-4">
-                                            <Field label="Nome">
-                                                <input
-                                                    value={dep.nome}
-                                                    onChange={(e) =>
-                                                        atualizarDependente(dep.localId, "nome", e.target.value)
-                                                    }
-                                                    className={inputBase}
-                                                />
-                                            </Field>
-                                        </div>
-
-                                        <div className="md:col-span-3">
-                                            <Field label="CPF">
-                                                <input
-                                                    value={formatCpf(dep.cpf)}
-                                                    onChange={(e) =>
-                                                        atualizarDependente(dep.localId, "cpf", e.target.value)
-                                                    }
-                                                    className={inputBase}
-                                                    maxLength={14}
-                                                />
-                                            </Field>
-                                        </div>
-
-                                        <div className="md:col-span-3">
-                                            <Field label="Plano">
-                                                <select
-                                                    value={dep.planoId}
-                                                    onChange={(e) =>
-                                                        atualizarDependente(dep.localId, "planoId", e.target.value)
-                                                    }
-                                                    className={inputBase}
-                                                >
-                                                    <option value=""></option>
-                                                    {planosDisponiveis.map((plano) => (
-                                                        <option
-                                                            key={plano.ID_CONVENIO_FATOR_AJUSTE}
-                                                            value={String(plano.ID_CONVENIO_FATOR_AJUSTE)}
-                                                        >
-                                                            {plano.NM_FATOR_AJUSTE}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </Field>
-                                        </div>
-
-                                        <div className="md:col-span-2">
-                                            <Field label="Parentesco">
-                                                <select
-                                                    value={dep.parentesco}
-                                                    onChange={(e) =>
-                                                        atualizarDependente(dep.localId, "parentesco", e.target.value)
-                                                    }
-                                                    className={inputBase}
-                                                >
-                                                    <option value=""></option>
-                                                    {parentescos
-                                                        .filter(
-                                                            (item) => String(item.NM_PARENTESCO || "").toUpperCase() !== "TITULAR"
-                                                        )
-                                                        .map((item, idx) => (
-                                                            <option key={`${item.NM_PARENTESCO}-${idx}`} value={item.NM_PARENTESCO}>
-                                                                {item.NM_PARENTESCO}
-                                                            </option>
-                                                        ))}
-                                                </select>
-                                            </Field>
-                                        </div>
-
-                                        <div className="md:col-span-3">
-                                            <Field label="Data de Nascimento">
-                                                <input
-                                                    type="date"
-                                                    value={dep.dataNascimento}
-                                                    onChange={(e) =>
-                                                        atualizarDependente(dep.localId, "dataNascimento", e.target.value)
-                                                    }
-                                                    className={inputBase}
-                                                />
-                                            </Field>
-                                        </div>
-
-                                        <div className="md:col-span-5">
-                                            <Field label="Nome da Mãe">
-                                                <input
-                                                    value={dep.nomeMae}
-                                                    onChange={(e) =>
-                                                        atualizarDependente(dep.localId, "nomeMae", e.target.value)
-                                                    }
-                                                    className={inputBase}
-                                                />
-                                            </Field>
-                                        </div>
-
-                                        <div className="md:col-span-4">
-                                            <Field label="Cod. Cartão">
-                                                <input
-                                                    value={dep.codCartao}
-                                                    onChange={(e) =>
-                                                        atualizarDependente(dep.localId, "codCartao", e.target.value)
-                                                    }
-                                                    className={inputBase}
-                                                />
-                                            </Field>
-                                        </div>
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={limparFormulario}
+                                        className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-(--text-darken-placeholder) bg-white px-4 text-sm font-semibold text-(--title) shadow-sm transition hover:border-primary hover:bg-primary/10"
+                                    >
+                                        Limpar
+                                    </button>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-                </Section>
+                            </div>
 
-                <Section title="Resumo">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                        <div className="md:col-span-8">
-                            <Field label="Observações">
-                                <textarea
-                                    rows={4}
-                                    className={textareaBase}
-                                    placeholder="Observações gerais do cadastro."
-                                />
-                            </Field>
                         </div>
 
-                        <div className="md:col-span-4">
-                            <Field label="Gasto total mensal">
-                                <input
-                                    readOnly
-                                    value={fmtBRL(gastoMensal)}
-                                    className={`${inputBase} bg-slate-50 text-right font-semibold`}
-                                />
-                            </Field>
-                        </div>
+                        {(erro || info) && (
+                            <div className="mt-4">
+                                {erro ? (
+                                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                                        {erro}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
+                                        {info}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
-                </Section>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                        <div className="max-w-sm">
-                            <p className="text-sm text-slate-500">
-                                Revise os dados do titular e dos dependentes antes de salvar.
-                            </p>
+                    <Section title="Dados do Titular">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                            <div className="md:col-span-7">
+                                <Field label="Nome">
+                                    <input value={nome} onChange={(e) => setNome(e.target.value)} className={inputBase} />
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-5">
+                                <Field label="Empresa">
+                                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        {empresas.length === 0 ? (
+                                            <p className="text-sm text-slate-500">Nenhuma empresa carregada.</p>
+                                        ) : (
+                                            empresas.map((empresa) => (
+                                                <label
+                                                    key={`${empresa.NR_MATRICULA}-${empresa.NR_CPF_CNPJ_EMPREGADOR}`}
+                                                    className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-primary/30 hover:bg-primary/5"
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="empresa"
+                                                        checked={matriculaSelecionada === String(empresa.NR_MATRICULA)}
+                                                        onChange={() =>
+                                                            syncEmpresaSelecionada(String(empresa.NR_MATRICULA), empresas)
+                                                        }
+                                                        className="mt-1 h-4 w-4 accent-primary"
+                                                    />
+
+                                                    <span className="text-sm text-slate-700">
+                                                        <strong>Matrícula:</strong> {empresa.NR_MATRICULA}{" "}
+                                                        <strong>— CNPJ:</strong> {empresa.NR_CPF_CNPJ_EMPREGADOR}{" "}
+                                                        <strong>— Empresa:</strong> {empresa.NM_EMPRESA}
+                                                    </span>
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-4">
+                                <Field label="Convênio">
+                                    <select
+                                        value={convenio}
+                                        onChange={(e) => {
+                                            setConvenio(e.target.value);
+                                            setPlanoTitular("");
+                                            setDependentes((old) =>
+                                                old.map((item) => ({
+                                                    ...item,
+                                                    planoId: item.dataExclusao ? item.planoId : "",
+                                                }))
+                                            );
+                                        }}
+                                        className={inputBase}
+                                    >
+                                        <option value=""></option>
+                                        <option value="2">HAPVIDA</option>
+                                        <option value="1">UNIODONTO</option>
+                                    </select>
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-4">
+                                <Field label="Plano">
+                                    <select
+                                        value={planoTitular}
+                                        onChange={(e) => setPlanoTitular(e.target.value)}
+                                        className={inputBase}
+                                    >
+                                        <option value=""></option>
+                                        {planosDisponiveis.map((plano) => (
+                                            <option
+                                                key={plano.ID_CONVENIO_FATOR_AJUSTE}
+                                                value={String(plano.ID_CONVENIO_FATOR_AJUSTE)}
+                                            >
+                                                {plano.NM_FATOR_AJUSTE}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-4">
+                                <Field label="Cidade">
+                                    <select value={cidade} onChange={(e) => setCidade(e.target.value)} className={inputBase}>
+                                        <option value=""></option>
+                                        <option value="CAMPOS DO JORDAO">Campos do Jordão</option>
+                                        <option value="JACAREI">Jacareí</option>
+                                        <option value="SAO JOSE DOS CAMPOS">São José dos Campos</option>
+                                    </select>
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-4">
+                                <Field label="Cod. Cartão">
+                                    <input
+                                        value={codCartao}
+                                        onChange={(e) => setCodCartao(e.target.value)}
+                                        className={inputBase}
+                                    />
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-8">
+                                <Field label="Nome da Mãe">
+                                    <input
+                                        value={nomeMae}
+                                        onChange={(e) => setNomeMae(e.target.value)}
+                                        className={inputBase}
+                                    />
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-4">
+                                <Field label="Cod. Associado">
+                                    <input
+                                        value={codAssociado}
+                                        onChange={(e) => setCodAssociado(e.target.value)}
+                                        className={inputBase}
+                                    />
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-4">
+                                <Field label="Cod. Plano">
+                                    <input
+                                        value={codPlano}
+                                        onChange={(e) => setCodPlano(e.target.value)}
+                                        className={inputBase}
+                                    />
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-4">
+                                <Field label="Data de Nascimento">
+                                    <input
+                                        type="date"
+                                        value={dataNascimento}
+                                        onChange={(e) => setDataNascimento(e.target.value)}
+                                        className={inputBase}
+                                    />
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-4">
+                                <Field label="Status do Titular">
+                                    <button
+                                        type="button"
+                                        onClick={() => setTitularAtivo((old) => !old)}
+                                        className={`inline-flex h-10 w-full cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-semibold shadow-sm transition ${titularAtivo
+                                            ? "border-secondary/30 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white"
+                                            : "border-fourth/30 bg-fourth/10 text-fourth hover:bg-fourth hover:text-white"
+                                            }`}
+                                    >
+                                        {titularAtivo ? "Ativo" : "Inativo"}
+                                    </button>
+                                </Field>
+                            </div>
                         </div>
+                    </Section>
 
-                        <div className="flex flex-col gap-3 sm:flex-row">
+                    <Section title="Dependentes">
+                        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h4 className="text-sm font-black text-slate-800">Dados dos Dependentes</h4>
+                                <p className="text-xs text-slate-500">
+                                    Adicione, altere ou inative dependentes do convênio odontológico.
+                                </p>
+                            </div>
+
                             <button
                                 type="button"
-                                onClick={salvar}
-                                disabled={loadingSalvar}
-                                className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                                onClick={adicionarDependente}
+                                className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-white"
                             >
-                                <FaSave />
-                                {loadingSalvar
-                                    ? "Salvando..."
-                                    : modoEdicao
-                                        ? "Salvar Alterações"
-                                        : "Salvar Cadastro"}
+                                <FaPlus />
+                                Adicionar Dependente
                             </button>
                         </div>
+
+                        {dependentes.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                                Nenhum dependente adicionado.
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {dependentes.map((dep, index) => (
+                                    <div
+                                        key={dep.localId}
+                                        className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4"
+                                    >
+                                        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <h5 className="text-sm font-bold text-slate-700">Dependente {index + 1}</h5>
+
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (!dep.dataExclusao) {
+                                                            atualizarDependente(dep.localId, "ativo", !dep.ativo);
+                                                        }
+                                                    }}
+                                                    disabled={Boolean(dep.dataExclusao)}
+                                                    className={`inline-flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-semibold shadow-sm transition ${dep.dataExclusao ? "cursor-not-allowed opacity-70 " : "cursor-pointer "}${dep.ativo
+                                                        ? "border-secondary/30 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white"
+                                                        : "border-fourth/30 bg-fourth/10 text-fourth hover:bg-fourth hover:text-white"
+                                                        }`}
+                                                >
+                                                    {dep.ativo ? "Ativo" : "Inativo"}
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removerDependente(dep.localId)}
+                                                    disabled={Boolean(dep.dataExclusao)}
+                                                    className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-fourth/30 bg-fourth/10 px-3 text-xs font-semibold text-fourth shadow-sm transition ${dep.dataExclusao ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-fourth hover:text-white"}`}
+                                                >
+                                                    <FaTrash />
+                                                    Remover
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                                            <div className="md:col-span-4">
+                                                <Field label="Nome">
+                                                    <input
+                                                        value={dep.nome}
+                                                        onChange={(e) =>
+                                                            atualizarDependente(dep.localId, "nome", e.target.value)
+                                                        }
+                                                        readOnly={Boolean(dep.dataExclusao)}
+                                                        className={`${inputBase} ${dep.dataExclusao ? "cursor-not-allowed bg-slate-100" : ""}`}
+                                                    />
+                                                </Field>
+                                            </div>
+
+                                            <div className="md:col-span-3">
+                                                <Field label="CPF">
+                                                    <input
+                                                        value={formatCpf(dep.cpf)}
+                                                        onChange={(e) =>
+                                                            atualizarDependente(dep.localId, "cpf", e.target.value)
+                                                        }
+                                                        readOnly={Boolean(dep.dataExclusao)}
+                                                        className={`${inputBase} ${dep.dataExclusao ? "cursor-not-allowed bg-slate-100" : ""}`}
+                                                        maxLength={14}
+                                                    />
+                                                </Field>
+                                            </div>
+
+                                            <div className="md:col-span-3">
+                                                <Field label="Plano">
+                                                    <select
+                                                        value={dep.planoId}
+                                                        onChange={(e) =>
+                                                            atualizarDependente(dep.localId, "planoId", e.target.value)
+                                                        }
+                                                        disabled={Boolean(dep.dataExclusao)}
+                                                        className={`${inputBase} ${dep.dataExclusao ? "cursor-not-allowed bg-slate-100" : ""}`}
+                                                    >
+                                                        <option value=""></option>
+                                                        {planosDisponiveis.map((plano) => (
+                                                            <option
+                                                                key={plano.ID_CONVENIO_FATOR_AJUSTE}
+                                                                value={String(plano.ID_CONVENIO_FATOR_AJUSTE)}
+                                                            >
+                                                                {plano.NM_FATOR_AJUSTE}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </Field>
+                                            </div>
+
+                                            <div className="md:col-span-2">
+                                                <Field label="Parentesco">
+                                                    <select
+                                                        value={dep.parentesco}
+                                                        onChange={(e) =>
+                                                            atualizarDependente(dep.localId, "parentesco", e.target.value)
+                                                        }
+                                                        disabled={Boolean(dep.dataExclusao)}
+                                                        className={`${inputBase} ${dep.dataExclusao ? "cursor-not-allowed bg-slate-100" : ""}`}
+                                                    >
+                                                        <option value=""></option>
+                                                        {parentescos
+                                                            .filter(
+                                                                (item) => String(item.NM_PARENTESCO || "").toUpperCase() !== "TITULAR"
+                                                            )
+                                                            .map((item, idx) => (
+                                                                <option key={`${item.NM_PARENTESCO}-${idx}`} value={item.NM_PARENTESCO}>
+                                                                    {item.NM_PARENTESCO}
+                                                                </option>
+                                                            ))}
+                                                    </select>
+                                                </Field>
+                                            </div>
+
+                                            <div className="md:col-span-3">
+                                                <Field label="Data de Nascimento">
+                                                    <input
+                                                        type="date"
+                                                        value={dep.dataNascimento}
+                                                        onChange={(e) =>
+                                                            atualizarDependente(dep.localId, "dataNascimento", e.target.value)
+                                                        }
+                                                        readOnly={Boolean(dep.dataExclusao)}
+                                                        className={`${inputBase} ${dep.dataExclusao ? "cursor-not-allowed bg-slate-100" : ""}`}
+                                                    />
+                                                </Field>
+                                            </div>
+
+                                            <div className="md:col-span-5">
+                                                <Field label="Nome da Mãe">
+                                                    <input
+                                                        value={dep.nomeMae}
+                                                        onChange={(e) =>
+                                                            atualizarDependente(dep.localId, "nomeMae", e.target.value)
+                                                        }
+                                                        readOnly={Boolean(dep.dataExclusao)}
+                                                        className={`${inputBase} ${dep.dataExclusao ? "cursor-not-allowed bg-slate-100" : ""}`}
+                                                    />
+                                                </Field>
+                                            </div>
+
+                                            <div className="md:col-span-4">
+                                                <Field label="Cod. Cartão">
+                                                    <input
+                                                        value={dep.codCartao}
+                                                        onChange={(e) =>
+                                                            atualizarDependente(dep.localId, "codCartao", e.target.value)
+                                                        }
+                                                        readOnly={Boolean(dep.dataExclusao)}
+                                                        className={`${inputBase} ${dep.dataExclusao ? "cursor-not-allowed bg-slate-100" : ""}`}
+                                                    />
+                                                </Field>
+                                            </div>
+
+                                            <div className="md:col-span-4">
+                                                <ReadOnlyField
+                                                    label="Data de Exclusão"
+                                                    value={formatarData(dep.dataExclusao)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </Section>
+
+                    {registrosHistoricos.length > 0 && (
+                        <Section title="Histórico / Registros Excluídos">
+                            <div className="mb-3">
+                                <p className="text-xs text-slate-500">
+                                    Registros com data de exclusão são exibidos apenas para consulta.
+                                </p>
+                            </div>
+
+                            <div className="space-y-3">
+                                {registrosHistoricos.map((registro, index) => (
+                                    <div
+                                        key={`historico-${registro.ID_CONVENIO_PESSOAS || index}`}
+                                        className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4"
+                                    >
+                                        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <h5 className="text-sm font-bold text-slate-700">
+                                                    {String(registro.DESC_PARENTESCO || "").toUpperCase() === "TITULAR"
+                                                        ? "Titular"
+                                                        : `Dependente ${index + 1}`}
+                                                </h5>
+                                                <p className="text-xs text-slate-500">
+                                                    Registro histórico #{registro.ID_CONVENIO_PESSOAS || "—"}
+                                                </p>
+                                            </div>
+
+                                            <span className="inline-flex h-9 items-center justify-center rounded-xl border border-fourth/30 bg-fourth/10 px-3 text-xs font-semibold text-fourth">
+                                                Excluído
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                                            <div className="md:col-span-4">
+                                                <ReadOnlyField
+                                                    label="Nome"
+                                                    value={registro.NM_USUARIO}
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-3">
+                                                <ReadOnlyField
+                                                    label="CPF"
+                                                    value={formatCpf(registro.NR_CPF_USUARIO || "")}
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-3">
+                                                <ReadOnlyField
+                                                    label="Plano"
+                                                    value={
+                                                        registro.NM_FATOR_AJUSTE ||
+                                                        planosDisponiveis.find(
+                                                            (plano) =>
+                                                                String(plano.ID_CONVENIO_FATOR_AJUSTE) ===
+                                                                String(registro.ID_CONVENIO_FATOR_AJUSTE)
+                                                        )?.NM_FATOR_AJUSTE ||
+                                                        registro.ID_CONVENIO_FATOR_AJUSTE
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-2">
+                                                <ReadOnlyField
+                                                    label="Parentesco"
+                                                    value={registro.DESC_PARENTESCO}
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-3">
+                                                <ReadOnlyField
+                                                    label="Data de Nascimento"
+                                                    value={formatarData(registro.DT_NASCIMENTO)}
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-5">
+                                                <ReadOnlyField
+                                                    label="Nome da Mãe"
+                                                    value={registro.NM_MAE}
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-4">
+                                                <ReadOnlyField
+                                                    label="Cod. Cartão"
+                                                    value={registro.CD_CARTAO}
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-4">
+                                                <ReadOnlyField
+                                                    label="Data de Exclusão"
+                                                    value={formatarData(registro.DT_EXCLUSAO)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Section>
+                    )}
+
+                    <Section title="Resumo">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                            <div className="md:col-span-8">
+                                <Field label="Observações">
+                                    <textarea
+                                        rows={4}
+                                        className={textareaBase}
+                                        placeholder="Observações gerais do cadastro."
+                                    />
+                                </Field>
+                            </div>
+
+                            <div className="md:col-span-4">
+                                <Field label="Gasto total mensal">
+                                    <input
+                                        readOnly
+                                        value={fmtBRL(gastoMensal)}
+                                        className={`${inputBase} bg-slate-50 text-right font-semibold`}
+                                    />
+                                </Field>
+                            </div>
+                        </div>
+                    </Section>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <div className="max-w-sm">
+                                <p className="text-sm text-slate-500">
+                                    Revise os dados do titular e dos dependentes antes de salvar.
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col gap-3 sm:flex-row">
+                                <button
+                                    type="button"
+                                    onClick={salvar}
+                                    disabled={loadingSalvar}
+                                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <FaSave />
+                                    {loadingSalvar
+                                        ? "Salvando..."
+                                        : modoEdicao
+                                            ? "Salvar Alterações"
+                                            : "Salvar Cadastro"}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </SearchForm>
+                </SearchForm>
+            </div>
+        </div>
+    );
+}
+
+function ReadOnlyField({
+    label,
+    value,
+}: {
+    label: string;
+    value: string | number | null | undefined;
+}) {
+    return (
+        <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">
+                {label}
+            </label>
+
+            <div className="flex min-h-11 items-center rounded-xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-medium text-slate-400">
+                {value === null ||
+                    value === undefined ||
+                    String(value).trim() === ""
+                    ? "—"
+                    : String(value)}
             </div>
         </div>
     );
