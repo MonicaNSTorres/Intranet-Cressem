@@ -1580,9 +1580,13 @@ export const convenioOdontologicoController = {
                     ID_BENEFICIARIO,
                     NM_BENEFICIARIO,
                     NR_CPF
-                FROM DBACRESSEM.ODONTO_BENEFICIARIO
-                WHERE ID_BENEFICIARIO =
-                      :idBeneficiario
+
+                FROM
+                    DBACRESSEM.ODONTO_BENEFICIARIO
+
+                WHERE
+                    ID_BENEFICIARIO =
+                    :idBeneficiario
                 `,
                     {
                         idBeneficiario,
@@ -1593,13 +1597,25 @@ export const convenioOdontologicoController = {
                     }
                 );
 
-            const beneficiario =
+            const beneficiario: any =
                 beneficiarioResult.rows?.[0];
 
             if (!beneficiario) {
                 return res.status(404).json({
                     error:
                         "Beneficiário não encontrado.",
+                });
+            }
+
+            const cpfBeneficiario =
+                somenteNumeros(
+                    beneficiario.NR_CPF
+                );
+
+            if (cpfBeneficiario.length !== 11) {
+                return res.status(400).json({
+                    error:
+                        "CPF do beneficiário é inválido.",
                 });
             }
 
@@ -1622,8 +1638,11 @@ export const convenioOdontologicoController = {
                     H.DT_CRIACAO,
 
                     CASE
-                        WHEN H.DT_FIM IS NULL
+                        WHEN
+                            H.DT_FIM IS NULL
+                            AND B.SN_ATIVO = 1
                         THEN 'ATUAL'
+
                         ELSE 'ENCERRADO'
                     END AS STATUS_VINCULO
 
@@ -1635,16 +1654,25 @@ export const convenioOdontologicoController = {
                     ON E.ID_EMPRESA =
                        H.ID_EMPRESA
 
+                INNER JOIN
+                    DBACRESSEM.ODONTO_BENEFICIARIO B
+                    ON B.ID_BENEFICIARIO =
+                       H.ID_BENEFICIARIO
+
                 WHERE
-                    H.ID_BENEFICIARIO =
-                    :idBeneficiario
+                    REGEXP_REPLACE(
+                        B.NR_CPF,
+                        '[^0-9]',
+                        ''
+                    ) = :cpf
 
                 ORDER BY
                     H.DT_INICIO DESC,
                     H.ID_HISTORICO DESC
                 `,
                     {
-                        idBeneficiario,
+                        cpf:
+                            cpfBeneficiario,
                     },
                     {
                         outFormat:
