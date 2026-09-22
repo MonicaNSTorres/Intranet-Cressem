@@ -19,5 +19,6 @@ dist/
 # Logs, relatórios e arquivos temporários locais
 backend/logs/
 backend/reports/
+frontend/.data/checkpoints/
 tmp_doc_review/
 *.log
