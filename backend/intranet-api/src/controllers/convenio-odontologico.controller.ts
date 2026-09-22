@@ -1895,6 +1895,7 @@ export const convenioOdontologicoController = {
             ID_OPERADORA,
             NM_PLANO,
             TP_COBRANCA,
+            CD_CLIENTE_CONVENIADO,
             NR_IDADE_MINIMA,
             NR_IDADE_MAXIMA
           FROM DBACRESSEM.ODONTO_PLANO
@@ -2009,6 +2010,7 @@ export const convenioOdontologicoController = {
             ID_TIPO_BENEFICIARIO,
             ID_EMPRESA,
             ID_PLANO,
+            CD_CLIENTE_CONVENIADO,
             ID_TITULAR,
             NR_MATRICULA,
             DT_INCLUSAO_PLANO,
@@ -2025,6 +2027,7 @@ export const convenioOdontologicoController = {
             :idTipoBeneficiario,
             :idEmpresa,
             :idPlano,
+            :cdClienteConveniado,
             :idTitular,
             :nrMatricula,
             SYSDATE,
@@ -2044,6 +2047,8 @@ export const convenioOdontologicoController = {
                     idTipoBeneficiario: Number(idTipoBeneficiario),
                     idEmpresa: idEmpresaFinal,
                     idPlano: Number(idPlano),
+                    cdClienteConveniado:
+                        plano.CD_CLIENTE_CONVENIADO ?? null,
                     idTitular: idTitularFinal,
                     nrMatricula: nrMatricula || null,
                     observacao: observacao || null,
@@ -2299,7 +2304,9 @@ export const convenioOdontologicoController = {
 
             const planoResult = await conn.execute(
                 `
-            SELECT ID_PLANO
+            SELECT
+                ID_PLANO,
+                CD_CLIENTE_CONVENIADO
             FROM DBACRESSEM.ODONTO_PLANO
             WHERE ID_PLANO = :idPlano
               AND SN_ATIVO = 1
@@ -2312,7 +2319,10 @@ export const convenioOdontologicoController = {
                 }
             );
 
-            if (!planoResult.rows?.length) {
+            const plano: any =
+                planoResult.rows?.[0];
+
+            if (!plano) {
                 return res.status(400).json({
                     error:
                         "Plano não encontrado ou inativo.",
@@ -2435,6 +2445,8 @@ export const convenioOdontologicoController = {
                     :idTipoBeneficiario,
                 ID_EMPRESA = :idEmpresa,
                 ID_PLANO = :idPlano,
+                CD_CLIENTE_CONVENIADO =
+                    :cdClienteConveniado,
                 ID_TITULAR = :idTitular,
                 NR_MATRICULA = :nrMatricula,
                 DS_OBSERVACAO = :observacao,
@@ -2460,6 +2472,8 @@ export const convenioOdontologicoController = {
                         idEmpresaNova,
                     idPlano:
                         Number(idPlano),
+                    cdClienteConveniado:
+                        plano.CD_CLIENTE_CONVENIADO ?? null,
                     idTitular:
                         idTitularFinal,
                     nrMatricula:
