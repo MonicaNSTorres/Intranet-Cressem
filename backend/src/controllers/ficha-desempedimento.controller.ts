@@ -1,0 +1,1016 @@
+import { Request, Response } from "express";
+import oracledb from "oracledb";
+import { randomUUID } from "crypto";
+import {
+  oracleExecute,
+  setAuditoriaContext,
+} from "../services/oracle.service";
+import { criarPendenciaOdontoDesligamento } from "../services/odonto-pendencia-desligamento.service";
+
+function gerarIdCurto(): string {
+  return randomUUID().replace(/-/g, "").substring(0, 10).toUpperCase();
+}
+
+function normalizarValor(valor: any): number {
+  if (valor === null || valor === undefined || valor === "") return 0;
+
+  if (typeof valor === "number") return valor;
+
+  const texto = String(valor).trim();
+
+  const normalizado = texto.replace(/\./g, "").replace(",", ".");
+  const numero = parseFloat(normalizado);
+
+  return isNaN(numero) ? 0 : numero;
+}
+
+function calcularTotalNumerico(contas: any[] = []): number {
+  return contas.reduce((soma, conta) => soma + normalizarValor(conta?.valor), 0);
+}
+
+async function getConnection() {
+  return await oracledb.getConnection({
+    user: process.env.ORACLE_USER,
+    password: process.env.ORACLE_PASSWORD,
+    connectString: process.env.ORACLE_CONNECT_STRING,
+  });
+}
+
+export const fichaDesimpedimentoController = {
+  async buscarAssociadoPorCpf(req: Request, res: Response) {
+    try {
+      const cpf = String(req.query.cpf || "").replace(/\D/g, "");
+
+      if (cpf.length !== 11) {
+        return res.status(400).json({
+          error: "CPF inválido. Informe 11 dígitos.",
+        });
+      }
+
+      const associadoSql = `
+      SELECT
+        a.NM_CLIENTE AS NOME,
+        a.NR_CPF_CNPJ AS CPF,
+        a.NR_MATRICULA AS PRONTUARIO,
+        a.NM_EMPRESA AS EMPRESA,
+        a.DS_ENDERECO AS ENDERECO,
+        a.NM_BAIRRO AS NM_BAIRRO,
+        a.NM_CIDADE AS NM_CIDADE,
+        a.NR_CEP AS NR_CEP,
+        a.NR_TELEFONE AS TELEFONE,
+        a.DS_EMAIL AS DS_EMAIL
+      FROM DBACRESSEM.ASSOCIADO_ANALITICO a
+      WHERE REGEXP_REPLACE(
+        a.NR_CPF_CNPJ,
+        '[^0-9]',
+        ''
+      ) = :cpf
+      FETCH FIRST 1 ROWS ONLY
+    `;
+
+      const associadoResult = await oracleExecute(
+        associadoSql,
+        { cpf },
+        {
+          outFormat: oracledb.OUT_FORMAT_OBJECT,
+        }
+      );
+
+      const associado: any =
+        associadoResult.rows?.[0];
+
+      if (!associado) {
+        return res.status(404).json({
+          error: "Associado não encontrado.",
+        });
+      }
+
+      const odontologicoSql = `
+      SELECT
+        B.ID_BENEFICIARIO,
+        B.NM_BENEFICIARIO,
+        B.NR_CPF,
+
+        TB.CD_TIPO_BENEFICIARIO,
+        TB.NM_TIPO_BENEFICIARIO,
+
+        P.ID_PLANO,
+        P.NM_PLANO,
+        P.TP_COBRANCA,
+
+        O.ID_OPERADORA,
+        O.NM_OPERADORA,
+
+        PV.ID_PLANO_VALOR,
+        PV.VL_MENSALIDADE,
+        PV.DT_VIGENCIA_INICIO,
+        PV.DT_VIGENCIA_FIM
+
+      FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+      INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+        ON TB.ID_TIPO_BENEFICIARIO =
+           B.ID_TIPO_BENEFICIARIO
+
+      INNER JOIN DBACRESSEM.ODONTO_PLANO P
+        ON P.ID_PLANO =
+           B.ID_PLANO
+
+      INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+        ON O.ID_OPERADORA =
+           P.ID_OPERADORA
+
+      LEFT JOIN DBACRESSEM.ODONTO_PLANO_VALOR PV
+        ON PV.ID_PLANO =
+           P.ID_PLANO
+
+       AND TRUNC(SYSDATE) >=
+           TRUNC(PV.DT_VIGENCIA_INICIO)
+
+       AND (
+         PV.DT_VIGENCIA_FIM IS NULL
+         OR SYSDATE <=
+            PV.DT_VIGENCIA_FIM
+       )
+
+      WHERE REGEXP_REPLACE(
+        B.NR_CPF,
+        '[^0-9]',
+        ''
+      ) = :cpf
+
+        AND B.SN_ATIVO = 1
+        AND P.SN_ATIVO = 1
+        AND O.SN_ATIVO = 1
+
+      FETCH FIRST 1 ROWS ONLY
+    `;
+
+      const odontologicoResult =
+        await oracleExecute(
+          odontologicoSql,
+          { cpf },
+          {
+            outFormat:
+              oracledb.OUT_FORMAT_OBJECT,
+          }
+        );
+
+      const odontologico: any =
+        odontologicoResult.rows?.[0];
+
+      let odontologicoHistorico: any = null;
+
+      if (!odontologico) {
+        const historicoResult = await oracleExecute(
+          `
+    SELECT
+      B.ID_BENEFICIARIO,
+      B.NM_BENEFICIARIO,
+      B.NR_CPF,
+
+      B.DT_INCLUSAO_PLANO,
+      B.DT_EXCLUSAO_PLANO,
+
+      TB.CD_TIPO_BENEFICIARIO,
+      TB.NM_TIPO_BENEFICIARIO,
+
+      P.ID_PLANO,
+      P.NM_PLANO,
+      P.TP_COBRANCA,
+
+      O.ID_OPERADORA,
+      O.NM_OPERADORA
+
+    FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+    INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+      ON TB.ID_TIPO_BENEFICIARIO =
+         B.ID_TIPO_BENEFICIARIO
+
+    INNER JOIN DBACRESSEM.ODONTO_PLANO P
+      ON P.ID_PLANO =
+         B.ID_PLANO
+
+    INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+      ON O.ID_OPERADORA =
+         P.ID_OPERADORA
+
+    WHERE REGEXP_REPLACE(
+      B.NR_CPF,
+      '[^0-9]',
+      ''
+    ) = :cpf
+
+      AND B.SN_ATIVO = 0
+
+    ORDER BY
+      B.DT_EXCLUSAO_PLANO DESC NULLS LAST,
+      B.ID_BENEFICIARIO DESC
+
+    FETCH FIRST 1 ROWS ONLY
+    `,
+          { cpf },
+          {
+            outFormat:
+              oracledb.OUT_FORMAT_OBJECT,
+          }
+        );
+
+        odontologicoHistorico =
+          historicoResult.rows?.[0] || null;
+      }
+
+      return res.json({
+        nome:
+          associado.NOME || "",
+
+        cpf:
+          associado.CPF || "",
+
+        prontuario:
+          associado.PRONTUARIO || "",
+
+        empresa:
+          associado.EMPRESA || "",
+
+        endereco:
+          associado.ENDERECO || "",
+
+        nm_bairro:
+          associado.NM_BAIRRO || "",
+
+        nm_cidade:
+          associado.NM_CIDADE || "",
+
+        nr_cep:
+          associado.NR_CEP || "",
+
+        telefone:
+          associado.TELEFONE || "",
+
+        ds_email:
+          associado.DS_EMAIL || "",
+
+        dt_matricula_associacao: "",
+
+        odontologico: odontologico
+          ? {
+            situacao: "ATIVO",
+
+            possuiPlanoAtivo: true,
+            tevePlanoAnterior: true,
+
+            idBeneficiario:
+              odontologico.ID_BENEFICIARIO,
+
+            tipoBeneficiario:
+              odontologico.CD_TIPO_BENEFICIARIO,
+
+            nomeTipoBeneficiario:
+              odontologico.NM_TIPO_BENEFICIARIO,
+
+            idOperadora:
+              odontologico.ID_OPERADORA,
+
+            operadora:
+              odontologico.NM_OPERADORA,
+
+            idPlano:
+              odontologico.ID_PLANO,
+
+            plano:
+              odontologico.NM_PLANO,
+
+            tipoCobranca:
+              odontologico.TP_COBRANCA,
+
+            valorMensalidade:
+              odontologico.VL_MENSALIDADE,
+
+            dataInicioVigenciaValor:
+              odontologico.DT_VIGENCIA_INICIO,
+
+            dataFimVigenciaValor:
+              odontologico.DT_VIGENCIA_FIM,
+          }
+
+          : odontologicoHistorico
+            ? {
+              situacao: "INATIVO",
+
+              possuiPlanoAtivo: false,
+              tevePlanoAnterior: true,
+
+              idBeneficiario:
+                odontologicoHistorico.ID_BENEFICIARIO,
+
+              tipoBeneficiario:
+                odontologicoHistorico.CD_TIPO_BENEFICIARIO,
+
+              nomeTipoBeneficiario:
+                odontologicoHistorico.NM_TIPO_BENEFICIARIO,
+
+              idOperadora:
+                odontologicoHistorico.ID_OPERADORA,
+
+              operadora:
+                odontologicoHistorico.NM_OPERADORA,
+
+              idPlano:
+                odontologicoHistorico.ID_PLANO,
+
+              plano:
+                odontologicoHistorico.NM_PLANO,
+
+              tipoCobranca:
+                odontologicoHistorico.TP_COBRANCA,
+
+              dataInclusaoPlano:
+                odontologicoHistorico.DT_INCLUSAO_PLANO,
+
+              dataExclusaoPlano:
+                odontologicoHistorico.DT_EXCLUSAO_PLANO,
+            }
+
+            : {
+              situacao: "NAO_ENCONTRADO",
+
+              possuiPlanoAtivo: false,
+              tevePlanoAnterior: false,
+            },
+      });
+    } catch (error: any) {
+      console.error(
+        "Erro ao buscar associado por CPF:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          "Erro ao buscar associado por CPF",
+        details:
+          error.message,
+      });
+    }
+  },
+
+  async proximoSequencial(_req: Request, res: Response) {
+    try {
+      const sql = `
+        SELECT NVL(MAX(SEQUENCIAL), 9999) + 1 AS SEQUENCIAL
+        FROM MONICAADM.FICHAS_FINANCEIRAS
+      `;
+
+      const result = await oracleExecute(
+        sql,
+        {},
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      const row: any = result.rows?.[0] || {};
+      return res.json({ sequencial: Number(row.SEQUENCIAL || 10000) });
+    } catch (error: any) {
+      console.error("Erro ao buscar próximo sequencial:", error);
+      return res.status(500).json({
+        error: "Erro ao buscar próximo sequencial",
+        details: error.message,
+      });
+    }
+  },
+
+  async listarFichas(_req: Request, res: Response) {
+    try {
+      const sql = `
+        SELECT
+          ID_FICHAS,
+          TIPO_FICHA,
+          NOME,
+          CPF,
+          PRONTUARIO,
+          EMPRESA,
+          ENDERECO,
+          TELEFONE,
+          OBSERVACAO,
+          RISCO,
+          TEMPO_ASSOCIADO,
+          TO_CHAR(DATA_FICHA, 'YYYY-MM-DD') AS DATA_FICHA,
+          OBSERVACOES_GERAIS,
+          RESPONSAVEL,
+          TOTAL_DEBITOS,
+          TOTAL_CREDITOS,
+          LIQUIDO_DEVEDOR,
+          DS_EMAIL,
+          NM_BAIRRO,
+          NM_CIDADE,
+          NR_CEP,
+          SEQUENCIAL,
+          CREATED_AT
+        FROM MONICAADM.FICHAS_FINANCEIRAS
+        ORDER BY CREATED_AT DESC NULLS LAST, SEQUENCIAL DESC
+      `;
+
+      const result = await oracleExecute(
+        sql,
+        {},
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      return res.json(result.rows || []);
+    } catch (error: any) {
+      console.error("Erro ao listar fichas:", error);
+      return res.status(500).json({
+        error: "Erro ao listar fichas",
+        details: error.message,
+      });
+    }
+  },
+
+  async listarContasDevedoras(req: Request, res: Response) {
+    try {
+      const idFicha = String(req.query.idFicha || "");
+
+      if (!idFicha) {
+        return res.status(400).json({ error: "Parâmetro idFicha é obrigatório." });
+      }
+
+      const sql = `
+        SELECT DESCRICAO, VALOR
+        FROM MONICAADM.CONTAS_DEVEDORAS
+        WHERE ID_FICHAS = :idFicha
+        ORDER BY DESCRICAO
+      `;
+
+      const result = await oracleExecute(
+        sql,
+        { idFicha },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      return res.json(result.rows || []);
+    } catch (error: any) {
+      console.error("Erro ao listar contas devedoras:", error);
+      return res.status(500).json({
+        error: "Erro ao listar contas devedoras",
+        details: error.message,
+      });
+    }
+  },
+
+  async listarContasCredoras(req: Request, res: Response) {
+    try {
+      const idFicha = String(req.query.idFicha || "");
+
+      if (!idFicha) {
+        return res.status(400).json({ error: "Parâmetro idFicha é obrigatório." });
+      }
+
+      const sql = `
+        SELECT DESCRICAO, VALOR
+        FROM MONICAADM.CONTAS_CREDORAS
+        WHERE ID_FICHAS = :idFicha
+        ORDER BY DESCRICAO
+      `;
+
+      const result = await oracleExecute(
+        sql,
+        { idFicha },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      return res.json(result.rows || []);
+    } catch (error: any) {
+      console.error("Erro ao listar contas credoras:", error);
+      return res.status(500).json({
+        error: "Erro ao listar contas credoras",
+        details: error.message,
+      });
+    }
+  },
+
+  async listarContasBancarias(req: Request, res: Response) {
+    try {
+      const idFicha = String(req.query.idFicha || "");
+
+      if (!idFicha) {
+        return res.status(400).json({ error: "Parâmetro idFicha é obrigatório." });
+      }
+
+      const sql = `
+        SELECT DESCRICAO, VALOR
+        FROM MONICAADM.CONTAS_BANCARIAS
+        WHERE ID_FICHAS = :idFicha
+        ORDER BY DESCRICAO
+      `;
+
+      const result = await oracleExecute(
+        sql,
+        { idFicha },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      return res.json(result.rows || []);
+    } catch (error: any) {
+      console.error("Erro ao listar contas bancárias:", error);
+      return res.status(500).json({
+        error: "Erro ao listar contas bancárias",
+        details: error.message,
+      });
+    }
+  },
+
+  async criarFicha(req: Request, res: Response) {
+    let conn: oracledb.Connection | undefined;
+
+    try {
+      const body = req.body;
+
+      const {
+        tipo,
+        nome,
+        cpf,
+        prontuario,
+        empresa,
+        endereco,
+        telefone,
+        observacao,
+        risco,
+        tempo_associado,
+        data_ficha,
+        observacoes_gerais,
+        responsavel,
+        ds_email,
+        nm_bairro,
+        nm_cidade,
+        nr_cep,
+        sequencial,
+        contasDevedoras = [],
+        contasCredoras = [],
+        contasBancarias = [],
+      } = body;
+
+      const total_debitos = calcularTotalNumerico(contasDevedoras);
+      const total_creditos = calcularTotalNumerico(contasCredoras);
+      const liquido_devedor = total_debitos - total_creditos;
+
+      conn = await getConnection();
+
+      await setAuditoriaContext(conn, req);
+
+      const idFicha = gerarIdCurto();
+
+      await conn.execute(
+        `
+          INSERT INTO MONICAADM.FICHAS_FINANCEIRAS (
+            ID_FICHAS,
+            TIPO_FICHA,
+            NOME,
+            CPF,
+            PRONTUARIO,
+            EMPRESA,
+            ENDERECO,
+            TELEFONE,
+            OBSERVACAO,
+            RISCO,
+            TEMPO_ASSOCIADO,
+            DATA_FICHA,
+            OBSERVACOES_GERAIS,
+            RESPONSAVEL,
+            TOTAL_DEBITOS,
+            TOTAL_CREDITOS,
+            LIQUIDO_DEVEDOR,
+            DS_EMAIL,
+            NM_BAIRRO,
+            NM_CIDADE,
+            NR_CEP,
+            SEQUENCIAL
+          ) VALUES (
+            :id,
+            :tipo,
+            :nome,
+            :cpf,
+            :prontuario,
+            :empresa,
+            :endereco,
+            :telefone,
+            :observacao,
+            :risco,
+            :tempo_associado,
+            TO_DATE(:data_ficha, 'YYYY-MM-DD'),
+            :observacoes_gerais,
+            :responsavel,
+            :total_debitos,
+            :total_creditos,
+            :liquido_devedor,
+            :ds_email,
+            :nm_bairro,
+            :nm_cidade,
+            :nr_cep,
+            :sequencial
+          )
+        `,
+        {
+          id: idFicha,
+          tipo: tipo || null,
+          nome: nome || null,
+          cpf: cpf || null,
+          prontuario: prontuario || null,
+          empresa: empresa || null,
+          endereco: endereco || null,
+          telefone: telefone || null,
+          observacao: observacao || null,
+          risco: risco || null,
+          tempo_associado: tempo_associado || null,
+          data_ficha: data_ficha || null,
+          observacoes_gerais: observacoes_gerais || null,
+          responsavel: responsavel || null,
+          total_debitos,
+          total_creditos,
+          liquido_devedor,
+          ds_email: ds_email || null,
+          nm_bairro: nm_bairro || null,
+          nm_cidade: nm_cidade || null,
+          nr_cep: nr_cep || null,
+          sequencial:
+            Number.isFinite(Number(sequencial)) && Number(sequencial) > 0
+              ? Number(sequencial)
+              : 10000,
+        }
+      );
+
+      for (const conta of contasDevedoras) {
+        await conn.execute(
+          `
+            INSERT INTO MONICAADM.CONTAS_DEVEDORAS (
+              ID_CONTAS_DEVEDORAS,
+              ID_FICHAS,
+              DESCRICAO,
+              VALOR
+            ) VALUES (
+              :id,
+              :idFicha,
+              :descricao,
+              :valor
+            )
+          `,
+          {
+            id: gerarIdCurto(),
+            idFicha,
+            descricao: conta?.descricao || null,
+            valor: normalizarValor(conta?.valor),
+          }
+        );
+      }
+
+      for (const conta of contasCredoras) {
+        if (!conta?.descricao) continue;
+
+        await conn.execute(
+          `
+            INSERT INTO MONICAADM.CONTAS_CREDORAS (
+              ID_CONTAS_CREDORAS,
+              ID_FICHAS,
+              DESCRICAO,
+              VALOR
+            ) VALUES (
+              :id,
+              :idFicha,
+              :descricao,
+              :valor
+            )
+          `,
+          {
+            id: gerarIdCurto(),
+            idFicha,
+            descricao: conta?.descricao || null,
+            valor: normalizarValor(conta?.valor),
+          }
+        );
+      }
+
+      for (const conta of contasBancarias) {
+        if (!conta?.descricao) continue;
+
+        await conn.execute(
+          `
+            INSERT INTO MONICAADM.CONTAS_BANCARIAS (
+              ID_CONTAS_BANCARIAS,
+              ID_FICHAS,
+              DESCRICAO,
+              VALOR
+            ) VALUES (
+              :id,
+              :idFicha,
+              :descricao,
+              :valor
+            )
+          `,
+          {
+            id: gerarIdCurto(),
+            idFicha,
+            descricao: conta?.descricao || null,
+            valor: normalizarValor(conta?.valor),
+          }
+        );
+      }
+
+      await conn.commit();
+
+      await criarPendenciaOdontoDesligamento({
+        origem: "DESIMPEDIMENTO",
+        idOrigem: idFicha,
+        cpf: String(cpf || ""),
+        nomeAssociado: String(nome || "").trim(),
+        usuario: {
+          nome: (req as any).user?.nome_completo,
+          login: (req as any).user?.sub,
+          email: (req as any).user?.email,
+        },
+      });
+
+      return res.status(201).json({
+        success: true,
+        id: idFicha,
+      });
+    } catch (error: any) {
+      if (conn) {
+        try {
+          await conn.rollback();
+        } catch { }
+      }
+
+      console.error("Erro ao criar ficha:", error);
+      return res.status(500).json({
+        error: "Erro ao criar ficha",
+        details: error.message,
+      });
+    } finally {
+      if (conn) {
+        try {
+          await conn.close();
+        } catch { }
+      }
+    }
+  },
+
+  async editarFicha(req: Request, res: Response) {
+    let conn: oracledb.Connection | undefined;
+
+    try {
+      const body = req.body;
+
+      const {
+        id,
+        tipo,
+        nome,
+        cpf,
+        prontuario,
+        empresa,
+        endereco,
+        telefone,
+        observacao,
+        risco,
+        tempo_associado,
+        data_ficha,
+        observacoes_gerais,
+        responsavel,
+        ds_email,
+        nm_bairro,
+        nm_cidade,
+        nr_cep,
+        contasDevedoras = [],
+        contasCredoras = [],
+        contasBancarias = [],
+      } = body;
+
+      if (!id) {
+        return res.status(400).json({ error: "ID da ficha é obrigatório." });
+      }
+
+      const total_debitos = calcularTotalNumerico(contasDevedoras);
+      const total_creditos = calcularTotalNumerico(contasCredoras);
+      const liquido_devedor = total_debitos - total_creditos;
+
+      conn = await getConnection();
+
+      await setAuditoriaContext(conn, req);
+
+      await conn.execute(
+        `
+          UPDATE MONICAADM.FICHAS_FINANCEIRAS
+          SET
+            TIPO_FICHA = :tipo,
+            NOME = :nome,
+            CPF = :cpf,
+            PRONTUARIO = :prontuario,
+            EMPRESA = :empresa,
+            ENDERECO = :endereco,
+            TELEFONE = :telefone,
+            OBSERVACAO = :observacao,
+            RISCO = :risco,
+            TEMPO_ASSOCIADO = :tempo_associado,
+            DATA_FICHA = TO_DATE(:data_ficha, 'YYYY-MM-DD'),
+            OBSERVACOES_GERAIS = :observacoes_gerais,
+            RESPONSAVEL = :responsavel,
+            TOTAL_DEBITOS = :total_debitos,
+            TOTAL_CREDITOS = :total_creditos,
+            LIQUIDO_DEVEDOR = :liquido_devedor,
+            DS_EMAIL = :ds_email,
+            NM_BAIRRO = :nm_bairro,
+            NM_CIDADE = :nm_cidade,
+            NR_CEP = :nr_cep
+          WHERE ID_FICHAS = :id
+        `,
+        {
+          id,
+          tipo: tipo || null,
+          nome: nome || null,
+          cpf: cpf || null,
+          prontuario: prontuario || null,
+          empresa: empresa || null,
+          endereco: endereco || null,
+          telefone: telefone || null,
+          observacao: observacao || null,
+          risco: risco || null,
+          tempo_associado: tempo_associado || null,
+          data_ficha: data_ficha || null,
+          observacoes_gerais: observacoes_gerais || null,
+          responsavel: responsavel || null,
+          total_debitos,
+          total_creditos,
+          liquido_devedor,
+          ds_email: ds_email || null,
+          nm_bairro: nm_bairro || null,
+          nm_cidade: nm_cidade || null,
+          nr_cep: nr_cep || null,
+        }
+      );
+
+      await conn.execute(
+        `DELETE FROM MONICAADM.CONTAS_DEVEDORAS WHERE ID_FICHAS = :id`,
+        { id }
+      );
+      await conn.execute(
+        `DELETE FROM MONICAADM.CONTAS_CREDORAS WHERE ID_FICHAS = :id`,
+        { id }
+      );
+      await conn.execute(
+        `DELETE FROM MONICAADM.CONTAS_BANCARIAS WHERE ID_FICHAS = :id`,
+        { id }
+      );
+
+      for (const conta of contasDevedoras) {
+        await conn.execute(
+          `
+            INSERT INTO MONICAADM.CONTAS_DEVEDORAS (
+              ID_CONTAS_DEVEDORAS,
+              ID_FICHAS,
+              DESCRICAO,
+              VALOR
+            ) VALUES (
+              :idConta,
+              :idFicha,
+              :descricao,
+              :valor
+            )
+          `,
+          {
+            idConta: gerarIdCurto(),
+            idFicha: id,
+            descricao: conta?.descricao || null,
+            valor: normalizarValor(conta?.valor),
+          }
+        );
+      }
+
+      for (const conta of contasCredoras) {
+        if (!conta?.descricao) continue;
+
+        await conn.execute(
+          `
+            INSERT INTO MONICAADM.CONTAS_CREDORAS (
+              ID_CONTAS_CREDORAS,
+              ID_FICHAS,
+              DESCRICAO,
+              VALOR
+            ) VALUES (
+              :idConta,
+              :idFicha,
+              :descricao,
+              :valor
+            )
+          `,
+          {
+            idConta: gerarIdCurto(),
+            idFicha: id,
+            descricao: conta?.descricao || null,
+            valor: normalizarValor(conta?.valor),
+          }
+        );
+      }
+
+      for (const conta of contasBancarias) {
+        if (!conta?.descricao) continue;
+
+        await conn.execute(
+          `
+            INSERT INTO MONICAADM.CONTAS_BANCARIAS (
+              ID_CONTAS_BANCARIAS,
+              ID_FICHAS,
+              DESCRICAO,
+              VALOR
+            ) VALUES (
+              :idConta,
+              :idFicha,
+              :descricao,
+              :valor
+            )
+          `,
+          {
+            idConta: gerarIdCurto(),
+            idFicha: id,
+            descricao: conta?.descricao || null,
+            valor: normalizarValor(conta?.valor),
+          }
+        );
+      }
+
+      await conn.commit();
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      if (conn) {
+        try {
+          await conn.rollback();
+        } catch { }
+      }
+
+      console.error("Erro ao editar ficha:", error);
+      return res.status(500).json({
+        error: "Erro ao editar ficha",
+        details: error.message,
+      });
+    } finally {
+      if (conn) {
+        try {
+          await conn.close();
+        } catch { }
+      }
+    }
+  },
+
+  async excluirFicha(req: Request, res: Response) {
+    let conn: oracledb.Connection | undefined;
+
+    try {
+      const id = String(req.query.id || "");
+
+      if (!id) {
+        return res.status(400).json({ error: "ID da ficha não informado." });
+      }
+
+      conn = await getConnection();
+
+      await setAuditoriaContext(conn, req);
+
+      await conn.execute(
+        `DELETE FROM MONICAADM.CONTAS_DEVEDORAS WHERE ID_FICHAS = :id`,
+        { id }
+      );
+      await conn.execute(
+        `DELETE FROM MONICAADM.CONTAS_CREDORAS WHERE ID_FICHAS = :id`,
+        { id }
+      );
+      await conn.execute(
+        `DELETE FROM MONICAADM.CONTAS_BANCARIAS WHERE ID_FICHAS = :id`,
+        { id }
+      );
+      await conn.execute(
+        `DELETE FROM MONICAADM.FICHAS_FINANCEIRAS WHERE ID_FICHAS = :id`,
+        { id }
+      );
+
+      await conn.commit();
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      if (conn) {
+        try {
+          await conn.rollback();
+        } catch { }
+      }
+
+      console.error("Erro ao excluir ficha:", error);
+      return res.status(500).json({
+        error: "Erro ao excluir ficha",
+        details: error.message,
+      });
+    } finally {
+      if (conn) {
+        try {
+          await conn.close();
+        } catch { }
+      }
+    }
+  },
+};

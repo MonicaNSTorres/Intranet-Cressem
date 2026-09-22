@@ -1,0 +1,690 @@
+﻿﻿"use client";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { formatCpfView, monetizarDigitacao, parseBRL, fmtBRL, hojeBR } from "@/utils/br";
+import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
+import { gerarPdfPrevisul } from "@/lib/pdf/gerarPdfPrevisul";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
+import { buscarCidadesResgate, type CidadeResgateItem } from "@/services/resgate_capital.service";
+
+function toIsoFromBr(value: string) {
+    if (!value) return "";
+    const [dia, mes, ano] = value.split("/");
+    if (!dia || !mes || !ano) return "";
+    return `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+}
+
+function toBrFromIso(value?: string) {
+    if (!value) return "";
+    const [ano, mes, dia] = value.split("-");
+    if (!ano || !mes || !dia) return value;
+    return `${dia}/${mes}/${ano}`;
+}
+
+function addMonths(dateIso: string, months: number) {
+    if (!dateIso) return "";
+    const d = new Date(`${dateIso}T00:00:00`);
+    d.setMonth(d.getMonth() + months);
+    const ano = d.getFullYear();
+    const mes = String(d.getMonth() + 1).padStart(2, "0");
+    const dia = String(d.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+}
+
+function calculateAgeFromIso(dateIso?: string) {
+    if (!dateIso) return "";
+    const birth = new Date(`${dateIso}T00:00:00`);
+    const today = new Date();
+
+    let years = today.getFullYear() - birth.getFullYear();
+    let months = today.getMonth() - birth.getMonth();
+    let days = today.getDate() - birth.getDate();
+
+    if (days < 0) {
+        months--;
+        const lastMonthDays = new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+        days += lastMonthDays;
+    }
+
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+
+    return `com ${years} anos, ${months} meses e ${days} dias`;
+}
+
+function formatNascimentoParaInput(value?: string | Date) {
+    if (!value) return "";
+
+    if (value instanceof Date) {
+        const ano = value.getFullYear();
+        const mes = String(value.getMonth() + 1).padStart(2, "0");
+        const dia = String(value.getDate()).padStart(2, "0");
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    const str = String(value).trim();
+
+    //yyyy-mm-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return str;
+    }
+
+    //yyyy-mm-ddTHH:mm:ss(.sss)Z (ou variantes)
+    const isoPrefix = str.match(/^(\d{4}-\d{2}-\d{2})T/);
+    if (isoPrefix?.[1]) {
+        return isoPrefix[1];
+    }
+
+    //dd/mm/yyyy
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+        const [dia, mes, ano] = str.split("/");
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    //dd-mm-yyyy
+    if (/^\d{2}-\d{2}-\d{4}$/.test(str)) {
+        const [dia, mes, ano] = str.split("-");
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    //Fallback para datas parseáveis
+    const d = new Date(str);
+    if (!Number.isNaN(d.getTime())) {
+        const ano = d.getFullYear();
+        const mes = String(d.getMonth() + 1).padStart(2, "0");
+        const dia = String(d.getDate()).padStart(2, "0");
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    return "";
+}
+
+function normalizeText(value?: string) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toUpperCase();
+}
+
+const fieldClass =
+    "h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15";
+
+const readOnlyFieldClass =
+    "h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 shadow-sm outline-none";
+
+const labelClass =
+    "mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500";
+
+function SectionCard({
+    title,
+    description,
+    children,
+}: {
+    title: string;
+    description?: string;
+    children: ReactNode;
+}) {
+    return (
+        <section className="rounded-[18px] border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 px-5 py-4">
+                <h2 className="flex items-center gap-2 text-base font-bold text-slate-950">
+                    <span className="h-2 w-2 rounded-full bg-primary" />
+                    {title}
+                </h2>
+                {description && (
+                    <p className="mt-1 text-sm text-slate-600">{description}</p>
+                )}
+            </div>
+
+            <div className="p-5">{children}</div>
+        </section>
+    );
+}
+
+function FieldLabel({ children }: { children: ReactNode }) {
+    return <label className={labelClass}>{children}</label>;
+}
+
+export function PrevisulForm() {
+    const [cpf, setCpf] = useState("");
+    const [nome, setNome] = useState("NOMECLIENTE");
+    const [cpfTermo, setCpfTermo] = useState("CPFCLIENTE");
+    const [nascimento, setNascimento] = useState("");
+    const [proposta, setProposta] = useState("");
+    const [valorEmprestimo, setValorEmprestimo] = useState("");
+    const [totalParcelas, setTotalParcelas] = useState("");
+    const [dataPrimeiraParcelaEmprestimo, setDataPrimeiraParcelaEmprestimo] = useState("");
+    const [valorMensalSeguro, setValorMensalSeguro] = useState("");
+    const [valorTotalSeguro, setValorTotalSeguro] = useState("");
+    const [taxaJuros] = useState("0,1%");
+    const [dataPrimeiraParcelaSeguro, setDataPrimeiraParcelaSeguro] = useState("");
+    const [dataUltimaParcelaSeguro, setDataUltimaParcelaSeguro] = useState("");
+    const [cidadeAtendimento, setCidadeAtendimento] = useState("");
+    const [cidadesAtendimento, setCidadesAtendimento] = useState<Array<{ value: string; label: string }>>([]);
+    const [dataHoje, setDataHoje] = useState(hojeBR());
+
+    const [erroLocal, setErroLocal] = useState("");
+    const [infoLocal, setInfoLocal] = useState("");
+
+    const { loading, erro, info, buscar } = useAssociadoPorCpf();
+
+    const nascimentoBr = useMemo(() => toBrFromIso(nascimento), [nascimento]);
+    const idadeTexto = useMemo(() => calculateAgeFromIso(nascimento), [nascimento]);
+    const parcelasNum = useMemo(() => Number(totalParcelas || 0), [totalParcelas]);
+    const valorEmprestimoNum = useMemo(() => parseBRL(valorEmprestimo), [valorEmprestimo]);
+    const cidadeSelecionadaValida = useMemo(
+        () => cidadesAtendimento.some((c) => c.value === cidadeAtendimento),
+        [cidadesAtendimento, cidadeAtendimento]
+    );
+
+    const mostrarCompetencia = useMemo(() => {
+        if (!dataPrimeiraParcelaEmprestimo) return false;
+        const ref = new Date(`${dataPrimeiraParcelaEmprestimo}T00:00:00`);
+        const now = new Date();
+        return !(ref.getMonth() === now.getMonth() && ref.getFullYear() === now.getFullYear());
+    }, [dataPrimeiraParcelaEmprestimo]);
+
+    const failWithScroll = (message: string) => {
+        setErroLocal(message);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return false;
+    };
+
+    const onBuscar = async () => {
+        setErroLocal("");
+        setInfoLocal("");
+        setCpfTermo(formatCpfView(cpf));
+
+        const r = await buscar(cpf);
+
+        if (r.found) {
+            setNome(r.data.nome || "NOMECLIENTE");
+            setCpfTermo(formatCpfView(r.data.cpf || cpf));
+            setNascimento(formatNascimentoParaInput(r.data.nascimento));
+            if (r.data.cidade) {
+                const cidadeAssociado = String(r.data.cidade).trim();
+                const match = cidadesAtendimento.find(
+                    (c) => normalizeText(c.value) === normalizeText(cidadeAssociado)
+                );
+                setCidadeAtendimento(match?.value || "");
+            }
+            setInfoLocal("Dados carregados. Complete manualmente os campos do contrato.");
+            return;
+        }
+
+        // Se não encontrou no cadastro, mantém os campos liberados para preenchimento manual.
+        setInfoLocal(
+            "Associado não encontrado na base. Preencha manualmente nome, CPF e nascimento para gerar o termo."
+        );
+    };
+
+    useEffect(() => {
+        async function carregarCidadesAtendimento() {
+            try {
+                const lista = await buscarCidadesResgate();
+                const opcoes = (lista || [])
+                    .map((c: CidadeResgateItem) => {
+                        const nome = String(c?.NM_CIDADE || "").trim();
+                        return { value: nome, label: nome };
+                    })
+                    .filter((c) => c.value.length > 0);
+
+                setCidadesAtendimento(opcoes);
+            } catch {
+                setCidadesAtendimento([]);
+            }
+        }
+
+        carregarCidadesAtendimento();
+    }, []);
+
+    useEffect(() => {
+        if (erroLocal || erro) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    }, [erroLocal, erro]);
+
+    const processar = () => {
+        setErroLocal("");
+        setInfoLocal("");
+
+        if (!proposta.trim()) {
+            failWithScroll("Preencha o número da proposta.");
+            return;
+        }
+
+        if (!valorEmprestimoNum || valorEmprestimoNum <= 0) {
+            failWithScroll("Informe um valor de empréstimo válido.");
+            return;
+        }
+
+        if (!parcelasNum || parcelasNum <= 0) {
+            failWithScroll("Informe a quantidade de parcelas.");
+            return;
+        }
+
+        if (!dataPrimeiraParcelaEmprestimo) {
+            failWithScroll("Informe a data da primeira parcela do empréstimo.");
+            return;
+        }
+
+        const mensal = valorEmprestimoNum * 0.001;
+        const total = mensal * parcelasNum;
+
+        setValorMensalSeguro(fmtBRL(mensal));
+        setValorTotalSeguro(fmtBRL(total));
+
+        const hojeIso = toIsoFromBr(dataHoje);
+        const primeiroSeguro = addMonths(hojeIso, 1);
+        const ultimoSeguro = addMonths(primeiroSeguro, parcelasNum - 1);
+
+        setDataPrimeiraParcelaSeguro(primeiroSeguro);
+        setDataUltimaParcelaSeguro(ultimoSeguro);
+
+        setInfoLocal("Seguro processado com sucesso.");
+    };
+
+    const validarGeracao = () => {
+        if (!nome.trim() || nome === "NOMECLIENTE") {
+            return failWithScroll("Preencha o nome do associado.");
+        }
+
+        if (!cpf.trim()) {
+            return failWithScroll("Preencha o CPF do associado.");
+        }
+
+        if (!cpfTermo.trim() || cpfTermo === "CPFCLIENTE") {
+            return failWithScroll("Preencha o CPF do associado no termo.");
+        }
+
+        if (!nascimento) {
+            return failWithScroll("Preencha a data de nascimento.");
+        }
+
+        if (!idadeTexto.trim()) {
+            return failWithScroll("Data de nascimento inválida para calcular a idade.");
+        }
+
+        if (!proposta.trim()) {
+            return failWithScroll("Preencha o número da proposta.");
+        }
+
+        if (!valorEmprestimo.trim()) {
+            return failWithScroll("Preencha o valor do empréstimo.");
+        }
+
+        if (!totalParcelas.trim()) {
+            return failWithScroll("Preencha o total de parcelas.");
+        }
+
+        if (!dataPrimeiraParcelaEmprestimo) {
+            return failWithScroll("Preencha a data da primeira parcela do empréstimo.");
+        }
+
+        if (!valorMensalSeguro || !valorTotalSeguro) {
+            return failWithScroll("Clique em Processar antes de gerar o PDF.");
+        }
+
+        if (mostrarCompetencia && (!dataPrimeiraParcelaSeguro || !dataUltimaParcelaSeguro)) {
+            return failWithScroll("Preencha as datas do seguro.");
+        }
+
+        if (!cidadeAtendimento.trim()) {
+            return failWithScroll("Preencha a cidade do atendimento.");
+        }
+
+        if (!cidadeSelecionadaValida) {
+            return failWithScroll("Cidade do atendimento inválida. Selecione uma opção da lista.");
+        }
+
+        if (!dataHoje.trim()) {
+            return failWithScroll("Preencha a data do atendimento.");
+        }
+
+        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dataHoje.trim())) {
+            return failWithScroll("Data do atendimento inválida. Use o formato dd/mm/aaaa.");
+        }
+
+        return true;
+    };
+
+    const formularioValido = useMemo(() => {
+        const cpfValido = cpf.replace(/\D/g, "").length === 11;
+        const cpfTermoValido = cpfTermo.replace(/\D/g, "").length === 11;
+        const dataHojeValida = /^\d{2}\/\d{2}\/\d{4}$/.test(dataHoje.trim());
+
+        if (!cpfValido) return false;
+        if (!nome.trim() || nome === "NOMECLIENTE") return false;
+        if (!cpfTermoValido || cpfTermo === "CPFCLIENTE") return false;
+        if (!nascimento) return false;
+        if (!proposta.trim()) return false;
+        if (!valorEmprestimo.trim() || valorEmprestimoNum <= 0) return false;
+        if (!totalParcelas.trim() || parcelasNum <= 0) return false;
+        if (!dataPrimeiraParcelaEmprestimo) return false;
+        if (!valorMensalSeguro || !valorTotalSeguro) return false;
+
+        if (mostrarCompetencia && (!dataPrimeiraParcelaSeguro || !dataUltimaParcelaSeguro)) {
+            return false;
+        }
+
+        if (!cidadeAtendimento.trim()) return false;
+        if (!cidadeSelecionadaValida) return false;
+        if (!dataHoje.trim() || !dataHojeValida) return false;
+
+        return true;
+    }, [
+        cpf,
+        cpfTermo,
+        nome,
+        nascimento,
+        proposta,
+        valorEmprestimo,
+        valorEmprestimoNum,
+        totalParcelas,
+        parcelasNum,
+        dataPrimeiraParcelaEmprestimo,
+        valorMensalSeguro,
+        valorTotalSeguro,
+        mostrarCompetencia,
+        dataPrimeiraParcelaSeguro,
+        dataUltimaParcelaSeguro,
+        cidadeAtendimento,
+        cidadeSelecionadaValida,
+        dataHoje,
+    ]);
+
+    const gerar = async () => {
+        setErroLocal("");
+        setInfoLocal("");
+
+        if (!validarGeracao()) return;
+
+        await gerarPdfPrevisul({
+            nome,
+            cpf: cpfTermo === "CPFCLIENTE" ? formatCpfView(cpf) : cpfTermo,
+            nascimento: nascimentoBr || "NASCIMENTO",
+            idadeTexto,
+            proposta,
+            valorEmprestimo: valorEmprestimo || fmtBRL(0),
+            totalParcelas,
+            dataPrimeiraParcelaEmprestimo: toBrFromIso(dataPrimeiraParcelaEmprestimo),
+            valorMensalSeguro: valorMensalSeguro || fmtBRL(0),
+            valorTotalSeguro: valorTotalSeguro || fmtBRL(0),
+            taxaJuros,
+            dataPrimeiraParcelaSeguro: toBrFromIso(dataPrimeiraParcelaSeguro),
+            dataUltimaParcelaSeguro: toBrFromIso(dataUltimaParcelaSeguro),
+            cidadeAtendimento,
+            dataHoje,
+            mostrarCompetencia,
+            assinaturaAssociado: nome,
+        });
+    };
+
+    return (
+        <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+            <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
+
+            <div className="space-y-5 p-5 md:p-6">
+                <SectionCard
+                    title="Consulta do associado"
+                    description="Busque o associado por CPF e complete os dados do contrato prestamista."
+                >
+                    <SearchForm onSearch={onBuscar}>
+                        <div>
+                            <FieldLabel>CPF do associado</FieldLabel>
+
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+                                <SearchInput
+                                    value={formatCpfView(cpf)}
+                                    onChange={(e) => setCpf(e.target.value)}
+                                    placeholder="CPF (somente números)"
+                                    className={fieldClass}
+                                    inputMode="numeric"
+                                    maxLength={14}
+                                />
+                                <SearchButton loading={loading} label="Pesquisar" />
+                            </div>
+
+                            {(erro || erroLocal) && (
+                                <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                    {erroLocal || erro}
+                                </div>
+                            )}
+
+                            {(info || infoLocal) && !(erro || erroLocal) && (
+                                <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                                    {infoLocal || info}
+                                </div>
+                            )}
+                        </div>
+                    </SearchForm>
+                </SectionCard>
+
+                <SectionCard title="Prévia do termo">
+                    <div className="rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50 via-white to-lime-50 p-4 text-sm leading-relaxed text-slate-700">
+                        <p>
+                            <strong>{nome}</strong>, pessoa física, CPF:{" "}
+                            <strong>{cpfTermo === "CPFCLIENTE" ? formatCpfView(cpf) : cpfTermo}</strong>,
+                            {" "}nascido em <strong>{nascimentoBr || "NASCIMENTO"}</strong>,
+                            {" "}<strong>{idadeTexto || "Idade"}</strong>, associado à SICOOB CRESSEM -
+                            COOPERATIVA DE ECONOMIA E CRÉDITO MÚTUO DOS SERVIDORES MUNICIPAIS DA
+                            REGIÃO METROPOLITANA DO VALE DO PARAÍBA E LITORAL NORTE, representado
+                            nos termos de seus atos constitutivos, formaliza pela assinatura do
+                            presente Termo, o interesse em aderir ao Contrato de Seguro Prestamista.
+                        </p>
+                    </div>
+                </SectionCard>
+
+                <SectionCard title="Dados do associado">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div>
+                            <FieldLabel>Nome do associado</FieldLabel>
+                            <input
+                                value={nome}
+                                onChange={(e) => setNome(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>CPF no termo</FieldLabel>
+                            <input
+                                value={cpfTermo === "CPFCLIENTE" ? formatCpfView(cpf) : cpfTermo}
+                                onChange={(e) => setCpfTermo(formatCpfView(e.target.value))}
+                                className={fieldClass}
+                                maxLength={14}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>Data de nascimento</FieldLabel>
+                            <input
+                                type="date"
+                                value={nascimento}
+                                onChange={(e) => setNascimento(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+                    </div>
+                </SectionCard>
+
+                <SectionCard
+                    title="Dados do empréstimo"
+                    description="Após preencher os campos, clique em Processar para calcular os valores do seguro."
+                >
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                            <FieldLabel>Proposta nº</FieldLabel>
+                            <input
+                                value={proposta}
+                                onChange={(e) => setProposta(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>Valor do empréstimo</FieldLabel>
+                            <input
+                                value={valorEmprestimo}
+                                onChange={(e) => setValorEmprestimo(monetizarDigitacao(e.target.value))}
+                                className={fieldClass}
+                                placeholder="R$ 0,00"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                            <FieldLabel>Total de parcelas</FieldLabel>
+                            <input
+                                value={totalParcelas}
+                                onChange={(e) => setTotalParcelas(e.target.value.replace(/\D/g, ""))}
+                                className={fieldClass}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>Data da 1ª parcela do empréstimo</FieldLabel>
+                            <input
+                                type="date"
+                                value={dataPrimeiraParcelaEmprestimo}
+                                onChange={(e) => setDataPrimeiraParcelaEmprestimo(e.target.value)}
+                                className={fieldClass}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="mt-5 flex items-center justify-end border-t border-slate-200 pt-5">
+                        <button
+                            type="button"
+                            onClick={processar}
+                            className="inline-flex h-10 items-center justify-center rounded-xl bg-secondary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary"
+                        >
+                            Processar
+                        </button>
+                    </div>
+                </SectionCard>
+
+                <SectionCard title="Resultado do seguro">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        <div>
+                            <FieldLabel>Valor mensal do seguro</FieldLabel>
+                            <input
+                                readOnly
+                                value={valorMensalSeguro}
+                                className={readOnlyFieldClass}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>Valor total do seguro</FieldLabel>
+                            <input
+                                readOnly
+                                value={valorTotalSeguro}
+                                className={readOnlyFieldClass}
+                            />
+                        </div>
+
+                        <div>
+                            <FieldLabel>Taxa de juros sobre o seguro</FieldLabel>
+                            <input
+                                readOnly
+                                value={taxaJuros}
+                                className={readOnlyFieldClass}
+                            />
+                        </div>
+                    </div>
+
+                    {mostrarCompetencia && (
+                        <div className="mt-5 space-y-3">
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <div>
+                                    <FieldLabel>Data da 1ª parcela do seguro</FieldLabel>
+                                    <input
+                                        type="date"
+                                        value={dataPrimeiraParcelaSeguro}
+                                        onChange={(e) => setDataPrimeiraParcelaSeguro(e.target.value)}
+                                        className={fieldClass}
+                                    />
+                                </div>
+
+                                <div>
+                                    <FieldLabel>Data da última parcela do seguro</FieldLabel>
+                                    <input
+                                        type="date"
+                                        value={dataUltimaParcelaSeguro}
+                                        onChange={(e) => setDataUltimaParcelaSeguro(e.target.value)}
+                                        className={fieldClass}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
+                                O seguro é pago por competência, ou seja, a partir da contratação,
+                                havendo assim a incidência de mais um mês de seguro, pois a primeira
+                                parcela do empréstimo vence no mês subsequente, mas tendo de estar
+                                segura a partir deste mês.
+                            </div>
+                        </div>
+                    )}
+                </SectionCard>
+
+                <SectionCard title="Atendimento">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+                        A formalização da adesão individual ao seguro será realizada por
+                        intermédio do preenchimento e assinatura, pelo proponente, da Proposta
+                        de Adesão.
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                            <FieldLabel>Cidade do atendimento</FieldLabel>
+                            <select
+                                value={cidadeAtendimento}
+                                onChange={(e) => setCidadeAtendimento(e.target.value)}
+                                className={fieldClass}
+                            >
+                                <option value="">Selecione</option>
+                                {cidadesAtendimento.map((cidade) => (
+                                    <option key={cidade.value} value={cidade.value}>
+                                        {cidade.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <FieldLabel>Data de hoje</FieldLabel>
+                            <input
+                                value={dataHoje}
+                                onChange={(e) => setDataHoje(e.target.value)}
+                                className={fieldClass}
+                                placeholder="dd/mm/aaaa"
+                            />
+                        </div>
+                    </div>
+                </SectionCard>
+
+                <div className="flex items-center justify-end border-t border-slate-200 pt-5">
+                    <button
+                        type="button"
+                        onClick={gerar}
+                        disabled={!formularioValido}
+                        className={`inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition ${
+                            formularioValido
+                                ? "cursor-pointer bg-primary hover:bg-fourth"
+                                : "cursor-not-allowed bg-slate-300"
+                        }`}
+                    >
+                        Gerar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}

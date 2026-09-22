@@ -1,0 +1,2118 @@
+﻿import { Request, Response } from "express";
+import oracledb from "oracledb";
+import path from "path";
+import fs from "fs/promises";
+import os from "os";
+import { UploadedFile } from "express-fileupload";
+import { getOraclePool } from "../config/oracle.pool";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import {
+    oracleExecute,
+    oracleExecuteCommitWithAudit,
+    setAuditoriaContext,
+} from "../services/oracle.service";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
+import { PDFDocument } from "pdf-lib";
+import { isConselhoParticipacao } from "../services/perfil-conselho.service";
+
+const execFileAsync = promisify(execFile);
+const AD_GROUP_SUPORTE = "GG_USERS_SUPORTE";
+const ID_DIRETOR_PRESIDENTE_PARTICIPACAO = 94;
+const NOMES_MARKETING = [
+    "JULIA DE ALMEIDA COUTINHO",
+    "LUIZ RODOLFO GERHARD",
+];
+const PERFIS_TESTE_PARTICIPACAO = ["gerencia", "marketing", "diretoria", "conselho"] as const;
+
+function modoTesteParticipacaoAtivo() {
+    return (
+        process.env.NODE_ENV === "development" &&
+        String(process.env.PARTICIPACAO_TEST_MODE || "").trim().toLowerCase() === "true"
+    );
+}
+
+function obterPerfilTesteParticipacao(req: Request) {
+    if (!modoTesteParticipacaoAtivo()) return null;
+
+    const perfil = String(req.headers["x-participacao-teste-perfil"] || "")
+        .trim()
+        .toLowerCase();
+
+    return PERFIS_TESTE_PARTICIPACAO.includes(
+        perfil as (typeof PERFIS_TESTE_PARTICIPACAO)[number]
+    )
+        ? perfil
+        : null;
+}
+
+function funcionarioDoPerfilTeste(perfil: string) {
+    const nomes: Record<string, string> = {
+        gerencia: "GERÊNCIA DE TESTE",
+        marketing: "MARKETING DE TESTE",
+        diretoria: "DIRETORIA DE TESTE",
+        conselho: "CONSELHO DE TESTE",
+    };
+
+    return {
+        NM_FUNCIONARIO: nomes[perfil] || "PERFIL DE TESTE",
+        TIPO: perfil,
+    };
+}
+
+function onlyDigits(value: string) {
+    return String(value || "").replace(/\D/g, "");
+}
+
+function toUpperTrim(value: any) {
+    return String(value || "").trim().toUpperCase();
+}
+
+function hasGroup(grupos: string[], target: string) {
+    const alvo = toUpperTrim(target);
+    return grupos.some((grupo) => toUpperTrim(grupo) === alvo);
+}
+
+function normalizeFiltroTexto(value: any) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toUpperCase();
+}
+
+function onlyCpfCnpjChars(value: string) {
+    return String(value || "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+}
+
+function toNumber(value: any, fallback = 0) {
+    if (value === null || value === undefined || value === "") return fallback;
+    const n = Number(String(value).replace(",", "."));
+    return Number.isFinite(n) ? n : fallback;
+}
+
+function toNullableNumber(value: any) {
+    if (value === null || value === undefined || value === "") return null;
+    const n = Number(String(value).replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+}
+
+function toNullableString(value: any) {
+    const v = String(value ?? "").trim();
+    return v ? v : null;
+}
+
+type PagamentoPatrocinio = {
+    SN_CONTA_COOPERATIVA: number;
+    NM_FAVORECIDO: string;
+    NR_CPF_CNPJ: string;
+    DS_BANCO: string;
+    NR_AGENCIA: string;
+    NR_CONTA: string;
+    TP_CONTA: string;
+};
+
+function obterPagamentoPatrocinio(body: any): PagamentoPatrocinio {
+    const contaCooperativa = toNumber(
+        body.CD_CONTA_COOPERATIVA,
+        -1
+    );
+
+    if (![0, 1].includes(contaCooperativa)) {
+        throw new Error(
+            "Informe se o recebimento será em conta da cooperativa."
+        );
+    }
+
+    const nomeFavorecido = toNullableString(body.NM_FAVORECIDO);
+    const cpfCnpjFavorecido = onlyCpfCnpjChars(
+        String(body.NR_CPF_CNPJ_FAVORECIDO || "")
+    );
+
+    if (!nomeFavorecido) {
+        throw new Error("NM_FAVORECIDO é obrigatório.");
+    }
+
+    const cpfValido =
+        cpfCnpjFavorecido.length === 11 && /^\d{11}$/.test(cpfCnpjFavorecido);
+    const cnpjValido = cpfCnpjFavorecido.length === 14;
+
+    if (!cpfValido && !cnpjValido) {
+        throw new Error(
+            "NR_CPF_CNPJ_FAVORECIDO deve conter um CPF com 11 dígitos ou CNPJ com 14 caracteres."
+        );
+    }
+
+    const banco = toNullableString(body.DS_BANCO_PAGAMENTO);
+    const agencia = toNullableString(body.NR_AGENCIA_PAGAMENTO);
+    const conta = toNullableString(body.NR_CONTA_PAGAMENTO);
+    const tipoConta =
+        toNullableString(body.TP_CONTA_PAGAMENTO)?.toUpperCase() || null;
+
+    if (!banco || !agencia || !conta || !tipoConta) {
+        throw new Error(
+            "Banco, agência, conta e tipo de conta são obrigatórios para o pagamento."
+        );
+    }
+
+    if (!["CORRENTE", "POUPANCA"].includes(tipoConta)) {
+        throw new Error("TP_CONTA_PAGAMENTO inválido.");
+    }
+
+    return {
+        SN_CONTA_COOPERATIVA: contaCooperativa,
+        NM_FAVORECIDO: nomeFavorecido,
+        NR_CPF_CNPJ: cpfCnpjFavorecido,
+        DS_BANCO: banco,
+        NR_AGENCIA: agencia,
+        NR_CONTA: conta,
+        TP_CONTA: tipoConta,
+    };
+}
+
+function ensurePdf(file?: UploadedFile | null) {
+    if (!file) return;
+
+    const isPdf =
+        file.mimetype === "application/pdf" ||
+        file.name.toLowerCase().endsWith(".pdf");
+
+    if (!isPdf) {
+        throw new Error("Apenas arquivos PDF sÃ£o permitidos.");
+    }
+}
+
+function sanitizeFileName(name: string) {
+    return String(name || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\w.\- ]+/g, "_")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function sanitizeFolderName(value: string) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[\\/:*?"<>|]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function escapeCsv(value: any) {
+    // CSV não carrega largura/quebra de texto. Para evitar conteúdo espalhando
+    // visualmente no Excel, normalizamos espaços, tabs e quebras de linha.
+    const text = String(value ?? "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (text.includes(";") || text.includes('"') || text.includes("\n")) {
+        return `"${text.replace(/"/g, '""')}"`;
+    }
+
+    return text;
+}
+
+function capitalizeWords(value: string) {
+    return String(value || "")
+        .toLowerCase()
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+function formatarCpfOuCnpj(valor: string) {
+    const value = onlyCpfCnpjChars(valor);
+
+    if (value.length <= 11) {
+        return value
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+            .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    }
+
+    return value
+        .replace(/^(.{2})(.)/, "$1.$2")
+        .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+        .replace(/\.(.{3})(.)/, ".$1/$2")
+        .replace(/(.{4})(.)$/, "$1-$2");
+}
+
+function getMimeTypeByFileName(filePath: string) {
+    const lower = filePath.toLowerCase();
+
+    if (lower.endsWith(".pdf")) return "application/pdf";
+    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+    if (lower.endsWith(".png")) return "image/png";
+    if (lower.endsWith(".doc")) return "application/msword";
+    if (lower.endsWith(".docx")) {
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    }
+
+    return "application/octet-stream";
+}
+
+function getSmbConfig() {
+    const server = String(process.env.SMB_SERVER || "").trim();
+    const share = String(process.env.SMB_SHARE || "").trim();
+    const user = String(process.env.SMB_USER || "").trim();
+    const password = String(process.env.SMB_PASSWORD || "");
+    const domain = String(process.env.SMB_DOMAIN || "").trim();
+
+    if (!server) throw new Error("SMB_SERVER nÃ£o configurado.");
+    if (!share) throw new Error("SMB_SHARE nÃ£o configurado.");
+    if (!user) throw new Error("SMB_USER nÃ£o configurado.");
+    if (!password) throw new Error("SMB_PASSWORD nÃ£o configurado.");
+
+    return { server, share, user, password, domain };
+}
+
+function getShareRoot() {
+    const { server, share } = getSmbConfig();
+    return `\\\\${server}\\${share}`;
+}
+
+function getShareRootLinux() {
+    const { server, share } = getSmbConfig();
+    return `//${server}/${share}`;
+}
+
+function isWindowsRuntime() {
+    return process.platform === "win32";
+}
+
+function toSlashUncPath(value: string) {
+    const normalized = String(value || "").trim().replace(/\\/g, "/");
+    if (!normalized) return normalized;
+    if (normalized.startsWith("//")) return normalized;
+    if (normalized.startsWith("/")) return `/${normalized}`;
+    return `//${normalized}`;
+}
+
+function toWindowsUncPath(value: string) {
+    const normalized = String(value || "").trim();
+    if (!normalized) return normalized;
+    return normalized.replace(/\//g, "\\");
+}
+
+function getSmbRelativePath(caminhoOriginal: string) {
+    const { server, share } = getSmbConfig();
+    const caminho = String(caminhoOriginal || "")
+        .trim()
+        .replace(/\\/g, "/")
+        .replace(/^\/+/, "");
+    const prefix = `${server}/${share}/`;
+
+    if (caminho.toLowerCase().startsWith(prefix.toLowerCase())) {
+        return caminho.slice(prefix.length);
+    }
+
+    return caminho;
+}
+
+async function readFileByPossibleUncPaths(caminhoOriginal: string) {
+    const caminho = String(caminhoOriginal || "").trim();
+    const candidatos = Array.from(
+        new Set([
+            caminho,
+            toWindowsUncPath(caminho),
+            toSlashUncPath(caminho),
+        ].filter(Boolean))
+    );
+
+    let lastError: any = null;
+
+    for (const candidato of candidatos) {
+        try {
+            const buffer = await fs.readFile(candidato);
+            return { buffer, caminhoResolvido: candidato };
+        } catch (error: any) {
+            lastError = error;
+        }
+    }
+
+    throw new Error(
+        `Arquivo não encontrado nos caminhos tentados: ${candidatos.join(" | ")}. Detalhes: ${String(
+            lastError?.message || lastError
+        )}`
+    );
+}
+
+async function execSmbClient(command: string) {
+    const { server, share, user, password, domain } = getSmbConfig();
+    const args = [`//${server}/${share}`];
+
+    if (domain) {
+        args.push("-W", domain);
+    }
+
+    args.push("-U", `${user}%${password}`, "-c", command);
+
+    try {
+        return await execFileAsync("smbclient", args);
+    } catch (error: any) {
+        throw new Error(
+            `Falha ao executar smbclient. Comando: ${command}. Detalhes: ${String(
+                error?.stderr ||
+                error?.stdout ||
+                error?.message ||
+                error
+            )}`
+        );
+    }
+}
+
+async function salvarArquivoPatrocinioNoServidorSMBLinux(
+    fileData: Buffer,
+    fileName: string,
+    solicitanteSafe: string
+) {
+    const diretorioDestino = `CRM/PATROCINIO/${solicitanteSafe}`;
+    const pastasParaGarantir = [
+        "CRM",
+        "CRM/PATROCINIO",
+        diretorioDestino,
+    ];
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "patrocinio-smb-"));
+    const tempFilePath = path.join(tempDir, fileName);
+
+    try {
+        for (const pasta of pastasParaGarantir) {
+            try {
+                await execSmbClient(`mkdir "${pasta}"`);
+            } catch {
+                // Se a pasta ja existe, o smbclient acusa erro. Pode seguir.
+            }
+        }
+
+        await fs.writeFile(tempFilePath, fileData);
+        await execSmbClient(`cd "${diretorioDestino}"; put "${tempFilePath}" "${fileName}"`);
+
+        return `${getShareRootLinux()}/${diretorioDestino}/${fileName}`;
+    } finally {
+        await fs.rm(tempDir, { recursive: true, force: true });
+    }
+}
+
+async function readFileFromSmbLinux(caminhoOriginal: string) {
+    const caminhoRelativo = getSmbRelativePath(caminhoOriginal);
+    const fileName = path.posix.basename(caminhoRelativo);
+    const pastaRemota = path.posix.dirname(caminhoRelativo);
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "patrocinio-smb-download-"));
+    const tempFilePath = path.join(tempDir, fileName);
+
+    try {
+        const comando = pastaRemota && pastaRemota !== "."
+            ? `cd "${pastaRemota}"; get "${fileName}" "${tempFilePath}"`
+            : `get "${fileName}" "${tempFilePath}"`;
+
+        await execSmbClient(comando);
+
+        const buffer = await fs.readFile(tempFilePath);
+
+        return {
+            buffer,
+            caminhoResolvido: `${getShareRootLinux()}/${caminhoRelativo}`,
+        };
+    } finally {
+        await fs.rm(tempDir, { recursive: true, force: true });
+    }
+}
+
+async function conectarShareWindows() {
+    const { server, share, user, password, domain } = getSmbConfig();
+    const remote = `\\\\${server}\\${share}`;
+    const fullUser = domain ? `${domain}\\${user}` : user;
+
+    try {
+        await execFileAsync("net", [
+            "use",
+            remote,
+            password,
+            `/user:${fullUser}`,
+            "/persistent:no",
+        ]);
+    } catch (error: any) {
+        const stderr = String(error?.stderr || "");
+        const stdout = String(error?.stdout || "");
+        const mensagem = `${stdout}\n${stderr}`.trim();
+
+        if (mensagem.includes("1219")) {
+            try {
+                await execFileAsync("net", ["use", remote, "/delete", "/y"]);
+                await execFileAsync("net", [
+                    "use",
+                    remote,
+                    password,
+                    `/user:${fullUser}`,
+                    "/persistent:no",
+                ]);
+                return;
+            } catch (reconnectError: any) {
+                throw new Error(
+                    `Falha ao reconectar no compartilhamento ${remote}. Detalhes: ${String(
+                        reconnectError?.stderr ||
+                        reconnectError?.stdout ||
+                        reconnectError?.message ||
+                        reconnectError
+                    )}`
+                );
+            }
+        }
+
+        if (
+            mensagem.toLowerCase().includes("comando concluÃ­do com Ãªxito") ||
+            mensagem.includes("85")
+        ) {
+            return;
+        }
+
+        throw new Error(
+            `Falha ao conectar no compartilhamento ${remote}. Detalhes: ${mensagem || error?.message || error
+            }`
+        );
+    }
+}
+
+async function salvarArquivoPatrocinioNoServidorSMB(
+    arquivo: UploadedFile,
+    solicitante: string
+) {
+    const shareRoot = getShareRoot();
+    const solicitanteSafe = sanitizeFolderName(solicitante);
+    const fileName = sanitizeFileName(arquivo.name || "arquivo.pdf");
+    let fileData = arquivo.data;
+
+    // Quando express-fileupload está com useTempFiles=true, o buffer pode vir vazio.
+    if (!fileData || fileData.length === 0) {
+        const tmpPath = String((arquivo as any)?.tempFilePath || "").trim();
+        if (tmpPath) {
+            fileData = await fs.readFile(tmpPath);
+        }
+    }
+
+    if (!fileData || fileData.length === 0) {
+        throw new Error(
+            `Arquivo "${fileName}" veio vazio no upload (0 bytes).`
+        );
+    }
+
+    if (!isWindowsRuntime()) {
+        return await salvarArquivoPatrocinioNoServidorSMBLinux(
+            fileData,
+            fileName,
+            solicitanteSafe
+        );
+    }
+
+    await conectarShareWindows();
+
+    const diretorioDestino = path.win32.join(
+        shareRoot,
+        "CRM",
+        "PATROCINIO",
+        solicitanteSafe
+    );
+
+    const caminhoCompleto = path.win32.join(diretorioDestino, fileName);
+
+    try {
+        await fs.mkdir(diretorioDestino, { recursive: true });
+        await fs.writeFile(caminhoCompleto, fileData);
+        return toSlashUncPath(caminhoCompleto);
+    } catch (error: any) {
+        throw new Error(
+            `Falha ao gravar arquivo no caminho ${caminhoCompleto}. Detalhes: ${String(
+                error?.message || error
+            )}`
+        );
+    }
+}
+
+async function getNextNumericId(
+    conn: oracledb.Connection,
+    table: string,
+    idColumn: string
+) {
+    const result = await conn.execute(
+        `SELECT NVL(MAX(${idColumn}), 0) + 1 AS NEXT_ID FROM ${table}`,
+        [],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const row: any = result.rows?.[0];
+    return Number(row?.NEXT_ID || 1);
+}
+
+function parseDias(value: any) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+
+    try {
+        return JSON.parse(String(value));
+    } catch {
+        return [];
+    }
+}
+
+function parseAuditorio(value: any) {
+    if (!value) return null;
+    if (typeof value === "object") return value;
+
+    try {
+        return JSON.parse(String(value));
+    } catch {
+        return null;
+    }
+}
+
+function getSingleUploadedFile(
+    file:
+        | UploadedFile
+        | UploadedFile[]
+        | { [fieldname: string]: UploadedFile[] }
+        | undefined
+): UploadedFile | undefined {
+    if (!file) return undefined;
+
+    if (Array.isArray(file)) {
+        return file[0];
+    }
+
+    if ("name" in file && "mv" in file) {
+        return file as UploadedFile;
+    }
+
+    const dict = file as { [fieldname: string]: UploadedFile[] };
+    const firstKey = Object.keys(dict)[0];
+    return firstKey ? dict[firstKey]?.[0] : undefined;
+}
+
+async function buscarTipoFuncionarioPorNome(nome: string) {
+    const nomeInformadoUpper = String(nome || "").trim().toUpperCase();
+
+    if (NOMES_MARKETING.includes(nomeInformadoUpper)) {
+        return {
+            NM_FUNCIONARIO: String(nome || "").trim(),
+            TIPO: "marketing",
+        };
+    }
+
+    const result = await oracleExecute(
+        `
+      SELECT
+        f.NM_FUNCIONARIO,
+        c.NM_NIVEL
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      LEFT JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM c
+        ON c.ID_CARGO = f.ID_CARGO
+      WHERE UPPER(f.NM_FUNCIONARIO) = UPPER(:nome)
+        AND ROWNUM = 1
+    `,
+        { nome },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const row: any = result.rows?.[0];
+
+    if (!row) {
+        return {
+            NM_FUNCIONARIO: nome,
+            TIPO: "funcionario",
+        };
+    }
+
+    const nomeUpper = String(row.NM_FUNCIONARIO || "").toUpperCase();
+    const nivelUpper = String(row.NM_NIVEL || "").toUpperCase();
+
+    let tipo = "funcionario";
+
+    if (isConselhoParticipacao(nomeUpper)) {
+        tipo = "conselho";
+    } else if (nivelUpper === "DIRETORIA") {
+        tipo = "diretoria";
+    } else if (nivelUpper === "GERENCIA") {
+        tipo = "gerencia";
+    }
+
+    return {
+        NM_FUNCIONARIO: row.NM_FUNCIONARIO,
+        TIPO: tipo,
+    };
+}
+
+async function buscarDiasPatrocinio(id: number) {
+    const result = await oracleExecute(
+        `
+      SELECT
+        TO_CHAR(DT_DIA, 'YYYY-MM-DD') AS DT_DIA,
+        HR_INICIO,
+        HR_FIM
+      FROM DBACRESSEM.DATA_HORA_PATROCINIO
+      WHERE ID_PATROCINIO = :id
+      ORDER BY DT_DIA, HR_INICIO
+    `,
+        { id },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    return result.rows || [];
+}
+
+type AndamentoInicialPorGestor = {
+    andamento: string;
+    gerenteEmFerias?: {
+        nome: string;
+        inicio: string;
+        fim: string;
+    };
+};
+
+async function definirAndamentoInicialPorGestor(
+    conn: oracledb.Connection,
+    nomeFuncionario: string
+): Promise<AndamentoInicialPorGestor> {
+    const nome = String(nomeFuncionario || "").trim();
+    if (!nome) return { andamento: "Pendente Gerencia" };
+
+    const result = await conn.execute(
+        `
+      SELECT
+        gestor.NM_FUNCIONARIO AS NM_GESTOR,
+        TO_CHAR(ferias.DT_DIA_INICIO, 'DD/MM/YYYY') AS DT_FERIAS_INICIO,
+        TO_CHAR(ferias.DT_DIA_FIM, 'DD/MM/YYYY') AS DT_FERIAS_FIM
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM gestor
+        ON gestor.ID_FUNCIONARIO = f.CD_GERENCIA
+      LEFT JOIN DBACRESSEM.FERIAS_FUNCIONARIOS ferias
+        ON ferias.ID_FUNCIONARIO = gestor.ID_FUNCIONARIO
+       AND TRUNC(SYSDATE) BETWEEN TRUNC(ferias.DT_DIA_INICIO) AND TRUNC(ferias.DT_DIA_FIM)
+      WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) = UPPER(TRIM(:nome))
+      FETCH FIRST 1 ROWS ONLY
+    `,
+        { nome },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const row: any = result.rows?.[0];
+    if (row?.DT_FERIAS_INICIO && row?.DT_FERIAS_FIM) {
+        return {
+            andamento: "Pendente Marketing",
+            gerenteEmFerias: {
+                nome: String(row.NM_GESTOR || "Gerência"),
+                inicio: String(row.DT_FERIAS_INICIO),
+                fim: String(row.DT_FERIAS_FIM),
+            },
+        };
+    }
+
+    return { andamento: "Pendente Gerencia" };
+}
+
+async function usuarioEhGestorDiretoDaSolicitacao(
+    nomeUsuario: string,
+    nomeSolicitante: string
+) {
+    const result = await oracleExecute(
+        `
+          SELECT 1 AS ENCONTRADO
+          FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM solicitante
+          INNER JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM gestor
+            ON gestor.ID_FUNCIONARIO = solicitante.CD_GERENCIA
+          WHERE UPPER(TRIM(solicitante.NM_FUNCIONARIO)) = UPPER(TRIM(:nomeSolicitante))
+            AND UPPER(TRIM(gestor.NM_FUNCIONARIO)) = UPPER(TRIM(:nomeUsuario))
+            AND ROWNUM = 1
+        `,
+        { nomeUsuario, nomeSolicitante },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    return Boolean(result.rows?.[0]);
+}
+
+async function diretorPodeAprovarParticipacao(nomeUsuario: string) {
+    const result = await oracleExecute(
+        `
+          SELECT
+            f.ID_FUNCIONARIO,
+            CASE
+              WHEN EXISTS (
+                SELECT 1
+                FROM DBACRESSEM.FERIAS_FUNCIONARIOS ferias
+                WHERE ferias.ID_FUNCIONARIO = :idDiretorPresidente
+                  AND TRUNC(SYSDATE) BETWEEN TRUNC(ferias.DT_DIA_INICIO) AND TRUNC(ferias.DT_DIA_FIM)
+              ) THEN 1
+              ELSE 0
+            END AS PRESIDENTE_EM_FERIAS,
+            CASE
+              WHEN EXISTS (
+                SELECT 1
+                FROM DBACRESSEM.FERIAS_FUNCIONARIOS ferias
+                WHERE ferias.ID_FUNCIONARIO = f.ID_FUNCIONARIO
+                  AND TRUNC(SYSDATE) BETWEEN TRUNC(ferias.DT_DIA_INICIO) AND TRUNC(ferias.DT_DIA_FIM)
+              ) THEN 1
+              ELSE 0
+            END AS USUARIO_EM_FERIAS
+          FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+          WHERE UPPER(TRIM(f.NM_FUNCIONARIO)) = UPPER(TRIM(:nomeUsuario))
+            AND ROWNUM = 1
+        `,
+        { nomeUsuario, idDiretorPresidente: ID_DIRETOR_PRESIDENTE_PARTICIPACAO },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const row: any = result.rows?.[0];
+    const idUsuario = Number(row?.ID_FUNCIONARIO || 0);
+    const presidenteEmFerias = Number(row?.PRESIDENTE_EM_FERIAS || 0) === 1;
+    const usuarioEmFerias = Number(row?.USUARIO_EM_FERIAS || 0) === 1;
+
+    if (!idUsuario || usuarioEmFerias) return false;
+
+    return presidenteEmFerias
+        ? idUsuario !== ID_DIRETOR_PRESIDENTE_PARTICIPACAO
+        : idUsuario === ID_DIRETOR_PRESIDENTE_PARTICIPACAO;
+}
+
+type ParticipacaoSubmitStatus = "processing" | "done";
+type ParticipacaoSubmitResponse = {
+    ID_PATROCINIO: number;
+    NM_ANDAMENTO: string;
+    DIR_OFICIO: string;
+    DIR_PAINEL_SISBR: string;
+    DIR_DOC_SEM_FINS_LUCRATIVO: string | null;
+};
+type ParticipacaoSubmitEntry = {
+    status: ParticipacaoSubmitStatus;
+    updatedAt: number;
+    response?: ParticipacaoSubmitResponse;
+};
+
+const PARTICIPACAO_DEDUPE_TTL_MS = 20_000;
+const participacaoSubmitMap = new Map<string, ParticipacaoSubmitEntry>();
+
+function normalizeDedupeText(value: any) {
+    return String(value ?? "").trim().toUpperCase();
+}
+
+function cleanupParticipacaoSubmitMap(now = Date.now()) {
+    for (const [key, entry] of participacaoSubmitMap.entries()) {
+        if (now - entry.updatedAt > PARTICIPACAO_DEDUPE_TTL_MS) {
+            participacaoSubmitMap.delete(key);
+        }
+    }
+}
+
+function buildParticipacaoDedupeKey(params: {
+    body: any;
+    dias: Array<{ DT_DIA: string; HR_INICIO: string; HR_FIM: string }>;
+    oficioFile?: UploadedFile;
+    painelSisbrFile?: UploadedFile;
+    semFinsFile?: UploadedFile | null;
+    auditorio: any;
+    pagamento: PagamentoPatrocinio | null;
+}) {
+    const { body, dias, oficioFile, painelSisbrFile, semFinsFile, auditorio, pagamento } = params;
+
+    const diasKey = [...dias]
+        .map(
+            (dia) =>
+                `${String(dia.DT_DIA || "").trim()}|${String(
+                    dia.HR_INICIO || ""
+                ).trim()}|${String(dia.HR_FIM || "").trim()}`
+        )
+        .sort()
+        .join(";");
+
+    const auditorioKey =
+        toNumber(body.CD_AUDITORIO_SEDE) === 1 && auditorio
+            ? [
+                toNumber(auditorio.QTD_ESTIMATIVA_CONVIDADOS),
+                toNumber(auditorio.SN_USO_MICROFONE),
+                toNumber(auditorio.QNTD_MICROFONE),
+                toNumber(auditorio.SN_USO_PROJETOR),
+                normalizeDedupeText(auditorio.NM_APRESENTACAO),
+                toNumber(auditorio.SN_AUDIO_EXTERNO),
+                toNumber(auditorio.SN_OPERADOR),
+                toNumber(auditorio.SN_AO_VIVO),
+                normalizeDedupeText(auditorio.NM_PLATAFORMA),
+                toNumber(auditorio.SN_INTERNET),
+                normalizeDedupeText(auditorio.DESC_JUSTIFICATIVA),
+                normalizeDedupeText(auditorio.OBS_AUDITORIO_SICOOB_SEDE),
+            ].join("|")
+            : "";
+
+    return [
+        normalizeDedupeText(body.NM_SOLICITANTE),
+        onlyCpfCnpjChars(String(body.NR_CPF_CNPJ || "")),
+        normalizeDedupeText(body.NM_FUNCIONARIO),
+        normalizeDedupeText(body.NM_CIDADE),
+        String(body.DT_SOLICITACAO || "").trim(),
+        normalizeDedupeText(body.DESC_SOLICITACAO),
+        normalizeDedupeText(body.DESC_RESUMO_EVENTO),
+        String(toNullableNumber(body.VL_PATROCINIO) ?? ""),
+        String(toNullableNumber(body.VL_MONETARIO) ?? ""),
+        String(toNullableNumber(body.QTD_INSUMO) ?? ""),
+        String(toNullableNumber(body.VL_ESTIMATIVA) ?? ""),
+        String(toNumber(body.CD_AUDITORIO_CENTRO)),
+        String(toNumber(body.CD_AUDITORIO_SEDE)),
+        diasKey,
+        `${normalizeDedupeText(oficioFile?.name)}|${String(
+            oficioFile?.size || 0
+        )}`,
+        `${normalizeDedupeText(painelSisbrFile?.name)}|${String(
+            painelSisbrFile?.size || 0
+        )}`,
+        `${normalizeDedupeText(semFinsFile?.name)}|${String(
+            semFinsFile?.size || 0
+        )}`,
+        auditorioKey,
+        pagamento
+            ? [
+                String(pagamento.SN_CONTA_COOPERATIVA),
+                normalizeDedupeText(pagamento.NM_FAVORECIDO),
+                pagamento.NR_CPF_CNPJ,
+                normalizeDedupeText(pagamento.DS_BANCO),
+                normalizeDedupeText(pagamento.NR_AGENCIA),
+                normalizeDedupeText(pagamento.NR_CONTA),
+                normalizeDedupeText(pagamento.TP_CONTA),
+            ].join("|")
+            : "SEM_PAGAMENTO",
+    ].join("§");
+}
+
+export const patrocinioController = {
+    async cadastrar(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+        let dedupeKey = "";
+
+        try {
+            const pool = getOraclePool();
+            conn = await pool.getConnection();
+
+            await setAuditoriaContext(conn, req);
+
+            const body = req.body || {};
+
+            const files = (req.files || {}) as Record<string, any>;
+            const oficioFile = getSingleUploadedFile(files.DIR_OFICIO);
+            const painelSisbrFile = getSingleUploadedFile(files.DIR_PAINEL_SISBR);
+            const semFinsFile = getSingleUploadedFile(
+                files.DIR_DOC_SEM_FINS_LUCRATIVO
+            );
+
+            ensurePdf(oficioFile);
+            ensurePdf(painelSisbrFile);
+            ensurePdf(semFinsFile);
+
+            const dias = parseDias(body.DIAS);
+            const auditorio = parseAuditorio(body.AUDITORIO);
+            let pagamento: PagamentoPatrocinio | null = null;
+
+            if (toNumber(body.VL_MONETARIO) === 1) {
+                try {
+                    pagamento = obterPagamentoPatrocinio(body);
+                } catch (error: any) {
+                    return res.status(400).json({
+                        error: String(error?.message || "Dados de recebimento inválidos."),
+                    });
+                }
+            }
+
+            if (!toNullableString(body.NM_SOLICITANTE)) {
+                return res.status(400).json({ error: "NM_SOLICITANTE é obrigatório." });
+            }
+
+            if (!toNullableString(body.NR_CPF_CNPJ)) {
+                return res.status(400).json({ error: "NR_CPF_CNPJ é obrigatório." });
+            }
+
+            const nrCpfCnpjNormalizado = onlyCpfCnpjChars(
+                String(body.NR_CPF_CNPJ || "")
+            );
+
+            const cpfValido =
+                nrCpfCnpjNormalizado.length === 11 &&
+                /^\d{11}$/.test(nrCpfCnpjNormalizado);
+
+            const cnpjValido = nrCpfCnpjNormalizado.length === 14;
+
+            if (!cpfValido && !cnpjValido) {
+                return res.status(400).json({
+                    error: "NR_CPF_CNPJ deve conter um CPF com 11 dígitos ou CNPJ com 14 caracteres.",
+                });
+            }
+
+            if (!toNullableString(body.NM_FUNCIONARIO)) {
+                return res.status(400).json({ error: "NM_FUNCIONARIO é obrigatório." });
+            }
+
+            if (!toNullableString(body.NM_CIDADE)) {
+                return res.status(400).json({ error: "NM_CIDADE é obrigatório." });
+            }
+
+            if (!toNullableString(body.DT_SOLICITACAO)) {
+                return res.status(400).json({ error: "DT_SOLICITACAO é obrigatório." });
+            }
+
+            if (!toNullableString(body.DESC_SOLICITACAO)) {
+                return res.status(400).json({
+                    error: "DESC_SOLICITACAO é obrigatório.",
+                });
+            }
+
+            if (!toNullableString(body.DESC_RESUMO_EVENTO)) {
+                return res.status(400).json({
+                    error: "DESC_RESUMO_EVENTO é obrigatório.",
+                });
+            }
+
+            if (!dias.length) {
+                return res.status(400).json({ error: "DIAS é obrigatório." });
+            }
+
+            if (!oficioFile) {
+                return res.status(400).json({ error: "DIR_OFICIO é obrigatório." });
+            }
+
+            if (!painelSisbrFile) {
+                return res.status(400).json({ error: "DIR_PAINEL_SISBR é obrigatório." });
+            }
+
+            dedupeKey = buildParticipacaoDedupeKey({
+                body,
+                dias,
+                oficioFile,
+                painelSisbrFile,
+                semFinsFile,
+                auditorio,
+                pagamento,
+            });
+
+            cleanupParticipacaoSubmitMap();
+            const dedupeEntry = participacaoSubmitMap.get(dedupeKey);
+
+            if (dedupeEntry?.status === "processing") {
+                return res.status(409).json({
+                    error: "Solicitação já está sendo enviada. Aguarde alguns segundos.",
+                });
+            }
+
+            if (dedupeEntry?.status === "done" && dedupeEntry.response) {
+                return res.status(200).json({
+                    message: "Solicitação já cadastrada recentemente.",
+                    DUPLICIDADE_IGNORADA: true,
+                    ...dedupeEntry.response,
+                });
+            }
+
+            participacaoSubmitMap.set(dedupeKey, {
+                status: "processing",
+                updatedAt: Date.now(),
+            });
+
+            const nomePastaSolicitante =
+                toNullableString(body.NM_SOLICITANTE) || "SEM_NOME";
+
+            const oficioPath = await salvarArquivoPatrocinioNoServidorSMB(
+                oficioFile,
+                nomePastaSolicitante
+            );
+
+            const painelSisbrPath = await salvarArquivoPatrocinioNoServidorSMB(
+                painelSisbrFile,
+                nomePastaSolicitante
+            );
+
+            let semFinsPath: string | null = null;
+            if (semFinsFile) {
+                semFinsPath = await salvarArquivoPatrocinioNoServidorSMB(
+                    semFinsFile,
+                    nomePastaSolicitante
+                );
+            }
+
+            const idPatrocinio = await getNextNumericId(
+                conn,
+                "DBACRESSEM.PATROCINIO",
+                "ID_PATROCINIO"
+            );
+
+            const definicaoAndamentoInicial = await definirAndamentoInicialPorGestor(
+                conn,
+                String(body.NM_FUNCIONARIO || "")
+            );
+            const andamentoInicial = definicaoAndamentoInicial.andamento;
+
+            await conn.execute(
+                `
+          INSERT INTO DBACRESSEM.PATROCINIO (
+            ID_PATROCINIO,
+            NM_SOLICITANTE,
+            NR_CPF_CNPJ,
+            VL_PATROCINIO,
+            NM_FUNCIONARIO,
+            DIR_OFICIO,
+            DIR_PAINEL_SISBR,
+            NM_CIDADE,
+            DT_SOLICITACAO,
+            NM_ANDAMENTO,
+            CD_CONTA_COOPERATIVA,
+            VL_SALDO_MEDCIOCC,
+            DESC_SERVICOS,
+            DESC_VINCULO,
+            DESC_RETORNO_ULTIMO_EVENTO,
+            VL_RENTABILIDADE_MAQUININHA,
+            CD_MOTORISTA,
+            CD_FUNCIONARIOS,
+            DESC_RESUMO_EVENTO,
+            DESC_SOLICITACAO,
+            VL_MONETARIO,
+            QTD_INSUMO,
+            VL_ESTIMATIVA,
+            SN_SEM_FINS_LUCATRIVOS,
+            DIR_DOC_SEM_FINS_LUCRATIVO,
+            CD_AUDITORIO_CENTRO,
+            CD_AUDITORIO_SEDE
+          ) VALUES (
+            :ID_PATROCINIO,
+            :NM_SOLICITANTE,
+            :NR_CPF_CNPJ,
+            :VL_PATROCINIO,
+            :NM_FUNCIONARIO,
+            :DIR_OFICIO,
+            :DIR_PAINEL_SISBR,
+            :NM_CIDADE,
+            TO_DATE(:DT_SOLICITACAO, 'YYYY-MM-DD'),
+            :NM_ANDAMENTO,
+            :CD_CONTA_COOPERATIVA,
+            :VL_SALDO_MEDCIOCC,
+            :DESC_SERVICOS,
+            :DESC_VINCULO,
+            :DESC_RETORNO_ULTIMO_EVENTO,
+            :VL_RENTABILIDADE_MAQUININHA,
+            :CD_MOTORISTA,
+            :CD_FUNCIONARIOS,
+            :DESC_RESUMO_EVENTO,
+            :DESC_SOLICITACAO,
+            :VL_MONETARIO,
+            :QTD_INSUMO,
+            :VL_ESTIMATIVA,
+            :SN_SEM_FINS_LUCATRIVOS,
+            :DIR_DOC_SEM_FINS_LUCRATIVO,
+            :CD_AUDITORIO_CENTRO,
+            :CD_AUDITORIO_SEDE
+          )
+        `,
+                {
+                    ID_PATROCINIO: idPatrocinio,
+                    NM_SOLICITANTE: toNullableString(body.NM_SOLICITANTE),
+                    NR_CPF_CNPJ: nrCpfCnpjNormalizado,
+                    VL_PATROCINIO: toNullableNumber(body.VL_PATROCINIO),
+                    NM_FUNCIONARIO: toNullableString(body.NM_FUNCIONARIO),
+                    DIR_OFICIO: oficioPath,
+                    DIR_PAINEL_SISBR: painelSisbrPath,
+                    NM_CIDADE: toNullableString(body.NM_CIDADE),
+                    DT_SOLICITACAO: String(body.DT_SOLICITACAO),
+                    NM_ANDAMENTO: andamentoInicial,
+                    CD_CONTA_COOPERATIVA: toNullableNumber(body.CD_CONTA_COOPERATIVA),
+                    VL_SALDO_MEDCIOCC: toNullableNumber(body.VL_SALDO_MEDCIOCC),
+                    DESC_SERVICOS: toNullableString(body.DESC_SERVICOS),
+                    DESC_VINCULO: toNullableString(body.DESC_VINCULO),
+                    DESC_RETORNO_ULTIMO_EVENTO: toNullableString(
+                        body.DESC_RETORNO_ULTIMO_EVENTO
+                    ),
+                    VL_RENTABILIDADE_MAQUININHA: toNullableNumber(
+                        body.VL_RENTABILIDADE_MAQUININHA
+                    ),
+                    CD_MOTORISTA: toNullableNumber(body.CD_MOTORISTA),
+                    CD_FUNCIONARIOS: toNullableNumber(body.CD_FUNCIONARIOS),
+                    DESC_RESUMO_EVENTO: toNullableString(body.DESC_RESUMO_EVENTO),
+                    DESC_SOLICITACAO: toNullableString(body.DESC_SOLICITACAO),
+                    VL_MONETARIO: toNullableNumber(body.VL_MONETARIO),
+                    QTD_INSUMO: toNullableNumber(body.QTD_INSUMO),
+                    VL_ESTIMATIVA: toNullableNumber(body.VL_ESTIMATIVA),
+                    SN_SEM_FINS_LUCATRIVOS: toNullableNumber(
+                        body.SN_SEM_FINS_LUCATRIVOS
+                    ),
+                    DIR_DOC_SEM_FINS_LUCRATIVO: semFinsPath,
+                    CD_AUDITORIO_CENTRO: toNullableNumber(body.CD_AUDITORIO_CENTRO),
+                    CD_AUDITORIO_SEDE: toNullableNumber(body.CD_AUDITORIO_SEDE),
+                },
+                { autoCommit: false }
+            );
+
+            if (pagamento) {
+                await conn.execute(
+                    `
+          INSERT INTO DBACRESSEM.PAGAMENTO_PATROCINIO (
+            ID_PATROCINIO,
+            SN_CONTA_COOPERATIVA,
+            NM_FAVORECIDO,
+            NR_CPF_CNPJ,
+            DS_BANCO,
+            NR_AGENCIA,
+            NR_CONTA,
+            TP_CONTA
+          ) VALUES (
+            :ID_PATROCINIO,
+            :SN_CONTA_COOPERATIVA,
+            :NM_FAVORECIDO,
+            :NR_CPF_CNPJ,
+            :DS_BANCO,
+            :NR_AGENCIA,
+            :NR_CONTA,
+            :TP_CONTA
+          )
+          `,
+                    {
+                    ID_PATROCINIO: idPatrocinio,
+                    SN_CONTA_COOPERATIVA: pagamento.SN_CONTA_COOPERATIVA,
+                    NM_FAVORECIDO: pagamento.NM_FAVORECIDO,
+                    NR_CPF_CNPJ: pagamento.NR_CPF_CNPJ,
+                    DS_BANCO: pagamento.DS_BANCO,
+                    NR_AGENCIA: pagamento.NR_AGENCIA,
+                    NR_CONTA: pagamento.NR_CONTA,
+                    TP_CONTA: pagamento.TP_CONTA,
+                    },
+                    { autoCommit: false }
+                );
+            }
+
+            for (const dia of dias) {
+                const idDataHora = await getNextNumericId(
+                    conn,
+                    "DBACRESSEM.DATA_HORA_PATROCINIO",
+                    "ID_DATA_HORA_PATROCINIO"
+                );
+
+                await conn.execute(
+                    `
+            INSERT INTO DBACRESSEM.DATA_HORA_PATROCINIO (
+              ID_DATA_HORA_PATROCINIO,
+              DT_DIA,
+              HR_INICIO,
+              HR_FIM,
+              ID_PATROCINIO
+            ) VALUES (
+              :ID_DATA_HORA_PATROCINIO,
+              TO_DATE(:DT_DIA, 'YYYY-MM-DD'),
+              :HR_INICIO,
+              :HR_FIM,
+              :ID_PATROCINIO
+            )
+          `,
+                    {
+                        ID_DATA_HORA_PATROCINIO: idDataHora,
+                        DT_DIA: String(dia.DT_DIA),
+                        HR_INICIO: String(dia.HR_INICIO),
+                        HR_FIM: String(dia.HR_FIM),
+                        ID_PATROCINIO: idPatrocinio,
+                    },
+                    { autoCommit: false }
+                );
+            }
+
+            if (toNumber(body.CD_AUDITORIO_SEDE) === 1 && auditorio) {
+                const idAuditorio = await getNextNumericId(
+                    conn,
+                    "DBACRESSEM.AUDITORIO_SICOOB_SEDE",
+                    "ID_AUDITORIO_SICOOB_SEDE"
+                );
+
+                await conn.execute(
+                    `
+            INSERT INTO DBACRESSEM.AUDITORIO_SICOOB_SEDE (
+              ID_AUDITORIO_SICOOB_SEDE,
+              QTD_ESTIMATIVA_CONVIDADOS,
+              SN_USO_MICROFONE,
+              QNTD_MICROFONE,
+              SN_USO_PROJETOR,
+              NM_APRESENTACAO,
+              SN_AUDIO_EXTERNO,
+              SN_OPERADOR,
+              SN_AO_VIVO,
+              NM_PLATAFORMA,
+              SN_INTERNET,
+              DESC_JUSTIFICATIVA,
+              OBS_AUDITORIO_SICOOB_SEDE,
+              ID_PATROCINIO
+            ) VALUES (
+              :ID_AUDITORIO_SICOOB_SEDE,
+              :QTD_ESTIMATIVA_CONVIDADOS,
+              :SN_USO_MICROFONE,
+              :QNTD_MICROFONE,
+              :SN_USO_PROJETOR,
+              :NM_APRESENTACAO,
+              :SN_AUDIO_EXTERNO,
+              :SN_OPERADOR,
+              :SN_AO_VIVO,
+              :NM_PLATAFORMA,
+              :SN_INTERNET,
+              :DESC_JUSTIFICATIVA,
+              :OBS_AUDITORIO_SICOOB_SEDE,
+              :ID_PATROCINIO
+            )
+          `,
+                    {
+                        ID_AUDITORIO_SICOOB_SEDE: idAuditorio,
+                        QTD_ESTIMATIVA_CONVIDADOS: toNumber(
+                            auditorio.QTD_ESTIMATIVA_CONVIDADOS
+                        ),
+                        SN_USO_MICROFONE: toNumber(auditorio.SN_USO_MICROFONE),
+                        QNTD_MICROFONE: toNumber(auditorio.QNTD_MICROFONE),
+                        SN_USO_PROJETOR: toNumber(auditorio.SN_USO_PROJETOR),
+                        NM_APRESENTACAO: toNullableString(auditorio.NM_APRESENTACAO),
+                        SN_AUDIO_EXTERNO: toNumber(auditorio.SN_AUDIO_EXTERNO),
+                        SN_OPERADOR: toNumber(auditorio.SN_OPERADOR),
+                        SN_AO_VIVO: toNumber(auditorio.SN_AO_VIVO),
+                        NM_PLATAFORMA: toNullableString(auditorio.NM_PLATAFORMA),
+                        SN_INTERNET: toNumber(auditorio.SN_INTERNET),
+                        DESC_JUSTIFICATIVA: toNullableString(
+                            auditorio.DESC_JUSTIFICATIVA
+                        ),
+                        OBS_AUDITORIO_SICOOB_SEDE: toNullableString(
+                            auditorio.OBS_AUDITORIO_SICOOB_SEDE
+                        ),
+                        ID_PATROCINIO: idPatrocinio,
+                    },
+                    { autoCommit: false }
+                );
+            }
+
+            await conn.commit();
+
+            const responsePayload = {
+                message: "Solicitação cadastrada com sucesso.",
+                ID_PATROCINIO: idPatrocinio,
+                NM_ANDAMENTO: andamentoInicial,
+                GERENTE_EM_FERIAS: definicaoAndamentoInicial.gerenteEmFerias || null,
+                DIR_OFICIO: oficioPath,
+                DIR_PAINEL_SISBR: painelSisbrPath,
+                DIR_DOC_SEM_FINS_LUCRATIVO: semFinsPath,
+            };
+
+            participacaoSubmitMap.set(dedupeKey, {
+                status: "done",
+                updatedAt: Date.now(),
+                response: responsePayload,
+            });
+
+            return res.status(201).json(responsePayload);
+        } catch (err: any) {
+            if (dedupeKey) {
+                participacaoSubmitMap.delete(dedupeKey);
+            }
+
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch {
+                    //
+                }
+            }
+
+            console.error("patrocinioController.cadastrar erro:", err);
+            return res.status(500).json({
+                error: "Falha ao cadastrar solicitação de participação.",
+                details: String(err?.message || err),
+            });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch {
+                    //
+                }
+            }
+        }
+    },
+
+    async listarPaginado(req: AuthenticatedRequest, res: Response) {
+        try {
+            const nome = String(req.query.nome || "").trim();
+            const pesquisa = String(req.query.pesquisa || "").trim().toUpperCase();
+            const status = normalizeFiltroTexto(req.query.status);
+            const page = Math.max(Number(req.query.page || 1), 1);
+            const limit = Math.max(Number(req.query.limit || 10), 1);
+            const offset = (page - 1) * limit;
+            const grupos = Array.isArray(req.user?.grupos) ? req.user!.grupos! : [];
+            const isSuporte = hasGroup(grupos, AD_GROUP_SUPORTE);
+            const verTodos = isSuporte && ["1", "true", "sim"].includes(String(req.query.ver_todos || "").trim().toLowerCase());
+
+            const perfilTeste = obterPerfilTesteParticipacao(req);
+            const funcionario = perfilTeste
+                ? funcionarioDoPerfilTeste(perfilTeste)
+                : await buscarTipoFuncionarioPorNome(nome);
+
+            let wherePerfil = "1 = 1";
+            const bindsBase: Record<string, any> = {
+                pesquisa: `%${pesquisa || ""}%`,
+                status: status || null,
+            };
+
+            if (!perfilTeste && !verTodos && funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria" && funcionario.TIPO !== "marketing") {
+                bindsBase.nome = nome;
+            }
+
+            if (perfilTeste || verTodos) {
+                wherePerfil = "1 = 1";
+            } else if (funcionario.TIPO === "funcionario") {
+                wherePerfil = "UPPER(p.NM_FUNCIONARIO) = UPPER(:nome)";
+            } else if (funcionario.TIPO === "gerencia") {
+                wherePerfil = `
+          (
+            UPPER(p.NM_FUNCIONARIO) IN (
+              SELECT UPPER(f.NM_FUNCIONARIO)
+              FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+              WHERE UPPER(f.NM_FUNCIONARIO) = UPPER(:nome)
+                 OR f.CD_GERENCIA = (
+                   SELECT fg.ID_FUNCIONARIO
+                   FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
+                   WHERE UPPER(fg.NM_FUNCIONARIO) = UPPER(:nome)
+                     AND ROWNUM = 1
+                 )
+            )
+          )
+        `;
+            } else if (funcionario.TIPO === "diretoria") {
+                wherePerfil = "1 = 1";
+            } else if (funcionario.TIPO === "conselho") {
+                wherePerfil = "1 = 1";
+            } else if (funcionario.TIPO === "marketing") {
+                wherePerfil = "1 = 1";
+            }
+
+            const wherePesquisa = `
+        (
+          :pesquisa = '%%'
+          OR UPPER(p.NM_SOLICITANTE) LIKE :pesquisa
+          OR UPPER(p.NM_CIDADE) LIKE :pesquisa
+          OR UPPER(p.NM_FUNCIONARIO) LIKE :pesquisa
+          OR REGEXP_REPLACE(UPPER(p.NR_CPF_CNPJ), '[^A-Z0-9]', '') LIKE REGEXP_REPLACE(UPPER(:pesquisa), '[^A-Z0-9]', '')
+          OR UPPER(p.NM_ANDAMENTO) LIKE :pesquisa
+        )
+      `;
+
+            const whereStatus = `
+        (
+          :status IS NULL
+          OR TRANSLATE(
+            UPPER(TRIM(p.NM_ANDAMENTO)),
+            'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ',
+            'AAAAAEEEEIIIIOOOOOUUUUC'
+          ) = :status
+        )
+      `;
+
+            const sqlCount = `
+        SELECT COUNT(*) AS TOTAL
+        FROM DBACRESSEM.PATROCINIO p
+        WHERE ${wherePerfil}
+          AND ${wherePesquisa}
+          AND ${whereStatus}
+      `;
+
+            const countResult = await oracleExecute(sqlCount, bindsBase, {
+                outFormat: oracledb.OUT_FORMAT_OBJECT,
+            });
+
+            const total = Number((countResult.rows?.[0] as any)?.TOTAL || 0);
+            const total_pages = total > 0 ? Math.ceil(total / limit) : 1;
+
+            const sql = `
+        SELECT *
+        FROM (
+          SELECT
+            p.ID_PATROCINIO,
+            p.NM_SOLICITANTE,
+            p.NR_CPF_CNPJ,
+            p.NM_CIDADE,
+            p.NM_FUNCIONARIO,
+            TO_CHAR(p.DT_SOLICITACAO, 'YYYY-MM-DD') AS DT_SOLICITACAO,
+            (
+              SELECT TO_CHAR(MIN(d.DT_DIA), 'YYYY-MM-DD')
+              FROM DBACRESSEM.DATA_HORA_PATROCINIO d
+              WHERE d.ID_PATROCINIO = p.ID_PATROCINIO
+            ) AS DT_EVENTO_INICIO,
+            (
+              SELECT TO_CHAR(MAX(d.DT_DIA), 'YYYY-MM-DD')
+              FROM DBACRESSEM.DATA_HORA_PATROCINIO d
+              WHERE d.ID_PATROCINIO = p.ID_PATROCINIO
+            ) AS DT_EVENTO_FIM,
+            p.NM_ANDAMENTO,
+            p.CD_CONTA_COOPERATIVA,
+            p.VL_SALDO_MEDCIOCC,
+            p.DESC_SERVICOS,
+            p.DESC_VINCULO,
+            p.DESC_RETORNO_ULTIMO_EVENTO,
+            p.VL_RENTABILIDADE_MAQUININHA,
+            p.DESC_SOLICITACAO,
+            p.DESC_RESUMO_EVENTO,
+            p.CD_MOTORISTA,
+            p.CD_FUNCIONARIOS,
+            p.VL_MONETARIO,
+            p.VL_PATROCINIO,
+            p.VL_ESTIMATIVA,
+            p.QTD_INSUMO,
+            p.CD_AUDITORIO_CENTRO,
+            p.CD_AUDITORIO_SEDE,
+            p.DIR_OFICIO,
+            p.DIR_PAINEL_SISBR,
+            p.DIR_DOC_SEM_FINS_LUCRATIVO,
+            p.NM_GERENCIA,
+            p.DESC_PARECER_GERENCIA,
+            p.NM_MARKETING,
+            p.DESC_PARECER_MARKETING,
+            p.NM_DIRETORIA,
+            p.DESC_PARECER_ESCRITO_DIRETORIA,
+            p.NM_CONSELHO,
+            p.NM_PARECER_CONSELHO,
+            p.DESC_PARECER_ESCRITO_CONSELHO,
+            p.NM_GERENTE_EVENTO,
+            p.NM_SUGESTAO_PARTICIPANTES,
+            ROW_NUMBER() OVER (
+              ORDER BY
+                p.DT_SOLICITACAO DESC,
+                UPPER(TRIM(p.NM_SOLICITANTE)) ASC,
+                p.ID_PATROCINIO DESC
+            ) AS RN
+          FROM DBACRESSEM.PATROCINIO p
+          WHERE ${wherePerfil}
+            AND ${wherePesquisa}
+            AND ${whereStatus}
+        )
+        WHERE RN > :offset
+          AND RN <= (:offset + :limit)
+        ORDER BY RN
+      `;
+
+            const result = await oracleExecute(
+                sql,
+                {
+                    ...bindsBase,
+                    offset,
+                    limit,
+                },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            return res.json({
+                items: result.rows || [],
+                total,
+                total_pages,
+                page,
+                limit,
+            });
+        } catch (err: any) {
+            console.error("patrocinioController.listarPaginado erro:", err);
+            return res.status(500).json({
+                error: "Falha ao listar solicitações de participação.",
+                details: String(err?.message || err),
+            });
+        }
+    },
+    async buscarPorId(req: Request, res: Response) {
+        try {
+            const id = Number(req.params.id || 0);
+
+            if (!id) {
+                return res.status(400).json({ error: "ID invÃ¡lido." });
+            }
+
+            const result = await oracleExecute(
+                `
+          SELECT
+            p.ID_PATROCINIO,
+            p.NM_SOLICITANTE,
+            p.NR_CPF_CNPJ,
+            p.VL_PATROCINIO,
+            p.NM_FUNCIONARIO,
+            gestor.NM_FUNCIONARIO AS NM_GESTOR_DIRETO,
+            p.DIR_OFICIO,
+            p.DIR_PAINEL_SISBR,
+            p.NM_CIDADE,
+            TO_CHAR(p.DT_SOLICITACAO, 'YYYY-MM-DD') AS DT_SOLICITACAO,
+            TO_CHAR(p.DT_FINALIZACAO, 'YYYY-MM-DD') AS DT_FINALIZACAO,
+            p.NM_ANDAMENTO,
+            p.CD_CONTA_COOPERATIVA,
+            p.VL_SALDO_MEDCIOCC,
+            p.DESC_SERVICOS,
+            p.DESC_VINCULO,
+            p.DESC_RETORNO_ULTIMO_EVENTO,
+            p.VL_RENTABILIDADE_MAQUININHA,
+            p.CD_MOTORISTA,
+            p.CD_FUNCIONARIOS,
+            p.DESC_RESUMO_EVENTO,
+            p.DESC_SOLICITACAO,
+            p.VL_MONETARIO,
+            p.NM_GERENTE_EVENTO,
+            p.NM_SUGESTAO_PARTICIPANTES,
+            p.VL_ESTIMATIVA,
+            p.SN_SEM_FINS_LUCATRIVOS,
+            p.DIR_DOC_SEM_FINS_LUCRATIVO,
+            p.QTD_INSUMO,
+            p.CD_AUDITORIO_CENTRO,
+            p.CD_AUDITORIO_SEDE,
+            p.DESC_PARECER_GERENCIA,
+            p.NM_GERENCIA,
+            p.NM_MARKETING,
+            p.DESC_PARECER_MARKETING,
+            p.DESC_PARECER_DIRETORIA,
+            p.DESC_PARECER_ESCRITO_DIRETORIA,
+            p.NM_DIRETORIA,
+            p.NM_CONSELHO,
+            p.NM_PARECER_CONSELHO,
+            p.DESC_PARECER_ESCRITO_CONSELHO,
+            pg.SN_CONTA_COOPERATIVA AS SN_CONTA_COOPERATIVA_PAGAMENTO,
+            pg.NM_FAVORECIDO,
+            pg.NR_CPF_CNPJ AS NR_CPF_CNPJ_FAVORECIDO,
+            pg.DS_BANCO AS DS_BANCO_PAGAMENTO,
+            pg.NR_AGENCIA AS NR_AGENCIA_PAGAMENTO,
+            pg.NR_CONTA AS NR_CONTA_PAGAMENTO,
+            pg.TP_CONTA AS TP_CONTA_PAGAMENTO
+          FROM DBACRESSEM.PATROCINIO p
+          LEFT JOIN DBACRESSEM.PAGAMENTO_PATROCINIO pg
+            ON pg.ID_PATROCINIO = p.ID_PATROCINIO
+          LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM solicitante
+            ON UPPER(TRIM(solicitante.NM_FUNCIONARIO)) = UPPER(TRIM(p.NM_FUNCIONARIO))
+          LEFT JOIN DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM gestor
+            ON gestor.ID_FUNCIONARIO = solicitante.CD_GERENCIA
+          WHERE p.ID_PATROCINIO = :id
+        `,
+                { id },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            const row: any = result.rows?.[0];
+
+            if (!row) {
+                return res.status(404).json({ error: "Solicitação não encontrada." });
+            }
+
+            row.DIAS = await buscarDiasPatrocinio(id);
+
+            return res.json(row);
+        } catch (err: any) {
+            console.error("patrocinioController.buscarPorId erro:", err);
+            return res.status(500).json({
+                error: "Falha ao buscar solicitação.",
+                details: String(err?.message || err),
+            });
+        }
+    },
+
+    async editar(req: AuthenticatedRequest, res: Response) {
+        try {
+            const id = Number(req.params.id || 0);
+
+            if (!id) {
+                return res.status(400).json({ error: "ID invÃ¡lido." });
+            }
+
+            const body = req.body || {};
+
+            const nomeUsuario = String(req.user?.nome_completo || "").trim();
+            if (!nomeUsuario) {
+                return res.status(401).json({ error: "Usuário autenticado sem nome completo." });
+            }
+
+            const perfilTeste = obterPerfilTesteParticipacao(req);
+            const tipoUsuario = perfilTeste
+                ? funcionarioDoPerfilTeste(perfilTeste)
+                : await buscarTipoFuncionarioPorNome(nomeUsuario);
+            const atualResult = await oracleExecute(
+                `
+                  SELECT
+                    NM_SOLICITANTE,
+                    NM_FUNCIONARIO,
+                    NM_ANDAMENTO,
+                    DESC_PARECER_GERENCIA,
+                    DESC_PARECER_MARKETING,
+                    DESC_PARECER_ESCRITO_DIRETORIA,
+                    DESC_PARECER_ESCRITO_CONSELHO
+                  FROM DBACRESSEM.PATROCINIO
+                  WHERE ID_PATROCINIO = :id
+                `,
+                { id },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+            const atual: any = atualResult.rows?.[0];
+
+            if (!atual) {
+                return res.status(404).json({ error: "Solicitação não encontrada." });
+            }
+
+            if (perfilTeste && !normalizeFiltroTexto(atual.NM_SOLICITANTE).includes("TESTE")) {
+                return res.status(403).json({
+                    error: "O modo de teste local só pode alterar solicitações identificadas com TESTE.",
+                });
+            }
+
+            const statusAtual = normalizeFiltroTexto(atual.NM_ANDAMENTO);
+            const statusSolicitado = normalizeFiltroTexto(body.NM_ANDAMENTO);
+            const regrasFluxo: Record<string, {
+                statusAtual: string;
+                proximoStatus: string;
+                campoParecer: string;
+            }> = {
+                gerencia: {
+                    statusAtual: "PENDENTE GERENCIA",
+                    proximoStatus: "PENDENTE MARKETING",
+                    campoParecer: "DESC_PARECER_GERENCIA",
+                },
+                marketing: {
+                    statusAtual: "PENDENTE MARKETING",
+                    proximoStatus: "PENDENTE DIRETORIA",
+                    campoParecer: "DESC_PARECER_MARKETING",
+                },
+                diretoria: {
+                    statusAtual: "PENDENTE DIRETORIA",
+                    proximoStatus: "PENDENTE CONSELHO",
+                    campoParecer: "DESC_PARECER_ESCRITO_DIRETORIA",
+                },
+                conselho: {
+                    statusAtual: "PENDENTE CONSELHO",
+                    proximoStatus: "",
+                    campoParecer: "DESC_PARECER_ESCRITO_CONSELHO",
+                },
+            };
+            let tipoEtapa = tipoUsuario.TIPO;
+
+            if (
+                !perfilTeste &&
+                ["diretoria", "marketing"].includes(tipoUsuario.TIPO) &&
+                statusAtual === "PENDENTE GERENCIA"
+            ) {
+                const ehGestorDireto = await usuarioEhGestorDiretoDaSolicitacao(
+                    nomeUsuario,
+                    String(atual.NM_FUNCIONARIO || "")
+                );
+
+                if (!ehGestorDireto) {
+                    return res.status(403).json({
+                        error: "Somente o gestor direto do solicitante pode registrar o parecer de Gerência.",
+                    });
+                }
+
+                tipoEtapa = "gerencia";
+            }
+
+            if (
+                !perfilTeste &&
+                tipoUsuario.TIPO === "diretoria" &&
+                statusAtual === "PENDENTE DIRETORIA" &&
+                !(await diretorPodeAprovarParticipacao(nomeUsuario))
+            ) {
+                return res.status(403).json({
+                    error: "A etapa de Diretoria está disponível somente ao Diretor Presidente ou, durante as férias dele, aos diretores substitutos disponíveis.",
+                });
+            }
+
+            const regra = regrasFluxo[tipoEtapa];
+
+            if (!regra || statusAtual !== regra.statusAtual) {
+                return res.status(403).json({ error: "Você não pode registrar parecer nesta etapa." });
+            }
+
+            if (atual[regra.campoParecer]) {
+                return res.status(409).json({ error: "O parecer desta etapa já foi registrado e não pode ser editado." });
+            }
+
+            const parecerPorTipo: Record<string, string> = {
+                gerencia: String(body.DESC_PARECER_GERENCIA || "").trim(),
+                marketing: String(body.DESC_PARECER_MARKETING || "").trim(),
+                diretoria: String(body.DESC_PARECER_ESCRITO_DIRETORIA || "").trim(),
+                conselho: String(body.DESC_PARECER_ESCRITO_CONSELHO || "").trim(),
+            };
+
+            if (!parecerPorTipo[tipoEtapa]) {
+                return res.status(400).json({ error: "O parecer da sua etapa é obrigatório." });
+            }
+
+            if (tipoEtapa === "conselho") {
+                const decisao = normalizeFiltroTexto(body.NM_PARECER_CONSELHO);
+                if (decisao !== "APROVADO" && decisao !== "REPROVADO") {
+                    return res.status(400).json({ error: "A decisão final deve ser Aprovado ou Reprovado." });
+                }
+            } else if (statusSolicitado !== regra.proximoStatus) {
+                return res.status(400).json({ error: "Transição de etapa inválida." });
+            }
+
+            const condicaoEtapaAindaPendente: Record<string, string> = {
+                gerencia: "DESC_PARECER_GERENCIA IS NULL",
+                marketing: "DESC_PARECER_MARKETING IS NULL",
+                diretoria: "DESC_PARECER_ESCRITO_DIRETORIA IS NULL",
+                conselho: "DESC_PARECER_ESCRITO_CONSELHO IS NULL",
+            };
+
+            const sql = `
+        UPDATE DBACRESSEM.PATROCINIO
+        SET
+          NM_ANDAMENTO = COALESCE(:NM_ANDAMENTO, NM_ANDAMENTO),
+          DESC_PARECER_GERENCIA = COALESCE(:DESC_PARECER_GERENCIA, DESC_PARECER_GERENCIA),
+          NM_GERENCIA = COALESCE(:NM_GERENCIA, NM_GERENCIA),
+          DESC_PARECER_MARKETING = COALESCE(:DESC_PARECER_MARKETING, DESC_PARECER_MARKETING),
+          NM_MARKETING = COALESCE(:NM_MARKETING, NM_MARKETING),
+          DESC_PARECER_ESCRITO_DIRETORIA = COALESCE(:DESC_PARECER_ESCRITO_DIRETORIA, DESC_PARECER_ESCRITO_DIRETORIA),
+          NM_DIRETORIA = COALESCE(:NM_DIRETORIA, NM_DIRETORIA),
+          NM_CONSELHO = COALESCE(:NM_CONSELHO, NM_CONSELHO),
+          NM_PARECER_CONSELHO = COALESCE(:NM_PARECER_CONSELHO, NM_PARECER_CONSELHO),
+          DESC_PARECER_ESCRITO_CONSELHO = COALESCE(:DESC_PARECER_ESCRITO_CONSELHO, DESC_PARECER_ESCRITO_CONSELHO),
+          NM_GERENTE_EVENTO = COALESCE(:NM_GERENTE_EVENTO, NM_GERENTE_EVENTO),
+          NM_SUGESTAO_PARTICIPANTES = COALESCE(:NM_SUGESTAO_PARTICIPANTES, NM_SUGESTAO_PARTICIPANTES),
+          DT_FINALIZACAO = CASE
+            WHEN :DT_FINALIZACAO IS NOT NULL THEN TO_DATE(:DT_FINALIZACAO, 'YYYY-MM-DD')
+            ELSE DT_FINALIZACAO
+          END
+        WHERE ID_PATROCINIO = :ID_PATROCINIO
+          AND NM_ANDAMENTO = :NM_ANDAMENTO_ATUAL
+          AND ${condicaoEtapaAindaPendente[tipoEtapa]}
+      `;
+
+            const result = await oracleExecuteCommitWithAudit(
+                req,
+                sql,
+                {
+                    ID_PATROCINIO: id,
+                    NM_ANDAMENTO_ATUAL: atual.NM_ANDAMENTO,
+                    NM_ANDAMENTO: toNullableString(body.NM_ANDAMENTO),
+                    DESC_PARECER_GERENCIA: toNullableString(body.DESC_PARECER_GERENCIA),
+                    NM_GERENCIA: tipoEtapa === "gerencia" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_GERENCIA),
+                    DESC_PARECER_MARKETING: toNullableString(body.DESC_PARECER_MARKETING),
+                    NM_MARKETING: tipoEtapa === "marketing" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_MARKETING),
+                    DESC_PARECER_ESCRITO_DIRETORIA: toNullableString(
+                        body.DESC_PARECER_ESCRITO_DIRETORIA
+                    ),
+                    NM_DIRETORIA: tipoEtapa === "diretoria" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_DIRETORIA),
+                    NM_CONSELHO: tipoEtapa === "conselho" ? tipoUsuario.NM_FUNCIONARIO : toNullableString(body.NM_CONSELHO),
+                    NM_PARECER_CONSELHO: toNullableString(body.NM_PARECER_CONSELHO),
+                    DESC_PARECER_ESCRITO_CONSELHO: toNullableString(
+                        body.DESC_PARECER_ESCRITO_CONSELHO
+                    ),
+                    NM_GERENTE_EVENTO: toNullableString(body.NM_GERENTE_EVENTO),
+                    NM_SUGESTAO_PARTICIPANTES: toNullableString(
+                        body.NM_SUGESTAO_PARTICIPANTES
+                    ),
+                    DT_FINALIZACAO: toNullableString(body.DT_FINALIZACAO),
+                },
+                {} as any
+            );
+
+            if (!result.rowsAffected) {
+                return res.status(409).json({
+                    error: "Esta etapa já foi concluída por outro responsável. Atualize a solicitação para ver o parecer registrado.",
+                });
+            }
+
+            return res.json({
+                message: "Solicitação atualizada com sucesso.",
+                ID_PATROCINIO: id,
+            });
+        } catch (err: any) {
+            console.error("patrocinioController.editar erro:", err);
+            return res.status(500).json({
+                error: "Falha ao atualizar solicitação.",
+                details: String(err?.message || err),
+            });
+        }
+    },
+
+    async downloadArquivo(req: Request, res: Response) {
+        try {
+            const caminho = String(req.body?.oficio || "").trim();
+
+            if (!caminho) {
+                return res.status(400).json({
+                    error: "Caminho do arquivo nÃ£o informado.",
+                });
+            }
+
+            const { buffer: arquivoBuffer, caminhoResolvido } = isWindowsRuntime()
+                ? await (async () => {
+                    await conectarShareWindows();
+                    return await readFileByPossibleUncPaths(caminho);
+                })()
+                : await readFileFromSmbLinux(caminho);
+            const fileName = path.win32.basename(caminhoResolvido);
+            const contentType = getMimeTypeByFileName(caminhoResolvido);
+
+            res.setHeader("Content-Type", contentType);
+            res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+
+            return res.end(arquivoBuffer);
+        } catch (err: any) {
+            console.error("patrocinioController.downloadArquivo erro:", err);
+            return res.status(500).json({
+                error: "Falha ao baixar o arquivo.",
+                details: String(err?.message || err),
+            });
+        }
+    },
+
+    async downloadPdfCompleto(req: Request, res: Response) {
+        try {
+            if (!req.file?.buffer) {
+                return res.status(400).json({ error: "O formulário em PDF é obrigatório." });
+            }
+
+            let anexos: string[] = [];
+            try {
+                const recebido = JSON.parse(String(req.body?.anexos || "[]"));
+                anexos = Array.isArray(recebido)
+                    ? recebido.map((item) => String(item || "").trim()).filter(Boolean)
+                    : [];
+            } catch {
+                return res.status(400).json({ error: "A relação de anexos é inválida." });
+            }
+
+            const destino = await PDFDocument.create();
+
+            async function adicionarPdf(buffer: Buffer, identificacao: string) {
+                try {
+                    const origem = await PDFDocument.load(buffer);
+                    const paginas = await destino.copyPages(origem, origem.getPageIndices());
+                    paginas.forEach((pagina) => destino.addPage(pagina));
+                } catch {
+                    throw new Error(`O arquivo ${identificacao} não é um PDF válido.`);
+                }
+            }
+
+            await adicionarPdf(req.file.buffer, "do formulário");
+
+            for (const caminho of anexos) {
+                const { buffer } = isWindowsRuntime()
+                    ? await (async () => {
+                        await conectarShareWindows();
+                        return await readFileByPossibleUncPaths(caminho);
+                    })()
+                    : await readFileFromSmbLinux(caminho);
+                await adicionarPdf(buffer, path.win32.basename(toWindowsUncPath(caminho)));
+            }
+
+            const pdf = await destino.save();
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader(
+                "Content-Disposition",
+                'attachment; filename="analise_participacao_completa.pdf"'
+            );
+            return res.status(200).send(Buffer.from(pdf));
+        } catch (err: any) {
+            console.error("patrocinioController.downloadPdfCompleto erro:", err);
+            return res.status(500).json({
+                error: "Falha ao gerar o PDF completo da solicitação.",
+                details: String(err?.message || err),
+            });
+        }
+    },
+
+    async downloadCsv(req: AuthenticatedRequest, res: Response) {
+        try {
+            const nome = String(req.query.nome || "").trim();
+            const pesquisa = String(req.query.pesquisa || "").trim().toUpperCase();
+            const status = normalizeFiltroTexto(req.query.status);
+            const grupos = Array.isArray(req.user?.grupos) ? req.user!.grupos! : [];
+            const isSuporte = hasGroup(grupos, AD_GROUP_SUPORTE);
+            const verTodos = isSuporte && ["1", "true", "sim"].includes(
+                String(req.query.ver_todos || "").trim().toLowerCase()
+            );
+
+            if (!nome) {
+                return res.status(400).json({ error: "Nome do usuário é obrigatório." });
+            }
+
+            const funcionario = await buscarTipoFuncionarioPorNome(nome);
+            let wherePerfil = "1 = 1";
+            const binds: Record<string, any> = {
+                pesquisa: `%${pesquisa || ""}%`,
+                status: status || null,
+            };
+
+            if (!verTodos && funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria" && funcionario.TIPO !== "marketing") {
+                binds.nome = nome;
+            }
+
+            if (verTodos) {
+                wherePerfil = "1 = 1";
+            } else if (funcionario.TIPO === "funcionario") {
+                wherePerfil = "UPPER(p.NM_FUNCIONARIO) = UPPER(:nome)";
+            } else if (funcionario.TIPO === "gerencia") {
+                wherePerfil = `
+                    UPPER(p.NM_FUNCIONARIO) IN (
+                        SELECT UPPER(f.NM_FUNCIONARIO)
+                        FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+                        WHERE UPPER(f.NM_FUNCIONARIO) = UPPER(:nome)
+                           OR f.CD_GERENCIA = (
+                               SELECT fg.ID_FUNCIONARIO
+                               FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
+                               WHERE UPPER(fg.NM_FUNCIONARIO) = UPPER(:nome)
+                                 AND ROWNUM = 1
+                           )
+                    )
+                `;
+            } else if (funcionario.TIPO === "marketing") {
+                wherePerfil = "1 = 1";
+            }
+
+            const result = await oracleExecute(
+                `
+          SELECT
+            p.ID_PATROCINIO,
+            p.NM_SOLICITANTE,
+            p.NR_CPF_CNPJ,
+            p.VL_PATROCINIO,
+            p.NM_CIDADE,
+            p.NM_FUNCIONARIO,
+            TO_CHAR(p.DT_SOLICITACAO, 'DD/MM/YYYY') AS DT_SOLICITACAO,
+            TO_CHAR(p.DT_FINALIZACAO, 'DD/MM/YYYY') AS DT_FINALIZACAO,
+            p.NM_ANDAMENTO,
+            p.CD_CONTA_COOPERATIVA,
+            p.VL_SALDO_MEDCIOCC,
+            p.DESC_SERVICOS,
+            p.DESC_VINCULO,
+            p.DESC_RETORNO_ULTIMO_EVENTO,
+            p.VL_RENTABILIDADE_MAQUININHA,
+            p.DESC_SOLICITACAO,
+            p.DESC_RESUMO_EVENTO,
+            p.CD_MOTORISTA,
+            p.CD_FUNCIONARIOS,
+            p.VL_MONETARIO,
+            p.VL_ESTIMATIVA,
+            p.QTD_INSUMO,
+            p.CD_AUDITORIO_CENTRO,
+            p.CD_AUDITORIO_SEDE,
+            p.SN_SEM_FINS_LUCATRIVOS,
+            p.DIR_OFICIO,
+            p.DIR_PAINEL_SISBR,
+            p.DIR_DOC_SEM_FINS_LUCRATIVO,
+            p.NM_GERENCIA,
+            p.DESC_PARECER_GERENCIA,
+            p.NM_MARKETING,
+            p.DESC_PARECER_MARKETING,
+            p.NM_DIRETORIA,
+            p.DESC_PARECER_DIRETORIA,
+            p.DESC_PARECER_ESCRITO_DIRETORIA,
+            p.NM_CONSELHO,
+            p.NM_PARECER_CONSELHO,
+            p.DESC_PARECER_ESCRITO_CONSELHO,
+            p.NM_GERENTE_EVENTO,
+            p.NM_SUGESTAO_PARTICIPANTES,
+            (
+              SELECT LISTAGG(
+                TO_CHAR(d.DT_DIA, 'DD/MM/YYYY') || ' ' ||
+                NVL(d.HR_INICIO, '-') || ' às ' || NVL(d.HR_FIM, '-'),
+                ' | '
+              ) WITHIN GROUP (ORDER BY d.DT_DIA, d.HR_INICIO)
+              FROM DBACRESSEM.DATA_HORA_PATROCINIO d
+              WHERE d.ID_PATROCINIO = p.ID_PATROCINIO
+            ) AS DIAS_HORARIOS
+          FROM DBACRESSEM.PATROCINIO p
+          WHERE ${wherePerfil}
+            AND (
+              :pesquisa = '%%'
+              OR UPPER(p.NM_SOLICITANTE) LIKE :pesquisa
+              OR REGEXP_REPLACE(UPPER(p.NR_CPF_CNPJ), '[^A-Z0-9]', '') LIKE REGEXP_REPLACE(UPPER(:pesquisa), '[^A-Z0-9]', '')
+              OR UPPER(p.NM_ANDAMENTO) LIKE :pesquisa
+            )
+            AND (
+              :status IS NULL
+              OR TRANSLATE(
+                UPPER(TRIM(p.NM_ANDAMENTO)),
+                'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ',
+                'AAAAAEEEEIIIIOOOOOUUUUC'
+              ) = :status
+            )
+          ORDER BY
+            p.DT_SOLICITACAO DESC,
+            UPPER(TRIM(p.NM_SOLICITANTE)) ASC,
+            p.ID_PATROCINIO DESC
+        `,
+                binds,
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            const rows = result.rows || [];
+
+            // Define as colunas em um único lugar.
+            // Mantemos todas as colunas do relatório, mesmo quando algum campo
+            // estiver vazio nos registros filtrados.
+            const colunasCsv: Array<{
+                header: string;
+                valor: (row: any) => any;
+            }> = [
+                { header: "ID", valor: (row) => row.ID_PATROCINIO ?? "" },
+                { header: "Nome Fantasia", valor: (row) => capitalizeWords(row.NM_SOLICITANTE || "") },
+                { header: "CPF/CNPJ", valor: (row) => formatarCpfOuCnpj(row.NR_CPF_CNPJ || "") },
+                { header: "Valor do Patrocínio", valor: (row) => row.VL_PATROCINIO ?? "" },
+                { header: "Cidade", valor: (row) => capitalizeWords(row.NM_CIDADE || "") },
+                { header: "Funcionário", valor: (row) => capitalizeWords(row.NM_FUNCIONARIO || "") },
+                { header: "Data da Solicitação", valor: (row) => row.DT_SOLICITACAO || "" },
+                { header: "Data da Finalização", valor: (row) => row.DT_FINALIZACAO || "" },
+                { header: "Status", valor: (row) => capitalizeWords(row.NM_ANDAMENTO || "") },
+                { header: "Conta da Cooperativa", valor: (row) => row.CD_CONTA_COOPERATIVA ?? "" },
+                { header: "Saldo Médio em Conta Corrente", valor: (row) => row.VL_SALDO_MEDCIOCC ?? "" },
+                { header: "Serviços", valor: (row) => row.DESC_SERVICOS || "" },
+                { header: "Vínculo", valor: (row) => row.DESC_VINCULO || "" },
+                { header: "Retorno do Último Evento", valor: (row) => row.DESC_RETORNO_ULTIMO_EVENTO || "" },
+                { header: "Rentabilidade da Maquininha", valor: (row) => row.VL_RENTABILIDADE_MAQUININHA ?? "" },
+                { header: "Solicitação", valor: (row) => row.DESC_SOLICITACAO || "" },
+                { header: "Resumo do Evento", valor: (row) => row.DESC_RESUMO_EVENTO || "" },
+                { header: "Motorista", valor: (row) => row.CD_MOTORISTA ?? "" },
+                { header: "Funcionários", valor: (row) => row.CD_FUNCIONARIOS ?? "" },
+                { header: "Valor Monetário", valor: (row) => row.VL_MONETARIO ?? "" },
+                { header: "Valor Estimado", valor: (row) => row.VL_ESTIMATIVA ?? "" },
+                { header: "Quantidade de Insumos", valor: (row) => row.QTD_INSUMO ?? "" },
+                { header: "Auditório Centro", valor: (row) => row.CD_AUDITORIO_CENTRO ?? "" },
+                { header: "Auditório Sede", valor: (row) => row.CD_AUDITORIO_SEDE ?? "" },
+                { header: "Entidade sem Fins Lucrativos", valor: (row) => row.SN_SEM_FINS_LUCATRIVOS === 1 ? "Sim" : "Não" },
+
+                // No relatório, o caminho SMB completo não agrega valor e deixa a célula enorme.
+                { header: "Ofício", valor: (row) => row.DIR_OFICIO ? "Anexado" : "Não anexado" },
+                { header: "Painel SISBR", valor: (row) => row.DIR_PAINEL_SISBR ? "Anexado" : "Não anexado" },
+                { header: "Documento sem Fins Lucrativos", valor: (row) => row.DIR_DOC_SEM_FINS_LUCRATIVO ? "Anexado" : "Não anexado" },
+
+                { header: "Gerência", valor: (row) => row.NM_GERENCIA || "" },
+                { header: "Parecer da Gerência", valor: (row) => row.DESC_PARECER_GERENCIA || "" },
+                { header: "Marketing", valor: (row) => row.NM_MARKETING || "" },
+                { header: "Parecer do Marketing", valor: (row) => row.DESC_PARECER_MARKETING || "" },
+                { header: "Diretoria", valor: (row) => row.NM_DIRETORIA || "" },
+                { header: "Parecer da Diretoria", valor: (row) => row.DESC_PARECER_DIRETORIA || "" },
+                { header: "Parecer Escrito da Diretoria", valor: (row) => row.DESC_PARECER_ESCRITO_DIRETORIA || "" },
+                { header: "Conselheiro(a)", valor: (row) => row.NM_CONSELHO || "" },
+                { header: "Parecer do Conselho", valor: (row) => row.NM_PARECER_CONSELHO || "" },
+                { header: "Parecer Escrito do Conselho", valor: (row) => row.DESC_PARECER_ESCRITO_CONSELHO || "" },
+                { header: "Responsável pelo Evento", valor: (row) => row.NM_GERENTE_EVENTO || "" },
+                { header: "Sugestão de Participantes", valor: (row) => row.NM_SUGESTAO_PARTICIPANTES || "" },
+                { header: "Dias e Horários", valor: (row) => row.DIAS_HORARIOS || "" },
+            ];
+
+            const lines = [
+                colunasCsv.map((coluna) => escapeCsv(coluna.header)).join(";"),
+            ];
+
+            rows.forEach((row: any) => {
+                lines.push(
+                    colunasCsv
+                        .map((coluna) => escapeCsv(coluna.valor(row)))
+                        .join(";")
+                );
+            });
+
+            const csv = "\uFEFF" + lines.join("\n");
+
+            res.setHeader("Content-Type", "text/csv; charset=utf-8");
+            res.setHeader(
+                "Content-Disposition",
+                'attachment; filename="participacoes_filtradas.csv"'
+            );
+
+            return res.status(200).send(csv);
+        } catch (err: any) {
+            console.error("patrocinioController.downloadCsv erro:", err);
+            return res.status(500).json({
+                error: "Falha ao gerar relatório CSV.",
+                details: String(err?.message || err),
+            });
+        }
+    },
+};

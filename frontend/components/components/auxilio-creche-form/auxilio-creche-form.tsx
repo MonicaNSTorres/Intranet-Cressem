@@ -1,0 +1,249 @@
+﻿"use client";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useMemo, useState } from "react";
+import { gerarPdfAuxilioCreche } from "@/lib/pdf/gerarPdfAuxilioCreche";
+import { AUXILIO_CRECHE_TETO } from "@/config/auxilio-creche";
+import { fmtBRL, formatCpfView, hojeBR, monetizarDigitacao, parseBRL } from "@/utils/br";
+import { useAssociadoPorCpf } from "@/hooks/useAssociadoPorCpf";
+import { SearchForm } from "@/components/ui/search-form";
+import { SearchInput } from "@/components/ui/search-input";
+import { SearchButton } from "@/components/ui/search-button";
+
+export function AuxilioCrecheForm() {
+  const [cpf, setCpf] = useState("");
+
+  const [nome, setNome] = useState("");
+  const [matricula, setMatricula] = useState("");
+  const [instituicao, setInstituicao] = useState("");
+  const [descritivo, setDescritivo] = useState("");
+  const [valorPago, setValorPago] = useState("");
+  const [dataEntrega, setDataEntrega] = useState(hojeBR());
+  const [erroFormulario, setErroFormulario] = useState("");
+
+  const totalReembolsar = useMemo(() => {
+    const valorPagoNum = parseBRL(valorPago);
+    return valorPagoNum <= AUXILIO_CRECHE_TETO ? valorPagoNum : AUXILIO_CRECHE_TETO;
+  }, [valorPago]);
+  const { loading, erro, info, buscar } = useAssociadoPorCpf();
+
+  const onBuscar = async () => {
+    const r = await buscar(cpf);
+    if (r.found) {
+      setNome(r.data.nome || "");
+      setMatricula(r.data.matricula || "");
+    }
+  };
+
+  const validarCampos = () => {
+    if (!nome.trim()) return "Preencha o nome do empregado(a).";
+    if (!matricula.trim()) return "Preencha a matrícula.";
+    if (!instituicao.trim()) return "Preencha a creche/instituição.";
+    if (!descritivo.trim()) return "Preencha o descritivo.";
+    if (!valorPago.trim()) return "Preencha o valor total pago.";
+    if (!dataEntrega.trim()) return "Preencha a data de entrega.";
+
+    const valorPagoNum = parseBRL(valorPago);
+
+    if (valorPagoNum <= 0) {
+      return "O valor total pago deve ser maior que zero.";
+    }
+
+    return null;
+  };
+
+  const formularioValido = useMemo(() => {
+    const cpfValido = cpf.replace(/\D/g, "").length === 11;
+
+    if (!cpfValido) return false;
+
+    if (!nome.trim()) return false;
+
+    if (!matricula.trim()) return false;
+
+    if (!instituicao.trim()) return false;
+
+    if (!descritivo.trim()) return false;
+
+    if (!valorPago.trim()) return false;
+
+    if (!dataEntrega.trim()) return false;
+
+    const valorPagoNum = parseBRL(valorPago);
+
+    if (valorPagoNum <= 0) return false;
+
+    return true;
+  }, [
+    cpf,
+    nome,
+    matricula,
+    instituicao,
+    descritivo,
+    valorPago,
+    dataEntrega,
+  ]);
+
+  const gerar = async () => {
+    const erroValidacao = validarCampos();
+
+    if (erroValidacao) {
+      setErroFormulario(erroValidacao);
+      return;
+    }
+
+    setErroFormulario("");
+
+    const valorPagoNum = parseBRL(valorPago);
+
+    await gerarPdfAuxilioCreche({
+      nome,
+      matricula,
+      instituicao,
+      descritivo,
+      valorPago: valorPagoNum,
+      valorFixo: AUXILIO_CRECHE_TETO,
+      totalReembolsar,
+      dataEntrega,
+    });
+  };
+
+  const mensagem = erroFormulario || erro || info;
+
+  const classeMensagem =
+    erroFormulario || erro
+      ? "mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3"
+      : "mt-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-3";
+
+  return (
+    <div className="min-w-225 mx-auto p-6 bg-white rounded-xl shadow">
+      <SearchForm onSearch={onBuscar}>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            CPF do empregado(a)
+          </label>
+
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+            <SearchInput
+              value={formatCpfView(cpf)}
+              onChange={(e) => setCpf(e.target.value)}
+              placeholder="CPF (somente números)"
+              inputMode="numeric"
+              maxLength={14}
+            />
+
+            <SearchButton loading={loading} label="Pesquisar" />
+          </div>
+
+          {mensagem && (
+            <div className={classeMensagem}>
+              {mensagem}
+            </div>
+          )}
+        </div>
+      </SearchForm>
+
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Nome do empregado(a)
+          </label>
+          <input
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Matrícula
+          </label>
+          <input
+            value={matricula}
+            onChange={(e) => setMatricula(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Creche/Instituição
+          </label>
+          <input
+            value={instituicao}
+            onChange={(e) => setInstituicao(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            placeholder="Nome da creche/instituição"
+          />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <label className="block text-xs font-medium text-gray-600 mb-1">
+          Descritivo
+        </label>
+        <textarea
+          value={descritivo}
+          onChange={(e) => setDescritivo(e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+          rows={3}
+          placeholder="Observações sobre o pagamento/beneficiário"
+        />
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Valor total pago
+          </label>
+          <input
+            value={valorPago}
+            onChange={(e) => setValorPago(monetizarDigitacao(e.target.value))}
+            className="w-full border px-3 py-2 rounded text-right"
+            placeholder="R$ 0,00"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Total a reembolsar
+          </label>
+          <input
+            readOnly
+            value={fmtBRL(totalReembolsar)}
+            className="w-full border px-3 py-2 rounded bg-gray-50 text-right"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Data de entrega
+          </label>
+          <input
+            value={dataEntrega}
+            onChange={(e) => setDataEntrega(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            placeholder="dd/mm/aaaa"
+          />
+        </div>
+      </div>
+
+      <div className="pt-5 border-t mt-6 flex items-center justify-end">
+        <button
+          type="button"
+          onClick={gerar}
+          disabled={!formularioValido}
+          className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2 rounded shadow transition
+    ${formularioValido
+              ? "bg-secondary hover:bg-primary cursor-pointer"
+              : "bg-gray-300 cursor-not-allowed"
+            }`}
+        >
+          Gerar PDF
+        </button>
+      </div>
+    </div>
+  );
+}
+

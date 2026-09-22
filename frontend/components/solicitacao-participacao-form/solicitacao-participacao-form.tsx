@@ -1,0 +1,2140 @@
+"use client";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { FaCalendarPlus, FaTrash } from "react-icons/fa";
+import {
+    cadastrarSolicitacaoParticipacao,
+    dispararEmailGerencia,
+    dispararEmailMarketingPorFerias,
+    listarCidades,
+    type CidadeResponse,
+} from "@/services/solicitacao_participacao.service";
+import { monetizarDigitacao } from "@/utils/br";
+import { useRouter } from "next/navigation";
+import { getMeAdUser } from "@/services/auth.service";
+
+type DiaEvento = {
+    id: string;
+    DT_DIA: string;
+    HR_INICIO: string;
+    HR_FIM: string;
+};
+
+type AuditorioData = {
+    QTD_ESTIMATIVA_CONVIDADOS: string;
+    SN_USO_MICROFONE: string;
+    QNTD_MICROFONE: string;
+    SN_USO_PROJETOR: string;
+    NM_APRESENTACAO: string;
+    SN_OPERADOR: string;
+    SN_AO_VIVO: string;
+    NM_PLATAFORMA: string;
+    SN_INTERNET: string;
+    DESC_JUSTIFICATIVA: string;
+    OBS_AUDITORIO_SICOOB_SEDE: string;
+    SN_AUDIO_EXTERNO: string;
+};
+
+function generateId() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function hojeISO() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+function converterReaisParaNumero(valorFormatado: string) {
+    if (!valorFormatado) return 0;
+
+    let valorLimpo = valorFormatado.replace(/[^0-9,-]/g, "");
+    valorLimpo = valorLimpo.replace(",", ".");
+
+    const valorNumerico = parseFloat(valorLimpo);
+    return Number.isNaN(valorNumerico) ? 0 : valorNumerico;
+}
+
+function limparCpfCnpj(value: string) {
+    return String(value || "")
+        .replace(/[^A-Za-z0-9]/g, "")
+        .toUpperCase()
+        .slice(0, 14);
+}
+
+function formatCpfOuCnpj(value: string) {
+    const raw = limparCpfCnpj(value);
+
+    // CPF: somente números e até 11 dígitos.
+    // Enquanto o usuário digita um CPF, aplica 000.000.000-00.
+    if (!/[A-Z]/.test(raw) && raw.length <= 11) {
+        return raw
+            .replace(/^(\d{3})(\d)/, "$1.$2")
+            .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+            .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d{1,2}).*/, "$1.$2.$3-$4");
+    }
+
+    // CNPJ: aceita o padrão atual de 14 caracteres, inclusive alfanumérico.
+    // Exibição: 00.000.000/0000-00.
+    return raw
+        .replace(/^(.{2})(.)/, "$1.$2")
+        .replace(/^(.{2})\.(.{3})(.)/, "$1.$2.$3")
+        .replace(/^(.{2})\.(.{3})\.(.{3})(.)/, "$1.$2.$3/$4")
+        .replace(/^(.{2})\.(.{3})\.(.{3})\/(.{4})(.{1,2}).*/, "$1.$2.$3/$4-$5");
+}
+
+function normalizarCpfCnpjParaBanco(value: string) {
+    return limparCpfCnpj(value);
+}
+
+const ORACLE_BYTE_BUFFER = 2;
+const ORACLE_NUMBER_SAFE_DIGITS = 20;
+const ORACLE_LIMITS = {
+    NM_SOLICITANTE: 100,
+    NM_CIDADE: 30,
+    NM_FUNCIONARIO: 70,
+    NM_FAVORECIDO: 255,
+    DS_BANCO_PAGAMENTO: 120,
+    NR_AGENCIA_PAGAMENTO: 20,
+    NR_CONTA_PAGAMENTO: 30,
+    DESC_SOLICITACAO: 400,
+    DESC_SERVICOS: 190,
+    DESC_VINCULO: 190,
+    DESC_RETORNO_ULTIMO_EVENTO: 285,
+    DESC_RESUMO_EVENTO: 1900,
+} as const;
+
+const utf8Encoder = new TextEncoder();
+
+const labelBase =
+    "mb-1.5 block text-[12px] font-bold uppercase tracking-[0.04em] text-slate-600";
+const inputBase =
+    "w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/15";
+const inputReadOnlyBase =
+    "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm outline-none";
+const choiceGroupBase =
+    "flex flex-wrap gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 shadow-inner shadow-slate-100 [&_input]:h-4 [&_input]:w-4 [&_input]:accent-primary";
+const choiceLabelBase =
+    "flex items-center gap-2 text-sm font-medium text-slate-700";
+const fileInputBase =
+    "w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm file:mr-3 file:rounded-xl file:border-0 file:bg-[#79B729] file:px-3 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-[#00AE9D]";
+const sectionTitleBase =
+    "mb-3 border-l-4 border-[#00AE9D] pl-3 text-sm font-black uppercase tracking-[0.04em] text-slate-800";
+const primaryButtonBase =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-[#79B729] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#00AE9D] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70";
+const secondaryButtonBase =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[#00AE9D]/35 bg-[#00AE9D]/10 px-4 text-sm font-bold text-[#006f65] shadow-sm transition hover:bg-[#00AE9D] hover:text-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70";
+
+function limitarTextoPorBytesOracle(value: string, limiteBanco: number) {
+    const limiteSeguro = Math.max(1, limiteBanco - ORACLE_BYTE_BUFFER);
+    let saida = "";
+    let totalBytes = 0;
+
+    for (const ch of String(value || "")) {
+        const bytesChar = utf8Encoder.encode(ch).length;
+        if (totalBytes + bytesChar > limiteSeguro) break;
+        saida += ch;
+        totalBytes += bytesChar;
+    }
+
+    return saida;
+}
+
+function normalizarOracleUpper(value: string, limiteBanco: number) {
+    return limitarTextoPorBytesOracle(
+        String(value || "").trim().toUpperCase(),
+        limiteBanco
+    );
+}
+
+function limitarMoedaOracle(value: string) {
+    const somenteDigitos = String(value || "")
+        .replace(/\D/g, "")
+        .slice(0, ORACLE_NUMBER_SAFE_DIGITS);
+
+    return monetizarDigitacao(somenteDigitos);
+}
+
+function isPdfFile(file: File | null) {
+    if (!file) return true;
+    const nome = file.name.toLowerCase();
+    return file.type === "application/pdf" || nome.endsWith(".pdf");
+}
+
+export function SolicitacaoParticipacaoForm() {
+    const router = useRouter();
+
+    const handleClick = () => {
+        router.push("/auth/gerenciamento_participacao");
+    };
+
+    const [loading, setLoading] = useState(false);
+    const submitLockRef = useRef(false);
+    const [erro, setErro] = useState("");
+    const [info, setInfo] = useState("");
+    const alertRef = useRef<HTMLDivElement | null>(null);
+    const oficioInputRef = useRef<HTMLInputElement | null>(null);
+    const painelSisbrInputRef = useRef<HTMLInputElement | null>(null);
+    const docSemFinsInputRef = useRef<HTMLInputElement | null>(null);
+    const subirParaAlerta = () => {
+        window.requestAnimationFrame(() => {
+            alertRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+        });
+    };
+
+    const mostrarErro = (mensagem: string) => {
+        setInfo("");
+        setErro(mensagem);
+        subirParaAlerta();
+    };
+
+    const [cidades, setCidades] = useState<CidadeResponse[]>([]);
+
+    const [nomeFantasia, setNomeFantasia] = useState("");
+    const [cpfCnpj, setCpfCnpj] = useState("");
+    const [cidade, setCidade] = useState("");
+
+    const [semFinsLucrativos, setSemFinsLucrativos] = useState("0");
+    const [docSemFins, setDocSemFins] = useState<File | null>(null);
+
+    const [dias, setDias] = useState<DiaEvento[]>([]);
+
+    const [precisaValorMonetario, setPrecisaValorMonetario] = useState("0");
+    const [valorSolicitado, setValorSolicitado] = useState("");
+
+    const [precisaInsumo, setPrecisaInsumo] = useState("0");
+    const [estimativaInsumo, setEstimativaInsumo] = useState("");
+
+    const [precisaAuditorio, setPrecisaAuditorio] = useState("0");
+    const [auditorioCentro, setAuditorioCentro] = useState(false);
+    const [auditorioSede, setAuditorioSede] = useState(false);
+
+    const [precisaMotorista, setPrecisaMotorista] = useState("0");
+    const [precisaFuncionarios, setPrecisaFuncionarios] = useState("0");
+
+    const [solicitacao, setSolicitacao] = useState("");
+    const [resumoEvento, setResumoEvento] = useState("");
+
+    const [contaCooperativa, setContaCooperativa] = useState("");
+    const [vinculo, setVinculo] = useState("");
+    const [servicos, setServicos] = useState("");
+    const [saldoMedio, setSaldoMedio] = useState("");
+    const [rentMaq, setRentMaq] = useState("");
+
+    const [contaCorrenteRecebimento, setContaCorrenteRecebimento] =
+        useState("");
+    const [numeroBancoCooperativa, setNumeroBancoCooperativa] = useState("756");
+    const [agenciaCooperativa, setAgenciaCooperativa] = useState("4317");
+    const [nomeFavorecido, setNomeFavorecido] = useState("");
+    const [cpfCnpjFavorecido, setCpfCnpjFavorecido] = useState("");
+    const [bancoFavorecido, setBancoFavorecido] = useState("");
+    const [agenciaFavorecido, setAgenciaFavorecido] = useState("");
+    const [contaBancariaFavorecido, setContaBancariaFavorecido] = useState("");
+    const [tipoContaFavorecido, setTipoContaFavorecido] = useState("");
+
+    const [eventoAnterior, setEventoAnterior] = useState("0");
+    const [retornoUltimoEvento, setRetornoUltimoEvento] = useState("");
+
+    const [funcionario, setFuncionario] = useState("");
+    const [oficio, setOficio] = useState<File | null>(null);
+    const [painelSisbr, setPainelSisbr] = useState<File | null>(null);
+    const [diaSolicitacao, setDiaSolicitacao] = useState(hojeISO());
+
+    const [openAuditorioModal, setOpenAuditorioModal] = useState(false);
+
+    const [auditorio, setAuditorio] = useState<AuditorioData>({
+        QTD_ESTIMATIVA_CONVIDADOS: "",
+        SN_USO_MICROFONE: "",
+        QNTD_MICROFONE: "",
+        SN_USO_PROJETOR: "",
+        NM_APRESENTACAO: "",
+        SN_AUDIO_EXTERNO: "",
+        SN_OPERADOR: "",
+        SN_AO_VIVO: "",
+        NM_PLATAFORMA: "",
+        SN_INTERNET: "",
+        DESC_JUSTIFICATIVA: "",
+        OBS_AUDITORIO_SICOOB_SEDE: "",
+    });
+
+    useEffect(() => {
+        async function carregarDadosIniciais() {
+            try {
+                setDiaSolicitacao(hojeISO());
+
+                const me = await getMeAdUser();
+                setFuncionario(me?.nome_completo || "");
+            } catch (err: any) {
+                console.error("Erro ao buscar usuário logado:", err);
+                setErro(err?.message || "Falha ao carregar o usuário logado.");
+            }
+        }
+
+        carregarDadosIniciais();
+    }, []);
+
+    useEffect(() => {
+        setDiaSolicitacao(hojeISO());
+
+        const nome =
+            typeof window !== "undefined"
+                ? localStorage.getItem("nome_completo") ||
+                localStorage.getItem("user_name") ||
+                ""
+                : "";
+
+        setFuncionario(nome);
+    }, []);
+
+    useEffect(() => {
+        async function load() {
+            try {
+                const data = await listarCidades();
+                setCidades(data);
+            } catch (err: any) {
+                setErro(err?.message || "Falha ao carregar cidades.");
+            }
+        }
+
+        load();
+    }, []);
+
+    useEffect(() => {
+        if (precisaAuditorio === "0") {
+            setAuditorioCentro(false);
+            setAuditorioSede(false);
+        }
+    }, [precisaAuditorio]);
+
+    useEffect(() => {
+        if ((erro || info) && alertRef.current) {
+            alertRef.current.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+        }
+    }, [erro, info]);
+
+    const cidadesOrdenadas = useMemo(() => {
+        const nomes = cidades
+            .map((item) => {
+                if (typeof item === "string") return item.trim();
+                return String(item?.NM_CIDADE || item?.nome || "").trim();
+            })
+            .filter(Boolean);
+
+        return Array.from(new Set(nomes)).sort((a, b) => a.localeCompare(b));
+    }, [cidades]);
+
+    const adicionarDiaEvento = () => {
+        setDias((prev) => [
+            ...prev,
+            {
+                id: generateId(),
+                DT_DIA: "",
+                HR_INICIO: "",
+                HR_FIM: "",
+            },
+        ]);
+    };
+
+    const removerDiaEvento = (id: string) => {
+        setDias((prev) => prev.filter((item) => item.id !== id));
+    };
+
+    const updateDiaEvento = (
+        id: string,
+        field: keyof Omit<DiaEvento, "id">,
+        value: string
+    ) => {
+        setDias((prev) =>
+            prev.map((item) =>
+                item.id === id
+                    ? {
+                        ...item,
+                        [field]: value,
+                    }
+                    : item
+            )
+        );
+    };
+
+    const updateAuditorio = (field: keyof AuditorioData, value: string) => {
+        setAuditorio((prev) => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
+    const selecionarPdf = (
+        file: File | null,
+        setFile: (file: File | null) => void,
+        inputRef?: RefObject<HTMLInputElement | null>
+    ) => {
+        if (!file) {
+            setFile(null);
+            return;
+        }
+
+        if (!isPdfFile(file)) {
+            setFile(null);
+            if (inputRef?.current) inputRef.current.value = "";
+            mostrarErro("Anexe somente arquivos em PDF.");
+            return;
+        }
+
+        setFile(file);
+    };
+
+    const getPlataformaString = () => {
+        return auditorio.NM_PLATAFORMA.trim();
+    };
+
+    const validaCamposAuditorio = () => {
+        if (!auditorio.QTD_ESTIMATIVA_CONVIDADOS) {
+            mostrarErro("Preencha a estimativa de convidados.");
+            return false;
+        }
+
+        if (!auditorio.SN_USO_MICROFONE) {
+            mostrarErro("Selecione o uso de microfone.");
+            return false;
+        }
+
+        if (
+            auditorio.SN_USO_MICROFONE === "1" &&
+            !auditorio.QNTD_MICROFONE.trim()
+        ) {
+            mostrarErro("Preencha a quantidade de microfones.");
+            return false;
+        }
+
+        if (!auditorio.SN_USO_PROJETOR) {
+            mostrarErro("Selecione o uso do projetor.");
+            return false;
+        }
+
+        if (
+            auditorio.SN_USO_PROJETOR === "1" &&
+            !auditorio.NM_APRESENTACAO.trim()
+        ) {
+            mostrarErro("Selecione o tipo de apresentação.");
+            return false;
+        }
+
+        if (!auditorio.SN_AUDIO_EXTERNO) {
+            mostrarErro("Selecione o uso de áudio externo.");
+            return false;
+        }
+
+        if (!auditorio.SN_OPERADOR) {
+            mostrarErro("Selecione o operador do som/apresentação.");
+            return false;
+        }
+
+        if (!auditorio.SN_AO_VIVO) {
+            mostrarErro("Selecione se haverá transmissão ao vivo.");
+            return false;
+        }
+
+        if (auditorio.SN_AO_VIVO === "1" && !getPlataformaString()) {
+            mostrarErro("Selecione ao menos uma plataforma de transmissão.");
+            return false;
+        }
+
+        if (!auditorio.SN_INTERNET) {
+            mostrarErro("Selecione se precisa de internet dedicada.");
+            return false;
+        }
+
+        if (
+            auditorio.SN_INTERNET === "1" &&
+            !auditorio.DESC_JUSTIFICATIVA.trim()
+        ) {
+            mostrarErro("Preencha a justificativa da internet.");
+            return false;
+        }
+
+        if (!auditorio.OBS_AUDITORIO_SICOOB_SEDE.trim()) {
+            mostrarErro("Preencha as observações adicionais do auditório.");
+            return false;
+        }
+
+        return true;
+    };
+
+    const validarCampos = () => {
+        if (!funcionario.trim()) {
+            mostrarErro("Não foi possível identificar o funcionário logado.");
+            return false;
+        }
+
+        if (!nomeFantasia.trim()) {
+            mostrarErro("Preencha o Nome Fantasia.");
+            return false;
+        }
+
+        if (!cpfCnpj.trim()) {
+            mostrarErro("Preencha o CPF/CNPJ.");
+            return false;
+        }
+
+        const documentoCpfCnpj = normalizarCpfCnpjParaBanco(cpfCnpj);
+
+        if (![11, 14].includes(documentoCpfCnpj.length)) {
+            mostrarErro("Preencha CPF com 11 caracteres ou CNPJ com 14 caracteres.");
+            return false;
+        }
+
+        if (!cidade.trim()) {
+            mostrarErro("Selecione a cidade.");
+            return false;
+        }
+
+        if (semFinsLucrativos === "1" && !docSemFins) {
+            mostrarErro("Anexe o comprovante de Entidade Sem Fins Lucrativos.");
+            return false;
+        }
+
+        if (!isPdfFile(docSemFins)) {
+            mostrarErro("O comprovante de Entidade Sem Fins Lucrativos deve estar em PDF.");
+            return false;
+        }
+
+        if (!dias.length) {
+            mostrarErro("Adicione o(s) dia(s) do evento.");
+            return false;
+        }
+
+        for (const dia of dias) {
+            if (!dia.DT_DIA || !dia.HR_INICIO || !dia.HR_FIM) {
+                mostrarErro("Preencha todos os campos de data e hora do evento.");
+                return false;
+            }
+        }
+
+        if (precisaValorMonetario === "1" && !valorSolicitado.trim()) {
+            mostrarErro("Preencha o valor desejado.");
+            return false;
+        }
+
+        if (precisaInsumo === "1" && !estimativaInsumo.trim()) {
+            mostrarErro("Preencha a estimativa de valor.");
+            return false;
+        }
+
+        if (precisaAuditorio === "1" && !auditorioCentro && !auditorioSede) {
+            mostrarErro("Selecione ao menos um local: Centro de Convivência ou Sede.");
+            return false;
+        }
+
+        if (!solicitacao.trim()) {
+            mostrarErro("Preencha a Solicitação.");
+            return false;
+        }
+
+        if (!resumoEvento.trim()) {
+            mostrarErro("Preencha o resumo do evento.");
+            return false;
+        }
+
+        if (!contaCooperativa) {
+            mostrarErro("Selecione se possui conta na cooperativa.");
+            return false;
+        }
+
+        if (contaCooperativa === "1") {
+            if (!servicos.trim()) {
+                mostrarErro("Preencha os serviços que a solicitante possui.");
+                return false;
+            }
+
+            if (!saldoMedio.trim()) {
+                mostrarErro("Preencha o saldo médio da conta corrente.");
+                return false;
+            }
+
+            if (!rentMaq.trim()) {
+                mostrarErro("Preencha a rentabilidade da maquininha.");
+                return false;
+            }
+
+            if (precisaValorMonetario === "1" && !contaCorrenteRecebimento.trim()) {
+                mostrarErro("Preencha a conta corrente para recebimento.");
+                return false;
+            }
+        } else if (precisaValorMonetario === "1") {
+            if (!nomeFavorecido.trim()) {
+                mostrarErro("Preencha o nome ou razão social de quem receberá.");
+                return false;
+            }
+
+            const documentoFavorecido = normalizarCpfCnpjParaBanco(cpfCnpjFavorecido);
+            if (![11, 14].includes(documentoFavorecido.length)) {
+                mostrarErro("Preencha o CPF/CNPJ de quem receberá.");
+                return false;
+            }
+
+            if (!bancoFavorecido.trim()) {
+                mostrarErro("Preencha o banco para recebimento.");
+                return false;
+            }
+
+            if (!agenciaFavorecido.trim()) {
+                mostrarErro("Preencha a agência para recebimento.");
+                return false;
+            }
+
+            if (!contaBancariaFavorecido.trim()) {
+                mostrarErro("Preencha a conta para recebimento.");
+                return false;
+            }
+
+            if (!tipoContaFavorecido) {
+                mostrarErro("Selecione o tipo de conta para recebimento.");
+                return false;
+            }
+        }
+
+        if (!vinculo.trim()) {
+            mostrarErro("Preencha o vínculo do solicitante.");
+            return false;
+        }
+
+        if (eventoAnterior === "1" && !retornoUltimoEvento.trim()) {
+            mostrarErro("Preencha o retorno do último evento.");
+            return false;
+        }
+
+        if (!oficio) {
+            mostrarErro("Anexe o Ofício.");
+            return false;
+        }
+
+        if (!isPdfFile(oficio)) {
+            mostrarErro("O Ofício deve estar em PDF.");
+            return false;
+        }
+
+        if (!painelSisbr) {
+            mostrarErro("Anexe o Painel SISBR.");
+            return false;
+        }
+
+        if (!isPdfFile(painelSisbr)) {
+            mostrarErro("O Painel SISBR deve estar em PDF.");
+            return false;
+        }
+
+        if (auditorioSede && !validaCamposAuditorio()) {
+            return false;
+        }
+
+        return true;
+    };
+
+    const limparAuditorio = () => {
+        setAuditorio({
+            QTD_ESTIMATIVA_CONVIDADOS: "",
+            SN_USO_MICROFONE: "",
+            QNTD_MICROFONE: "",
+            SN_USO_PROJETOR: "",
+            NM_APRESENTACAO: "",
+            SN_AUDIO_EXTERNO: "",
+            SN_OPERADOR: "",
+            SN_AO_VIVO: "",
+            NM_PLATAFORMA: "",
+            SN_INTERNET: "",
+            DESC_JUSTIFICATIVA: "",
+            OBS_AUDITORIO_SICOOB_SEDE: "",
+        });
+    };
+
+    const limparTudo = () => {
+        setNomeFantasia("");
+        setCpfCnpj("");
+        setCidade("");
+        setSemFinsLucrativos("0");
+        setDocSemFins(null);
+        setDias([]);
+        setPrecisaValorMonetario("0");
+        setValorSolicitado("");
+        setPrecisaInsumo("0");
+        setEstimativaInsumo("");
+        setPrecisaAuditorio("0");
+        setAuditorioCentro(false);
+        setAuditorioSede(false);
+        setPrecisaMotorista("0");
+        setPrecisaFuncionarios("0");
+        setSolicitacao("");
+        setResumoEvento("");
+        setContaCooperativa("");
+        setVinculo("");
+        setServicos("");
+        setSaldoMedio("");
+        setRentMaq("");
+        setContaCorrenteRecebimento("");
+        setNumeroBancoCooperativa("756");
+        setAgenciaCooperativa("4317");
+        setNomeFavorecido("");
+        setCpfCnpjFavorecido("");
+        setBancoFavorecido("");
+        setAgenciaFavorecido("");
+        setContaBancariaFavorecido("");
+        setTipoContaFavorecido("");
+        setEventoAnterior("0");
+        setRetornoUltimoEvento("");
+        setOficio(null);
+        setPainelSisbr(null);
+        if (oficioInputRef.current) {
+            oficioInputRef.current.value = "";
+        }
+        if (painelSisbrInputRef.current) {
+            painelSisbrInputRef.current.value = "";
+        }
+        if (docSemFinsInputRef.current) {
+            docSemFinsInputRef.current.value = "";
+        }
+        setDiaSolicitacao(hojeISO());
+        limparAuditorio();
+    };
+
+    const togglePlataforma = (nome: string, checked: boolean) => {
+        const atual = getPlataformaString()
+            .split(" ")
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+        let novaLista = [...atual];
+
+        if (checked) {
+            if (!novaLista.includes(nome)) novaLista.push(nome);
+        } else {
+            novaLista = novaLista.filter((item) => item !== nome);
+        }
+
+        updateAuditorio("NM_PLATAFORMA", novaLista.join(" "));
+    };
+
+    const isPlataformaChecked = (nome: string) => {
+        return getPlataformaString().split(" ").includes(nome);
+    };
+
+    const onSalvarAuditorio = () => {
+        setErro("");
+        if (!validaCamposAuditorio()) {
+            subirParaAlerta();
+            return;
+        }
+        setOpenAuditorioModal(false);
+        setInfo("Dados do auditório sede preenchidos com sucesso.");
+    };
+
+    const cadastrar = async () => {
+        if (loading || submitLockRef.current) return;
+
+        setErro("");
+        setInfo("");
+
+        if (!validarCampos()) return;
+
+        submitLockRef.current = true;
+
+        try {
+            setLoading(true);
+
+            const formData = new FormData();
+            const nmSolicitanteOracle = normalizarOracleUpper(
+                nomeFantasia,
+                ORACLE_LIMITS.NM_SOLICITANTE
+            );
+            const nmCidadeOracle = normalizarOracleUpper(
+                cidade,
+                ORACLE_LIMITS.NM_CIDADE
+            );
+            const nmFuncionarioOracle = normalizarOracleUpper(
+                funcionario,
+                ORACLE_LIMITS.NM_FUNCIONARIO
+            );
+            const descServicosOracle = normalizarOracleUpper(
+                servicos,
+                ORACLE_LIMITS.DESC_SERVICOS
+            );
+            const descVinculoOracle = normalizarOracleUpper(
+                vinculo,
+                ORACLE_LIMITS.DESC_VINCULO
+            );
+            const descRetornoOracle = normalizarOracleUpper(
+                retornoUltimoEvento,
+                ORACLE_LIMITS.DESC_RETORNO_ULTIMO_EVENTO
+            );
+            const descSolicitacaoOracle = normalizarOracleUpper(
+                solicitacao,
+                ORACLE_LIMITS.DESC_SOLICITACAO
+            );
+            const descResumoOracle = normalizarOracleUpper(
+                resumoEvento,
+                ORACLE_LIMITS.DESC_RESUMO_EVENTO
+            );
+
+            const nrCpfCnpjBanco = normalizarCpfCnpjParaBanco(cpfCnpj);
+            const favorecidoContaCooperativa = contaCooperativa === "1";
+            const nmFavorecidoOracle = normalizarOracleUpper(
+                favorecidoContaCooperativa ? nomeFantasia : nomeFavorecido,
+                ORACLE_LIMITS.NM_FAVORECIDO
+            );
+            const nrCpfCnpjFavorecido = normalizarCpfCnpjParaBanco(
+                favorecidoContaCooperativa ? cpfCnpj : cpfCnpjFavorecido
+            );
+            const nrContaCooperativa = limitarTextoPorBytesOracle(
+                contaCorrenteRecebimento.trim(),
+                ORACLE_LIMITS.NR_CONTA_PAGAMENTO
+            );
+            const dsBancoCooperativa = limitarTextoPorBytesOracle(
+                numeroBancoCooperativa.trim(),
+                ORACLE_LIMITS.DS_BANCO_PAGAMENTO
+            );
+            const nrAgenciaCooperativa = limitarTextoPorBytesOracle(
+                agenciaCooperativa.trim(),
+                ORACLE_LIMITS.NR_AGENCIA_PAGAMENTO
+            );
+            const dsBancoPagamento = favorecidoContaCooperativa
+                ? dsBancoCooperativa
+                : normalizarOracleUpper(
+                    bancoFavorecido,
+                    ORACLE_LIMITS.DS_BANCO_PAGAMENTO
+                );
+            const nrAgenciaPagamento = favorecidoContaCooperativa
+                ? nrAgenciaCooperativa
+                : limitarTextoPorBytesOracle(
+                    agenciaFavorecido.trim(),
+                    ORACLE_LIMITS.NR_AGENCIA_PAGAMENTO
+                );
+            const nrContaPagamento = favorecidoContaCooperativa
+                ? nrContaCooperativa
+                : limitarTextoPorBytesOracle(
+                    contaBancariaFavorecido.trim(),
+                    ORACLE_LIMITS.NR_CONTA_PAGAMENTO
+                );
+            const tpContaPagamento = favorecidoContaCooperativa
+                ? "CORRENTE"
+                : tipoContaFavorecido;
+
+            formData.append("NM_SOLICITANTE", nmSolicitanteOracle);
+            formData.append("NR_CPF_CNPJ", nrCpfCnpjBanco);
+            formData.append("NM_FUNCIONARIO", nmFuncionarioOracle);
+            formData.append("NM_CIDADE", nmCidadeOracle);
+            formData.append("DT_SOLICITACAO", diaSolicitacao);
+            formData.append("NM_ANDAMENTO", "Pendente Gerência");
+            formData.append("CD_CONTA_COOPERATIVA", contaCooperativa || "0");
+            formData.append(
+                "VL_SALDO_MEDCIOCC",
+                String(converterReaisParaNumero(saldoMedio))
+            );
+            formData.append("DESC_SERVICOS", descServicosOracle);
+            formData.append("DESC_VINCULO", descVinculoOracle);
+            formData.append(
+                "DESC_RETORNO_ULTIMO_EVENTO",
+                descRetornoOracle
+            );
+            formData.append(
+                "VL_RENTABILIDADE_MAQUININHA",
+                String(converterReaisParaNumero(rentMaq))
+            );
+
+            formData.append("DESC_SOLICITACAO", descSolicitacaoOracle);
+            formData.append("CD_MOTORISTA", precisaMotorista);
+            formData.append("CD_FUNCIONARIOS", precisaFuncionarios);
+            formData.append("DESC_RESUMO_EVENTO", descResumoOracle);
+            formData.append(
+                "VL_PATROCINIO",
+                String(converterReaisParaNumero(valorSolicitado))
+            );
+            formData.append("VL_MONETARIO", precisaValorMonetario);
+            formData.append(
+                "VL_ESTIMATIVA",
+                String(converterReaisParaNumero(estimativaInsumo))
+            );
+            formData.append("SN_SEM_FINS_LUCATRIVOS", semFinsLucrativos);
+            formData.append("QTD_INSUMO", precisaInsumo);
+            formData.append("CD_AUDITORIO_CENTRO", auditorioCentro ? "1" : "0");
+            formData.append("CD_AUDITORIO_SEDE", auditorioSede ? "1" : "0");
+            if (precisaValorMonetario === "1") {
+                formData.append("NM_FAVORECIDO", nmFavorecidoOracle);
+                formData.append("NR_CPF_CNPJ_FAVORECIDO", nrCpfCnpjFavorecido);
+                formData.append("DS_BANCO_PAGAMENTO", dsBancoPagamento);
+                formData.append("NR_AGENCIA_PAGAMENTO", nrAgenciaPagamento);
+                formData.append("NR_CONTA_PAGAMENTO", nrContaPagamento);
+                formData.append("TP_CONTA_PAGAMENTO", tpContaPagamento);
+            }
+
+            formData.append(
+                "DIAS",
+                JSON.stringify(
+                    dias.map((item) => ({
+                        DT_DIA: item.DT_DIA,
+                        HR_INICIO: item.HR_INICIO,
+                        HR_FIM: item.HR_FIM,
+                    }))
+                )
+            );
+
+            if (auditorioSede) {
+                formData.append(
+                    "AUDITORIO",
+                    JSON.stringify({
+                        QTD_ESTIMATIVA_CONVIDADOS: auditorio.QTD_ESTIMATIVA_CONVIDADOS,
+                        SN_USO_MICROFONE: auditorio.SN_USO_MICROFONE || 0,
+                        QNTD_MICROFONE: auditorio.QNTD_MICROFONE || 0,
+                        SN_USO_PROJETOR: auditorio.SN_USO_PROJETOR || 0,
+                        NM_APRESENTACAO: auditorio.NM_APRESENTACAO || "",
+                        SN_AUDIO_EXTERNO: auditorio.SN_AUDIO_EXTERNO || 0,
+                        SN_OPERADOR: auditorio.SN_OPERADOR || 0,
+                        SN_AO_VIVO: auditorio.SN_AO_VIVO || 0,
+                        NM_PLATAFORMA: auditorio.NM_PLATAFORMA || "",
+                        SN_INTERNET: auditorio.SN_INTERNET || 0,
+                        DESC_JUSTIFICATIVA: auditorio.DESC_JUSTIFICATIVA || "",
+                        OBS_AUDITORIO_SICOOB_SEDE:
+                            auditorio.OBS_AUDITORIO_SICOOB_SEDE || "",
+                    })
+                );
+            }
+
+            if (docSemFins) {
+                formData.append("DIR_DOC_SEM_FINS_LUCRATIVO", docSemFins);
+            }
+
+            if (oficio) {
+                formData.append("DIR_OFICIO", oficio);
+            }
+
+            if (painelSisbr) {
+                formData.append("DIR_PAINEL_SISBR", painelSisbr);
+            }
+
+            const response = await cadastrarSolicitacaoParticipacao(formData);
+            const idPatrocinio = response?.ID_PATROCINIO;
+            const duplicidadeIgnorada = Boolean(response?.DUPLICIDADE_IGNORADA);
+
+            const modoTesteParticipacao =
+                process.env.NODE_ENV === "development" &&
+                process.env.NEXT_PUBLIC_PARTICIPACAO_TEST_MODE === "true";
+            const solicitacaoTeste = nmSolicitanteOracle.toUpperCase().includes("TESTE");
+
+            if (idPatrocinio && !duplicidadeIgnorada && !(modoTesteParticipacao && solicitacaoTeste)) {
+                const gerenteEmFerias = response?.GERENTE_EM_FERIAS;
+
+                if (gerenteEmFerias) {
+                    await dispararEmailMarketingPorFerias({
+                        patrocinioId: idPatrocinio,
+                        gerente: String(gerenteEmFerias.nome || "Gerência"),
+                        inicio: String(gerenteEmFerias.inicio || ""),
+                        fim: String(gerenteEmFerias.fim || ""),
+                    });
+                } else {
+                    await dispararEmailGerencia({
+                        funcionario,
+                        empresa: nmSolicitanteOracle,
+                        patrocinioId: idPatrocinio,
+                    });
+                }
+            }
+
+            limparTudo();
+            setInfo(response?.message || "Solicitação cadastrada com sucesso.");
+        } catch (err: any) {
+            setErro(err?.message || "Falha ao cadastrar solicitação.");
+        } finally {
+            setLoading(false);
+            submitLockRef.current = false;
+        }
+    };
+
+    return (
+        <>
+            <div className="mx-auto w-full space-y-5">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="h-1 bg-gradient-to-r from-[#00AE9D] via-[#79B729] to-[#C7D300]" />
+                    <div className="flex flex-col gap-4 p-5 sm:p-6 md:flex-row md:items-center md:justify-between">
+                        <div className="min-w-0">
+                            <h2 className="text-lg font-black text-slate-950">
+                                Dados da solicitação
+                            </h2>
+                            <p className="mt-1 max-w-3xl text-sm font-medium text-slate-600">
+                                Preencha as informações do evento e anexe o ofício para encaminhar a aprovação.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleClick}
+                            className={`${secondaryButtonBase} shrink-0 cursor-pointer px-5`}
+                        >
+                            Consulta Participação de Marketing
+                        </button>
+                    </div>
+                </div>
+
+                <div ref={alertRef} />
+
+                {erro && (
+                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                        {erro}
+                    </div>
+                )}
+
+                {info && (
+                    <div className="rounded-2xl border border-[#00AE9D]/25 bg-[#00AE9D]/10 px-4 py-3 text-sm font-semibold text-[#006f65]">
+                        {info}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                    <div className="border-b border-slate-100 pb-4">
+                        <h3 className="text-base font-bold text-[var(--title)]">
+                            Identificação do solicitante
+                        </h3>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            Dados da organização que está solicitando o patrocínio.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label className={labelBase}>
+                            Nome Fantasia
+                        </label>
+                        <input
+                            value={nomeFantasia}
+                            onChange={(e) =>
+                                setNomeFantasia(
+                                    limitarTextoPorBytesOracle(
+                                        e.target.value,
+                                        ORACLE_LIMITS.NM_SOLICITANTE
+                                    )
+                                )
+                            }
+                            className={inputBase}
+                            maxLength={ORACLE_LIMITS.NM_SOLICITANTE}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
+                        <div>
+                            <label className={labelBase}>
+                                CPF/CNPJ
+                            </label>
+                            <input
+                                value={cpfCnpj}
+                                onChange={(e) => setCpfCnpj(formatCpfOuCnpj(e.target.value))}
+                                className={inputBase}
+                                maxLength={18}
+                                autoComplete="off"
+                                placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                            />
+                        </div>
+
+                        <div>
+                            <label className={labelBase}>
+                                Cidade destino
+                            </label>
+                            <select
+                                value={cidade}
+                                onChange={(e) =>
+                                    setCidade(
+                                        limitarTextoPorBytesOracle(
+                                            e.target.value,
+                                            ORACLE_LIMITS.NM_CIDADE
+                                        )
+                                    )
+                                }
+                                className={inputBase}
+                            >
+                                <option value="">Selecione uma cidade</option>
+                                {cidadesOrdenadas.map((item, index) => (
+                                    <option key={`${item}-${index}`} value={item}>
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className={labelBase}>
+                            Entidade Sem Fins Lucrativos?
+                        </label>
+                        <div className={choiceGroupBase}>
+                            <label className={choiceLabelBase}>
+                                <input
+                                    type="radio"
+                                    name="sem-fins"
+                                    checked={semFinsLucrativos === "1"}
+                                    onChange={() => setSemFinsLucrativos("1")}
+                                />
+                                Sim
+                            </label>
+                            <label className={choiceLabelBase}>
+                                <input
+                                    type="radio"
+                                    name="sem-fins"
+                                    checked={semFinsLucrativos === "0"}
+                                    onChange={() => setSemFinsLucrativos("0")}
+                                />
+                                Não
+                            </label>
+                        </div>
+                    </div>
+
+                    {semFinsLucrativos === "1" && (
+                        <div>
+                            <label className={labelBase}>
+                                Declaração de Utilidade Pública
+                            </label>
+                            <input
+                                ref={docSemFinsInputRef}
+                                type="file"
+                                accept="application/pdf,.pdf"
+                                onChange={(e) =>
+                                    selecionarPdf(
+                                        e.target.files?.[0] || null,
+                                        setDocSemFins,
+                                        docSemFinsInputRef
+                                    )
+                                }
+                                className={fileInputBase}
+                            />
+                            <p className="mt-1 text-xs text-slate-500">
+                                {docSemFins ? docSemFins.name : "Nenhum arquivo selecionado"}
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-4 shadow-inner shadow-slate-100">
+                        <div className="mb-3 flex items-center justify-between">
+                            <label className={sectionTitleBase}>
+                                Dia(s) do Evento
+                            </label>
+                            <button
+                                type="button"
+                                onClick={adicionarDiaEvento}
+                                className={primaryButtonBase}
+                            >
+                                <FaCalendarPlus size={12} />
+                                Adicionar Hora e dia
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {dias.length === 0 ? (
+                                <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">
+                                    Nenhum dia adicionado ainda.
+                                </div>
+                            ) : (
+                                dias.map((dia) => (
+                                    <div
+                                        key={dia.id}
+                                        className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-[1.2fr_1fr_1fr_auto]"
+                                    >
+                                        <div>
+                                            <label className={labelBase}>
+                                                Data
+                                            </label>
+
+                                            <input
+                                                type="date"
+                                                value={dia.DT_DIA}
+                                                onChange={(e) =>
+                                                    updateDiaEvento(dia.id, "DT_DIA", e.target.value)
+                                                }
+                                                className={inputBase}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className={labelBase}>
+                                                Hora Inicial
+                                            </label>
+
+                                            <input
+                                                type="time"
+                                                value={dia.HR_INICIO}
+                                                onChange={(e) =>
+                                                    updateDiaEvento(dia.id, "HR_INICIO", e.target.value)
+                                                }
+                                                className={inputBase}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className={labelBase}>
+                                                Hora Final
+                                            </label>
+
+                                            <input
+                                                type="time"
+                                                value={dia.HR_FIM}
+                                                onChange={(e) =>
+                                                    updateDiaEvento(dia.id, "HR_FIM", e.target.value)
+                                                }
+                                                className={inputBase}
+                                            />
+                                        </div>
+
+                                        <div className="flex items-end">
+                                            <button
+                                                type="button"
+                                                onClick={() => removerDiaEvento(dia.id)}
+                                                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
+                                            >
+                                                <FaTrash size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-5">
+                        <h3 className="text-base font-bold text-[var(--title)]">
+                            Necessidades do evento
+                        </h3>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            Selecione somente os recursos necessários para a realização do evento.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label className={labelBase}>
+                                Precisa de Valor Monetário?
+                            </label>
+                            <div className={choiceGroupBase}>
+                                <label className={choiceLabelBase}>
+                                    <input
+                                        type="radio"
+                                        checked={precisaValorMonetario === "1"}
+                                        onChange={() => setPrecisaValorMonetario("1")}
+                                    />
+                                    Sim
+                                </label>
+                                <label className={choiceLabelBase}>
+                                    <input
+                                        type="radio"
+                                        checked={precisaValorMonetario === "0"}
+                                        onChange={() => setPrecisaValorMonetario("0")}
+                                    />
+                                    Não
+                                </label>
+                            </div>
+                        </div>
+
+                        {precisaValorMonetario === "1" && (
+                            <div>
+                                <label className={labelBase}>
+                                    Valor Solicitado
+                                </label>
+                                <input
+                                    value={valorSolicitado}
+                                    onChange={(e) =>
+                                        setValorSolicitado(limitarMoedaOracle(e.target.value))
+                                    }
+                                    className={`${inputBase} text-right`}
+                                    placeholder="R$ 0,00"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label className={labelBase}>
+                                Compra de Insumos?
+                            </label>
+                            <div className={choiceGroupBase}>
+                                <label className={choiceLabelBase}>
+                                    <input
+                                        type="radio"
+                                        checked={precisaInsumo === "1"}
+                                        onChange={() => setPrecisaInsumo("1")}
+                                    />
+                                    Sim
+                                </label>
+                                <label className={choiceLabelBase}>
+                                    <input
+                                        type="radio"
+                                        checked={precisaInsumo === "0"}
+                                        onChange={() => setPrecisaInsumo("0")}
+                                    />
+                                    Não
+                                </label>
+                            </div>
+                        </div>
+
+                        {precisaInsumo === "1" && (
+                            <div>
+                                <label className={labelBase}>
+                                    Estimativa de Valor Monetário
+                                </label>
+                                <input
+                                    value={estimativaInsumo}
+                                    onChange={(e) =>
+                                        setEstimativaInsumo(limitarMoedaOracle(e.target.value))
+                                    }
+                                    className={`${inputBase} text-right`}
+                                    placeholder="R$ 0,00"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div>
+                            <label className={labelBase}>
+                                Precisa do Auditório?
+                            </label>
+                            <div className={choiceGroupBase}>
+                                <label className={choiceLabelBase}>
+                                    <input
+                                        type="radio"
+                                        checked={precisaAuditorio === "1"}
+                                        onChange={() => setPrecisaAuditorio("1")}
+                                    />
+                                    Sim
+                                </label>
+                                <label className={choiceLabelBase}>
+                                    <input
+                                        type="radio"
+                                        checked={precisaAuditorio === "0"}
+                                        onChange={() => setPrecisaAuditorio("0")}
+                                    />
+                                    Não
+                                </label>
+                            </div>
+                        </div>
+
+                        {precisaAuditorio === "1" && (
+                            <>
+                                <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-sm font-semibold text-slate-700 shadow-inner shadow-slate-100">
+                                    <input
+                                        type="checkbox"
+                                        checked={auditorioCentro}
+                                        onChange={(e) => setAuditorioCentro(e.target.checked)}
+                                    />
+                                    Centro de Convivência
+                                </label>
+
+                                <label className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-sm font-semibold text-slate-700 shadow-inner shadow-slate-100">
+                                    <span className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={auditorioSede}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setAuditorioSede(checked);
+                                                if (checked) setOpenAuditorioModal(true);
+                                            }}
+                                        />
+                                        Sede
+                                    </span>
+
+                                    {auditorioSede && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setOpenAuditorioModal(true)}
+                                            className="rounded-xl border border-[#00AE9D]/30 bg-white px-3 py-1 text-xs font-bold text-[#006f65] shadow-sm transition hover:bg-[#00AE9D]/10"
+                                        >
+                                            Configurar
+                                        </button>
+                                    )}
+                                </label>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label className={labelBase}>
+                                Precisa de Motorista?
+                            </label>
+                            <div className={choiceGroupBase}>
+                                <label className={choiceLabelBase}>
+                                    <input
+                                        type="radio"
+                                        checked={precisaMotorista === "1"}
+                                        onChange={() => setPrecisaMotorista("1")}
+                                    />
+                                    Sim
+                                </label>
+                                <label className={choiceLabelBase}>
+                                    <input
+                                        type="radio"
+                                        checked={precisaMotorista === "0"}
+                                        onChange={() => setPrecisaMotorista("0")}
+                                    />
+                                    Não
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className={labelBase}>
+                                Precisa de Funcionários?
+                            </label>
+                            <div className={choiceGroupBase}>
+                                <label className={choiceLabelBase}>
+                                    <input
+                                        type="radio"
+                                        checked={precisaFuncionarios === "1"}
+                                        onChange={() => setPrecisaFuncionarios("1")}
+                                    />
+                                    Sim
+                                </label>
+                                <label className={choiceLabelBase}>
+                                    <input
+                                        type="radio"
+                                        checked={precisaFuncionarios === "0"}
+                                        onChange={() => setPrecisaFuncionarios("0")}
+                                    />
+                                    Não
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-5">
+                        <h3 className="text-base font-bold text-[var(--title)]">
+                            Detalhes do patrocínio
+                        </h3>
+                        <p className="mt-1 text-sm text-[var(--paragraph)]">
+                            Explique a solicitação e informe os dados necessários para análise.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label className={labelBase}>
+                            Solicitação
+                        </label>
+                        <textarea
+                            value={solicitacao}
+                            onChange={(e) =>
+                                setSolicitacao(
+                                    limitarTextoPorBytesOracle(
+                                        e.target.value,
+                                        ORACLE_LIMITS.DESC_SOLICITACAO
+                                    )
+                                )
+                            }
+                            className={inputBase}
+                            rows={5}
+                            maxLength={ORACLE_LIMITS.DESC_SOLICITACAO}
+                            placeholder="Detalhe sua solicitação de patrocínio, incluindo evento, datas, valores, contrapartidas e demais informações."
+                        />
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-5">
+                        <h3 className="mb-3 text-base font-bold text-[var(--title)]">
+                            Informações complementares
+                        </h3>
+                        <label className={labelBase}>
+                            Resumo do evento
+                        </label>
+                        <textarea
+                            value={resumoEvento}
+                            onChange={(e) =>
+                                setResumoEvento(
+                                    limitarTextoPorBytesOracle(
+                                        e.target.value,
+                                        ORACLE_LIMITS.DESC_RESUMO_EVENTO
+                                    )
+                                )
+                            }
+                            className={inputBase}
+                            rows={6}
+                            maxLength={ORACLE_LIMITS.DESC_RESUMO_EVENTO}
+                            placeholder="Informe um resumo claro do evento e seu objetivo."
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
+                        <div>
+                            <label className={labelBase}>
+                                Conta na Cooperativa?
+                            </label>
+                            <select
+                                value={contaCooperativa}
+                                onChange={(e) => setContaCooperativa(e.target.value)}
+                                className={inputBase}
+                            >
+                                <option value="">Selecione</option>
+                                <option value="1">Sim</option>
+                                <option value="0">Não</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelBase}>
+                                Vínculo
+                            </label>
+                            <textarea
+                                value={vinculo}
+                                onChange={(e) =>
+                                    setVinculo(
+                                        limitarTextoPorBytesOracle(
+                                            e.target.value,
+                                            ORACLE_LIMITS.DESC_VINCULO
+                                        )
+                                    )
+                                }
+                                className={inputBase}
+                                rows={2}
+                                maxLength={ORACLE_LIMITS.DESC_VINCULO}
+                            />
+                        </div>
+                    </div>
+
+                    {contaCooperativa === "1" && (
+                        <>
+                            <div>
+                                <label className={labelBase}>
+                                    Produtos/Serviços
+                                </label>
+                                <textarea
+                                    value={servicos}
+                                    onChange={(e) =>
+                                        setServicos(
+                                            limitarTextoPorBytesOracle(
+                                                e.target.value,
+                                                ORACLE_LIMITS.DESC_SERVICOS
+                                            )
+                                        )
+                                    }
+                                    className={inputBase}
+                                    rows={2}
+                                    maxLength={ORACLE_LIMITS.DESC_SERVICOS}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <label className={labelBase}>
+                                        Saldo Médio Conta Corrente
+                                    </label>
+                                    <input
+                                        value={saldoMedio}
+                                        onChange={(e) =>
+                                            setSaldoMedio(limitarMoedaOracle(e.target.value))
+                                        }
+                                        className={`${inputBase} text-right`}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className={labelBase}>
+                                        Rentabilidade da Maquininha
+                                    </label>
+                                    <input
+                                        value={rentMaq}
+                                        onChange={(e) =>
+                                            setRentMaq(limitarMoedaOracle(e.target.value))
+                                        }
+                                        className={`${inputBase} text-right`}
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {contaCooperativa && precisaValorMonetario === "1" && (
+                        <section className="space-y-4 rounded-2xl border border-[#00AE9D]/25 bg-[#00AE9D]/5 p-4">
+                            <div>
+                                <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-800 before:h-2 before:w-2 before:rounded-full before:bg-[#00AE9D]">
+                                    Dados para recebimento
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-600">
+                                    Informe os dados da pessoa ou empresa que receberá o pagamento do patrocínio.
+                                </p>
+                            </div>
+
+                            {contaCooperativa === "1" && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div>
+                                            <label className={labelBase}>Favorecido</label>
+                                            <input
+                                                value={nomeFantasia}
+                                                readOnly
+                                                className={inputReadOnlyBase}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={labelBase}>CPF/CNPJ do favorecido</label>
+                                            <input
+                                                value={cpfCnpj}
+                                                readOnly
+                                                className={inputReadOnlyBase}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                        <div>
+                                            <label className={labelBase}>
+                                                Número do banco
+                                            </label>
+                                            <input
+                                                value={numeroBancoCooperativa}
+                                                readOnly
+                                                className={inputReadOnlyBase}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={labelBase}>
+                                                Agência
+                                            </label>
+                                            <input
+                                                value={agenciaCooperativa}
+                                                readOnly
+                                                className={inputReadOnlyBase}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={labelBase}>
+                                                Conta corrente para recebimento
+                                            </label>
+                                            <input
+                                                value={contaCorrenteRecebimento}
+                                                onChange={(e) =>
+                                                    setContaCorrenteRecebimento(
+                                                        limitarTextoPorBytesOracle(
+                                                            e.target.value,
+                                                            ORACLE_LIMITS.NR_CONTA_PAGAMENTO
+                                                        )
+                                                    )
+                                                }
+                                                className={inputBase}
+                                                maxLength={ORACLE_LIMITS.NR_CONTA_PAGAMENTO}
+                                                placeholder="Informe a conta corrente"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {contaCooperativa === "0" && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label className={labelBase}>Nome ou razão social</label>
+                                        <input
+                                            value={nomeFavorecido}
+                                            onChange={(e) =>
+                                                setNomeFavorecido(
+                                                    limitarTextoPorBytesOracle(
+                                                        e.target.value,
+                                                        ORACLE_LIMITS.NM_FAVORECIDO
+                                                    )
+                                                )
+                                            }
+                                            className={inputBase}
+                                            maxLength={ORACLE_LIMITS.NM_FAVORECIDO}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={labelBase}>CPF/CNPJ</label>
+                                        <input
+                                            value={cpfCnpjFavorecido}
+                                            onChange={(e) =>
+                                                setCpfCnpjFavorecido(formatCpfOuCnpj(e.target.value))
+                                            }
+                                            className={inputBase}
+                                            maxLength={18}
+                                            autoComplete="off"
+                                            placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                                        />
+                                    </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                                    <div>
+                                        <label className={labelBase}>Banco</label>
+                                        <input
+                                            value={bancoFavorecido}
+                                            onChange={(e) =>
+                                                setBancoFavorecido(
+                                                    limitarTextoPorBytesOracle(
+                                                        e.target.value,
+                                                        ORACLE_LIMITS.DS_BANCO_PAGAMENTO
+                                                    )
+                                                )
+                                            }
+                                            className={inputBase}
+                                            maxLength={ORACLE_LIMITS.DS_BANCO_PAGAMENTO}
+                                            placeholder="Ex.: Banco do Brasil"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={labelBase}>Agência</label>
+                                        <input
+                                            value={agenciaFavorecido}
+                                            onChange={(e) =>
+                                                setAgenciaFavorecido(
+                                                    limitarTextoPorBytesOracle(
+                                                        e.target.value,
+                                                        ORACLE_LIMITS.NR_AGENCIA_PAGAMENTO
+                                                    )
+                                                )
+                                            }
+                                            className={inputBase}
+                                            maxLength={ORACLE_LIMITS.NR_AGENCIA_PAGAMENTO}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={labelBase}>Conta</label>
+                                        <input
+                                            value={contaBancariaFavorecido}
+                                            onChange={(e) =>
+                                                setContaBancariaFavorecido(
+                                                    limitarTextoPorBytesOracle(
+                                                        e.target.value,
+                                                        ORACLE_LIMITS.NR_CONTA_PAGAMENTO
+                                                    )
+                                                )
+                                            }
+                                            className={inputBase}
+                                            maxLength={ORACLE_LIMITS.NR_CONTA_PAGAMENTO}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={labelBase}>Tipo de conta</label>
+                                        <select
+                                            value={tipoContaFavorecido}
+                                            onChange={(e) => setTipoContaFavorecido(e.target.value)}
+                                            className={inputBase}
+                                        >
+                                            <option value="">Selecione</option>
+                                            <option value="CORRENTE">Conta corrente</option>
+                                            <option value="POUPANCA">Conta poupança</option>
+                                        </select>
+                                    </div>
+                                    </div>
+                                </div>
+                            )}
+                        </section>
+                    )}
+
+                    <div>
+                        <label className={labelBase}>
+                            Já realizou algum evento conosco anteriormente?
+                        </label>
+                        <div className={choiceGroupBase}>
+                            <label className={choiceLabelBase}>
+                                <input
+                                    type="radio"
+                                    checked={eventoAnterior === "1"}
+                                    onChange={() => setEventoAnterior("1")}
+                                />
+                                Sim
+                            </label>
+                            <label className={choiceLabelBase}>
+                                <input
+                                    type="radio"
+                                    checked={eventoAnterior === "0"}
+                                    onChange={() => setEventoAnterior("0")}
+                                />
+                                Não
+                            </label>
+                        </div>
+                    </div>
+
+                    {eventoAnterior === "1" && (
+                        <div>
+                            <label className={labelBase}>
+                                Retorno do último evento
+                            </label>
+                            <textarea
+                                value={retornoUltimoEvento}
+                                onChange={(e) =>
+                                    setRetornoUltimoEvento(
+                                        limitarTextoPorBytesOracle(
+                                            e.target.value,
+                                            ORACLE_LIMITS.DESC_RETORNO_ULTIMO_EVENTO
+                                        )
+                                    )
+                                }
+                                className={inputBase}
+                                rows={5}
+                                maxLength={ORACLE_LIMITS.DESC_RETORNO_ULTIMO_EVENTO}
+                            />
+                        </div>
+                    )}
+
+                    <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                        <div>
+                            <h3 className="text-base font-bold text-[var(--title)]">
+                                Documentos para análise
+                            </h3>
+                            <p className="mt-1 text-sm text-[var(--paragraph)]">
+                                Anexe os documentos obrigatórios para o encaminhamento da solicitação.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label className={labelBase}>
+                                Funcionário
+                            </label>
+                            <input
+                                value={funcionario || "Carregando usuário..."}
+                                readOnly
+                                className={inputReadOnlyBase}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
+                            <div>
+                                <label className={labelBase}>
+                                    Adicionar Ofício
+                                </label>
+                                <input
+                                    ref={oficioInputRef}
+                                    type="file"
+                                    accept="application/pdf,.pdf"
+                                    onChange={(e) =>
+                                        selecionarPdf(
+                                            e.target.files?.[0] || null,
+                                            setOficio,
+                                            oficioInputRef
+                                        )
+                                    }
+                                    className={fileInputBase}
+                                />
+                                <p className="mt-1 text-xs text-slate-500">
+                                    {oficio ? oficio.name : "Nenhum arquivo selecionado"}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className={labelBase}>
+                                    Painel SISBR <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    ref={painelSisbrInputRef}
+                                    type="file"
+                                    accept="application/pdf,.pdf"
+                                    required
+                                    onChange={(e) =>
+                                        selecionarPdf(
+                                            e.target.files?.[0] || null,
+                                            setPainelSisbr,
+                                            painelSisbrInputRef
+                                        )
+                                    }
+                                    className={fileInputBase}
+                                />
+                                <p className="mt-1 text-xs text-slate-500">
+                                    {painelSisbr ? painelSisbr.name : "Nenhum arquivo selecionado"}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 md:grid-cols-[260px_1fr]">
+                        <div>
+                            <label className={labelBase}>
+                                Dia da Solicitação
+                            </label>
+                            <input
+                                type="date"
+                                value={diaSolicitacao}
+                                readOnly
+                                className={inputReadOnlyBase}
+                            />
+                        </div>
+
+                        <div className="flex items-end justify-end">
+                            <button
+                                type="button"
+                                onClick={cadastrar}
+                                disabled={loading || submitLockRef.current}
+                                aria-busy={loading}
+                                className={`${primaryButtonBase} px-6`}
+                            >
+                                {loading ? "Cadastrando..." : "Cadastrar solicitação"}
+                            </button>
+                        </div>
+                    </div>
+            </div>
+            </div>
+
+            {openAuditorioModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4">
+                    <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
+                            <h2 className="text-lg font-black text-slate-950">
+                                Informações importantes para a reserva do Auditório Sede
+                            </h2>
+                            <button
+                                type="button"
+                                onClick={() => setOpenAuditorioModal(false)}
+                                className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-600 transition hover:bg-red-100"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+
+                        <div className="space-y-4 p-6">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_180px]">
+                                <div>
+                                    <label className={labelBase}>
+                                        Estimativa de convidados
+                                    </label>
+                                    <input
+                                        value={auditorio.QTD_ESTIMATIVA_CONVIDADOS}
+                                        onChange={(e) =>
+                                            updateAuditorio("QTD_ESTIMATIVA_CONVIDADOS", e.target.value)
+                                        }
+                                        className={inputBase}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className={labelBase}>
+                                        USO DE MICROFONE?
+                                    </label>
+                                    <select
+                                        value={auditorio.SN_USO_MICROFONE}
+                                        onChange={(e) =>
+                                            updateAuditorio("SN_USO_MICROFONE", e.target.value)
+                                        }
+                                        className={inputBase}
+                                    >
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
+                                    </select>
+                                </div>
+
+                                {auditorio.SN_USO_MICROFONE === "1" && (
+                                    <div>
+                                        <label className={labelBase}>
+                                            Quantos?
+                                        </label>
+                                        <input
+                                            value={auditorio.QNTD_MICROFONE}
+                                            onChange={(e) =>
+                                                updateAuditorio("QNTD_MICROFONE", e.target.value)
+                                            }
+                                            className={inputBase}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
+                                <div>
+                                    <label className={labelBase}>
+                                        USO DE PROJEÇÃO? (DATASHOW/TELA)
+                                    </label>
+                                    <select
+                                        value={auditorio.SN_USO_PROJETOR}
+                                        onChange={(e) =>
+                                            updateAuditorio("SN_USO_PROJETOR", e.target.value)
+                                        }
+                                        className={inputBase}
+                                    >
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
+                                    </select>
+                                </div>
+
+                                {auditorio.SN_USO_PROJETOR === "1" && (
+                                    <div>
+                                        <label className={labelBase}>
+                                            APRESENTAÇÃO VIA
+                                        </label>
+                                        <select
+                                            value={auditorio.NM_APRESENTACAO}
+                                            onChange={(e) =>
+                                                updateAuditorio("NM_APRESENTACAO", e.target.value)
+                                            }
+                                            className={inputBase}
+                                        >
+                                            <option value="">Selecione</option>
+                                            <option value="POSSUI NOTEBOOK PROPRIO">
+                                                NOTEBOOK PRÓPRIO
+                                            </option>
+                                            <option value="PRECISA DE NOTEBOOK DO TI">
+                                                PRECISA DE NOTEBOOK DO TI
+                                            </option>
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr]">
+                                <div>
+                                    <label className={labelBase}>
+                                        USO DE ÁUDIO EXTERNO
+                                    </label>
+                                    <select
+                                        value={auditorio.SN_AUDIO_EXTERNO}
+                                        onChange={(e) =>
+                                            updateAuditorio("SN_AUDIO_EXTERNO", e.target.value)
+                                        }
+                                        className={inputBase}
+                                    >
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className={labelBase}>
+                                        TEM OPERADOR DO SOM/APRESENTAÇÃO?
+                                    </label>
+                                    <select
+                                        value={auditorio.SN_OPERADOR}
+                                        onChange={(e) =>
+                                            updateAuditorio("SN_OPERADOR", e.target.value)
+                                        }
+                                        className={inputBase}
+                                    >
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
+                                <div>
+                                    <label className={labelBase}>
+                                        HAVERÁ TRANSMISSÃO AO VIVO?
+                                    </label>
+                                    <select
+                                        value={auditorio.SN_AO_VIVO}
+                                        onChange={(e) =>
+                                            updateAuditorio("SN_AO_VIVO", e.target.value)
+                                        }
+                                        className={inputBase}
+                                    >
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
+                                    </select>
+                                </div>
+
+                                {auditorio.SN_AO_VIVO === "1" && (
+                                    <div>
+                                        <label className={labelBase}>
+                                            Plataforma
+                                        </label>
+                                        <div className={choiceGroupBase}>
+                                            <label className={choiceLabelBase}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isPlataformaChecked("Youtube")}
+                                                    onChange={(e) =>
+                                                        togglePlataforma("Youtube", e.target.checked)
+                                                    }
+                                                />
+                                                Youtube
+                                            </label>
+                                            <label className={choiceLabelBase}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isPlataformaChecked("Zoom")}
+                                                    onChange={(e) =>
+                                                        togglePlataforma("Zoom", e.target.checked)
+                                                    }
+                                                />
+                                                Zoom
+                                            </label>
+                                            <label className={choiceLabelBase}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isPlataformaChecked("Teams")}
+                                                    onChange={(e) =>
+                                                        togglePlataforma("Teams", e.target.checked)
+                                                    }
+                                                />
+                                                Teams
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
+                                <div>
+                                    <label className={labelBase}>
+                                        INTERNET DEDICADA?
+                                    </label>
+                                    <select
+                                        value={auditorio.SN_INTERNET}
+                                        onChange={(e) =>
+                                            updateAuditorio("SN_INTERNET", e.target.value)
+                                        }
+                                        className={inputBase}
+                                    >
+                                        <option value="">Selecione</option>
+                                        <option value="1">SIM</option>
+                                        <option value="0">NÃO</option>
+                                    </select>
+                                </div>
+
+                                {auditorio.SN_INTERNET === "1" && (
+                                    <div>
+                                        <label className={labelBase}>
+                                            Justifique
+                                        </label>
+                                        <input
+                                            value={auditorio.DESC_JUSTIFICATIVA}
+                                            onChange={(e) =>
+                                                updateAuditorio("DESC_JUSTIFICATIVA", e.target.value)
+                                            }
+                                            className={inputBase}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className={labelBase}>
+                                    Observações adicionais
+                                </label>
+                                <textarea
+                                    value={auditorio.OBS_AUDITORIO_SICOOB_SEDE}
+                                    onChange={(e) =>
+                                        updateAuditorio(
+                                            "OBS_AUDITORIO_SICOOB_SEDE",
+                                            e.target.value
+                                        )
+                                    }
+                                    className={inputBase}
+                                    rows={4}
+                                />
+                            </div>
+
+                            <div className="flex justify-end border-t border-slate-200 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={onSalvarAuditorio}
+                                    className={`${primaryButtonBase} px-5`}
+                                >
+                                    Salvar informações do auditório
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}

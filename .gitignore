@@ -1,0 +1,23 @@
+# Dependências instaladas localmente
+node_modules/
+**/node_modules/
+
+# Arquivos gerados por build
+dist/
+**/dist/
+.next/
+**/.next/
+*.tsbuildinfo
+
+# Configurações e segredos locais
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+
+# Logs, relatórios e arquivos temporários locais
+backend/logs/
+backend/reports/
+tmp_doc_review/
+*.log

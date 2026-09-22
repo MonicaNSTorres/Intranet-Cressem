@@ -1,0 +1,4176 @@
+import { Request, Response } from "express";
+import oracledb from "oracledb";
+import {
+    oracleExecute,
+    setAuditoriaContext,
+} from "../services/oracle.service";
+import { sendEmail } from "../services/email.service";
+
+const EMAIL_CADASTRO = "cadastro.cressem@sicoob.com.br";
+
+async function getConnection() {
+    return await oracledb.getConnection({
+        user: process.env.ORACLE_USER,
+        password: process.env.ORACLE_PASSWORD,
+        connectString: process.env.ORACLE_CONNECT_STRING,
+    });
+}
+
+function somenteNumeros(valor: unknown): string {
+    return String(valor || "").replace(/\D/g, "");
+}
+
+function escaparHtml(valor: unknown): string {
+    return String(valor || "").replace(/[&<>"']/g, (caractere) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+    }[caractere] || caractere));
+}
+
+function formatarCpf(valor: unknown): string {
+    const cpf = somenteNumeros(valor);
+    if (cpf.length === 11) return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`;
+    if (cpf.length === 14) return `${cpf.slice(0, 2)}.${cpf.slice(2, 5)}.${cpf.slice(5, 8)}/${cpf.slice(8, 12)}-${cpf.slice(12)}`;
+    return String(valor || "-");
+}
+
+function montarEmailDesligamentoViaDemissao(desligados: any[], solicitante: string) {
+    const linhas = desligados.map((pessoa) => `
+      <tr>
+        <td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:12px;">${escaparHtml(pessoa.NM_BENEFICIARIO)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:12px;">${formatarCpf(pessoa.NR_CPF)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:12px;">${escaparHtml(pessoa.NM_TIPO_BENEFICIARIO)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:12px;">${escaparHtml(pessoa.NM_TITULAR)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:12px;">${escaparHtml(pessoa.NM_OPERADORA)}<br/>${escaparHtml(pessoa.NM_PLANO)}</td>
+      </tr>`).join("");
+
+    return `<!doctype html><html><body style="margin:0;padding:24px;background:#F6FBFA;font-family:Arial,Helvetica,sans-serif;color:#0F172A;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center"><table role="presentation" width="760" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:760px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:18px;overflow:hidden;border-collapse:separate;"><tr><td style="padding:20px 24px;background:#00AE9D;color:#FFFFFF;"><div style="font-size:10px;line-height:14px;font-weight:bold;letter-spacing:.8px;">INTRANET CRESSEM</div><div style="font-size:18px;line-height:24px;font-weight:bold;margin-top:2px;">Desligamento do convênio odontológico</div></td></tr><tr><td style="padding:22px 24px 18px;"><p style="margin:0 0 13px;font-size:13px;line-height:19px;">O desligamento abaixo foi realizado pelo formulário de Demissão.</p><p style="margin:0 0 16px;font-size:12px;line-height:18px;color:#475569;">Solicitante: <strong>${escaparHtml(solicitante)}</strong> &nbsp;|&nbsp; Data: <strong>${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date())}</strong></p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;border:1px solid #E2E8F0;"><tr style="background:#F8FAFC;"><th align="left" style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:11px;color:#475569;">Beneficiário</th><th align="left" style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:11px;color:#475569;">CPF</th><th align="left" style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:11px;color:#475569;">Tipo</th><th align="left" style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:11px;color:#475569;">Titular</th><th align="left" style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:11px;color:#475569;">Operadora / plano</th></tr>${linhas}</table><p style="margin:16px 0 0;font-size:12px;line-height:18px;color:#475569;">Total de desligados: <strong>${desligados.length}</strong>.</p></td></tr><tr><td style="padding:0 24px 21px;color:#64748B;font-size:11px;line-height:16px;">Mensagem automática da Intranet Cressem.</td></tr></table></td></tr></table></body></html>`;
+}
+
+export const convenioOdontologicoController = {
+    async listarTiposBeneficiario(_req: Request, res: Response) {
+        try {
+            const sql = `
+        SELECT
+          ID_TIPO_BENEFICIARIO,
+          CD_TIPO_BENEFICIARIO,
+          NM_TIPO_BENEFICIARIO
+        FROM DBACRESSEM.ODONTO_TIPO_BENEFICIARIO
+        WHERE SN_ATIVO = 1
+        ORDER BY NM_TIPO_BENEFICIARIO
+      `;
+
+            const result = await oracleExecute(
+                sql,
+                {},
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            return res.json(result.rows || []);
+        } catch (error: any) {
+            console.error("Erro ao listar tipos de beneficiário:", error);
+
+            return res.status(500).json({
+                error: "Erro ao listar tipos de beneficiário.",
+                details: error.message,
+            });
+        }
+    },
+
+    async listarOperadoras(_req: Request, res: Response) {
+        try {
+            const sql = `
+        SELECT
+          ID_OPERADORA,
+          NM_OPERADORA,
+          NR_CNPJ
+        FROM DBACRESSEM.ODONTO_OPERADORA
+        WHERE SN_ATIVO = 1
+        ORDER BY NM_OPERADORA
+      `;
+
+            const result = await oracleExecute(
+                sql,
+                {},
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            return res.json(result.rows || []);
+        } catch (error: any) {
+            console.error("Erro ao listar operadoras:", error);
+
+            return res.status(500).json({
+                error: "Erro ao listar operadoras.",
+                details: error.message,
+            });
+        }
+    },
+
+    async listarEmpresas(_req: Request, res: Response) {
+        try {
+            const sql = `
+        SELECT
+          ID_EMPRESA,
+          NM_EMPRESA,
+          NR_CNPJ
+        FROM DBACRESSEM.ODONTO_EMPRESA
+        WHERE SN_ATIVO = 1
+        ORDER BY NM_EMPRESA
+      `;
+
+            const result = await oracleExecute(
+                sql,
+                {},
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            return res.json(result.rows || []);
+        } catch (error: any) {
+            console.error("Erro ao listar empresas:", error);
+
+            return res.status(500).json({
+                error: "Erro ao listar empresas.",
+                details: error.message,
+            });
+        }
+    },
+
+    async criarEmpresa(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
+        try {
+            const {
+                nomeEmpresa,
+                cnpj,
+                cidade,
+            } = req.body || {};
+
+            const nomeEmpresaLimpo =
+                String(nomeEmpresa || "")
+                    .trim()
+                    .replace(/\s+/g, " ");
+
+            const cnpjLimpo =
+                cnpj
+                    ? somenteNumeros(cnpj)
+                    : null;
+
+            const cidadeLimpa =
+                String(cidade || "")
+                    .trim()
+                    .replace(/\s+/g, " ");
+
+            if (!nomeEmpresaLimpo) {
+                return res.status(400).json({
+                    error:
+                        "Informe o nome da empresa.",
+                });
+            }
+
+            if (
+                cnpjLimpo &&
+                cnpjLimpo.length !== 14
+            ) {
+                return res.status(400).json({
+                    error:
+                        "CNPJ inválido. Informe 14 dígitos.",
+                });
+            }
+
+            if (!cidadeLimpa) {
+                return res.status(400).json({
+                    error:
+                        "Informe a cidade da empresa.",
+                });
+            }
+
+            conn = await getConnection();
+
+            await setAuditoriaContext(
+                conn,
+                req
+            );
+
+            const empresaExistenteResult =
+                await conn.execute(
+                    `
+                SELECT
+                    ID_EMPRESA,
+                    NM_EMPRESA,
+                    NR_CNPJ,
+                    SN_ATIVO
+
+                FROM DBACRESSEM.ODONTO_EMPRESA
+
+                WHERE
+                    UPPER(TRIM(NM_EMPRESA)) =
+                    UPPER(TRIM(:nomeEmpresa))
+
+                FETCH FIRST 1 ROWS ONLY
+                `,
+                    {
+                        nomeEmpresa:
+                            nomeEmpresaLimpo,
+                    },
+                    {
+                        outFormat:
+                            oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            const empresaExistente: any =
+                empresaExistenteResult.rows?.[0];
+
+            if (empresaExistente) {
+                if (
+                    Number(
+                        empresaExistente.SN_ATIVO
+                    ) === 1
+                ) {
+                    return res.status(409).json({
+                        error:
+                            "Já existe uma empresa ativa cadastrada com este nome.",
+                    });
+                }
+
+                return res.status(409).json({
+                    error:
+                        "Já existe uma empresa inativa cadastrada com este nome.",
+                });
+            }
+
+            if (cnpjLimpo) {
+                const empresaCnpjResult =
+                    await conn.execute(
+                        `
+                    SELECT
+                        ID_EMPRESA,
+                        NM_EMPRESA,
+                        SN_ATIVO
+
+                    FROM DBACRESSEM.ODONTO_EMPRESA
+
+                    WHERE
+                        REGEXP_REPLACE(
+                            NR_CNPJ,
+                            '[^0-9]',
+                            ''
+                        ) = :cnpj
+
+                    FETCH FIRST 1 ROWS ONLY
+                    `,
+                        {
+                            cnpj:
+                                cnpjLimpo,
+                        },
+                        {
+                            outFormat:
+                                oracledb.OUT_FORMAT_OBJECT,
+                        }
+                    );
+
+                const empresaCnpj: any =
+                    empresaCnpjResult.rows?.[0];
+
+                if (empresaCnpj) {
+                    return res.status(409).json({
+                        error:
+                            `Já existe uma empresa cadastrada com este CNPJ: ${empresaCnpj.NM_EMPRESA}.`,
+                    });
+                }
+            }
+
+            const result =
+                await conn.execute(
+                    `
+                INSERT INTO DBACRESSEM.ODONTO_EMPRESA (
+                    NM_EMPRESA,
+                    NR_CNPJ,
+                    NM_CIDADE,
+                    DT_CRIACAO,
+                    DT_ATUALIZACAO,
+                    SN_ATIVO
+                )
+                VALUES (
+                    :nomeEmpresa,
+                    :cnpj,
+                    :cidade,
+                    SYSDATE,
+                    NULL,
+                    1
+                )
+                RETURNING ID_EMPRESA
+                INTO :idEmpresa
+                `,
+                    {
+                        nomeEmpresa:
+                            nomeEmpresaLimpo,
+
+                        cnpj:
+                            cnpjLimpo,
+
+                        cidade:
+                            cidadeLimpa,
+
+                        idEmpresa: {
+                            dir:
+                                oracledb.BIND_OUT,
+                            type:
+                                oracledb.NUMBER,
+                        },
+                    },
+                    {
+                        autoCommit: false,
+                    }
+                );
+
+            const outBinds: any =
+                result.outBinds;
+
+            const idEmpresa =
+                Array.isArray(
+                    outBinds?.idEmpresa
+                )
+                    ? outBinds.idEmpresa[0]
+                    : outBinds?.idEmpresa;
+
+            if (!idEmpresa) {
+                throw new Error(
+                    "Não foi possível obter o ID da empresa cadastrada."
+                );
+            }
+
+            await conn.commit();
+
+            return res.status(201).json({
+                success: true,
+
+                message:
+                    "Empresa cadastrada com sucesso.",
+
+                empresa: {
+                    idEmpresa:
+                        Number(idEmpresa),
+
+                    nomeEmpresa:
+                        nomeEmpresaLimpo,
+
+                    cnpj:
+                        cnpjLimpo,
+
+                    cidade:
+                        cidadeLimpa,
+                },
+            });
+        } catch (error: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch { }
+            }
+
+            console.error(
+                "Erro ao cadastrar empresa odontológica:",
+                error
+            );
+
+            if (error?.errorNum === 1) {
+                return res.status(409).json({
+                    error:
+                        "Já existe uma empresa com os dados informados.",
+                });
+            }
+
+            return res.status(500).json({
+                error:
+                    "Erro ao cadastrar empresa.",
+
+                details:
+                    error.message,
+            });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch { }
+            }
+        }
+    },
+
+    async listarPlanos(req: Request, res: Response) {
+        try {
+            const idOperadora = req.query.idOperadora
+                ? Number(req.query.idOperadora)
+                : null;
+
+            const sql = `
+        SELECT
+          P.ID_PLANO,
+          P.ID_OPERADORA,
+          O.NM_OPERADORA,
+          P.NM_PLANO,
+          P.DS_PLANO,
+          P.TP_COBRANCA,
+          P.NR_IDADE_MINIMA,
+          P.NR_IDADE_MAXIMA,
+          P.DT_VIGENCIA_INICIO,
+          P.DT_VIGENCIA_FIM
+        FROM DBACRESSEM.ODONTO_PLANO P
+
+        INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+          ON O.ID_OPERADORA = P.ID_OPERADORA
+
+        WHERE P.SN_ATIVO = 1
+          AND (:idOperadora IS NULL OR P.ID_OPERADORA = :idOperadora)
+
+        ORDER BY
+          O.NM_OPERADORA,
+          P.NM_PLANO
+      `;
+
+            const result = await oracleExecute(
+                sql,
+                {
+                    idOperadora,
+                },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            return res.json(result.rows || []);
+        } catch (error: any) {
+            console.error("Erro ao listar planos:", error);
+
+            return res.status(500).json({
+                error: "Erro ao listar planos.",
+                details: error.message,
+            });
+        }
+    },
+
+    async buscarValorVigentePlano(req: Request, res: Response) {
+        try {
+            const idPlano = Number(req.params.id);
+
+            if (!Number.isInteger(idPlano) || idPlano <= 0) {
+                return res.status(400).json({
+                    error: "Plano inválido.",
+                });
+            }
+
+            const sql = `
+        SELECT
+          PV.ID_PLANO_VALOR,
+          PV.ID_PLANO,
+          P.NM_PLANO,
+          P.TP_COBRANCA,
+          PV.VL_MENSALIDADE,
+          PV.DT_VIGENCIA_INICIO,
+          PV.DT_VIGENCIA_FIM
+        FROM DBACRESSEM.ODONTO_PLANO_VALOR PV
+
+        INNER JOIN DBACRESSEM.ODONTO_PLANO P
+          ON P.ID_PLANO = PV.ID_PLANO
+
+        WHERE PV.ID_PLANO = :idPlano
+
+        AND TRUNC(SYSDATE) >=
+            TRUNC(PV.DT_VIGENCIA_INICIO)
+
+        AND (
+            PV.DT_VIGENCIA_FIM IS NULL
+            OR SYSDATE <= PV.DT_VIGENCIA_FIM
+        )
+
+        ORDER BY
+            PV.DT_VIGENCIA_INICIO DESC
+
+        FETCH FIRST 1 ROWS ONLY
+      `;
+
+            const result = await oracleExecute(
+                sql,
+                { idPlano },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            const row = result.rows?.[0];
+
+            if (!row) {
+                return res.status(404).json({
+                    error: "Valor vigente não encontrado para o plano.",
+                });
+            }
+
+            return res.json(row);
+        } catch (error: any) {
+            console.error("Erro ao buscar valor vigente do plano:", error);
+
+            return res.status(500).json({
+                error: "Erro ao buscar valor vigente do plano.",
+                details: error.message,
+            });
+        }
+    },
+
+    async listarBeneficiarios(req: Request, res: Response) {
+        try {
+            const somenteAtivos =
+                String(req.query.somenteAtivos || "0") === "1";
+
+            const somenteInativos =
+                String(req.query.somenteInativos || "0") === "1";
+
+            const sql = `
+        SELECT
+          B.ID_BENEFICIARIO,
+          B.NM_BENEFICIARIO,
+          B.NR_CPF,
+          B.DT_NASCIMENTO,
+
+          TB.ID_TIPO_BENEFICIARIO,
+          TB.CD_TIPO_BENEFICIARIO,
+          TB.NM_TIPO_BENEFICIARIO,
+
+          E.ID_EMPRESA,
+          E.NM_EMPRESA,
+
+          P.ID_PLANO,
+          P.NM_PLANO,
+          P.TP_COBRANCA,
+
+          O.ID_OPERADORA,
+          O.NM_OPERADORA,
+
+          B.ID_TITULAR,
+          T.NM_BENEFICIARIO AS NM_TITULAR,
+
+          B.NR_MATRICULA,
+          B.DT_INCLUSAO_PLANO,
+          B.DT_EXCLUSAO_PLANO,
+          B.SN_ATIVO,
+
+          PV.VL_MENSALIDADE,
+
+          CC.NR_CONTA_CAPITAL,
+          CC.SN_CONTA_CAPITAL,
+          CC.SN_INDICADOR_POSSUI_INTEGRALIZACAO_INDETERMINADA
+
+        FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+        INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+          ON TB.ID_TIPO_BENEFICIARIO = B.ID_TIPO_BENEFICIARIO
+
+        INNER JOIN DBACRESSEM.ODONTO_EMPRESA E
+          ON E.ID_EMPRESA = B.ID_EMPRESA
+
+        INNER JOIN DBACRESSEM.ODONTO_PLANO P
+          ON P.ID_PLANO = B.ID_PLANO
+
+        INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+          ON O.ID_OPERADORA = P.ID_OPERADORA
+
+        LEFT JOIN DBACRESSEM.ODONTO_BENEFICIARIO T
+          ON T.ID_BENEFICIARIO = B.ID_TITULAR
+
+        LEFT JOIN DBACRESSEM.ODONTO_PLANO_VALOR PV
+          ON PV.ID_PLANO = B.ID_PLANO
+         AND PV.SN_ATIVO = 1
+
+        LEFT JOIN DBACRESSEM.VW_ODONTO_BENEF_CONTA_CAPITAL CC
+          ON CC.ID_BENEFICIARIO = B.ID_BENEFICIARIO
+
+        WHERE (
+            (:somenteAtivos = 0 AND :somenteInativos = 0)
+
+            OR (
+                :somenteAtivos = 1
+                AND B.SN_ATIVO = 1
+            )
+
+            OR (
+                :somenteInativos = 1
+                AND B.SN_ATIVO = 0
+            )
+        )
+
+        ORDER BY B.NM_BENEFICIARIO
+      `;
+
+            const result = await oracleExecute(
+                sql,
+                {
+                    somenteAtivos: somenteAtivos ? 1 : 0,
+                    somenteInativos: somenteInativos ? 1 : 0,
+                },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            return res.json(result.rows || []);
+        } catch (error: any) {
+            console.error("Erro ao listar beneficiários:", error);
+
+            return res.status(500).json({
+                error: "Erro ao listar beneficiários.",
+                details: error.message,
+            });
+        }
+    },
+
+    async relatorioBeneficiarios(
+        req: Request,
+        res: Response
+    ) {
+        try {
+            const idEmpresa =
+                req.query.idEmpresa
+                    ? Number(
+                        req.query.idEmpresa
+                    )
+                    : null;
+
+            const idOperadora =
+                req.query.idOperadora
+                    ? Number(
+                        req.query.idOperadora
+                    )
+                    : null;
+
+            const idPlano =
+                req.query.idPlano
+                    ? Number(
+                        req.query.idPlano
+                    )
+                    : null;
+
+            const cpf =
+                req.query.cpf
+                    ? somenteNumeros(
+                        req.query.cpf
+                    )
+                    : null;
+
+            const valor =
+                req.query.valor !==
+                    undefined &&
+                    req.query.valor !== ""
+                    ? Number(
+                        String(
+                            req.query.valor
+                        ).replace(",", ".")
+                    )
+                    : null;
+
+            const status =
+                req.query.status
+                    ? String(
+                        req.query.status
+                    )
+                        .trim()
+                        .toUpperCase()
+                    : null;
+
+            const tipoCobranca =
+                req.query.tipoCobranca
+                    ? String(
+                        req.query.tipoCobranca
+                    )
+                        .trim()
+                        .toUpperCase()
+                    : null;
+
+            const idTipoBeneficiario =
+                req.query.idTipoBeneficiario
+                    ? Number(
+                        req.query
+                            .idTipoBeneficiario
+                    )
+                    : null;
+
+            const matricula =
+                req.query.matricula
+                    ? String(
+                        req.query.matricula
+                    ).trim()
+                    : null;
+
+            const titular =
+                req.query.titular
+                    ? String(
+                        req.query.titular
+                    ).trim()
+                    : null;
+
+            const titularNumerosBruto =
+                titular
+                    ? somenteNumeros(
+                        titular
+                    )
+                    : "";
+
+            const titularNumeros =
+                titularNumerosBruto
+                    ? titularNumerosBruto
+                    : null;
+
+            const dataInclusaoDe =
+                req.query.dataInclusaoDe
+                    ? String(
+                        req.query.dataInclusaoDe
+                    ).trim()
+                    : null;
+
+            const dataInclusaoAte =
+                req.query.dataInclusaoAte
+                    ? String(
+                        req.query.dataInclusaoAte
+                    ).trim()
+                    : null;
+
+            const dataExclusaoDe =
+                req.query.dataExclusaoDe
+                    ? String(
+                        req.query.dataExclusaoDe
+                    ).trim()
+                    : null;
+
+            const dataExclusaoAte =
+                req.query.dataExclusaoAte
+                    ? String(
+                        req.query.dataExclusaoAte
+                    ).trim()
+                    : null;
+
+            const possuiContaCapital =
+                req.query.possuiContaCapital
+                    ? String(
+                        req.query
+                            .possuiContaCapital
+                    )
+                        .trim()
+                        .toUpperCase()
+                    : null;
+
+            const integralizacaoIndeterminada =
+                req.query
+                    .integralizacaoIndeterminada
+                    ? String(
+                        req.query
+                            .integralizacaoIndeterminada
+                    )
+                        .trim()
+                        .toUpperCase()
+                    : null;
+
+            if (
+                idEmpresa !== null &&
+                (
+                    !Number.isInteger(
+                        idEmpresa
+                    ) ||
+                    idEmpresa <= 0
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Empresa inválida.",
+                    });
+            }
+
+            if (
+                idOperadora !== null &&
+                (
+                    !Number.isInteger(
+                        idOperadora
+                    ) ||
+                    idOperadora <= 0
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Operadora inválida.",
+                    });
+            }
+
+            if (
+                idPlano !== null &&
+                (
+                    !Number.isInteger(
+                        idPlano
+                    ) ||
+                    idPlano <= 0
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Plano inválido.",
+                    });
+            }
+
+            if (
+                idTipoBeneficiario !==
+                null &&
+                (
+                    !Number.isInteger(
+                        idTipoBeneficiario
+                    ) ||
+                    idTipoBeneficiario <= 0
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Tipo de beneficiário inválido.",
+                    });
+            }
+
+            if (
+                cpf !== null &&
+                cpf.length !== 11
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "CPF inválido. Informe 11 dígitos.",
+                    });
+            }
+
+            if (
+                valor !== null &&
+                (
+                    !Number.isFinite(
+                        valor
+                    ) ||
+                    valor < 0
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Valor do plano inválido.",
+                    });
+            }
+
+            if (
+                status !== null &&
+                status !== "ATIVO" &&
+                status !== "INATIVO"
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Status inválido. Utilize ATIVO ou INATIVO.",
+                    });
+            }
+
+            if (
+                tipoCobranca !== null &&
+                tipoCobranca !==
+                "POR_PESSOA" &&
+                tipoCobranca !==
+                "POR_PLANO"
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Tipo de cobrança inválido.",
+                    });
+            }
+
+            if (
+                possuiContaCapital !==
+                null &&
+                possuiContaCapital !==
+                "SIM" &&
+                possuiContaCapital !==
+                "NAO"
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Filtro de Conta Capital inválido. Utilize SIM ou NAO.",
+                    });
+            }
+
+            if (
+                integralizacaoIndeterminada !== null &&
+                integralizacaoIndeterminada !== "SIM" &&
+                integralizacaoIndeterminada !== "NAO"
+            ) {
+                return res.status(400).json({
+                    error:
+                        "Filtro de integralização indeterminada inválido. Utilize SIM ou NAO.",
+                });
+            }
+
+            const regexData =
+                /^\d{4}-\d{2}-\d{2}$/;
+
+            if (
+                dataInclusaoDe &&
+                !regexData.test(
+                    dataInclusaoDe
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Data inicial de inclusão inválida.",
+                    });
+            }
+
+            if (
+                dataInclusaoAte &&
+                !regexData.test(
+                    dataInclusaoAte
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Data final de inclusão inválida.",
+                    });
+            }
+
+            if (
+                dataExclusaoDe &&
+                !regexData.test(
+                    dataExclusaoDe
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Data inicial de exclusão inválida.",
+                    });
+            }
+
+            if (
+                dataExclusaoAte &&
+                !regexData.test(
+                    dataExclusaoAte
+                )
+            ) {
+                return res
+                    .status(400)
+                    .json({
+                        error:
+                            "Data final de exclusão inválida.",
+                    });
+            }
+
+            const sql = `
+            SELECT
+                B.ID_BENEFICIARIO,
+                B.NM_BENEFICIARIO,
+                B.NR_CPF,
+                B.DT_NASCIMENTO,
+
+                TB.ID_TIPO_BENEFICIARIO,
+                TB.CD_TIPO_BENEFICIARIO,
+                TB.NM_TIPO_BENEFICIARIO,
+
+                E.ID_EMPRESA,
+                E.NM_EMPRESA,
+
+                O.ID_OPERADORA,
+                O.NM_OPERADORA,
+
+                P.ID_PLANO,
+                P.NM_PLANO,
+                P.TP_COBRANCA,
+
+                PV.ID_PLANO_VALOR,
+                PV.VL_MENSALIDADE,
+
+                PV.DT_VIGENCIA_INICIO
+                    AS DT_VIGENCIA_INICIO_VALOR,
+
+                PV.DT_VIGENCIA_FIM
+                    AS DT_VIGENCIA_FIM_VALOR,
+
+                B.ID_TITULAR,
+
+                T.NM_BENEFICIARIO
+                    AS NM_TITULAR,
+
+                T.NR_CPF
+                    AS NR_CPF_TITULAR,
+
+                B.NR_MATRICULA,
+
+                B.DT_INCLUSAO_PLANO,
+
+                B.DT_EXCLUSAO_PLANO,
+
+                B.SN_ATIVO,
+
+                CC.NR_CONTA_CAPITAL,
+
+                CC.SN_CONTA_CAPITAL,
+
+                CC.SN_INDICADOR_POSSUI_INTEGRALIZACAO_INDETERMINADA,
+
+                CC.DT_MATRICULA_CONTA_CAPITAL,
+
+                CC.DT_SAIDA_CONTA_CAPITAL,
+
+                CC.DT_MOVIMENTO_CONTA_CAPITAL,
+
+                CC.DT_ATUALIZACAO_CONTA_CAPITAL
+
+            FROM
+                DBACRESSEM.ODONTO_BENEFICIARIO B
+
+            INNER JOIN
+                DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+                ON TB.ID_TIPO_BENEFICIARIO =
+                   B.ID_TIPO_BENEFICIARIO
+
+            INNER JOIN
+                DBACRESSEM.ODONTO_EMPRESA E
+                ON E.ID_EMPRESA =
+                   B.ID_EMPRESA
+
+            INNER JOIN
+                DBACRESSEM.ODONTO_PLANO P
+                ON P.ID_PLANO =
+                   B.ID_PLANO
+
+            INNER JOIN
+                DBACRESSEM.ODONTO_OPERADORA O
+                ON O.ID_OPERADORA =
+                   P.ID_OPERADORA
+
+            LEFT JOIN
+                DBACRESSEM.ODONTO_BENEFICIARIO T
+                ON T.ID_BENEFICIARIO =
+                   B.ID_TITULAR
+
+            LEFT JOIN
+                DBACRESSEM.ODONTO_PLANO_VALOR PV
+                ON PV.ID_PLANO =
+                   B.ID_PLANO
+
+               AND TRUNC(SYSDATE) >=
+                   TRUNC(
+                       PV.DT_VIGENCIA_INICIO
+                   )
+
+               AND (
+                    PV.DT_VIGENCIA_FIM
+                        IS NULL
+
+                    OR SYSDATE <=
+                       PV.DT_VIGENCIA_FIM
+               )
+
+            LEFT JOIN
+                DBACRESSEM.VW_ODONTO_BENEF_CONTA_CAPITAL CC
+                ON CC.ID_BENEFICIARIO =
+                   B.ID_BENEFICIARIO
+
+            WHERE 1 = 1
+
+                AND (
+                    :idEmpresa IS NULL
+
+                    OR B.ID_EMPRESA =
+                       :idEmpresa
+                )
+
+                AND (
+                    :cpf IS NULL
+
+                    OR REGEXP_REPLACE(
+                        B.NR_CPF,
+                        '[^0-9]',
+                        ''
+                    ) = :cpf
+                )
+
+                AND (
+                    :idTipoBeneficiario
+                        IS NULL
+
+                    OR
+                    B.ID_TIPO_BENEFICIARIO =
+                    :idTipoBeneficiario
+                )
+
+                AND (
+                    :idOperadora IS NULL
+
+                    OR O.ID_OPERADORA =
+                       :idOperadora
+                )
+
+                AND (
+                    :idPlano IS NULL
+
+                    OR P.ID_PLANO =
+                       :idPlano
+                )
+
+                AND (
+                    :valor IS NULL
+
+                    OR ROUND(
+                        PV.VL_MENSALIDADE,
+                        2
+                    ) =
+                    ROUND(
+                        :valor,
+                        2
+                    )
+                )
+
+                AND (
+                    :tipoCobranca IS NULL
+
+                    OR P.TP_COBRANCA =
+                       :tipoCobranca
+                )
+
+                AND (
+                    :status IS NULL
+
+                    OR (
+                        :status =
+                            'ATIVO'
+
+                        AND B.SN_ATIVO =
+                            1
+                    )
+
+                    OR (
+                        :status =
+                            'INATIVO'
+
+                        AND B.SN_ATIVO =
+                            0
+                    )
+                )
+
+                AND (
+                    :matricula IS NULL
+
+                    OR UPPER(
+                        NVL(
+                            B.NR_MATRICULA,
+                            ''
+                        )
+                    )
+                    LIKE
+                        '%' ||
+                        UPPER(
+                            :matricula
+                        ) ||
+                        '%'
+                )
+
+                AND (
+                    :titular IS NULL
+
+                    OR (
+                        TB.CD_TIPO_BENEFICIARIO =
+                            'TITULAR'
+
+                        AND (
+                            UPPER(
+                                B.NM_BENEFICIARIO
+                            )
+                            LIKE
+                                '%' ||
+                                UPPER(
+                                    :titular
+                                ) ||
+                                '%'
+
+                            OR (
+                                :titularNumeros
+                                    IS NOT NULL
+
+                                AND
+                                REGEXP_REPLACE(
+                                    B.NR_CPF,
+                                    '[^0-9]',
+                                    ''
+                                ) =
+                                :titularNumeros
+                            )
+                        )
+                    )
+
+                    OR (
+                        B.ID_TITULAR
+                            IS NOT NULL
+
+                        AND (
+                            UPPER(
+                                T.NM_BENEFICIARIO
+                            )
+                            LIKE
+                                '%' ||
+                                UPPER(
+                                    :titular
+                                ) ||
+                                '%'
+
+                            OR (
+                                :titularNumeros
+                                    IS NOT NULL
+
+                                AND
+                                REGEXP_REPLACE(
+                                    T.NR_CPF,
+                                    '[^0-9]',
+                                    ''
+                                ) =
+                                :titularNumeros
+                            )
+                        )
+                    )
+                )
+
+                AND (
+                    :dataInclusaoDe
+                        IS NULL
+
+                    OR
+                    B.DT_INCLUSAO_PLANO >=
+                    TO_DATE(
+                        :dataInclusaoDe,
+                        'YYYY-MM-DD'
+                    )
+                )
+
+                AND (
+                    :dataInclusaoAte
+                        IS NULL
+
+                    OR
+                    B.DT_INCLUSAO_PLANO <
+                    TO_DATE(
+                        :dataInclusaoAte,
+                        'YYYY-MM-DD'
+                    ) + 1
+                )
+
+                AND (
+                    :dataExclusaoDe
+                        IS NULL
+
+                    OR
+                    B.DT_EXCLUSAO_PLANO >=
+                    TO_DATE(
+                        :dataExclusaoDe,
+                        'YYYY-MM-DD'
+                    )
+                )
+
+                AND (
+                    :dataExclusaoAte
+                        IS NULL
+
+                    OR
+                    B.DT_EXCLUSAO_PLANO <
+                    TO_DATE(
+                        :dataExclusaoAte,
+                        'YYYY-MM-DD'
+                    ) + 1
+                )
+
+                AND (
+                    :possuiContaCapital
+                        IS NULL
+
+                    OR (
+                        :possuiContaCapital =
+                            'SIM'
+
+                        AND
+                        CC.NR_CONTA_CAPITAL
+                            IS NOT NULL
+                    )
+
+                    OR (
+                        :possuiContaCapital =
+                            'NAO'
+
+                        AND
+                        CC.NR_CONTA_CAPITAL
+                            IS NULL
+                    )
+                )
+
+                AND (
+                :integralizacaoIndeterminada IS NULL
+
+                OR (
+                    :integralizacaoIndeterminada = 'SIM'
+                    AND UPPER(
+                        NVL(
+                            CC.SN_INDICADOR_POSSUI_INTEGRALIZACAO_INDETERMINADA,
+                            'NAO'
+                        )
+                    ) IN ('SIM', 'S')
+                )
+
+                OR (
+                    :integralizacaoIndeterminada = 'NAO'
+                    AND UPPER(
+                        NVL(
+                            CC.SN_INDICADOR_POSSUI_INTEGRALIZACAO_INDETERMINADA,
+                            'NAO'
+                        )
+                    ) IN ('NAO', 'N')
+                )
+            )
+
+            ORDER BY
+                B.NM_BENEFICIARIO
+        `;
+
+            const result =
+                await oracleExecute(
+                    sql,
+                    {
+                        idEmpresa,
+
+                        cpf,
+
+                        idTipoBeneficiario,
+
+                        idOperadora,
+
+                        idPlano,
+
+                        valor,
+
+                        status,
+
+                        tipoCobranca,
+
+                        matricula,
+
+                        titular,
+
+                        titularNumeros,
+
+                        dataInclusaoDe,
+
+                        dataInclusaoAte,
+
+                        dataExclusaoDe,
+
+                        dataExclusaoAte,
+
+                        possuiContaCapital,
+
+                        integralizacaoIndeterminada,
+                    },
+                    {
+                        outFormat:
+                            oracledb
+                                .OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            return res
+                .status(200)
+                .json(
+                    result.rows || []
+                );
+        } catch (error: any) {
+            console.error(
+                "Erro ao gerar relatório de beneficiários odontológicos:",
+                error
+            );
+
+            return res
+                .status(500)
+                .json({
+                    error:
+                        "Erro ao consultar relatório de beneficiários.",
+
+                    details:
+                        error.message,
+                });
+        }
+    },
+
+    async buscarBeneficiarioPorCpf(req: Request, res: Response) {
+        try {
+            const cpf = somenteNumeros(req.params.cpf);
+
+            if (cpf.length !== 11) {
+                return res.status(400).json({
+                    error: "CPF inválido. Informe 11 dígitos.",
+                });
+            }
+
+            const sql = `
+        SELECT
+          B.ID_BENEFICIARIO,
+          B.NM_BENEFICIARIO,
+          B.NR_CPF,
+          B.DT_NASCIMENTO,
+          B.ID_TIPO_BENEFICIARIO,
+          B.ID_EMPRESA,
+          B.ID_PLANO,
+          B.ID_TITULAR,
+          B.NR_MATRICULA,
+          B.DT_INCLUSAO_PLANO,
+          B.DT_EXCLUSAO_PLANO,
+          B.DS_OBSERVACAO,
+          B.SN_ATIVO,
+
+          CC.NR_CONTA_CAPITAL,
+          CC.DT_MATRICULA_CONTA_CAPITAL,
+          CC.DT_SAIDA_CONTA_CAPITAL,
+          CC.SN_CONTA_CAPITAL,
+          CC.SN_INDICADOR_POSSUI_INTEGRALIZACAO_INDETERMINADA,
+          CC.DT_MOVIMENTO_CONTA_CAPITAL,
+          CC.DT_ATUALIZACAO_CONTA_CAPITAL
+
+        FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+        LEFT JOIN DBACRESSEM.VW_ODONTO_BENEF_CONTA_CAPITAL CC
+          ON CC.ID_BENEFICIARIO = B.ID_BENEFICIARIO
+
+        WHERE B.NR_CPF = :cpf
+          AND B.SN_ATIVO = 1
+      `;
+
+            const result = await oracleExecute(
+                sql,
+                { cpf },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            const row = result.rows?.[0];
+
+            if (!row) {
+                return res.status(404).json({
+                    error: "Beneficiário ativo não encontrado.",
+                });
+            }
+
+            return res.json(row);
+        } catch (error: any) {
+            console.error("Erro ao buscar beneficiário por CPF:", error);
+
+            return res.status(500).json({
+                error: "Erro ao buscar beneficiário por CPF.",
+                details: error.message,
+            });
+        }
+    },
+
+    async buscarBeneficiarioPorId(req: Request, res: Response) {
+        try {
+            const id = Number(req.params.id);
+
+            if (!Number.isInteger(id) || id <= 0) {
+                return res.status(400).json({
+                    error: "ID do beneficiário inválido.",
+                });
+            }
+
+            const sql = `
+        SELECT
+          B.ID_BENEFICIARIO,
+          B.NM_BENEFICIARIO,
+          B.NR_CPF,
+          B.DT_NASCIMENTO,
+
+          B.ID_TIPO_BENEFICIARIO,
+          TB.CD_TIPO_BENEFICIARIO,
+          TB.NM_TIPO_BENEFICIARIO,
+
+          B.ID_EMPRESA,
+          E.NM_EMPRESA,
+
+          B.ID_PLANO,
+          P.NM_PLANO,
+          P.TP_COBRANCA,
+
+          O.ID_OPERADORA,
+          O.NM_OPERADORA,
+
+          B.ID_TITULAR,
+          T.NM_BENEFICIARIO AS NM_TITULAR,
+
+          B.NR_MATRICULA,
+          B.DT_INCLUSAO_PLANO,
+          B.DT_EXCLUSAO_PLANO,
+          B.DS_OBSERVACAO,
+          B.SN_ATIVO,
+
+          PV.VL_MENSALIDADE,
+
+          CC.NR_CONTA_CAPITAL,
+          CC.DT_MATRICULA_CONTA_CAPITAL,
+          CC.DT_SAIDA_CONTA_CAPITAL,
+          CC.SN_CONTA_CAPITAL,
+          CC.SN_INDICADOR_POSSUI_INTEGRALIZACAO_INDETERMINADA,
+          CC.DT_MOVIMENTO_CONTA_CAPITAL,
+          CC.DT_ATUALIZACAO_CONTA_CAPITAL
+
+        FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+        INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+          ON TB.ID_TIPO_BENEFICIARIO = B.ID_TIPO_BENEFICIARIO
+
+        INNER JOIN DBACRESSEM.ODONTO_EMPRESA E
+          ON E.ID_EMPRESA = B.ID_EMPRESA
+
+        INNER JOIN DBACRESSEM.ODONTO_PLANO P
+          ON P.ID_PLANO = B.ID_PLANO
+
+        INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+          ON O.ID_OPERADORA = P.ID_OPERADORA
+
+        LEFT JOIN DBACRESSEM.ODONTO_BENEFICIARIO T
+          ON T.ID_BENEFICIARIO = B.ID_TITULAR
+
+        LEFT JOIN DBACRESSEM.ODONTO_PLANO_VALOR PV
+          ON PV.ID_PLANO = B.ID_PLANO
+         AND PV.SN_ATIVO = 1
+
+        LEFT JOIN DBACRESSEM.VW_ODONTO_BENEF_CONTA_CAPITAL CC
+          ON CC.ID_BENEFICIARIO = B.ID_BENEFICIARIO
+
+        WHERE B.ID_BENEFICIARIO = :id
+      `;
+
+            const result = await oracleExecute(
+                sql,
+                { id },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            const row = result.rows?.[0];
+
+            if (!row) {
+                return res.status(404).json({
+                    error: "Beneficiário não encontrado.",
+                });
+            }
+
+            return res.json(row);
+        } catch (error: any) {
+            console.error("Erro ao buscar beneficiário por ID:", error);
+
+            return res.status(500).json({
+                error: "Erro ao buscar beneficiário por ID.",
+                details: error.message,
+            });
+        }
+    },
+
+    async listarHistoricoEmpresasBeneficiario(
+        req: Request,
+        res: Response
+    ) {
+        try {
+            const idBeneficiario = Number(
+                req.params.id
+            );
+
+            if (
+                !Number.isInteger(idBeneficiario) ||
+                idBeneficiario <= 0
+            ) {
+                return res.status(400).json({
+                    error:
+                        "ID do beneficiário inválido.",
+                });
+            }
+
+            const beneficiarioResult =
+                await oracleExecute(
+                    `
+                SELECT
+                    ID_BENEFICIARIO,
+                    NM_BENEFICIARIO,
+                    NR_CPF
+                FROM DBACRESSEM.ODONTO_BENEFICIARIO
+                WHERE ID_BENEFICIARIO =
+                      :idBeneficiario
+                `,
+                    {
+                        idBeneficiario,
+                    },
+                    {
+                        outFormat:
+                            oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            const beneficiario =
+                beneficiarioResult.rows?.[0];
+
+            if (!beneficiario) {
+                return res.status(404).json({
+                    error:
+                        "Beneficiário não encontrado.",
+                });
+            }
+
+            const historicoResult =
+                await oracleExecute(
+                    `
+                SELECT
+                    H.ID_HISTORICO,
+                    H.ID_BENEFICIARIO,
+                    H.ID_EMPRESA,
+
+                    E.NM_EMPRESA,
+                    E.NR_CNPJ,
+
+                    H.DT_INICIO,
+                    H.DT_FIM,
+
+                    H.NM_USUARIO_CRIACAO,
+                    H.LOGIN_USUARIO_CRIACAO,
+                    H.DT_CRIACAO,
+
+                    CASE
+                        WHEN H.DT_FIM IS NULL
+                        THEN 'ATUAL'
+                        ELSE 'ENCERRADO'
+                    END AS STATUS_VINCULO
+
+                FROM
+                    DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST H
+
+                INNER JOIN
+                    DBACRESSEM.ODONTO_EMPRESA E
+                    ON E.ID_EMPRESA =
+                       H.ID_EMPRESA
+
+                WHERE
+                    H.ID_BENEFICIARIO =
+                    :idBeneficiario
+
+                ORDER BY
+                    H.DT_INICIO DESC,
+                    H.ID_HISTORICO DESC
+                `,
+                    {
+                        idBeneficiario,
+                    },
+                    {
+                        outFormat:
+                            oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            return res.status(200).json({
+                beneficiario,
+                historico:
+                    historicoResult.rows || [],
+            });
+        } catch (error: any) {
+            console.error(
+                "Erro ao listar histórico de empresas do beneficiário:",
+                error
+            );
+
+            return res.status(500).json({
+                error:
+                    "Erro ao consultar histórico de empresas do beneficiário.",
+                details:
+                    error.message,
+            });
+        }
+    },
+
+    async listarDependentes(req: Request, res: Response) {
+        try {
+            const idTitular = Number(req.params.id);
+
+            if (!Number.isInteger(idTitular) || idTitular <= 0) {
+                return res.status(400).json({
+                    error: "ID do titular inválido.",
+                });
+            }
+
+            const sql = `
+        SELECT
+          B.ID_BENEFICIARIO,
+          B.NM_BENEFICIARIO,
+          B.NR_CPF,
+          B.DT_NASCIMENTO,
+          B.ID_TIPO_BENEFICIARIO,
+          B.ID_EMPRESA,
+          B.ID_PLANO,
+          P.NM_PLANO,
+          B.ID_TITULAR,
+          B.NR_MATRICULA,
+          B.DT_INCLUSAO_PLANO,
+          B.DT_EXCLUSAO_PLANO,
+          B.SN_ATIVO
+        FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+        INNER JOIN DBACRESSEM.ODONTO_PLANO P
+          ON P.ID_PLANO = B.ID_PLANO
+
+        WHERE B.ID_TITULAR = :idTitular
+
+        ORDER BY B.NM_BENEFICIARIO
+      `;
+
+            const result = await oracleExecute(
+                sql,
+                { idTitular },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            return res.json(result.rows || []);
+        } catch (error: any) {
+            console.error("Erro ao listar dependentes:", error);
+
+            return res.status(500).json({
+                error: "Erro ao listar dependentes.",
+                details: error.message,
+            });
+        }
+    },
+
+    async criarBeneficiario(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
+        try {
+            const {
+                nome,
+                cpf,
+                dataNascimento,
+                idTipoBeneficiario,
+                idEmpresa,
+                idPlano,
+                idTitular,
+                nrMatricula,
+                observacao,
+                nomeUsuario,
+                loginUsuario,
+            } = req.body;
+
+            const cpfLimpo = somenteNumeros(cpf);
+
+            if (!nome || String(nome).trim() === "") {
+                return res.status(400).json({
+                    error: "Nome do beneficiário é obrigatório.",
+                });
+            }
+
+            if (cpfLimpo.length !== 11) {
+                return res.status(400).json({
+                    error: "CPF inválido. Informe 11 dígitos.",
+                });
+            }
+
+            if (!dataNascimento) {
+                return res.status(400).json({
+                    error: "Data de nascimento é obrigatória.",
+                });
+            }
+
+            if (!Number.isInteger(Number(idTipoBeneficiario))) {
+                return res.status(400).json({
+                    error: "Tipo de beneficiário inválido.",
+                });
+            }
+
+            if (
+                !Number.isInteger(Number(idEmpresa)) ||
+                Number(idEmpresa) <= 0
+            ) {
+                return res.status(400).json({
+                    error: "Selecione uma empresa válida.",
+                });
+            }
+
+            if (!Number.isInteger(Number(idPlano))) {
+                return res.status(400).json({
+                    error: "Plano inválido.",
+                });
+            }
+
+            conn = await getConnection();
+
+            await setAuditoriaContext(conn, req);
+
+            const beneficiarioExistente = await conn.execute(
+                `
+          SELECT
+            ID_BENEFICIARIO
+          FROM DBACRESSEM.ODONTO_BENEFICIARIO
+          WHERE NR_CPF = :cpf
+            AND SN_ATIVO = 1
+          FETCH FIRST 1 ROWS ONLY
+        `,
+                {
+                    cpf: cpfLimpo,
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            if (beneficiarioExistente.rows?.length) {
+                return res.status(409).json({
+                    error: "Já existe um beneficiário ativo cadastrado com este CPF.",
+                });
+            }
+
+            const tipoResult = await conn.execute(
+                `
+          SELECT
+            ID_TIPO_BENEFICIARIO,
+            CD_TIPO_BENEFICIARIO,
+            NM_TIPO_BENEFICIARIO
+          FROM DBACRESSEM.ODONTO_TIPO_BENEFICIARIO
+          WHERE ID_TIPO_BENEFICIARIO = :idTipoBeneficiario
+            AND SN_ATIVO = 1
+        `,
+                {
+                    idTipoBeneficiario: Number(idTipoBeneficiario),
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const tipo: any = tipoResult.rows?.[0];
+
+            if (!tipo) {
+                return res.status(400).json({
+                    error: "Tipo de beneficiário não encontrado ou inativo.",
+                });
+            }
+
+            const empresaResult = await conn.execute(
+                `
+          SELECT
+            ID_EMPRESA
+          FROM DBACRESSEM.ODONTO_EMPRESA
+          WHERE ID_EMPRESA = :idEmpresa
+            AND SN_ATIVO = 1
+        `,
+                {
+                    idEmpresa: Number(idEmpresa),
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            if (!empresaResult.rows?.length) {
+                return res.status(400).json({
+                    error: "Empresa não encontrada ou inativa.",
+                });
+            }
+
+            const idEmpresaFinal = Number(idEmpresa);
+
+            const planoResult = await conn.execute(
+                `
+          SELECT
+            ID_PLANO,
+            ID_OPERADORA,
+            NM_PLANO,
+            TP_COBRANCA,
+            NR_IDADE_MINIMA,
+            NR_IDADE_MAXIMA
+          FROM DBACRESSEM.ODONTO_PLANO
+          WHERE ID_PLANO = :idPlano
+            AND SN_ATIVO = 1
+        `,
+                {
+                    idPlano: Number(idPlano),
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const plano: any = planoResult.rows?.[0];
+
+            if (!plano) {
+                return res.status(400).json({
+                    error: "Plano não encontrado ou inativo.",
+                });
+            }
+
+            const valorPlanoResult = await conn.execute(
+                `
+          SELECT
+            ID_PLANO_VALOR,
+            VL_MENSALIDADE,
+            DT_VIGENCIA_INICIO,
+            DT_VIGENCIA_FIM
+          FROM DBACRESSEM.ODONTO_PLANO_VALOR
+          WHERE ID_PLANO = :idPlano
+            AND SN_ATIVO = 1
+          FETCH FIRST 1 ROWS ONLY
+        `,
+                {
+                    idPlano: Number(idPlano),
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            if (!valorPlanoResult.rows?.length) {
+                return res.status(400).json({
+                    error: "O plano selecionado não possui valor vigente cadastrado.",
+                });
+            }
+
+            let idTitularFinal: number | null = null;
+
+            if (tipo.CD_TIPO_BENEFICIARIO === "TITULAR") {
+                idTitularFinal = null;
+            }
+
+            if (tipo.CD_TIPO_BENEFICIARIO === "DEPENDENTE") {
+                const idTitularNumero = Number(idTitular);
+
+                if (!Number.isInteger(idTitularNumero) || idTitularNumero <= 0) {
+                    return res.status(400).json({
+                        error:
+                            "Beneficiário dependente deve possuir um titular vinculado.",
+                    });
+                }
+
+                const titularResult = await conn.execute(
+                    `
+            SELECT
+              B.ID_BENEFICIARIO,
+              B.NM_BENEFICIARIO,
+              B.SN_ATIVO,
+              TB.CD_TIPO_BENEFICIARIO
+            FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+            INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+              ON TB.ID_TIPO_BENEFICIARIO = B.ID_TIPO_BENEFICIARIO
+
+            WHERE B.ID_BENEFICIARIO = :idTitular
+              AND B.SN_ATIVO = 1
+          `,
+                    {
+                        idTitular: idTitularNumero,
+                    },
+                    {
+                        outFormat: oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+                const titular: any = titularResult.rows?.[0];
+
+                if (!titular) {
+                    return res.status(400).json({
+                        error: "Titular informado não foi encontrado ou está inativo.",
+                    });
+                }
+
+                if (titular.CD_TIPO_BENEFICIARIO !== "TITULAR") {
+                    return res.status(400).json({
+                        error:
+                            "O beneficiário informado como titular não possui o tipo TITULAR.",
+                    });
+                }
+
+                idTitularFinal = idTitularNumero;
+            }
+
+            const result = await conn.execute(
+                `
+          INSERT INTO DBACRESSEM.ODONTO_BENEFICIARIO (
+            NM_BENEFICIARIO,
+            NR_CPF,
+            DT_NASCIMENTO,
+            ID_TIPO_BENEFICIARIO,
+            ID_EMPRESA,
+            ID_PLANO,
+            ID_TITULAR,
+            NR_MATRICULA,
+            DT_INCLUSAO_PLANO,
+            DS_OBSERVACAO,
+            NM_USUARIO_CRIACAO,
+            LOGIN_USUARIO_CRIACAO,
+            DT_CRIACAO,
+            SN_ATIVO
+          )
+          VALUES (
+            :nome,
+            :cpf,
+            TO_DATE(:dataNascimento, 'YYYY-MM-DD'),
+            :idTipoBeneficiario,
+            :idEmpresa,
+            :idPlano,
+            :idTitular,
+            :nrMatricula,
+            SYSDATE,
+            :observacao,
+            :nomeUsuario,
+            :loginUsuario,
+            SYSDATE,
+            1
+          )
+          RETURNING ID_BENEFICIARIO
+          INTO :idBeneficiario
+        `,
+                {
+                    nome: String(nome).trim(),
+                    cpf: cpfLimpo,
+                    dataNascimento,
+                    idTipoBeneficiario: Number(idTipoBeneficiario),
+                    idEmpresa: idEmpresaFinal,
+                    idPlano: Number(idPlano),
+                    idTitular: idTitularFinal,
+                    nrMatricula: nrMatricula || null,
+                    observacao: observacao || null,
+                    nomeUsuario: nomeUsuario || null,
+                    loginUsuario: loginUsuario || null,
+
+                    idBeneficiario: {
+                        dir: oracledb.BIND_OUT,
+                        type: oracledb.NUMBER,
+                    },
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            const outBinds: any = result.outBinds;
+
+            const idBeneficiario =
+                Array.isArray(outBinds?.idBeneficiario)
+                    ? outBinds.idBeneficiario[0]
+                    : outBinds?.idBeneficiario;
+
+            if (!idBeneficiario) {
+                throw new Error(
+                    "Não foi possível obter o ID do beneficiário cadastrado."
+                );
+            }
+
+            await conn.execute(
+                `
+          INSERT INTO DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST (
+            ID_BENEFICIARIO,
+            ID_EMPRESA,
+            DT_INICIO,
+            DT_FIM,
+            NM_USUARIO_CRIACAO,
+            LOGIN_USUARIO_CRIACAO,
+            DT_CRIACAO
+          )
+          VALUES (
+            :idBeneficiario,
+            :idEmpresa,
+            SYSDATE,
+            NULL,
+            :nomeUsuario,
+            :loginUsuario,
+            SYSDATE
+          )
+        `,
+                {
+                    idBeneficiario: Number(idBeneficiario),
+                    idEmpresa: idEmpresaFinal,
+                    nomeUsuario: nomeUsuario || null,
+                    loginUsuario: loginUsuario || null,
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            await conn.commit();
+
+            return res.status(201).json({
+                success: true,
+                message: "Beneficiário cadastrado com sucesso.",
+                idBeneficiario,
+            });
+        } catch (error: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch { }
+            }
+
+            console.error("Erro ao criar beneficiário:", error);
+
+            if (error?.errorNum === 1) {
+                return res.status(409).json({
+                    error: "Já existe um beneficiário ativo cadastrado com este CPF.",
+                });
+            }
+
+            return res.status(500).json({
+                error: "Erro ao cadastrar beneficiário.",
+                details: error.message,
+            });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch { }
+            }
+        }
+    },
+
+    async editarBeneficiario(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
+        try {
+            const id = Number(req.params.id);
+
+            if (!Number.isInteger(id) || id <= 0) {
+                return res.status(400).json({
+                    error: "ID do beneficiário inválido.",
+                });
+            }
+
+            const {
+                nome,
+                cpf,
+                dataNascimento,
+                idTipoBeneficiario,
+                idEmpresa,
+                idPlano,
+                idTitular,
+                nrMatricula,
+                observacao,
+                nomeUsuario,
+                loginUsuario,
+            } = req.body;
+
+            const cpfLimpo = somenteNumeros(cpf);
+
+            if (!nome || String(nome).trim() === "") {
+                return res.status(400).json({
+                    error: "Nome do beneficiário é obrigatório.",
+                });
+            }
+
+            if (cpfLimpo.length !== 11) {
+                return res.status(400).json({
+                    error: "CPF inválido. Informe 11 dígitos.",
+                });
+            }
+
+            if (!dataNascimento) {
+                return res.status(400).json({
+                    error: "Data de nascimento é obrigatória.",
+                });
+            }
+
+            conn = await getConnection();
+
+            await setAuditoriaContext(conn, req);
+
+            const existenteResult = await conn.execute(
+                `
+            SELECT
+                ID_BENEFICIARIO,
+                ID_EMPRESA,
+                SN_ATIVO
+            FROM DBACRESSEM.ODONTO_BENEFICIARIO
+            WHERE ID_BENEFICIARIO = :id
+            FOR UPDATE
+            `,
+                { id },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const existente: any = existenteResult.rows?.[0];
+
+            if (!existente) {
+                return res.status(404).json({
+                    error: "Beneficiário não encontrado.",
+                });
+            }
+
+            const idEmpresaAnterior =
+                Number(existente.ID_EMPRESA);
+
+            const idEmpresaNova =
+                Number(idEmpresa);
+
+            const empresaFoiAlterada =
+                idEmpresaAnterior !== idEmpresaNova;
+
+            const cpfResult = await conn.execute(
+                `
+            SELECT ID_BENEFICIARIO
+            FROM DBACRESSEM.ODONTO_BENEFICIARIO
+            WHERE NR_CPF = :cpf
+              AND SN_ATIVO = 1
+              AND ID_BENEFICIARIO <> :id
+            FETCH FIRST 1 ROWS ONLY
+            `,
+                {
+                    cpf: cpfLimpo,
+                    id,
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            if (cpfResult.rows?.length) {
+                return res.status(409).json({
+                    error:
+                        "Já existe outro beneficiário ativo cadastrado com este CPF.",
+                });
+            }
+
+            const tipoResult = await conn.execute(
+                `
+            SELECT
+                ID_TIPO_BENEFICIARIO,
+                CD_TIPO_BENEFICIARIO
+            FROM DBACRESSEM.ODONTO_TIPO_BENEFICIARIO
+            WHERE ID_TIPO_BENEFICIARIO = :idTipoBeneficiario
+              AND SN_ATIVO = 1
+            `,
+                {
+                    idTipoBeneficiario:
+                        Number(idTipoBeneficiario),
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const tipo: any = tipoResult.rows?.[0];
+
+            if (!tipo) {
+                return res.status(400).json({
+                    error:
+                        "Tipo de beneficiário não encontrado ou inativo.",
+                });
+            }
+
+            const empresaResult = await conn.execute(
+                `
+            SELECT ID_EMPRESA
+            FROM DBACRESSEM.ODONTO_EMPRESA
+            WHERE ID_EMPRESA = :idEmpresa
+              AND SN_ATIVO = 1
+            `,
+                {
+                    idEmpresa: idEmpresaNova,
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            if (!empresaResult.rows?.length) {
+                return res.status(400).json({
+                    error:
+                        "Empresa não encontrada ou inativa.",
+                });
+            }
+
+            const planoResult = await conn.execute(
+                `
+            SELECT ID_PLANO
+            FROM DBACRESSEM.ODONTO_PLANO
+            WHERE ID_PLANO = :idPlano
+              AND SN_ATIVO = 1
+            `,
+                {
+                    idPlano: Number(idPlano),
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            if (!planoResult.rows?.length) {
+                return res.status(400).json({
+                    error:
+                        "Plano não encontrado ou inativo.",
+                });
+            }
+
+            const valorResult = await conn.execute(
+                `
+            SELECT ID_PLANO_VALOR
+            FROM DBACRESSEM.ODONTO_PLANO_VALOR
+            WHERE ID_PLANO = :idPlano
+              AND SN_ATIVO = 1
+            FETCH FIRST 1 ROWS ONLY
+            `,
+                {
+                    idPlano: Number(idPlano),
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            if (!valorResult.rows?.length) {
+                return res.status(400).json({
+                    error:
+                        "O plano selecionado não possui valor vigente cadastrado.",
+                });
+            }
+
+            let idTitularFinal: number | null = null;
+
+            if (
+                tipo.CD_TIPO_BENEFICIARIO ===
+                "DEPENDENTE"
+            ) {
+                const idTitularNumero =
+                    Number(idTitular);
+
+                if (
+                    !Number.isInteger(
+                        idTitularNumero
+                    ) ||
+                    idTitularNumero <= 0
+                ) {
+                    return res.status(400).json({
+                        error:
+                            "Beneficiário dependente deve possuir um titular vinculado.",
+                    });
+                }
+
+                if (idTitularNumero === id) {
+                    return res.status(400).json({
+                        error:
+                            "O beneficiário não pode ser titular de si mesmo.",
+                    });
+                }
+
+                const titularResult =
+                    await conn.execute(
+                        `
+                    SELECT
+                        B.ID_BENEFICIARIO,
+                        B.SN_ATIVO,
+                        TB.CD_TIPO_BENEFICIARIO
+                    FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+                    INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+                        ON TB.ID_TIPO_BENEFICIARIO =
+                           B.ID_TIPO_BENEFICIARIO
+
+                    WHERE B.ID_BENEFICIARIO = :idTitular
+                      AND B.SN_ATIVO = 1
+                    `,
+                        {
+                            idTitular:
+                                idTitularNumero,
+                        },
+                        {
+                            outFormat:
+                                oracledb.OUT_FORMAT_OBJECT,
+                        }
+                    );
+
+                const titular: any =
+                    titularResult.rows?.[0];
+
+                if (!titular) {
+                    return res.status(400).json({
+                        error:
+                            "Titular informado não foi encontrado ou está inativo.",
+                    });
+                }
+
+                if (
+                    titular.CD_TIPO_BENEFICIARIO !==
+                    "TITULAR"
+                ) {
+                    return res.status(400).json({
+                        error:
+                            "O beneficiário informado não possui o tipo TITULAR.",
+                    });
+                }
+
+                idTitularFinal =
+                    idTitularNumero;
+            }
+
+            await conn.execute(
+                `
+            UPDATE DBACRESSEM.ODONTO_BENEFICIARIO
+            SET
+                NM_BENEFICIARIO = :nome,
+                NR_CPF = :cpf,
+                DT_NASCIMENTO =
+                    TO_DATE(
+                        :dataNascimento,
+                        'YYYY-MM-DD'
+                    ),
+                ID_TIPO_BENEFICIARIO =
+                    :idTipoBeneficiario,
+                ID_EMPRESA = :idEmpresa,
+                ID_PLANO = :idPlano,
+                ID_TITULAR = :idTitular,
+                NR_MATRICULA = :nrMatricula,
+                DS_OBSERVACAO = :observacao,
+                NM_USUARIO_ATUALIZACAO =
+                    :nomeUsuario,
+                LOGIN_USUARIO_ATUALIZACAO =
+                    :loginUsuario,
+                DT_ATUALIZACAO = SYSDATE
+            WHERE ID_BENEFICIARIO = :id
+            `,
+                {
+                    id,
+                    nome:
+                        String(nome).trim(),
+                    cpf:
+                        cpfLimpo,
+                    dataNascimento,
+                    idTipoBeneficiario:
+                        Number(
+                            idTipoBeneficiario
+                        ),
+                    idEmpresa:
+                        idEmpresaNova,
+                    idPlano:
+                        Number(idPlano),
+                    idTitular:
+                        idTitularFinal,
+                    nrMatricula:
+                        nrMatricula || null,
+                    observacao:
+                        observacao || null,
+                    nomeUsuario:
+                        nomeUsuario || null,
+                    loginUsuario:
+                        loginUsuario || null,
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            if (empresaFoiAlterada) {
+                await conn.execute(
+                    `
+                UPDATE DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST
+                SET
+                    DT_FIM = SYSDATE
+                WHERE ID_BENEFICIARIO = :idBeneficiario
+                  AND DT_FIM IS NULL
+                `,
+                    {
+                        idBeneficiario: id,
+                    },
+                    {
+                        autoCommit: false,
+                    }
+                );
+
+                await conn.execute(
+                    `
+                INSERT INTO DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST (
+                    ID_BENEFICIARIO,
+                    ID_EMPRESA,
+                    DT_INICIO,
+                    DT_FIM,
+                    NM_USUARIO_CRIACAO,
+                    LOGIN_USUARIO_CRIACAO,
+                    DT_CRIACAO
+                )
+                VALUES (
+                    :idBeneficiario,
+                    :idEmpresa,
+                    SYSDATE,
+                    NULL,
+                    :nomeUsuario,
+                    :loginUsuario,
+                    SYSDATE
+                )
+                `,
+                    {
+                        idBeneficiario: id,
+                        idEmpresa:
+                            idEmpresaNova,
+                        nomeUsuario:
+                            nomeUsuario || null,
+                        loginUsuario:
+                            loginUsuario || null,
+                    },
+                    {
+                        autoCommit: false,
+                    }
+                );
+            }
+
+            await conn.commit();
+
+            return res.json({
+                success: true,
+                message:
+                    "Beneficiário atualizado com sucesso.",
+            });
+        } catch (error: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch { }
+            }
+
+            console.error(
+                "Erro ao editar beneficiário:",
+                error
+            );
+
+            if (error?.errorNum === 1) {
+                return res.status(409).json({
+                    error:
+                        "Já existe outro beneficiário ativo cadastrado com este CPF.",
+                });
+            }
+
+            return res.status(500).json({
+                error:
+                    "Erro ao atualizar beneficiário.",
+                details:
+                    error.message,
+            });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch { }
+            }
+        }
+    },
+
+    async inativarBeneficiario(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
+        try {
+            const id = Number(req.params.id);
+
+            if (!Number.isInteger(id) || id <= 0) {
+                return res.status(400).json({
+                    error: "ID do beneficiário inválido.",
+                });
+            }
+
+            const {
+                nomeUsuario,
+                loginUsuario,
+                observacao,
+                origem,
+            } = req.body || {};
+
+            conn = await getConnection();
+
+            await setAuditoriaContext(conn, req);
+
+            const beneficiarioResult = await conn.execute(
+                `
+        SELECT
+          B.ID_BENEFICIARIO,
+          B.NM_BENEFICIARIO,
+          B.NR_CPF,
+          B.SN_ATIVO,
+          TB.CD_TIPO_BENEFICIARIO
+        FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+
+        INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+          ON TB.ID_TIPO_BENEFICIARIO = B.ID_TIPO_BENEFICIARIO
+
+        WHERE B.ID_BENEFICIARIO = :id
+      `,
+                { id },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const beneficiario: any = beneficiarioResult.rows?.[0];
+
+            if (!beneficiario) {
+                return res.status(404).json({
+                    error: "Beneficiário não encontrado.",
+                });
+            }
+
+            if (beneficiario.SN_ATIVO !== 1) {
+                return res.status(400).json({
+                    error: "Beneficiário já está inativo.",
+                });
+            }
+
+            const desligadosResult = await conn.execute(
+                `
+          SELECT
+            B.ID_BENEFICIARIO,
+            B.NM_BENEFICIARIO,
+            B.NR_CPF,
+            TB.CD_TIPO_BENEFICIARIO,
+            TB.NM_TIPO_BENEFICIARIO,
+            NVL(T.NM_BENEFICIARIO, B.NM_BENEFICIARIO) AS NM_TITULAR,
+            NVL(T.NR_CPF, B.NR_CPF) AS NR_CPF_TITULAR,
+            O.NM_OPERADORA,
+            P.NM_PLANO
+          FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+          INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB
+            ON TB.ID_TIPO_BENEFICIARIO = B.ID_TIPO_BENEFICIARIO
+          LEFT JOIN DBACRESSEM.ODONTO_BENEFICIARIO T
+            ON T.ID_BENEFICIARIO = B.ID_TITULAR
+          LEFT JOIN DBACRESSEM.ODONTO_PLANO P
+            ON P.ID_PLANO = B.ID_PLANO
+          LEFT JOIN DBACRESSEM.ODONTO_OPERADORA O
+            ON O.ID_OPERADORA = P.ID_OPERADORA
+          WHERE B.SN_ATIVO = 1
+            AND (B.ID_BENEFICIARIO = :id OR B.ID_TITULAR = :id)
+          ORDER BY CASE WHEN B.ID_BENEFICIARIO = :id THEN 0 ELSE 1 END, B.NM_BENEFICIARIO
+        `,
+                { id },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+            const desligados = desligadosResult.rows || [];
+
+            if (beneficiario.CD_TIPO_BENEFICIARIO === "TITULAR") {
+                await conn.execute(
+                    `
+          UPDATE DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST H
+          SET
+            H.DT_FIM = SYSDATE
+          WHERE H.DT_FIM IS NULL
+            AND H.ID_BENEFICIARIO IN (
+              SELECT B.ID_BENEFICIARIO
+              FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+              WHERE B.ID_TITULAR = :idTitular
+                AND B.SN_ATIVO = 1
+            )
+        `,
+                    {
+                        idTitular: id,
+                    },
+                    {
+                        autoCommit: false,
+                    }
+                );
+            }
+
+            await conn.execute(
+                `
+        UPDATE DBACRESSEM.ODONTO_BENEF_EMPRESA_HIST
+        SET
+          DT_FIM = SYSDATE
+        WHERE ID_BENEFICIARIO = :id
+          AND DT_FIM IS NULL
+      `,
+                {
+                    id,
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            await conn.execute(
+                `
+        UPDATE DBACRESSEM.ODONTO_BENEFICIARIO
+        SET
+          SN_ATIVO = 0,
+          DT_EXCLUSAO_PLANO = SYSDATE,
+          DT_ATUALIZACAO = SYSDATE,
+          NM_USUARIO_ATUALIZACAO = :nomeUsuario,
+          LOGIN_USUARIO_ATUALIZACAO = :loginUsuario,
+          DS_OBSERVACAO =
+            CASE
+              WHEN :observacao IS NOT NULL
+                THEN :observacao
+              ELSE DS_OBSERVACAO
+            END
+        WHERE ID_BENEFICIARIO = :id
+          AND SN_ATIVO = 1
+      `,
+                {
+                    id,
+                    nomeUsuario: nomeUsuario || null,
+                    loginUsuario: loginUsuario || null,
+                    observacao: observacao || null,
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            let dependentesInativados = 0;
+
+            if (beneficiario.CD_TIPO_BENEFICIARIO === "TITULAR") {
+                const dependentesResult = await conn.execute(
+                    `
+          UPDATE DBACRESSEM.ODONTO_BENEFICIARIO
+          SET
+            SN_ATIVO = 0,
+            DT_EXCLUSAO_PLANO = SYSDATE,
+            DT_ATUALIZACAO = SYSDATE,
+            NM_USUARIO_ATUALIZACAO = :nomeUsuario,
+            LOGIN_USUARIO_ATUALIZACAO = :loginUsuario
+          WHERE ID_TITULAR = :idTitular
+            AND SN_ATIVO = 1
+        `,
+                    {
+                        idTitular: id,
+                        nomeUsuario: nomeUsuario || null,
+                        loginUsuario: loginUsuario || null,
+                    },
+                    {
+                        autoCommit: false,
+                    }
+                );
+
+                dependentesInativados = Number(
+                    dependentesResult.rowsAffected || 0
+                );
+            }
+
+            await conn.commit();
+
+            let emailEnviado = false;
+            let erroEmail: string | null = null;
+            const notificacaoViaDemissao = String(origem || "").toUpperCase() === "DEMISSAO";
+
+            if (notificacaoViaDemissao) {
+                const usuarioAutenticado = (req as any).user || {};
+                const emailSolicitante = String(usuarioAutenticado.email || "").trim();
+                const destinatarios = Array.from(new Set([emailSolicitante, EMAIL_CADASTRO].filter(Boolean)));
+
+                try {
+                    await sendEmail(
+                        destinatarios,
+                        `SICOOB CRESSEM - Desligamento odontológico via Demissão - ${beneficiario.NM_BENEFICIARIO}`,
+                        montarEmailDesligamentoViaDemissao(desligados as any[], String(usuarioAutenticado.nome_completo || nomeUsuario || "Solicitante"))
+                    );
+                    emailEnviado = true;
+                } catch (emailError: any) {
+                    erroEmail = String(emailError?.message || emailError || "Falha ao enviar a notificação.");
+                    console.error("Convênio odontológico inativado, mas a notificação da demissão falhou:", emailError);
+                }
+            }
+
+            return res.json({
+                success: true,
+                message:
+                    beneficiario.CD_TIPO_BENEFICIARIO === "TITULAR"
+                        ? "Titular e dependentes vinculados foram inativados com sucesso."
+                        : "Beneficiário inativado com sucesso.",
+                idBeneficiario: id,
+                tipoBeneficiario: beneficiario.CD_TIPO_BENEFICIARIO,
+                dependentesInativados,
+                emailEnviado,
+                erroEmail,
+                desligados,
+            });
+        } catch (error: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch { }
+            }
+
+            console.error("Erro ao inativar beneficiário:", error);
+
+            return res.status(500).json({
+                error: "Erro ao inativar beneficiário.",
+                details: error.message,
+            });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch { }
+            }
+        }
+    },
+
+    async listarPlanosGestao(_req: Request, res: Response) {
+        try {
+            const sql = `
+      SELECT
+        P.ID_PLANO,
+        P.ID_OPERADORA,
+        O.NM_OPERADORA,
+        O.NR_CNPJ AS NR_CNPJ_OPERADORA,
+        P.NM_PLANO,
+        P.DS_PLANO,
+        P.TP_COBRANCA,
+        P.NR_IDADE_MINIMA,
+        P.NR_IDADE_MAXIMA,
+        P.DT_VIGENCIA_INICIO AS DT_VIGENCIA_INICIO_PLANO,
+        P.DT_VIGENCIA_FIM AS DT_VIGENCIA_FIM_PLANO,
+        P.SN_ATIVO AS SN_PLANO_ATIVO,
+        PV.ID_PLANO_VALOR,
+        PV.VL_MENSALIDADE,
+        PV.DT_VIGENCIA_INICIO AS DT_VIGENCIA_INICIO_VALOR,
+        PV.DT_VIGENCIA_FIM AS DT_VIGENCIA_FIM_VALOR,
+        PV.SN_ATIVO AS SN_VALOR_ATIVO
+
+      FROM DBACRESSEM.ODONTO_PLANO P
+
+      INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+        ON O.ID_OPERADORA = P.ID_OPERADORA
+
+      LEFT JOIN DBACRESSEM.ODONTO_PLANO_VALOR PV
+        ON PV.ID_PLANO = P.ID_PLANO
+       AND PV.SN_ATIVO = 1
+
+      ORDER BY
+        O.NM_OPERADORA,
+        P.NM_PLANO
+    `;
+
+            const result = await oracleExecute(
+                sql,
+                {},
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            return res.json(result.rows || []);
+        } catch (error: any) {
+            console.error(
+                "Erro ao listar planos para gestão:",
+                error
+            );
+
+            return res.status(500).json({
+                error: "Erro ao listar planos odontológicos.",
+                details: error.message,
+            });
+        }
+    },
+
+    async listarHistoricoValoresPlano(req: Request, res: Response) {
+        try {
+            const idPlano = Number(req.params.id);
+
+            if (!Number.isInteger(idPlano) || idPlano <= 0) {
+                return res.status(400).json({
+                    error: "Plano inválido.",
+                });
+            }
+
+            const planoResult = await oracleExecute(
+                `
+            SELECT
+                P.ID_PLANO,
+                P.NM_PLANO,
+                P.ID_OPERADORA,
+                O.NM_OPERADORA,
+                P.TP_COBRANCA,
+                P.SN_ATIVO
+            FROM DBACRESSEM.ODONTO_PLANO P
+
+            INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+                ON O.ID_OPERADORA = P.ID_OPERADORA
+
+            WHERE P.ID_PLANO = :idPlano
+            `,
+                {
+                    idPlano,
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const plano = planoResult.rows?.[0];
+
+            if (!plano) {
+                return res.status(404).json({
+                    error: "Plano não encontrado.",
+                });
+            }
+
+            const valoresResult = await oracleExecute(
+                `
+            SELECT
+                ID_PLANO_VALOR,
+                ID_PLANO,
+                VL_MENSALIDADE,
+                DT_VIGENCIA_INICIO,
+                DT_VIGENCIA_FIM,
+                DT_CRIACAO,
+                NM_USUARIO_CRIACAO,
+                LOGIN_USUARIO_CRIACAO,
+                SN_ATIVO,
+
+                CASE
+                    WHEN TRUNC(DT_VIGENCIA_INICIO) > TRUNC(SYSDATE)
+                    THEN 'AGENDADO'
+
+                    WHEN TRUNC(SYSDATE) >= TRUNC(DT_VIGENCIA_INICIO)
+                         AND (
+                             DT_VIGENCIA_FIM IS NULL
+                             OR SYSDATE <= DT_VIGENCIA_FIM
+                         )
+                    THEN 'VIGENTE'
+
+                    ELSE 'ENCERRADO'
+                END AS STATUS_VIGENCIA
+
+            FROM DBACRESSEM.ODONTO_PLANO_VALOR
+
+            WHERE ID_PLANO = :idPlano
+
+            ORDER BY
+                DT_VIGENCIA_INICIO DESC,
+                ID_PLANO_VALOR DESC
+            `,
+                {
+                    idPlano,
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            return res.json({
+                plano,
+                valores: valoresResult.rows || [],
+            });
+        } catch (error: any) {
+            console.error(
+                "Erro ao listar histórico de valores:",
+                error
+            );
+
+            return res.status(500).json({
+                error: "Erro ao consultar histórico de valores do plano.",
+                details: error.message,
+            });
+        }
+    },
+
+    async reajustarValorPlano(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
+        try {
+            const idPlano = Number(req.params.id);
+
+            if (!Number.isInteger(idPlano) || idPlano <= 0) {
+                return res.status(400).json({
+                    error: "Plano inválido.",
+                });
+            }
+
+            const {
+                novoValor,
+                dataInicioVigencia,
+                nomeUsuario,
+                loginUsuario,
+            } = req.body || {};
+
+            const valorNumero = Number(novoValor);
+
+            if (
+                !Number.isFinite(valorNumero) ||
+                valorNumero <= 0
+            ) {
+                return res.status(400).json({
+                    error: "Informe um novo valor válido.",
+                });
+            }
+
+            if (
+                !dataInicioVigencia ||
+                !/^\d{4}-\d{2}-\d{2}$/.test(
+                    String(dataInicioVigencia)
+                )
+            ) {
+                return res.status(400).json({
+                    error:
+                        "Informe uma data de início de vigência válida.",
+                });
+            }
+
+            conn = await getConnection();
+
+            await setAuditoriaContext(conn, req);
+
+            const planoResult = await conn.execute(
+                `
+            SELECT
+                P.ID_PLANO,
+                P.NM_PLANO,
+                P.ID_OPERADORA,
+                P.TP_COBRANCA,
+                P.SN_ATIVO,
+                O.NM_OPERADORA
+            FROM DBACRESSEM.ODONTO_PLANO P
+
+            INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+                ON O.ID_OPERADORA = P.ID_OPERADORA
+
+            WHERE P.ID_PLANO = :idPlano
+
+            FOR UPDATE
+            `,
+                {
+                    idPlano,
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const plano: any =
+                planoResult.rows?.[0];
+
+            if (!plano) {
+                return res.status(404).json({
+                    error: "Plano não encontrado.",
+                });
+            }
+
+            if (plano.SN_ATIVO !== 1) {
+                return res.status(400).json({
+                    error:
+                        "Não é possível reajustar um plano inativo.",
+                });
+            }
+
+            const valorAtualResult = await conn.execute(
+                `
+            SELECT
+                ID_PLANO_VALOR,
+                ID_PLANO,
+                VL_MENSALIDADE,
+                DT_VIGENCIA_INICIO,
+                DT_VIGENCIA_FIM,
+                SN_ATIVO
+            FROM DBACRESSEM.ODONTO_PLANO_VALOR
+            WHERE ID_PLANO = :idPlano
+              AND SN_ATIVO = 1
+            FOR UPDATE
+            `,
+                {
+                    idPlano,
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const valorAtual: any =
+                valorAtualResult.rows?.[0];
+
+            if (!valorAtual) {
+                return res.status(400).json({
+                    error:
+                        "O plano não possui valor vigente para ser reajustado.",
+                });
+            }
+
+            const dataResult = await conn.execute(
+                `
+            SELECT
+                TO_DATE(
+                    :dataInicioVigencia,
+                    'YYYY-MM-DD'
+                ) AS NOVA_VIGENCIA
+            FROM DUAL
+            `,
+                {
+                    dataInicioVigencia:
+                        String(dataInicioVigencia),
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const dataRow: any =
+                dataResult.rows?.[0];
+
+            const novaVigencia =
+                dataRow?.NOVA_VIGENCIA;
+
+            if (!novaVigencia) {
+                return res.status(400).json({
+                    error:
+                        "Data de início de vigência inválida.",
+                });
+            }
+
+            const validacaoDataResult =
+                await conn.execute(
+                    `
+                SELECT
+                    CASE
+                        WHEN TO_DATE(
+                            :dataInicioVigencia,
+                            'YYYY-MM-DD'
+                        ) > TRUNC(:dataVigenciaAtual)
+                        THEN 1
+                        ELSE 0
+                    END AS DATA_VALIDA
+                FROM DUAL
+                `,
+                    {
+                        dataInicioVigencia:
+                            String(dataInicioVigencia),
+
+                        dataVigenciaAtual:
+                            valorAtual.DT_VIGENCIA_INICIO,
+                    },
+                    {
+                        outFormat:
+                            oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            const validacaoData: any =
+                validacaoDataResult.rows?.[0];
+
+            if (validacaoData?.DATA_VALIDA !== 1) {
+                return res.status(400).json({
+                    error:
+                        "A nova vigência deve ser posterior à vigência do valor atual.",
+                });
+            }
+
+            const dataFimResult =
+                await conn.execute(
+                    `
+                SELECT
+                    TO_DATE(
+                        :dataInicioVigencia,
+                        'YYYY-MM-DD'
+                    ) - (1 / 86400) AS DATA_FIM_ANTERIOR
+                FROM DUAL
+                `,
+                    {
+                        dataInicioVigencia:
+                            String(dataInicioVigencia),
+                    },
+                    {
+                        outFormat:
+                            oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            const dataFimRow: any =
+                dataFimResult.rows?.[0];
+
+            const dataFimAnterior =
+                dataFimRow?.DATA_FIM_ANTERIOR;
+
+            await conn.execute(
+                `
+            UPDATE DBACRESSEM.ODONTO_PLANO_VALOR
+            SET
+                DT_VIGENCIA_FIM = :dataFimAnterior,
+                SN_ATIVO = 0
+            WHERE ID_PLANO_VALOR = :idPlanoValor
+              AND SN_ATIVO = 1
+            `,
+                {
+                    dataFimAnterior,
+                    idPlanoValor:
+                        valorAtual.ID_PLANO_VALOR,
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            const novoValorResult =
+                await conn.execute(
+                    `
+                INSERT INTO DBACRESSEM.ODONTO_PLANO_VALOR (
+                    ID_PLANO,
+                    VL_MENSALIDADE,
+                    DT_VIGENCIA_INICIO,
+                    DT_VIGENCIA_FIM,
+                    DT_CRIACAO,
+                    NM_USUARIO_CRIACAO,
+                    LOGIN_USUARIO_CRIACAO,
+                    SN_ATIVO
+                )
+                VALUES (
+                    :idPlano,
+                    :novoValor,
+                    TO_DATE(
+                        :dataInicioVigencia,
+                        'YYYY-MM-DD'
+                    ),
+                    NULL,
+                    SYSDATE,
+                    :nomeUsuario,
+                    :loginUsuario,
+                    1
+                )
+                RETURNING ID_PLANO_VALOR
+                INTO :idPlanoValor
+                `,
+                    {
+                        idPlano,
+                        novoValor: valorNumero,
+
+                        dataInicioVigencia:
+                            String(dataInicioVigencia),
+
+                        nomeUsuario:
+                            nomeUsuario || null,
+
+                        loginUsuario:
+                            loginUsuario || null,
+
+                        idPlanoValor: {
+                            dir: oracledb.BIND_OUT,
+                            type: oracledb.NUMBER,
+                        },
+                    },
+                    {
+                        autoCommit: false,
+                    }
+                );
+
+            await conn.commit();
+
+            const outBinds: any =
+                novoValorResult.outBinds;
+
+            const idNovoPlanoValor =
+                Array.isArray(
+                    outBinds?.idPlanoValor
+                )
+                    ? outBinds.idPlanoValor[0]
+                    : outBinds?.idPlanoValor;
+
+            return res.status(201).json({
+                success: true,
+
+                message:
+                    "Reajuste cadastrado com sucesso.",
+
+                plano: {
+                    idPlano:
+                        plano.ID_PLANO,
+
+                    nomePlano:
+                        plano.NM_PLANO,
+
+                    operadora:
+                        plano.NM_OPERADORA,
+                },
+
+                valorAnterior: {
+                    idPlanoValor:
+                        valorAtual.ID_PLANO_VALOR,
+
+                    valor:
+                        valorAtual.VL_MENSALIDADE,
+
+                    dataInicio:
+                        valorAtual.DT_VIGENCIA_INICIO,
+
+                    dataFim:
+                        dataFimAnterior,
+                },
+
+                novoValor: {
+                    idPlanoValor:
+                        idNovoPlanoValor,
+
+                    valor:
+                        valorNumero,
+
+                    dataInicio:
+                        novaVigencia,
+                },
+            });
+        } catch (error: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch { }
+            }
+
+            console.error(
+                "Erro ao reajustar valor do plano:",
+                error
+            );
+
+            if (error?.errorNum === 1) {
+                return res.status(409).json({
+                    error:
+                        "O plano já possui outro valor vigente.",
+                });
+            }
+
+            return res.status(500).json({
+                error:
+                    "Erro ao cadastrar reajuste do plano.",
+
+                details: error.message,
+            });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch { }
+            }
+        }
+    },
+
+    async criarPlano(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
+        try {
+            const {
+                idOperadora,
+                nomePlano,
+                descricao,
+                tipoCobranca,
+                dataVigenciaInicioPlano,
+                valorInicial,
+                dataVigenciaInicioValor,
+                nomeUsuario,
+                loginUsuario,
+            } = req.body || {};
+
+            const operadora = Number(idOperadora);
+            const valor = Number(valorInicial);
+
+            if (
+                !Number.isInteger(operadora) ||
+                operadora <= 0
+            ) {
+                return res.status(400).json({
+                    error: "Informe uma operadora válida.",
+                });
+            }
+
+            if (!String(nomePlano || "").trim()) {
+                return res.status(400).json({
+                    error: "Informe o nome do plano.",
+                });
+            }
+
+            if (
+                tipoCobranca !== "POR_PESSOA" &&
+                tipoCobranca !== "POR_PLANO"
+            ) {
+                return res.status(400).json({
+                    error: "Informe um tipo de cobrança válido.",
+                });
+            }
+
+            if (
+                !Number.isFinite(valor) ||
+                valor <= 0
+            ) {
+                return res.status(400).json({
+                    error: "Informe um valor inicial válido.",
+                });
+            }
+
+            if (
+                !dataVigenciaInicioValor ||
+                !/^\d{4}-\d{2}-\d{2}$/.test(
+                    String(dataVigenciaInicioValor)
+                )
+            ) {
+                return res.status(400).json({
+                    error:
+                        "Informe uma data de início de vigência válida para o valor.",
+                });
+            }
+
+            if (
+                dataVigenciaInicioPlano &&
+                !/^\d{4}-\d{2}-\d{2}$/.test(
+                    String(dataVigenciaInicioPlano)
+                )
+            ) {
+                return res.status(400).json({
+                    error:
+                        "A data de início da vigência do plano é inválida.",
+                });
+            }
+
+            conn = await getConnection();
+
+            await setAuditoriaContext(conn, req);
+
+            const operadoraResult = await conn.execute(
+                `
+            SELECT
+                ID_OPERADORA,
+                NM_OPERADORA,
+                SN_ATIVO
+            FROM DBACRESSEM.ODONTO_OPERADORA
+            WHERE ID_OPERADORA = :idOperadora
+            `,
+                {
+                    idOperadora: operadora,
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const operadoraEncontrada: any =
+                operadoraResult.rows?.[0];
+
+            if (!operadoraEncontrada) {
+                return res.status(404).json({
+                    error: "Operadora não encontrada.",
+                });
+            }
+
+            if (operadoraEncontrada.SN_ATIVO !== 1) {
+                return res.status(400).json({
+                    error:
+                        "Não é possível cadastrar um plano para uma operadora inativa.",
+                });
+            }
+
+            const planoExistenteResult = await conn.execute(
+                `
+            SELECT
+                ID_PLANO
+            FROM DBACRESSEM.ODONTO_PLANO
+            WHERE ID_OPERADORA = :idOperadora
+              AND UPPER(TRIM(NM_PLANO)) =
+                  UPPER(TRIM(:nomePlano))
+              AND SN_ATIVO = 1
+            `,
+                {
+                    idOperadora: operadora,
+                    nomePlano: String(nomePlano).trim(),
+                },
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            if (planoExistenteResult.rows?.length) {
+                return res.status(409).json({
+                    error:
+                        "Já existe um plano ativo com este nome para a operadora selecionada.",
+                });
+            }
+
+            const planoResult = await conn.execute(
+                `
+            INSERT INTO DBACRESSEM.ODONTO_PLANO (
+                ID_OPERADORA,
+                NM_PLANO,
+                DS_PLANO,
+                TP_COBRANCA,
+                NR_IDADE_MINIMA,
+                NR_IDADE_MAXIMA,
+                DT_VIGENCIA_INICIO,
+                DT_VIGENCIA_FIM,
+                DT_CRIACAO,
+                DT_ATUALIZACAO,
+                SN_ATIVO
+            )
+            VALUES (
+                :idOperadora,
+                :nomePlano,
+                :descricao,
+                :tipoCobranca,
+                NULL,
+                NULL,
+                CASE
+                    WHEN :dataVigenciaInicioPlano IS NOT NULL
+                    THEN TO_DATE(
+                        :dataVigenciaInicioPlano,
+                        'YYYY-MM-DD'
+                    )
+                    ELSE SYSDATE
+                END,
+                NULL,
+                SYSDATE,
+                NULL,
+                1
+            )
+            RETURNING ID_PLANO
+            INTO :idPlano
+            `,
+                {
+                    idOperadora: operadora,
+
+                    nomePlano:
+                        String(nomePlano).trim(),
+
+                    descricao:
+                        String(descricao || "").trim() ||
+                        null,
+
+                    tipoCobranca,
+
+                    dataVigenciaInicioPlano:
+                        dataVigenciaInicioPlano || null,
+
+                    idPlano: {
+                        dir: oracledb.BIND_OUT,
+                        type: oracledb.NUMBER,
+                    },
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            const outBindsPlano: any =
+                planoResult.outBinds;
+
+            const idPlano =
+                Array.isArray(outBindsPlano?.idPlano)
+                    ? outBindsPlano.idPlano[0]
+                    : outBindsPlano?.idPlano;
+
+            if (!idPlano) {
+                throw new Error(
+                    "Não foi possível obter o ID do plano criado."
+                );
+            }
+
+            const valorResult = await conn.execute(
+                `
+            INSERT INTO DBACRESSEM.ODONTO_PLANO_VALOR (
+                ID_PLANO,
+                VL_MENSALIDADE,
+                DT_VIGENCIA_INICIO,
+                DT_VIGENCIA_FIM,
+                DT_CRIACAO,
+                NM_USUARIO_CRIACAO,
+                LOGIN_USUARIO_CRIACAO,
+                SN_ATIVO
+            )
+            VALUES (
+                :idPlano,
+                :valorInicial,
+                TO_DATE(
+                    :dataVigenciaInicioValor,
+                    'YYYY-MM-DD'
+                ),
+                NULL,
+                SYSDATE,
+                :nomeUsuario,
+                :loginUsuario,
+                1
+            )
+            RETURNING ID_PLANO_VALOR
+            INTO :idPlanoValor
+            `,
+                {
+                    idPlano,
+                    valorInicial: valor,
+
+                    dataVigenciaInicioValor:
+                        String(dataVigenciaInicioValor),
+
+                    nomeUsuario:
+                        nomeUsuario || null,
+
+                    loginUsuario:
+                        loginUsuario || null,
+
+                    idPlanoValor: {
+                        dir: oracledb.BIND_OUT,
+                        type: oracledb.NUMBER,
+                    },
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            const outBindsValor: any =
+                valorResult.outBinds;
+
+            const idPlanoValor =
+                Array.isArray(outBindsValor?.idPlanoValor)
+                    ? outBindsValor.idPlanoValor[0]
+                    : outBindsValor?.idPlanoValor;
+
+            await conn.commit();
+
+            return res.status(201).json({
+                success: true,
+                message:
+                    "Plano odontológico cadastrado com sucesso.",
+
+                plano: {
+                    idPlano,
+                    nomePlano:
+                        String(nomePlano).trim(),
+
+                    idOperadora: operadora,
+
+                    operadora:
+                        operadoraEncontrada.NM_OPERADORA,
+
+                    tipoCobranca,
+                },
+
+                valorInicial: {
+                    idPlanoValor,
+                    valor,
+                    dataInicio:
+                        dataVigenciaInicioValor,
+                },
+            });
+        } catch (error: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch { }
+            }
+
+            console.error(
+                "Erro ao cadastrar plano odontológico:",
+                error
+            );
+
+            return res.status(500).json({
+                error:
+                    "Erro ao cadastrar plano odontológico.",
+                details: error.message,
+            });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch { }
+            }
+        }
+    },
+
+    async atualizarPlano(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
+        try {
+            const idPlano = Number(req.params.id);
+
+            if (
+                !Number.isInteger(idPlano) ||
+                idPlano <= 0
+            ) {
+                return res.status(400).json({
+                    error: "Plano inválido.",
+                });
+            }
+
+            const {
+                nomePlano,
+                descricao,
+                tipoCobranca,
+                dataVigenciaInicioPlano,
+                nomeUsuario,
+                loginUsuario,
+            } = req.body || {};
+
+            if (!String(nomePlano || "").trim()) {
+                return res.status(400).json({
+                    error: "Informe o nome do plano.",
+                });
+            }
+
+            if (
+                tipoCobranca !== "POR_PESSOA" &&
+                tipoCobranca !== "POR_PLANO"
+            ) {
+                return res.status(400).json({
+                    error:
+                        "Informe um tipo de cobrança válido.",
+                });
+            }
+
+            if (
+                dataVigenciaInicioPlano &&
+                !/^\d{4}-\d{2}-\d{2}$/.test(
+                    String(dataVigenciaInicioPlano)
+                )
+            ) {
+                return res.status(400).json({
+                    error:
+                        "A data de início da vigência do plano é inválida.",
+                });
+            }
+
+            conn = await getConnection();
+
+            await setAuditoriaContext(conn, req);
+
+            const planoResult = await conn.execute(
+                `
+                SELECT
+                    P.ID_PLANO,
+                    P.ID_OPERADORA,
+                    P.NM_PLANO,
+                    P.DS_PLANO,
+                    P.TP_COBRANCA,
+                    P.DT_VIGENCIA_INICIO,
+                    P.SN_ATIVO,
+                    O.NM_OPERADORA
+
+                FROM DBACRESSEM.ODONTO_PLANO P
+
+                INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+                    ON O.ID_OPERADORA = P.ID_OPERADORA
+
+                WHERE P.ID_PLANO = :idPlano
+
+                FOR UPDATE
+                `,
+                {
+                    idPlano,
+                },
+                {
+                    outFormat:
+                        oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
+
+            const plano: any =
+                planoResult.rows?.[0];
+
+            if (!plano) {
+                return res.status(404).json({
+                    error: "Plano não encontrado.",
+                });
+            }
+
+            if (plano.SN_ATIVO !== 1) {
+                return res.status(400).json({
+                    error:
+                        "Não é possível editar um plano inativo.",
+                });
+            }
+
+            const duplicadoResult =
+                await conn.execute(
+                    `
+                    SELECT
+                        ID_PLANO
+
+                    FROM DBACRESSEM.ODONTO_PLANO
+
+                    WHERE ID_OPERADORA = :idOperadora
+
+                      AND UPPER(TRIM(NM_PLANO)) =
+                          UPPER(TRIM(:nomePlano))
+
+                      AND ID_PLANO <> :idPlano
+
+                      AND SN_ATIVO = 1
+
+                    FETCH FIRST 1 ROWS ONLY
+                    `,
+                    {
+                        idOperadora:
+                            plano.ID_OPERADORA,
+
+                        nomePlano:
+                            String(nomePlano).trim(),
+
+                        idPlano,
+                    },
+                    {
+                        outFormat:
+                            oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            if (duplicadoResult.rows?.length) {
+                return res.status(409).json({
+                    error:
+                        "Já existe outro plano ativo com este nome para a mesma operadora.",
+                });
+            }
+
+            await conn.execute(
+                `
+                UPDATE DBACRESSEM.ODONTO_PLANO
+
+                SET
+                    NM_PLANO = :nomePlano,
+
+                    DS_PLANO = :descricao,
+
+                    TP_COBRANCA = :tipoCobranca,
+
+                    DT_VIGENCIA_INICIO =
+                        CASE
+                            WHEN :dataVigenciaInicioPlano IS NOT NULL
+                            THEN TO_DATE(
+                                :dataVigenciaInicioPlano,
+                                'YYYY-MM-DD'
+                            )
+                            ELSE DT_VIGENCIA_INICIO
+                        END,
+
+                    DT_ATUALIZACAO = SYSDATE
+
+                WHERE ID_PLANO = :idPlano
+                `,
+                {
+                    nomePlano:
+                        String(nomePlano).trim(),
+
+                    descricao:
+                        String(descricao || "").trim() ||
+                        null,
+
+                    tipoCobranca,
+
+                    dataVigenciaInicioPlano:
+                        dataVigenciaInicioPlano ||
+                        null,
+
+                    idPlano,
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            await conn.commit();
+
+            return res.status(200).json({
+                success: true,
+
+                message:
+                    "Plano odontológico atualizado com sucesso.",
+
+                plano: {
+                    idPlano,
+
+                    nomePlano:
+                        String(nomePlano).trim(),
+
+                    idOperadora:
+                        plano.ID_OPERADORA,
+
+                    operadora:
+                        plano.NM_OPERADORA,
+
+                    tipoCobranca,
+
+                    dataVigenciaInicioPlano:
+                        dataVigenciaInicioPlano ||
+                        plano.DT_VIGENCIA_INICIO,
+                },
+            });
+        } catch (error: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch { }
+            }
+
+            console.error(
+                "Erro ao atualizar plano odontológico:",
+                error
+            );
+
+            return res.status(500).json({
+                error:
+                    "Erro ao atualizar plano odontológico.",
+
+                details: error.message,
+            });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch { }
+            }
+        }
+    },
+
+    async alterarStatusPlano(req: Request, res: Response) {
+        let conn: oracledb.Connection | undefined;
+
+        try {
+            const idPlano = Number(req.params.id);
+
+            if (
+                !Number.isInteger(idPlano) ||
+                idPlano <= 0
+            ) {
+                return res.status(400).json({
+                    error: "Plano inválido.",
+                });
+            }
+
+            const {
+                ativo,
+            } = req.body || {};
+
+            if (typeof ativo !== "boolean") {
+                return res.status(400).json({
+                    error:
+                        "Informe o status do plano através do campo ativo.",
+                });
+            }
+
+            const novoStatus =
+                ativo ? 1 : 0;
+
+            conn = await getConnection();
+
+            await setAuditoriaContext(
+                conn,
+                req
+            );
+
+            const planoResult =
+                await conn.execute(
+                    `
+                SELECT
+                    P.ID_PLANO,
+                    P.ID_OPERADORA,
+                    P.NM_PLANO,
+                    P.SN_ATIVO,
+                    O.NM_OPERADORA,
+                    O.SN_ATIVO AS SN_OPERADORA_ATIVA
+
+                FROM DBACRESSEM.ODONTO_PLANO P
+
+                INNER JOIN DBACRESSEM.ODONTO_OPERADORA O
+                    ON O.ID_OPERADORA =
+                       P.ID_OPERADORA
+
+                WHERE P.ID_PLANO = :idPlano
+
+                FOR UPDATE
+                `,
+                    {
+                        idPlano,
+                    },
+                    {
+                        outFormat:
+                            oracledb.OUT_FORMAT_OBJECT,
+                    }
+                );
+
+            const plano: any =
+                planoResult.rows?.[0];
+
+            if (!plano) {
+                return res.status(404).json({
+                    error:
+                        "Plano odontológico não encontrado.",
+                });
+            }
+
+            if (
+                Number(plano.SN_ATIVO) ===
+                novoStatus
+            ) {
+                return res.status(400).json({
+                    error: ativo
+                        ? "O plano já está ativo."
+                        : "O plano já está inativo.",
+                });
+            }
+
+            if (!ativo) {
+                const beneficiariosResult =
+                    await conn.execute(
+                        `
+                    SELECT
+                        COUNT(*) AS TOTAL
+
+                    FROM DBACRESSEM.ODONTO_BENEFICIARIO
+
+                    WHERE ID_PLANO = :idPlano
+                      AND SN_ATIVO = 1
+                    `,
+                        {
+                            idPlano,
+                        },
+                        {
+                            outFormat:
+                                oracledb.OUT_FORMAT_OBJECT,
+                        }
+                    );
+
+                const beneficiarios: any =
+                    beneficiariosResult
+                        .rows?.[0];
+
+                const totalBeneficiarios =
+                    Number(
+                        beneficiarios?.TOTAL ||
+                        0
+                    );
+
+                if (
+                    totalBeneficiarios > 0
+                ) {
+                    return res
+                        .status(409)
+                        .json({
+                            error:
+                                "Não é possível inativar este plano porque existem beneficiários ativos vinculados a ele.",
+
+                            beneficiariosAtivos:
+                                totalBeneficiarios,
+                        });
+                }
+            }
+
+            if (ativo) {
+                if (
+                    Number(
+                        plano.SN_OPERADORA_ATIVA
+                    ) !== 1
+                ) {
+                    return res
+                        .status(400)
+                        .json({
+                            error:
+                                "Não é possível reativar o plano porque a operadora está inativa.",
+                        });
+                }
+
+                const valorResult =
+                    await conn.execute(
+                        `
+                    SELECT
+                        ID_PLANO_VALOR
+
+                    FROM DBACRESSEM.ODONTO_PLANO_VALOR
+
+                    WHERE ID_PLANO =
+                          :idPlano
+
+                    FETCH FIRST 1 ROWS ONLY
+                    `,
+                        {
+                            idPlano,
+                        },
+                        {
+                            outFormat:
+                                oracledb.OUT_FORMAT_OBJECT,
+                        }
+                    );
+
+                if (
+                    !valorResult.rows?.length
+                ) {
+                    return res
+                        .status(400)
+                        .json({
+                            error:
+                                "Não é possível reativar o plano porque ele não possui valor cadastrado.",
+                        });
+                }
+            }
+
+            await conn.execute(
+                `
+            UPDATE DBACRESSEM.ODONTO_PLANO
+
+            SET
+                SN_ATIVO = :novoStatus,
+                DT_ATUALIZACAO = SYSDATE
+
+            WHERE ID_PLANO = :idPlano
+            `,
+                {
+                    novoStatus,
+                    idPlano,
+                },
+                {
+                    autoCommit: false,
+                }
+            );
+
+            await conn.commit();
+
+            return res.status(200).json({
+                success: true,
+
+                message: ativo
+                    ? "Plano odontológico reativado com sucesso."
+                    : "Plano odontológico inativado com sucesso.",
+
+                plano: {
+                    idPlano:
+                        plano.ID_PLANO,
+
+                    nomePlano:
+                        plano.NM_PLANO,
+
+                    operadora:
+                        plano.NM_OPERADORA,
+
+                    ativo,
+                },
+            });
+        } catch (error: any) {
+            if (conn) {
+                try {
+                    await conn.rollback();
+                } catch { }
+            }
+
+            console.error(
+                "Erro ao alterar status do plano odontológico:",
+                error
+            );
+
+            return res.status(500).json({
+                error:
+                    "Erro ao alterar status do plano odontológico.",
+
+                details:
+                    error.message,
+            });
+        } finally {
+            if (conn) {
+                try {
+                    await conn.close();
+                } catch { }
+            }
+        }
+    },
+};

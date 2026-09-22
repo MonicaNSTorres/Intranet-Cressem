@@ -1,0 +1,1254 @@
+"use client";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  FaCalendarAlt,
+  FaChartLine,
+  FaDatabase,
+  FaDownload,
+  FaFilter,
+  FaInfoCircle,
+  FaLayerGroup,
+  FaUser,
+} from "react-icons/fa";
+import {
+  buscarDatasRelatorioMetaFuncionario,
+  buscarProducaoMetaRelatorioFuncionario,
+  buscarUsuarioLogadoMetaFuncionario,
+} from "@/services/producao_meta_funcionario.service";
+import {
+  CAMPOS_COLORIR_FUNCIONARIO,
+  MAPA_TEMA_PARA_TABELA_FUNCIONARIO,
+  TEMAS_SOMENTE_ANO_FUNCIONARIO,
+  TIPOS_RELATORIO_FUNCIONARIO_OPTIONS,
+  getConfigAjustadaPorPeriodoFuncionario,
+  parseNumeroBR,
+  type ChaveRelatorioFuncionario,
+  type ModoPeriodoFuncionario,
+  type RelatorioFuncionarioDataInfo,
+  type RelatorioFuncionarioItem,
+} from "@/config/producao_meta_funcionario";
+
+type PeriodoOption = {
+  value: string;
+  label: string;
+  tipo: "semana" | "mes_inteiro";
+};
+
+function inicioDoDia(date: Date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatarISO(d: Date) {
+  return d.toISOString().split("T")[0];
+}
+
+function formatarBR(d: Date) {
+  return d.toLocaleDateString("pt-BR");
+}
+
+function formatarDataHoraBR(valor?: string | Date | null) {
+  if (!valor) return "-";
+
+  const dt =
+    valor instanceof Date ? valor : new Date(String(valor).replace(" ", "T"));
+
+  if (Number.isNaN(dt.getTime())) return String(valor);
+
+  const dd = String(dt.getDate()).padStart(2, "0");
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const yyyy = dt.getFullYear();
+
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function normalizarTextoComparacao(valor: unknown) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
+function temMetaAcimaDeUm(item: RelatorioFuncionarioItem) {
+  const ignorar = ["perc_meta", "porcentagem", "percentual"];
+
+  for (const [chave, valor] of Object.entries(item || {})) {
+    const chaveNormalizada = normalizarTextoComparacao(chave);
+    const ehCampoMeta = chaveNormalizada.startsWith("META");
+    const ehCampoIgnorado = ignorar.some((termo) =>
+      chaveNormalizada.includes(normalizarTextoComparacao(termo))
+    );
+
+    if (!ehCampoMeta || ehCampoIgnorado) continue;
+
+    const numero = parseNumeroBR(valor);
+    if (!Number.isNaN(numero) && numero > 1) return true;
+  }
+
+  return false;
+}
+
+export function formatarInteiroBR(valor: number) {
+  return Math.round(valor).toLocaleString("pt-BR");
+}
+
+export function formatarPercentualBR(valor: number, casas = 2) {
+  return `${valor.toLocaleString("pt-BR", {
+    minimumFractionDigits: casas,
+    maximumFractionDigits: casas,
+  })}%`;
+}
+
+export function formatarMoedaBR(valor: number) {
+  const absoluto = Math.abs(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return valor < 0 ? `-${absoluto}` : absoluto;
+}
+
+function formatarCelulaCsv(valor: unknown) {
+  const texto = String(valor ?? "")
+    .replace(/\r?\n|\r/g, " ")
+    .trim();
+
+  return `"${texto.replace(/"/g, '""')}"`;
+}
+
+function limparNomeArquivoCsv(valor: string) {
+  return valor
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toLowerCase();
+}
+
+function baixarArquivoCsv(nomeArquivo: string, linhas: unknown[][]) {
+  const conteudo = `\uFEFF${linhas
+    .map((linha) => linha.map(formatarCelulaCsv).join(";"))
+    .join("\r\n")}`;
+  const blob = new Blob([conteudo], { type: "text/csv;charset=utf-8;" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = nomeArquivo;
+  link.click();
+
+  window.URL.revokeObjectURL(url);
+}
+
+export function formatarValorExibicaoRelatorio(
+  campo: string,
+  valor: unknown,
+  temaAtual?: ChaveRelatorioFuncionario | ""
+) {
+  if (valor === null || valor === undefined || valor === "") return "-";
+
+  const numero = parseNumeroBR(valor);
+  if (Number.isNaN(numero)) return String(valor);
+
+  // Monte por tema os campos que devem ser formatados.
+  // Exemplo de uso:
+  // const regrasPorTema = {
+  //   entrada_cooperados: {
+  //     inteiro: ["meta_2026", "falta_para_meta"],
+  //     percentual: ["perc_meta_realizada"],
+  //     moeda: [],
+  //   },
+  // };
+  const regrasPorTema: Partial<
+    Record<
+      ChaveRelatorioFuncionario,
+      {
+        inteiro?: string[];
+        percentual?: string[];
+        moeda?: string[];
+        percentualCasas?: number;
+      }
+    >
+  > = {
+    entrada_cooperados: {
+      inteiro: [
+        "meta_semanal",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+      ],
+      percentual: [
+        "perc_meta_realizada",
+        "porcentagem_semanal",
+        "perc_meta_realizada_mensal",
+      ]
+    },
+    conta_corrente_abertas: {
+      inteiro: [
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "meta_semanal_52",
+        "gap_semanal",
+      ],
+      percentual: [
+        "perc_meta_realizada_mensal",
+        "perc_meta_realizada",
+        "porcentagem_semana",
+      ]
+    },
+    seguro_gerais_novo: {
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+      moeda: [
+        "producao_semanal",
+        "meta_semanal_mes",
+        "meta_semanal_52",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+    },
+    seguro_venda_nova: {
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+      moeda: [
+        "producao_vigente",
+        "meta_vigente",
+        "gap_vigente",
+        "producao_semanal",
+        "meta_semanal",
+        "meta_semanal_52",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+    },
+    seguro_rural: {
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+      moeda: [
+        "producao_semanal",
+        "meta_semanal",
+        "meta_semanal_52",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+    },
+    consorcio: {
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+      moeda: [
+        "producao_semanal",
+        "meta_semanal_52",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+    },
+    saldo_previdencia_mi: {
+      inteiro: [
+        "producao_semanal",
+        "meta_semanal",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+    },
+    saldo_previdencia_vgbl: {
+      inteiro: [
+        "producao_semanal",
+        "meta_semanal",
+        "gap_semanal",
+        "producao_mensal",
+        "meta_mensal",
+        "falta_para_meta_mensal",
+        "producao_ano",
+        "meta_2026",
+        "falta_para_meta",
+      ],
+      percentual: [
+        "porcentagem_semana",
+        "perc_meta_realizada",
+        "perc_meta_realizada_mensal",
+      ],
+    },
+
+
+  };
+
+  if (!temaAtual || !regrasPorTema[temaAtual]) {
+    return String(valor);
+  }
+
+  const regraTema = regrasPorTema[temaAtual];
+  const camposInteiro = new Set(regraTema?.inteiro ?? []);
+  const camposPercentual = new Set(regraTema?.percentual ?? []);
+  const camposMoeda = new Set(regraTema?.moeda ?? []);
+  const casasPercentual = regraTema?.percentualCasas ?? 2;
+
+  if (camposInteiro.has(campo)) {
+    return formatarInteiroBR(numero);
+  }
+
+  if (camposPercentual.has(campo)) {
+    return formatarPercentualBR(numero, casasPercentual);
+  }
+
+  if (camposMoeda.has(campo)) {
+    return formatarMoedaBR(numero);
+  }
+
+  return String(valor);
+}
+
+function obterMaisRecente(datas: Array<string | Date | null | undefined>) {
+  const validas = datas
+    .filter(Boolean)
+    .map((valor) => new Date(String(valor).replace(" ", "T")))
+    .filter((dt) => !Number.isNaN(dt.getTime()));
+
+  if (!validas.length) return null;
+  return new Date(Math.max(...validas.map((dt) => dt.getTime())));
+}
+
+function aplicarClasseCor(campo: string, valorOriginal: unknown) {
+  if (!CAMPOS_COLORIR_FUNCIONARIO.has(campo)) return "";
+
+  const n = parseNumeroBR(valorOriginal);
+  if (Number.isNaN(n)) return "";
+
+  return n <= 0
+    ? "text-red-600 bg-red-50/60"
+    : "text-emerald-700 bg-emerald-50/60";
+}
+
+function calcularPercentualComMetaArredondada(
+  item: RelatorioFuncionarioItem,
+  campo: string,
+  temaAtual?: ChaveRelatorioFuncionario | ""
+) {
+  const temasAlvo = new Set<ChaveRelatorioFuncionario>([
+    "entrada_cooperados",
+    "conta_corrente_abertas",
+  ]);
+
+  if (!temaAtual || !temasAlvo.has(temaAtual)) return null;
+
+  if (campo === "porcentagem_semanal" || campo === "porcentagem_semana") {
+    const producao = parseNumeroBR(item?.producao_semanal);
+    const metaBruta = parseNumeroBR(
+      item?.meta_semanal ?? item?.meta_semanal_52 ?? item?.meta_semanal_ano
+    );
+    if (Number.isNaN(producao) || Number.isNaN(metaBruta)) return null;
+
+    const meta = Math.round(metaBruta);
+    if (meta <= 0) return 0;
+    return (producao / meta) * 100;
+  }
+
+  if (campo === "perc_meta_realizada_mensal") {
+    const producao = parseNumeroBR(item?.producao_mensal ?? item?.producao_vigente);
+    const metaBruta = parseNumeroBR(item?.meta_mensal ?? item?.meta_vigente);
+    if (Number.isNaN(producao) || Number.isNaN(metaBruta)) return null;
+
+    const meta = Math.round(metaBruta);
+    if (meta <= 0) return 0;
+    return (producao / meta) * 100;
+  }
+
+  if (campo === "perc_meta_realizada") {
+    const producao = parseNumeroBR(item?.producao_ano);
+    const metaBruta = parseNumeroBR(item?.meta_2026 ?? item?.meta_ano);
+    if (Number.isNaN(producao) || Number.isNaN(metaBruta)) return null;
+
+    const meta = Math.round(metaBruta);
+    if (meta <= 0) return 0;
+    return (producao / meta) * 100;
+  }
+
+  return null;
+}
+
+function getSemanasDoMes(ano: number, mesIndex: number) {
+  const semanas: { inicio: Date; fim: Date }[] = [];
+
+  const mesInicio = new Date(ano, mesIndex, 1);
+  const mesFim = new Date(ano, mesIndex + 1, 0);
+
+  let cursor = new Date(mesInicio);
+
+  while (cursor <= mesFim) {
+    if (cursor.getDay() === 0 || cursor.getDay() === 6) {
+      cursor.setDate(cursor.getDate() + 1);
+      continue;
+    }
+
+    const inicioSemana = new Date(cursor);
+    const fimSemana = new Date(cursor);
+
+    while (fimSemana.getDay() !== 5 && fimSemana <= mesFim) {
+      fimSemana.setDate(fimSemana.getDate() + 1);
+
+      if (fimSemana.getDay() === 6) {
+        fimSemana.setDate(fimSemana.getDate() - 1);
+        break;
+      }
+    }
+
+    semanas.push({
+      inicio: new Date(inicioSemana),
+      fim: new Date(fimSemana),
+    });
+
+    cursor = new Date(fimSemana);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return semanas;
+}
+
+function gerarMesesAteAtual() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mesAtual = hoje.getMonth();
+
+  const nomesMes = [
+    "Janeiro",
+    "Fevereiro",
+    "Março",
+    "Abril",
+    "Maio",
+    "Junho",
+    "Julho",
+    "Agosto",
+    "Setembro",
+    "Outubro",
+    "Novembro",
+    "Dezembro",
+  ];
+
+  return Array.from({ length: mesAtual + 1 }, (_, index) => ({
+    value: String(index),
+    label: `${nomesMes[index]} / ${ano}`,
+  }));
+}
+
+function gerarSemanasDoMes(mesIndex: number): PeriodoOption[] {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+
+  const semanas = getSemanasDoMes(ano, mesIndex);
+  const ehMesAtual = ano === hoje.getFullYear() && mesIndex === hoje.getMonth();
+
+  const semanasFiltradas = ehMesAtual
+    ? semanas.filter((w) => w.inicio <= inicioDoDia(hoje))
+    : semanas;
+
+  const listaFinal = semanasFiltradas.length ? semanasFiltradas : semanas.slice(0, 1);
+
+  const options: PeriodoOption[] = listaFinal.map((w, idx) => ({
+    value: `${formatarISO(w.inicio)}|${formatarISO(w.fim)}`,
+    label: `Semana ${idx + 1} (${formatarBR(w.inicio)} à ${formatarBR(w.fim)})`,
+    tipo: "semana",
+  }));
+
+  const inicioMes = new Date(ano, mesIndex, 1);
+  const fimMes = new Date(ano, mesIndex + 1, 0);
+  const fimEfetivo = ehMesAtual ? inicioDoDia(hoje) : fimMes;
+
+  options.push({
+    value: `${formatarISO(inicioMes)}|${formatarISO(fimEfetivo)}`,
+    label: `Mês inteiro (${formatarBR(inicioMes)} à ${formatarBR(fimEfetivo)})`,
+    tipo: "mes_inteiro",
+  });
+
+  return options;
+}
+
+function gerarOpcaoProducaoAno() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const inicioAno = new Date(ano, 0, 1);
+
+  return {
+    value: `${formatarISO(inicioAno)}|${formatarISO(inicioDoDia(hoje))}`,
+    label: "Produção Ano",
+    tipo: "producao_total" as const,
+  };
+}
+
+function extrairMesDoPeriodo(periodo: string) {
+  const inicio = periodo.split("|")[0];
+  if (!inicio) return "";
+
+  const data = new Date(`${inicio}T00:00:00`);
+  if (Number.isNaN(data.getTime())) return "";
+
+  return String(data.getMonth());
+}
+
+export function ProducaoMetaFuncionarioForm() {
+  const [tema, setTema] = useState<ChaveRelatorioFuncionario | "">("");
+  const [mesSelecionado, setMesSelecionado] = useState("");
+  const [periodoSelecionado, setPeriodoSelecionado] = useState("");
+  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState("");
+  const [modoPeriodo, setModoPeriodo] =
+    useState<ModoPeriodoFuncionario>("semana");
+
+  const [loading, setLoading] = useState(false);
+  const [dados, setDados] = useState<RelatorioFuncionarioItem[]>([]);
+  const [erro, setErro] = useState("");
+  const [datasRelatorioCache, setDatasRelatorioCache] = useState<
+    RelatorioFuncionarioDataInfo[]
+  >([]);
+
+  const [ultimaAtualizacaoBanco, setUltimaAtualizacaoBanco] = useState("-");
+  const [ultimaAtualizacaoSisbr, setUltimaAtualizacaoSisbr] = useState("-");
+  const [infoTema, setInfoTema] = useState<RelatorioFuncionarioDataInfo | null>(
+    null
+  );
+
+  const mesesOptions = useMemo(() => gerarMesesAteAtual(), []);
+  const opcaoProducaoAno = useMemo(() => gerarOpcaoProducaoAno(), []);
+
+  const semanasOptions = useMemo(() => {
+    if (!mesSelecionado || mesSelecionado === "__ANO__") return [];
+    return gerarSemanasDoMes(Number(mesSelecionado));
+  }, [mesSelecionado]);
+
+  const configAtual = useMemo(() => {
+    if (!tema) return null;
+    return getConfigAjustadaPorPeriodoFuncionario(tema, modoPeriodo);
+  }, [tema, modoPeriodo]);
+
+  const dadosDisponiveis = useMemo(() => {
+    const alvo = "COLABORADOR SANTA BRANCA";
+
+    return (dados || []).filter((item) => {
+      const nome =
+        item?.nm_funcionario ??
+        (item as Record<string, unknown>)?.NM_FUNCIONARIO ??
+        (item as Record<string, unknown>)?.funcionario ??
+        (item as Record<string, unknown>)?.FUNCIONARIO ??
+        "";
+
+      if (normalizarTextoComparacao(nome) === alvo) return false;
+      if ((item as Record<string, unknown>)?.sem_retorno_meta === true) {
+        return true;
+      }
+
+      return temMetaAcimaDeUm(item);
+    });
+  }, [dados]);
+
+  const funcionariosOptions = useMemo(() => {
+    const nomes = dadosDisponiveis
+      .map((item) =>
+        String(
+          item?.nm_funcionario ??
+            (item as Record<string, unknown>)?.NM_FUNCIONARIO ??
+            (item as Record<string, unknown>)?.funcionario ??
+            (item as Record<string, unknown>)?.FUNCIONARIO ??
+            ""
+        ).trim()
+      )
+      .filter(Boolean);
+
+    return Array.from(new Set(nomes)).sort((a, b) =>
+      a.localeCompare(b, "pt-BR")
+    );
+  }, [dadosDisponiveis]);
+
+  const dadosFiltrados = useMemo(() => {
+    if (!funcionarioSelecionado) return dadosDisponiveis;
+
+    const funcionarioNormalizado =
+      normalizarTextoComparacao(funcionarioSelecionado);
+
+    return dadosDisponiveis.filter((item) => {
+      const nome =
+        item?.nm_funcionario ??
+        (item as Record<string, unknown>)?.NM_FUNCIONARIO ??
+        (item as Record<string, unknown>)?.funcionario ??
+        (item as Record<string, unknown>)?.FUNCIONARIO ??
+        "";
+
+      return normalizarTextoComparacao(nome) === funcionarioNormalizado;
+    });
+  }, [dadosDisponiveis, funcionarioSelecionado]);
+
+  const temaLabel = useMemo(() => {
+    return TIPOS_RELATORIO_FUNCIONARIO_OPTIONS.flatMap((grupo) => grupo.options).find(
+      (item) => item.value === tema
+    )?.label;
+  }, [tema]);
+
+  async function carregarSessao() {
+    try {
+      await buscarUsuarioLogadoMetaFuncionario();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function carregarUltimaAtualizacao() {
+    try {
+      const lista = await buscarDatasRelatorioMetaFuncionario();
+      setDatasRelatorioCache(Array.isArray(lista) ? lista : []);
+    } catch {
+      setDatasRelatorioCache([]);
+    }
+  }
+
+  async function carregarInfoTema(chaveTema: ChaveRelatorioFuncionario) {
+    try {
+      const nmTabela = MAPA_TEMA_PARA_TABELA_FUNCIONARIO[chaveTema];
+      const lista = datasRelatorioCache;
+
+      if (!nmTabela) {
+        setInfoTema(null);
+
+        const baseLista = Array.isArray(lista) ? lista : [];
+        const maisRecenteCarga = obterMaisRecente(
+          baseLista.map((row) => row?.dt_carga)
+        );
+        const maisRecenteMovimento = obterMaisRecente(
+          baseLista.map((row) => row?.dt_movimento)
+        );
+        setUltimaAtualizacaoBanco(
+          maisRecenteCarga ? formatarDataHoraBR(maisRecenteCarga) : "-"
+        );
+        setUltimaAtualizacaoSisbr(
+          maisRecenteMovimento ? formatarDataHoraBR(maisRecenteMovimento) : "-"
+        );
+        return;
+      }
+
+      const item = Array.isArray(lista)
+        ? lista.find((row) => row?.nm_tabela === nmTabela)
+        : null;
+
+      setInfoTema(item ?? null);
+
+      if (item) {
+        setUltimaAtualizacaoBanco(
+          item?.dt_carga ? formatarDataHoraBR(item.dt_carga) : "-"
+        );
+        setUltimaAtualizacaoSisbr(
+          item?.dt_movimento ? formatarDataHoraBR(item.dt_movimento) : "-"
+        );
+        return;
+      }
+
+      const baseLista = Array.isArray(lista) ? lista : [];
+      const maisRecenteCarga = obterMaisRecente(
+        baseLista.map((row) => row?.dt_carga)
+      );
+      const maisRecenteMovimento = obterMaisRecente(
+        baseLista.map((row) => row?.dt_movimento)
+      );
+      setUltimaAtualizacaoBanco(
+        maisRecenteCarga ? formatarDataHoraBR(maisRecenteCarga) : "-"
+      );
+      setUltimaAtualizacaoSisbr(
+        maisRecenteMovimento ? formatarDataHoraBR(maisRecenteMovimento) : "-"
+      );
+    } catch {
+      setInfoTema(null);
+      setUltimaAtualizacaoBanco("-");
+      setUltimaAtualizacaoSisbr("-");
+    }
+  }
+
+  async function carregarRelatorio(params?: {
+    temaAtual?: ChaveRelatorioFuncionario;
+    periodoAtual?: string;
+    modoAtual?: ModoPeriodoFuncionario;
+  }) {
+    const temaBusca = params?.temaAtual ?? tema;
+    const periodoBusca = params?.periodoAtual ?? periodoSelecionado;
+    const modoBusca = params?.modoAtual ?? modoPeriodo;
+
+    if (!temaBusca || !periodoBusca) {
+      setDados([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setErro("");
+
+      const resp = await buscarProducaoMetaRelatorioFuncionario({
+        tema: temaBusca,
+        periodo: periodoBusca,
+      });
+
+      const lista = Array.isArray(resp?.rows) ? resp.rows : [];
+      setModoPeriodo(modoBusca);
+      setDados(lista);
+    } catch (error) {
+      console.error(error);
+      setErro("Não foi possível carregar o relatório.");
+      setDados([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleBaixarCsv() {
+    if (!tema || !configAtual || !dadosFiltrados.length) return;
+
+    const linhas = dadosFiltrados.map((item) =>
+      configAtual.campos.map((campo) => {
+        const valorOriginal = item?.[campo] ?? "-";
+        const percentualAjustado = calcularPercentualComMetaArredondada(
+          item,
+          campo,
+          tema
+        );
+        const valor =
+          percentualAjustado === null ? valorOriginal : percentualAjustado;
+
+        return formatarValorExibicaoRelatorio(campo, valor, tema);
+      })
+    );
+
+    const nomeTema = limparNomeArquivoCsv(temaLabel || tema);
+    const periodoArquivo = limparNomeArquivoCsv(
+      periodoSelecionado.replace("|", "_a_") || formatarISO(new Date())
+    );
+    const funcionarioArquivo = funcionarioSelecionado
+      ? `_${limparNomeArquivoCsv(funcionarioSelecionado)}`
+      : "";
+
+    baixarArquivoCsv(
+      `producao_meta_funcionario_${nomeTema}${funcionarioArquivo}_${periodoArquivo}.csv`,
+      [configAtual.colunas, ...linhas]
+    );
+  }
+
+  useEffect(() => {
+    carregarSessao();
+    carregarUltimaAtualizacao();
+  }, []);
+
+  useEffect(() => {
+    if (!tema) {
+      setInfoTema(null);
+      setUltimaAtualizacaoBanco("-");
+      setUltimaAtualizacaoSisbr("-");
+      return;
+    }
+
+    carregarInfoTema(tema);
+  }, [tema, datasRelatorioCache]);
+
+  useEffect(() => {
+    if (
+      funcionarioSelecionado &&
+      !funcionariosOptions.includes(funcionarioSelecionado)
+    ) {
+      setFuncionarioSelecionado("");
+    }
+  }, [funcionarioSelecionado, funcionariosOptions]);
+
+  async function handleChangeTema(value: string) {
+    const novoTema = value as ChaveRelatorioFuncionario | "";
+
+    setTema(novoTema);
+    setDados([]);
+    setErro("");
+    setMesSelecionado("");
+    setPeriodoSelecionado("");
+    setFuncionarioSelecionado("");
+    setModoPeriodo("semana");
+
+    if (!novoTema) return;
+
+    if (TEMAS_SOMENTE_ANO_FUNCIONARIO.has(novoTema)) {
+      const valorAno = opcaoProducaoAno.value;
+      setPeriodoSelecionado(valorAno);
+      setModoPeriodo("ano");
+
+      await carregarRelatorio({
+        temaAtual: novoTema,
+        periodoAtual: valorAno,
+        modoAtual: "ano",
+      });
+    }
+  }
+
+  function handleChangeMes(value: string) {
+    setMesSelecionado(value);
+    setDados([]);
+    setErro("");
+
+    if (!value) {
+      setPeriodoSelecionado("");
+      return;
+    }
+
+    if (value === "__ANO__") {
+      setPeriodoSelecionado(opcaoProducaoAno.value);
+      setModoPeriodo("ano");
+
+      if (tema) {
+        carregarRelatorio({
+          temaAtual: tema,
+          periodoAtual: opcaoProducaoAno.value,
+          modoAtual: "ano",
+        });
+      }
+      return;
+    }
+
+    setPeriodoSelecionado("");
+  }
+
+  async function handleChangePeriodo(value: string) {
+    setPeriodoSelecionado(value);
+
+    if (!tema || !value) {
+      setDados([]);
+      return;
+    }
+
+    const opt = semanasOptions.find((item) => item.value === value);
+
+    const novoModo: ModoPeriodoFuncionario =
+      opt?.tipo === "mes_inteiro"
+        ? "mes"
+        : opt?.tipo === "semana"
+          ? "semana"
+          : "ano";
+
+    setModoPeriodo(novoModo);
+
+    await carregarRelatorio({
+      temaAtual: tema,
+      periodoAtual: value,
+      modoAtual: novoModo,
+    });
+  }
+
+  const avisoTema =
+    tema === "consorcio"
+      ? "Este relatório de consórcio possui atualização mensal."
+      : "";
+
+  const mesesComInconsistenciaSisbr = new Set(["6", "7", "8"]);
+  const mesDoPeriodoSelecionado = extrairMesDoPeriodo(periodoSelecionado);
+
+  const mostrarAvisoInconsistenciaSisbr =
+    tema === "seguro_gerais_novo" ||
+    (tema === "seguro_venda_nova" &&
+      (mesesComInconsistenciaSisbr.has(mesSelecionado) ||
+        mesesComInconsistenciaSisbr.has(mesDoPeriodoSelecionado)));
+
+  const mostrarMes =
+    !!tema && !TEMAS_SOMENTE_ANO_FUNCIONARIO.has(tema as ChaveRelatorioFuncionario);
+
+  const mostrarPeriodo =
+    !!tema &&
+    (TEMAS_SOMENTE_ANO_FUNCIONARIO.has(tema as ChaveRelatorioFuncionario) ||
+      (!!mesSelecionado && mesSelecionado !== "__ANO__"));
+
+  return (
+    <div className="space-y-6">
+      <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,0.06)]">
+        <div className="border-b border-gray-100 bg-[linear-gradient(135deg,#f8fffa_0%,#ffffff_45%,#f5fbff_100%)] p-6">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div className="max-w-3xl">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#C7D300]/40 bg-[#C7D300]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5E6B00]">
+                Painel analítico por funcionário
+              </div>
+
+              <h2 className="text-xl font-semibold text-gray-900">
+                Filtros de consulta
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                Selecione o tipo de relatório e o período desejado para visualizar
+                os indicadores consolidados de produção e meta por funcionário.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3">
+                <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                  <FaDatabase />
+                  Última atualização
+                </div>
+                <p className="text-xs text-emerald-800">
+                  Banco:{" "}
+                  <span className="font-semibold text-emerald-900">
+                    {ultimaAtualizacaoBanco}
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-emerald-800">
+                  Sisbr Analí­tico:{" "}
+                  <span className="font-semibold text-emerald-900">
+                    {ultimaAtualizacaoSisbr}
+                  </span>
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <FaLayerGroup />
+                  Relatório
+                </div>
+                <p className="text-sm font-semibold text-slate-800">
+                  {temaLabel || "Nenhum selecionado"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_0.9fr_1fr_1.1fr]">
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <FaFilter className="text-[#79B729]" />
+                Tipo de relatório
+              </label>
+
+              <select
+                value={tema}
+                onChange={(e) => handleChangeTema(e.target.value)}
+                className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 shadow-sm outline-none transition-all focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+              >
+                <option value="">Selecione</option>
+
+                {TIPOS_RELATORIO_FUNCIONARIO_OPTIONS.map((grupo) => (
+                  <optgroup key={grupo.label} label={grupo.label}>
+                    {grupo.options.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <FaCalendarAlt className="text-[#00AE9D]" />
+                Mês
+              </label>
+
+              <select
+                value={mesSelecionado}
+                onChange={(e) => handleChangeMes(e.target.value)}
+                disabled={!mostrarMes}
+                className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 shadow-sm outline-none transition-all disabled:cursor-not-allowed disabled:bg-gray-100 focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+              >
+                <option value="">Selecione o mês</option>
+
+                {mesesOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+
+                <option value="__ANO__">{opcaoProducaoAno.label}</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <FaChartLine className="text-[#C7D300]" />
+                Semana / período
+              </label>
+
+              <select
+                value={
+                  TEMAS_SOMENTE_ANO_FUNCIONARIO.has(
+                    tema as ChaveRelatorioFuncionario
+                  )
+                    ? opcaoProducaoAno.value
+                    : periodoSelecionado
+                }
+                onChange={(e) => {
+                  if (
+                    TEMAS_SOMENTE_ANO_FUNCIONARIO.has(
+                      tema as ChaveRelatorioFuncionario
+                    )
+                  ) {
+                    return;
+                  }
+
+                  handleChangePeriodo(e.target.value);
+                }}
+                disabled={
+                  !mostrarPeriodo ||
+                  TEMAS_SOMENTE_ANO_FUNCIONARIO.has(
+                    tema as ChaveRelatorioFuncionario
+                  )
+                }
+                className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 shadow-sm outline-none transition-all disabled:cursor-not-allowed disabled:bg-gray-100 focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+              >
+                {!TEMAS_SOMENTE_ANO_FUNCIONARIO.has(
+                  tema as ChaveRelatorioFuncionario
+                ) && <option value="">Selecione a semana</option>}
+
+                {TEMAS_SOMENTE_ANO_FUNCIONARIO.has(
+                  tema as ChaveRelatorioFuncionario
+                ) ? (
+                  <option value={opcaoProducaoAno.value}>
+                    {opcaoProducaoAno.label}
+                  </option>
+                ) : (
+                  semanasOptions.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <FaUser className="text-[#00796B]" />
+                Funcionário
+              </label>
+
+              <select
+                value={funcionarioSelecionado}
+                onChange={(e) => setFuncionarioSelecionado(e.target.value)}
+                disabled={!funcionariosOptions.length}
+                className="h-12 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-gray-700 shadow-sm outline-none transition-all disabled:cursor-not-allowed disabled:bg-gray-100 focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10"
+              >
+                <option value="">Todos os funcionários</option>
+                {funcionariosOptions.map((nome) => (
+                  <option key={nome} value={nome}>
+                    {nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {(infoTema || avisoTema || mostrarAvisoInconsistenciaSisbr) && (
+            <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr]">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <FaDatabase className="text-[#00AE9D]" />
+                  Informações do relatório
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div className="rounded-xl border border-white bg-white px-4 py-3 shadow-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                      Data de inserção no banco
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-gray-800">
+                      {formatarDataHoraBR(infoTema?.dt_carga)}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-white bg-white px-4 py-3 shadow-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                      Data do Sisbr Analítico
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-gray-800">
+                      {formatarDataHoraBR(infoTema?.dt_movimento)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-900">
+                  <FaInfoCircle />
+                  Observação
+                </div>
+                <p className="text-sm text-amber-800">
+                  {mostrarAvisoInconsistenciaSisbr ? (
+                    <>
+                      Atenção: foram identificadas inconsistências na base do{" "}
+                      <strong>Sisbr Analítico</strong> para este período. Recomenda-se validar os
+                      valores com cautela até a regularização da origem dos dados.
+                    </>
+                  ) : (
+                    avisoTema ||
+                    "Os dados exibidos variam conforme o relatório e o período selecionados."
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_10px_35px_rgba(15,23,42,0.06)]">
+        <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/70 px-6 py-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Resultado consolidado
+            </h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Visualização dinâmica dos dados conforme o relatório selecionado.
+            </p>
+          </div>
+
+          {(temaLabel || dadosFiltrados.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2 md:justify-end">
+              {temaLabel && (
+                <div className="inline-flex w-fit items-center rounded-full border border-[#00AE9D]/20 bg-[#00AE9D]/10 px-3 py-1 text-xs font-semibold text-[#00796B]">
+                  {temaLabel}
+                </div>
+              )}
+
+              {dadosFiltrados.length > 0 && configAtual && (
+                <button
+                  type="button"
+                  onClick={handleBaixarCsv}
+                  disabled={loading}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#00AE9D]/30 bg-white px-3 py-2 text-xs font-semibold text-[#00796B] shadow-sm transition hover:bg-[#00AE9D]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <FaDownload className="text-[12px]" />
+                  Baixar CSV
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6">
+          {loading ? (
+            <div className="flex min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-500">
+              Carregando relatório...
+            </div>
+          ) : erro ? (
+            <div className="flex min-h-[260px] items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-6 text-center text-sm text-red-700">
+              {erro}
+            </div>
+          ) : !tema ? (
+            <div className="flex min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 text-center text-sm text-gray-500">
+              Selecione um tipo de relatório para iniciar a consulta.
+            </div>
+          ) : !dadosFiltrados.length ? (
+            <div className="flex min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 text-center text-sm text-gray-500">
+              Sem dados para exibir.
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-gray-200">
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-collapse">
+                  <thead>
+                    <tr className="bg-[linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)]">
+                      {configAtual?.colunas.map((coluna, index) => (
+                        <th
+                          key={`${coluna}-${index}`}
+                          className={`border-b border-gray-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600 ${index === 0 ? "text-left" : "text-center"
+                            }`}
+                        >
+                          {coluna}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {dadosFiltrados.map((item, rowIndex) => (
+                      <tr
+                        key={`${item?.nm_funcionario ?? rowIndex}-${rowIndex}`}
+                        className={`transition ${rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/50"
+                          } hover:bg-[#00AE9D]/[0.04]`}
+                      >
+                        {configAtual?.campos.map((campo, index) => {
+                          const valorOriginal = item?.[campo] ?? "-";
+                          const percentualAjustado = calcularPercentualComMetaArredondada(
+                            item,
+                            campo,
+                            tema
+                          );
+                          const valor =
+                            percentualAjustado === null ? valorOriginal : percentualAjustado;
+                          const valorFormatado = formatarValorExibicaoRelatorio(
+                            campo,
+                            valor,
+                            tema
+                          );
+                          const corClasse = aplicarClasseCor(campo, valor);
+
+                          return (
+                            <td
+                              key={`${campo}-${index}-${rowIndex}`}
+                              className={`border-b border-gray-100 px-4 py-3 text-sm ${index === 0
+                                  ? "text-left font-medium text-gray-900"
+                                  : "text-center text-gray-700"
+                                }`}
+                            >
+                              <span
+                                className={`inline-block rounded-lg px-2 py-1 ${corClasse || ""
+                                  }`}
+                              >
+                                {valorFormatado}
+                              </span>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
