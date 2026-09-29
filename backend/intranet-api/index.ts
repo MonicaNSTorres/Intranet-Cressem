@@ -19,6 +19,8 @@ import os from "os";
 import { initOraclePool, closeOraclePool } from "./src/config/oracle.pool";
 import { estoqueConsumiveisService } from "./src/services/estoque_consumiveis.service";
 import { registrarAcesso } from "./src/middleware/registrar-acesso.middleware";
+import { apiReference } from "@scalar/express-api-reference";
+import { openApiDocument } from "./src/config/openapi";
 
 const app = express();
 const MAX_PDF_UPLOAD_MB = Number(process.env.MAX_PDF_UPLOAD_MB || 50);
@@ -96,6 +98,18 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
+
+app.get("/openapi.json", (_req, res) => {
+  res.json(openApiDocument);
+});
+
+app.use(
+  "/docs",
+  apiReference({
+    url: "/openapi.json",
+    pageTitle: "Intranet API - Documentação",
+  })
+);
 
 app.use(registrarAcesso);
 
