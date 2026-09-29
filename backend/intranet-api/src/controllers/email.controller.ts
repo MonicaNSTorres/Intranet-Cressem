@@ -1,6 +1,17 @@
-﻿import { Request, Response } from "express";
+import { Request, Response } from "express";
+import oracledb from "oracledb";
 import { sendEmail } from "../services/email.service";
 import { oracleExecute } from "../services/oracle.service";
+import { AuthenticatedRequest } from "../middleware/auth.middleware";
+
+const ID_DIRETOR_PRESIDENTE_PARTICIPACAO = 94;
+
+function modoTesteParticipacaoAtivo() {
+  return (
+    process.env.NODE_ENV === "development" &&
+    String(process.env.PARTICIPACAO_TEST_MODE || "").trim().toLowerCase() === "true"
+  );
+}
 
 function formatarCnpj(cnpj: string) {
   if (!cnpj) return "";
@@ -54,6 +65,63 @@ function aplicarParticipacaoDebugDestinatarios(destinatarios: string | string[])
   return [String(destinatarios || "").trim()].filter(Boolean);
 }
 
+async function obterEmailsDiretoriaParticipacao() {
+  const result = await oracleExecute(
+    `
+      SELECT
+        f.ID_FUNCIONARIO,
+        f.EMAIL,
+        CASE
+          WHEN EXISTS (
+            SELECT 1
+            FROM DBACRESSEM.FERIAS_FUNCIONARIOS ferias
+            WHERE ferias.ID_FUNCIONARIO = f.ID_FUNCIONARIO
+              AND TRUNC(SYSDATE) BETWEEN TRUNC(ferias.DT_DIA_INICIO) AND TRUNC(ferias.DT_DIA_FIM)
+          ) THEN 1
+          ELSE 0
+        END AS EM_FERIAS
+      FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+      INNER JOIN DBACRESSEM.CARGO_GERENTES_SICOOB_CRESSEM cargo
+        ON cargo.ID_CARGO = f.ID_CARGO
+      WHERE UPPER(TRIM(cargo.NM_NIVEL)) = 'DIRETORIA'
+      ORDER BY f.ID_FUNCIONARIO
+    `,
+    {},
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+
+  const diretores = (result.rows || []) as any[];
+  const diretorPresidente = diretores.find(
+    (diretor) => Number(diretor.ID_FUNCIONARIO) === ID_DIRETOR_PRESIDENTE_PARTICIPACAO
+  );
+
+  if (Number(diretorPresidente?.EM_FERIAS || 0) !== 1) {
+    return [String(diretorPresidente?.EMAIL || "").trim()].filter(Boolean);
+  }
+
+  return diretores
+    .filter(
+      (diretor) =>
+        Number(diretor.ID_FUNCIONARIO) !== ID_DIRETOR_PRESIDENTE_PARTICIPACAO &&
+        Number(diretor.EM_FERIAS || 0) !== 1
+    )
+    .map((diretor) => String(diretor.EMAIL || "").trim())
+    .filter(Boolean);
+}
+
+function getEmailsFinanceiroParticipacao() {
+  const raw =
+    process.env.PATROCINIO_FINANCEIRO_EMAIL ||
+    process.env.FINANCEIRO_EMAIL ||
+    process.env.REEMBOLSO_FINANCEIRO_EMAIL ||
+    "";
+
+  return String(raw)
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+}
+
 function simNao(value: any) {
   return Number(value || 0) === 1 ? "SIM" : "NÃO";
 }
@@ -73,7 +141,362 @@ function fmtDate(value: any) {
   return d.toLocaleDateString("pt-BR");
 }
 
+
+function escaparHtml(value: any) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function linhaTabelaEmail(label: string, value: any) {
+  return `
+    <tr>
+      <td
+        width="36%"
+        valign="top"
+        style="
+          padding: 11px 12px;
+          border-bottom: 1px solid #dfe6e2;
+          background-color: #f7f9f8;
+          font-family: Arial, sans-serif;
+          font-size: 13px;
+          line-height: 18px;
+          font-weight: 700;
+          color: #17211d;
+        "
+      >
+        ${escaparHtml(label)}
+      </td>
+      <td
+        width="64%"
+        valign="top"
+        style="
+          padding: 11px 12px;
+          border-bottom: 1px solid #dfe6e2;
+          background-color: #ffffff;
+          font-family: Arial, sans-serif;
+          font-size: 13px;
+          line-height: 18px;
+          color: #17211d;
+          word-break: break-word;
+        "
+      >
+        ${escaparHtml(value)}
+      </td>
+    </tr>
+  `;
+}
+
+function montarEmailParticipacao({
+  titulo,
+  saudacao,
+  introducao,
+  linhas,
+  orientacao,
+}: {
+  titulo: string;
+  saudacao: string;
+  introducao: string;
+  linhas: string;
+  orientacao?: string;
+}) {
+  return `
+    <!doctype html>
+    <html>
+      <body style="margin:0; padding:0; background-color:#f2f6f4;">
+        <table
+          role="presentation"
+          width="100%"
+          cellspacing="0"
+          cellpadding="0"
+          border="0"
+          style="width:100%; background-color:#f2f6f4; margin:0; padding:0;"
+        >
+          <tr>
+            <td align="center" style="padding:24px 12px;">
+              <table
+                role="presentation"
+                width="620"
+                cellspacing="0"
+                cellpadding="0"
+                border="0"
+                style="
+                  width:100%;
+                  max-width:620px;
+                  background-color:#ffffff;
+                  border:1px solid #d7e0db;
+                  border-radius:14px;
+                  overflow:hidden;
+                "
+              >
+                <tr>
+                  <td
+                    style="
+                      padding:20px 22px 18px 22px;
+                      background-color:#007a48;
+                      font-family:Arial, sans-serif;
+                    "
+                  >
+                    <div
+                      style="
+                        margin:0 0 6px 0;
+                        font-size:11px;
+                        line-height:15px;
+                        font-weight:700;
+                        color:#ffffff;
+                        text-transform:uppercase;
+                      "
+                    >
+                      <span
+                        style="
+                          background-color:#fff200;
+                          color:#17211d;
+                          padding:1px 3px;
+                        "
+                      >PARTICIPAÇÃO</span>
+                      <span style="color:#ffffff;"> DE MARKETING</span>
+                    </div>
+
+                    <div
+                      style="
+                        margin:0;
+                        font-size:20px;
+                        line-height:25px;
+                        font-weight:700;
+                        color:#ffffff;
+                      "
+                    >
+                      ${escaparHtml(titulo)}
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:20px 22px 22px 22px;">
+                    <p
+                      style="
+                        margin:0 0 10px 0;
+                        font-family:Arial, sans-serif;
+                        font-size:13px;
+                        line-height:19px;
+                        color:#17211d;
+                      "
+                    >
+                      ${escaparHtml(saudacao)}
+                    </p>
+
+                    <p
+                      style="
+                        margin:0 0 16px 0;
+                        font-family:Arial, sans-serif;
+                        font-size:13px;
+                        line-height:19px;
+                        color:#17211d;
+                      "
+                    >
+                      ${escaparHtml(introducao)}
+                    </p>
+
+                    <table
+                      role="presentation"
+                      width="100%"
+                      cellspacing="0"
+                      cellpadding="0"
+                      border="0"
+                      style="
+                        width:100%;
+                        border-collapse:separate;
+                        border-spacing:0;
+                        border:1px solid #d7e0db;
+                        border-radius:10px;
+                        overflow:hidden;
+                      "
+                    >
+                      ${linhas}
+                    </table>
+
+                    ${
+                      orientacao
+                        ? `
+                          <table
+                            role="presentation"
+                            width="100%"
+                            cellspacing="0"
+                            cellpadding="0"
+                            border="0"
+                            style="width:100%; margin-top:16px;"
+                          >
+                            <tr>
+                              <td
+                                style="
+                                  padding:11px 13px;
+                                  background-color:#eaf5ef;
+                                  border-left:4px solid #00a65a;
+                                  border-radius:7px;
+                                  font-family:Arial, sans-serif;
+                                  font-size:13px;
+                                  line-height:18px;
+                                  color:#17211d;
+                                "
+                              >
+                                <strong>Orientação:</strong>
+                                ${escaparHtml(orientacao)}
+                              </td>
+                            </tr>
+                          </table>
+                        `
+                        : ""
+                    }
+
+                    <p
+                      style="
+                        margin:18px 0 0 0;
+                        font-family:Arial, sans-serif;
+                        font-size:11px;
+                        line-height:16px;
+                        color:#607067;
+                      "
+                    >
+                      Este e-mail foi enviado automaticamente pelo sistema.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
+}
+
+export type EncaminhamentoMarketingPorFerias = {
+  gerente: string;
+  inicio: string;
+  fim: string;
+};
+
+export async function enviarEmailMarketingPatrocinio(
+  id: number,
+  encaminhamentoPorFerias?: EncaminhamentoMarketingPorFerias
+) {
+  const patrocinioResult = await oracleExecute(
+    `SELECT * FROM DBACRESSEM.PATROCINIO WHERE ID_PATROCINIO = :id`,
+    { id }
+  );
+  const patrocinio: any = patrocinioResult.rows?.[0];
+
+  if (!patrocinio) {
+    throw new Error("Patrocínio não encontrado.");
+  }
+
+  const foiEncaminhadoPorFerias = Boolean(encaminhamentoPorFerias);
+  const introducao = foiEncaminhadoPorFerias
+    ? `A etapa de Gerência foi dispensada automaticamente porque ${encaminhamentoPorFerias!.gerente} está de férias de ${encaminhamentoPorFerias!.inicio} a ${encaminhamentoPorFerias!.fim}. A solicitação aguarda a opinião do setor de Marketing.`
+    : "A Gerência registrou o parecer e a solicitação de participação de marketing aguarda a opinião do setor de Marketing.";
+  const linhasEncaminhamento = foiEncaminhadoPorFerias
+    ? linhaTabelaEmail(
+        "Encaminhamento automático",
+        `Gerência dispensada: ${encaminhamentoPorFerias!.gerente} está de férias de ${encaminhamentoPorFerias!.inicio} a ${encaminhamentoPorFerias!.fim}.`
+      )
+    : "";
+
+  const body = montarEmailParticipacao({
+    titulo: "Parecer de Marketing solicitado",
+    saudacao: "Prezados(as),",
+    introducao,
+    linhas: [
+      linhaTabelaEmail("ID Solicitação", id),
+      linhaTabelaEmail("Empresa", patrocinio.NM_SOLICITANTE || ""),
+      linhaTabelaEmail("Solicitante", patrocinio.NM_FUNCIONARIO || ""),
+      linhasEncaminhamento,
+      linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+      linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+      linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+    ].join(""),
+    orientacao:
+      "Por favor, acessem a Intranet para consultar os detalhes e registrar o parecer de Marketing.",
+  });
+
+  await sendEmail(
+    aplicarParticipacaoDebugDestinatarios([
+      "julia.a.coutinho@sicoob.com.br",
+      "luiz.gerhard@sicoob.com.br",
+    ]),
+    "Parecer de Marketing solicitado - Participação",
+    body
+  );
+
+  return {
+    debug_email_ativo: getParticipacaoDebugEmail().length > 0,
+  };
+}
+
 export const emailController = {
+  async emailTesteParticipacao(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!modoTesteParticipacaoAtivo()) {
+        return res.status(404).json({ error: "Modo de teste não está ativo." });
+      }
+
+      const id = getParamAsNumber(req.params.id);
+      const emailUsuario = String(req.user?.email || "").trim();
+
+      if (id === null) {
+        return res.status(400).json({ error: "ID inválido." });
+      }
+
+      if (!emailUsuario) {
+        return res.status(400).json({ error: "Usuário autenticado sem e-mail." });
+      }
+
+      const patrocinioResult = await oracleExecute(
+        `SELECT * FROM DBACRESSEM.PATROCINIO WHERE ID_PATROCINIO = :id`,
+        { id }
+      );
+      const patrocinio: any = patrocinioResult.rows?.[0];
+
+      if (!patrocinio) {
+        return res.status(404).json({ error: "Patrocínio não encontrado." });
+      }
+
+      if (!String(patrocinio.NM_SOLICITANTE || "").toUpperCase().includes("TESTE")) {
+        return res.status(403).json({
+          error: "O e-mail de teste só pode ser enviado para solicitações identificadas como TESTE.",
+        });
+      }
+
+      const body = montarEmailParticipacao({
+        titulo: "Teste de fluxo de participação",
+        saudacao: "Olá,",
+        introducao: "Este é um e-mail de teste enviado pelo modo local de simulação.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail("Empresa", patrocinio.NM_SOLICITANTE || ""),
+          linhaTabelaEmail("Status atual", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao: "Nenhuma pessoa do fluxo real foi notificada por este teste.",
+      });
+
+      await sendEmail(
+        emailUsuario,
+        `[TESTE] Participação ${id} atualizada`,
+        body
+      );
+
+      return res.json({ message: "E-mail de teste enviado ao usuário logado." });
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({
+        error: "Erro ao enviar e-mail de teste",
+        details: error.message,
+      });
+    }
+  },
+
   async emailGerencia(req: Request, res: Response) {
     try {
       const funcionario = getParamAsString(req.params.funcionario);
@@ -109,62 +532,78 @@ export const emailController = {
       );
 
       const diasHtml = (diasResult.rows || [])
-        .map((row: any) => {
+        .map((row: any, index: number) => {
           const dtDia = String(row?.DT_DIA || "");
           const hrInicio = String(row?.HR_INICIO || "");
           const hrFim = String(row?.HR_FIM || "");
-          return `<li><b>Dia:</b> ${dtDia}, <b>Início:</b> ${hrInicio}, <b>Fim:</b> ${hrFim}</li>`;
+          return linhaTabelaEmail(
+            `Dia do Evento${(diasResult.rows || []).length > 1 ? ` ${index + 1}` : ""}`,
+            `${dtDia} - ${hrInicio} às ${hrFim}`
+          );
         })
         .join("");
 
       const subject = "Nova Solicitação de Participação de Marketing Recebida";
 
-      const body = `
-      <p>Prezado(a) Gestor(a),</p>
-
-      <p>Uma solicitação de participação de marketing está aguardando sua avaliação.</p>
-
-      <ul>
-        <li><b>Empresa:</b> ${empresa}</li>
-        <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || funcionario || "-"}</li>
-        <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
-        <li><b>Funcionário:</b> ${funcionario}</li>
-        ${diasHtml}
-        <li><b>Precisa de Valor Monetário?</b> ${simNao(
-        patrocinio.VL_MONETARIO
-      )}</li>
-        <li><b>Valor Solicitado:</b> R$ ${fmtMoney(
-        patrocinio.VL_PATROCINIO
-      )}</li>
-        <li><b>É insumo?</b> ${simNao(patrocinio.QTD_INSUMO)}</li>
-        <li><b>Estimativa de Valor:</b> R$ ${fmtMoney(
-        patrocinio.VL_ESTIMATIVA
-      )}</li>
-        <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
-        <li><b>Resumo:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
-        <li><b>Precisa de Motorista?</b> ${simNao(
-        patrocinio.CD_MOTORISTA
-      )}</li>
-        <li><b>Precisa de Funcionários?</b> ${simNao(
-        patrocinio.CD_FUNCIONARIOS
-      )}</li>
-        <li><b>Data da Solicitação:</b> ${fmtDate(
-        patrocinio.DT_SOLICITACAO
-      )}</li>
-        <li><b>Cidade:</b> ${patrocinio.NM_CIDADE}</li>
-        <li><b>Reserva Auditório Sede:</b> ${simNao(
-        patrocinio.CD_AUDITORIO_SEDE
-      )}</li>
-        <li><b>Reserva Centro de Convivência:</b> ${simNao(
-        patrocinio.CD_AUDITORIO_CENTRO
-      )}</li>
-        <li><b>Status:</b> ${patrocinio.NM_ANDAMENTO}</li>
-      </ul>
-
-      <p>Por favor, acesse a Intranet para visualizar os detalhes completos da solicitação e registrar seu parecer.</p>
-
-      <p>Atenciosamente<br/>E-mail automático</p>
-      `;
+      const body = montarEmailParticipacao({
+        titulo: "Nova solicitação",
+        saudacao: "Prezado(a) Gestor(a),",
+        introducao:
+          "Uma solicitação de participação de marketing está aguardando sua avaliação.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail("Empresa", empresa),
+          linhaTabelaEmail(
+            "Solicitante",
+            patrocinio.NM_FUNCIONARIO || funcionario || "-"
+          ),
+          linhaTabelaEmail(
+            "CNPJ/CPF",
+            formatarCnpj(patrocinio.NR_CPF_CNPJ)
+          ),
+          linhaTabelaEmail("Funcionário", funcionario),
+          diasHtml,
+          linhaTabelaEmail(
+            "Precisa de Valor Monetário?",
+            simNao(patrocinio.VL_MONETARIO)
+          ),
+          linhaTabelaEmail(
+            "Valor Solicitado",
+            `R$ ${fmtMoney(patrocinio.VL_PATROCINIO)}`
+          ),
+          linhaTabelaEmail("É insumo?", simNao(patrocinio.QTD_INSUMO)),
+          linhaTabelaEmail(
+            "Estimativa de Valor",
+            `R$ ${fmtMoney(patrocinio.VL_ESTIMATIVA)}`
+          ),
+          linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+          linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+          linhaTabelaEmail(
+            "Precisa de Motorista?",
+            simNao(patrocinio.CD_MOTORISTA)
+          ),
+          linhaTabelaEmail(
+            "Precisa de Funcionários?",
+            simNao(patrocinio.CD_FUNCIONARIOS)
+          ),
+          linhaTabelaEmail(
+            "Data da Solicitação",
+            fmtDate(patrocinio.DT_SOLICITACAO)
+          ),
+          linhaTabelaEmail("Cidade", patrocinio.NM_CIDADE || ""),
+          linhaTabelaEmail(
+            "Reserva Auditório Sede",
+            simNao(patrocinio.CD_AUDITORIO_SEDE)
+          ),
+          linhaTabelaEmail(
+            "Reserva Centro de Convivência",
+            simNao(patrocinio.CD_AUDITORIO_CENTRO)
+          ),
+          linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao:
+          "Por favor, acesse a Intranet para visualizar os detalhes completos da solicitação e registrar seu parecer.",
+      });
 
       const funcionarioResult = await oracleExecute(
         `
@@ -248,73 +687,96 @@ export const emailController = {
 
         const microfoneHtml =
           Number(auditorio.SN_USO_MICROFONE || 0) === 1
-            ? `<li><b>Uso de microfone?</b> SIM, <b>Quantidade:</b> ${auditorio.QNTD_MICROFONE || 0
-            }</li>`
-            : `<li><b>Uso de microfone?</b> NÃO</li>`;
+            ? linhaTabelaEmail(
+                "Uso de microfone?",
+                `SIM - Quantidade: ${auditorio.QNTD_MICROFONE || 0}`
+              )
+            : linhaTabelaEmail("Uso de microfone?", "NÃO");
 
         const projetorHtml =
           Number(auditorio.SN_USO_PROJETOR || 0) === 1
-            ? `<li><b>Uso de projeção?</b> SIM, <b>Apresentação via:</b> ${auditorio.NM_APRESENTACAO || "-"
-            }</li>`
-            : `<li><b>Uso de projeção?</b> NÃO</li>`;
+            ? linhaTabelaEmail(
+                "Uso de projeção?",
+                `SIM - Apresentação via: ${auditorio.NM_APRESENTACAO || "-"}`
+              )
+            : linhaTabelaEmail("Uso de projeção?", "NÃO");
 
         const transmissaoHtml =
           Number(auditorio.SN_AO_VIVO || 0) === 1
-            ? `<li><b>Haverá transmissão ao vivo?</b> SIM, <b>Plataforma(s):</b> ${auditorio.NM_PLATAFORMA || "-"
-            }</li>`
-            : `<li><b>Haverá transmissão ao vivo?</b> NÃO</li>`;
+            ? linhaTabelaEmail(
+                "Haverá transmissão ao vivo?",
+                `SIM - Plataforma(s): ${auditorio.NM_PLATAFORMA || "-"}`
+              )
+            : linhaTabelaEmail("Haverá transmissão ao vivo?", "NÃO");
 
         const internetHtml =
           Number(auditorio.SN_INTERNET || 0) === 1
-            ? `<li><b>Uso de Internet dedicada?</b> SIM, <b>Justificativa:</b> ${auditorio.DESC_JUSTIFICATIVA || "-"
-            }</li>`
-            : `<li><b>Uso de Internet dedicada?</b> NÃO</li>`;
+            ? linhaTabelaEmail(
+                "Uso de Internet dedicada?",
+                `SIM - Justificativa: ${auditorio.DESC_JUSTIFICATIVA || "-"}`
+              )
+            : linhaTabelaEmail("Uso de Internet dedicada?", "NÃO");
 
-        const bodyAuditorio = `
-        <p>Prezada Equipe de TI,</p>
-
-        <p>Informamos que uma <b>solicitação de Participação de Marketing Sicoob</b> solicitou a reserva do Auditório Sede.</p>
-
-        <ul>
-          <li><b>Empresa:</b> ${empresa}</li>
-          <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || funcionario || "-"}</li>
-          <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
-          <li><b>Funcionário:</b> ${funcionario}</li>
-          ${diasHtml}
-          <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
-          <li><b>Resumo do Evento:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
-          <li><b>Precisa de Funcionários?</b> ${simNao(
-          patrocinio.CD_FUNCIONARIOS
-        )}</li>
-          <li><b>Data da Solicitação:</b> ${fmtDate(
-          patrocinio.DT_SOLICITACAO
-        )}</li>
-          <li><b>Cidade:</b> ${patrocinio.NM_CIDADE}</li>
-          <li><b>Status:</b> ${patrocinio.NM_ANDAMENTO}</li>
-        </ul>
-
-        <p><b>Informações da reserva do Auditório:</b></p>
-        <ul>
-          <li><b>Estimativa de Convidados:</b> ${auditorio.QTD_ESTIMATIVA_CONVIDADOS || 0
-          }</li>
-          ${microfoneHtml}
-          ${projetorHtml}
-          <li><b>Uso de áudio externo via notebook?</b> ${simNao(
-            auditorio.SN_AUDIO_EXTERNO
-          )}</li>
-          <li><b>Tem operador do som e apresentação?</b> ${simNao(
-            auditorio.SN_OPERADOR
-          )}</li>
-          ${transmissaoHtml}
-          ${internetHtml}
-          <li><b>Observações:</b> ${auditorio.OBS_AUDITORIO_SICOOB_SEDE || "-"
-          }</li>
-        </ul>
-
-        <p>Por favor, acesse a Intranet para acompanhar os detalhes da reserva e tratar as providências necessárias.</p>
-
-        <p>Atenciosamente<br/>E-mail Automático</p>
-        `;
+        const bodyAuditorio = montarEmailParticipacao({
+          titulo: "Reserva do Auditório Sede",
+          saudacao: "Prezada Equipe de TI,",
+          introducao:
+            "Uma solicitação de Participação de Marketing solicitou a reserva do Auditório Sede.",
+          linhas: [
+            linhaTabelaEmail("ID Solicitação", id),
+            linhaTabelaEmail("Empresa", empresa),
+            linhaTabelaEmail(
+              "Solicitante",
+              patrocinio.NM_FUNCIONARIO || funcionario || "-"
+            ),
+            linhaTabelaEmail(
+              "CNPJ/CPF",
+              formatarCnpj(patrocinio.NR_CPF_CNPJ)
+            ),
+            linhaTabelaEmail("Funcionário", funcionario),
+            diasHtml,
+            linhaTabelaEmail(
+              "Solicitação",
+              patrocinio.DESC_SOLICITACAO || ""
+            ),
+            linhaTabelaEmail(
+              "Resumo do Evento",
+              patrocinio.DESC_RESUMO_EVENTO || ""
+            ),
+            linhaTabelaEmail(
+              "Precisa de Funcionários?",
+              simNao(patrocinio.CD_FUNCIONARIOS)
+            ),
+            linhaTabelaEmail(
+              "Data da Solicitação",
+              fmtDate(patrocinio.DT_SOLICITACAO)
+            ),
+            linhaTabelaEmail("Cidade", patrocinio.NM_CIDADE || ""),
+            linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+            linhaTabelaEmail(
+              "Estimativa de Convidados",
+              auditorio.QTD_ESTIMATIVA_CONVIDADOS || 0
+            ),
+            microfoneHtml,
+            projetorHtml,
+            linhaTabelaEmail(
+              "Uso de áudio externo via notebook?",
+              simNao(auditorio.SN_AUDIO_EXTERNO)
+            ),
+            linhaTabelaEmail(
+              "Tem operador do som e apresentação?",
+              simNao(auditorio.SN_OPERADOR)
+            ),
+            transmissaoHtml,
+            internetHtml,
+            linhaTabelaEmail(
+              "Observações",
+              auditorio.OBS_AUDITORIO_SICOOB_SEDE || "-"
+            ),
+          ].join(""),
+          orientacao:
+            "Por favor, acesse a Intranet para acompanhar os detalhes da reserva e tratar as providências necessárias.",
+        });
 
         const subjectAuditorio =
           "Nova Solicitação de Reserva do Auditório Sede Recebida";
@@ -344,6 +806,39 @@ export const emailController = {
     }
   },
 
+  async emailMarketing(req: Request, res: Response) {
+    try {
+      const id = getParamAsNumber(req.params.id);
+
+      if (id === null) {
+        return res.status(400).json({ error: "ID inválido." });
+      }
+
+      const gerente = String(req.query.gerente_em_ferias || "").trim();
+      const inicio = String(req.query.ferias_inicio || "").trim();
+      const fim = String(req.query.ferias_fim || "").trim();
+      const encaminhamentoPorFerias = gerente && inicio && fim
+        ? { gerente, inicio, fim }
+        : undefined;
+
+      const resultado = await enviarEmailMarketingPatrocinio(
+        id,
+        encaminhamentoPorFerias
+      );
+
+      return res.json({
+        message: "Email enviado para marketing",
+        ...resultado,
+      });
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({
+        error: "Erro ao enviar email para marketing",
+        details: error.message,
+      });
+    }
+  },
+
   async emailDiretoria(req: Request, res: Response) {
     try {
       const funcionario = getParamAsString(req.params.funcionario);
@@ -367,29 +862,40 @@ export const emailController = {
 
       const subject = "Nova Solicitação de Participação de Marketing Recebida";
 
-      const body = `
-      <p>Prezado(a) Diretor(a),</p>
+      const body = montarEmailParticipacao({
+        titulo: "Atualização de solicitação",
+        saudacao: "Prezado(a) Diretor(a),",
+        introducao:
+          "Uma solicitação de participação de marketing está aguardando sua avaliação.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail("Empresa", empresa),
+          linhaTabelaEmail(
+            "Solicitante",
+            patrocinio.NM_FUNCIONARIO || funcionario || "-"
+          ),
+          linhaTabelaEmail(
+            "CNPJ/CPF",
+            formatarCnpj(patrocinio.NR_CPF_CNPJ)
+          ),
+          linhaTabelaEmail("Funcionário", funcionario),
+          linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+          linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+          linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao:
+          "Por favor, acesse a Intranet para visualizar os detalhes completos e registrar seu parecer.",
+      });
 
-      <p>Uma solicitação de participação de marketing está aguardando sua avaliação.</p>
+      const emailsDiretoria = await obterEmailsDiretoriaParticipacao();
 
-      <ul>
-        <li><b>Empresa:</b> ${empresa}</li>
-        <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || funcionario || "-"}</li>
-        <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
-        <li><b>Funcionário:</b> ${funcionario}</li>
-        <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
-        <li><b>Resumo:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
-        <li><b>Status:</b> ${patrocinio.NM_ANDAMENTO}</li>
-      </ul>
+      if (!emailsDiretoria.length) {
+        return res.status(500).json({
+          error: "Nenhum diretor disponível com e-mail cadastrado para receber a solicitação.",
+        });
+      }
 
-      <p>Por favor, acesse a Intranet para visualizar os detalhes completos e registrar seu parecer.</p>
-
-      <p>Atenciosamente<br/>E-mail automático</p>
-      `;
-
-      const emails = aplicarParticipacaoDebugDestinatarios([
-        "paulo.tarso@sicoob.com.br",
-      ]);
+      const emails = aplicarParticipacaoDebugDestinatarios(emailsDiretoria);
 
       await sendEmail(emails, subject, body);
 
@@ -428,23 +934,25 @@ export const emailController = {
 
       const subject = "Nova Solicitação de Participação de Marketing Recebida";
 
-      const body = `
-      <p>Prezados(as) Conselheiros(as),</p>
-
-      <p>Uma solicitação de participação de marketing está aguardando decisão do conselho.</p>
-
-      <ul>
-        <li><b>Empresa:</b> ${patrocinio.NM_SOLICITANTE}</li>
-        <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
-        <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
-        <li><b>Resumo:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
-        <li><b>Status:</b> ${patrocinio.NM_ANDAMENTO}</li>
-      </ul>
-
-      <p>Por favor, acesse a Intranet para visualizar os detalhes completos e registrar a decisão final.</p>
-
-      <p>Atenciosamente<br/>E-mail automático</p>
-      `;
+      const body = montarEmailParticipacao({
+        titulo: "Atualização de solicitação",
+        saudacao: "Prezados(as) Conselheiros(as),",
+        introducao:
+          "Uma solicitação de participação de marketing está aguardando decisão do conselho.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail("Empresa", patrocinio.NM_SOLICITANTE || ""),
+          linhaTabelaEmail(
+            "CNPJ/CPF",
+            formatarCnpj(patrocinio.NR_CPF_CNPJ)
+          ),
+          linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+          linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+          linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao:
+          "Por favor, acesse a Intranet para visualizar os detalhes completos e registrar a decisão final.",
+      });
 
       const emailsConselho = aplicarParticipacaoDebugDestinatarios([
         "janainag@sicoob.com.br",
@@ -462,6 +970,130 @@ export const emailController = {
 
       return res.status(500).json({
         error: "Erro ao enviar email conselho",
+        details: error.message,
+      });
+    }
+  },
+
+  async emailFinanceiroPatrocinio(req: Request, res: Response) {
+    try {
+      const id = getParamAsNumber(req.params.id);
+
+      if (id === null) {
+        return res.status(400).json({ error: "ID inválido." });
+      }
+
+      const result = await oracleExecute(
+        `
+          SELECT
+            p.ID_PATROCINIO,
+            p.NM_SOLICITANTE,
+            p.NM_FUNCIONARIO,
+            p.VL_PATROCINIO,
+            p.VL_MONETARIO,
+            p.NM_ANDAMENTO,
+            p.NM_CONSELHO,
+            pg.SN_CONTA_COOPERATIVA,
+            pg.NM_FAVORECIDO,
+            pg.NR_CPF_CNPJ AS NR_CPF_CNPJ_FAVORECIDO,
+            pg.DS_BANCO,
+            pg.NR_AGENCIA,
+            pg.NR_CONTA,
+            pg.TP_CONTA
+          FROM DBACRESSEM.PATROCINIO p
+          LEFT JOIN DBACRESSEM.PAGAMENTO_PATROCINIO pg
+            ON pg.ID_PATROCINIO = p.ID_PATROCINIO
+          WHERE p.ID_PATROCINIO = :id
+        `,
+        { id }
+      );
+
+      const patrocinio: any = result.rows?.[0];
+
+      if (!patrocinio) {
+        return res.status(404).json({ error: "Patrocínio não encontrado." });
+      }
+
+      if (String(patrocinio.NM_ANDAMENTO || "").trim().toUpperCase() !== "APROVADO") {
+        return res.status(409).json({
+          error: "O e-mail ao Financeiro só pode ser enviado para patrocínio aprovado.",
+        });
+      }
+
+      if (Number(patrocinio.VL_MONETARIO || 0) !== 1) {
+        return res.status(409).json({
+          error: "Este patrocínio aprovado não possui valor monetário para pagamento.",
+        });
+      }
+
+      if (
+        !patrocinio.NM_FAVORECIDO ||
+        !patrocinio.NR_CPF_CNPJ_FAVORECIDO ||
+        !patrocinio.DS_BANCO ||
+        !patrocinio.NR_AGENCIA ||
+        !patrocinio.NR_CONTA ||
+        !patrocinio.TP_CONTA
+      ) {
+        return res.status(409).json({
+          error: "Os dados de pagamento deste patrocínio não estão completos.",
+        });
+      }
+
+      const emails = aplicarParticipacaoDebugDestinatarios(
+        getEmailsFinanceiroParticipacao()
+      );
+
+      if (!emails.length) {
+        return res.status(500).json({
+          error:
+            "Configure PATROCINIO_FINANCEIRO_EMAIL, FINANCEIRO_EMAIL ou REEMBOLSO_FINANCEIRO_EMAIL no ambiente.",
+        });
+      }
+
+      const subject = `Patrocínio aprovado para pagamento #${id}`;
+      const body = montarEmailParticipacao({
+        titulo: "Pagamento de patrocínio aprovado",
+        saudacao: "Prezados(as),",
+        introducao:
+          "O Conselho aprovou a solicitação abaixo. Por gentileza, realize o pagamento conforme os dados informados.",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", patrocinio.ID_PATROCINIO),
+          linhaTabelaEmail("Empresa", patrocinio.NM_SOLICITANTE || ""),
+          linhaTabelaEmail("Solicitante", patrocinio.NM_FUNCIONARIO || ""),
+          linhaTabelaEmail("Valor aprovado", `R$ ${fmtMoney(patrocinio.VL_PATROCINIO)}`),
+          linhaTabelaEmail("Aprovado por", patrocinio.NM_CONSELHO || "Conselho"),
+          linhaTabelaEmail("Favorecido", patrocinio.NM_FAVORECIDO),
+          linhaTabelaEmail(
+            "CPF/CNPJ do favorecido",
+            formatarCnpj(patrocinio.NR_CPF_CNPJ_FAVORECIDO)
+          ),
+          linhaTabelaEmail(
+            "Conta na cooperativa",
+            Number(patrocinio.SN_CONTA_COOPERATIVA) === 1 ? "Sim" : "Não"
+          ),
+          linhaTabelaEmail("Banco", patrocinio.DS_BANCO),
+          linhaTabelaEmail("Agência", patrocinio.NR_AGENCIA),
+          linhaTabelaEmail("Conta", patrocinio.NR_CONTA),
+          linhaTabelaEmail(
+            "Tipo de conta",
+            patrocinio.TP_CONTA === "POUPANCA" ? "Conta poupança" : "Conta corrente"
+          ),
+        ].join(""),
+        orientacao:
+          "Para consultar a solicitação completa e os pareceres registrados, acesse a Intranet.",
+      });
+
+      await sendEmail(emails, subject, body);
+
+      return res.json({
+        message: "E-mail de pagamento enviado ao Financeiro.",
+        debug_email_ativo: getParticipacaoDebugEmail().length > 0,
+      });
+    } catch (error: any) {
+      console.error("Erro ao enviar e-mail de pagamento do patrocínio:", error);
+
+      return res.status(500).json({
+        error: "Erro ao enviar e-mail de pagamento ao Financeiro.",
         details: error.message,
       });
     }
@@ -488,23 +1120,27 @@ export const emailController = {
 
       const subject = "Solicitação de Participação de Marketing Finalizada";
 
-      const body = `
-      <p>Prezados(as),</p>
-
-      <p>A solicitação abaixo foi finalizada:</p>
-
-      <ul>
-        <li><b>Solicitante:</b> ${patrocinio.NM_FUNCIONARIO || "-"}</li>
-        <li><b>CNPJ/CPF:</b> ${formatarCnpj(patrocinio.NR_CPF_CNPJ)}</li>
-        <li><b>Solicitação:</b> ${patrocinio.DESC_SOLICITACAO}</li>
-        <li><b>Resumo:</b> ${patrocinio.DESC_RESUMO_EVENTO}</li>
-        <li><b>Status:</b> ${patrocinio.NM_ANDAMENTO}</li>
-      </ul>
-
-      <p>Para histórico e consulta completa, acesse a Intranet.</p>
-
-      <p>Atenciosamente<br/>E-mail automático</p>
-      `;
+      const body = montarEmailParticipacao({
+        titulo: "Solicitação finalizada",
+        saudacao: "Prezados(as),",
+        introducao: "A solicitação abaixo foi finalizada:",
+        linhas: [
+          linhaTabelaEmail("ID Solicitação", id),
+          linhaTabelaEmail(
+            "Solicitante",
+            patrocinio.NM_FUNCIONARIO || "-"
+          ),
+          linhaTabelaEmail(
+            "CNPJ/CPF",
+            formatarCnpj(patrocinio.NR_CPF_CNPJ)
+          ),
+          linhaTabelaEmail("Solicitação", patrocinio.DESC_SOLICITACAO || ""),
+          linhaTabelaEmail("Resumo", patrocinio.DESC_RESUMO_EVENTO || ""),
+          linhaTabelaEmail("Status", patrocinio.NM_ANDAMENTO || ""),
+        ].join(""),
+        orientacao:
+          "Para histórico e consulta completa, acesse a Intranet.",
+      });
 
       const destinatarios = new Set<string>();
 

@@ -120,12 +120,22 @@ export type EmailAttachment = {
   contentType?: string;
 };
 
+export type SendEmailOptions = {
+  cc?: string | string[];
+};
+
 export async function sendEmail(
   to: string | string[],
   subject: string,
   html: string,
-  attachments: EmailAttachment[] = []
+  attachments: EmailAttachment[] = [],
+  options: SendEmailOptions = {}
 ) {
+  // A verificação fica no ponto central de envio para que nenhum fluxo
+  // (inclusive os que não a chamam explicitamente) consiga contorná-la.
+  // O modo de teste também passa obrigatoriamente por esta proteção.
+  validarHostAutorizadoParaEmail();
+
   const accessToken = await getAccessToken();
   const departmentalMailbox = getEnv("DEPARTAMENTBOX");
   const emailModoTeste = isTruthyEnv(getOptionalEnv("EMAIL_MODO_TESTE"));
@@ -135,6 +145,10 @@ export async function sendEmail(
   const recipients = emailModoTeste
     ? normalizeRecipients(emailDestinoTeste)
     : normalizeRecipients(to);
+
+  const ccRecipients = emailModoTeste
+    ? []
+    : normalizeRecipients(options.cc || []);
 
   if (!recipients.length) {
     throw new Error("Nenhum destinatário informado para envio do e-mail.");
@@ -159,6 +173,14 @@ export async function sendEmail(
       },
     },
   };
+
+  if (ccRecipients.length) {
+    message.ccRecipients = ccRecipients.map((email) => ({
+      emailAddress: {
+        address: email,
+      },
+    }));
+  }
 
   const validAttachments = attachments.filter(
     (attachment) => attachment?.name && attachment?.contentBytes

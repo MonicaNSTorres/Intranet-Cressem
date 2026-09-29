@@ -1,7 +1,7 @@
 ﻿"use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   FaPlus,
   FaPrint,
@@ -16,7 +16,7 @@ import {
   buscarCidadesDemissao,
   buscarMotivosDemissao,
   buscarConvenioDemissaoPorCpf,
-  desativarConvenioDemissao,
+  registrarDemissao,
   type MotivoDemissaoOption,
 } from "@/services/demissao.service";
 import { buscarDiaUtil } from "@/services/resgate_capital.service";
@@ -164,6 +164,13 @@ export function DemissaoForm() {
   const [loadingSalvar, setLoadingSalvar] = useState(false);
   const [erro, setErro] = useState("");
   const [info, setInfo] = useState("");
+  const [ocorrenciaErro, setOcorrenciaErro] = useState(0);
+  const avisoErroRef = useRef<HTMLDivElement>(null);
+
+  const mostrarErro = (mensagem: string) => {
+    setErro(mensagem);
+    setOcorrenciaErro((ocorrencia) => ocorrencia + 1);
+  };
 
   const [possuiConvenio, setPossuiConvenio] = useState<"Sim" | "Não">("Não");
   const [valorConvenio, setValorConvenio] = useState("");
@@ -193,13 +200,16 @@ export function DemissaoForm() {
     dataExclusaoPlano?: string | null;
   } | null>(null);
   const [loadingGerar, setLoadingGerar] = useState(false);
+  const [idDemissaoGravada, setIdDemissaoGravada] = useState<number | null>(null);
+  const pdfDemissaoGravadaRef = useRef<Awaited<ReturnType<typeof gerarPdfDemissao>> | null>(null);
+  const salvamentoEmAndamentoRef = useRef(false);
   const [nomeAtendente, setNomeAtendente] = useState("Atendente");
-  const [loginAtendente, setLoginAtendente] =
-    useState("");
   const [
     inativarConvenioAoSalvar,
     setInativarConvenioAoSalvar,
   ] = useState(false);
+  const [mostrarConfirmacaoDesligamento, setMostrarConfirmacaoDesligamento] = useState(false);
+  const [mostrarConfirmacaoSemDesligamento, setMostrarConfirmacaoSemDesligamento] = useState(false);
 
   useEffect(() => {
     async function carregarDados() {
@@ -230,15 +240,9 @@ export function DemissaoForm() {
           ""
         ).trim();
 
-        const login = String(
-          me?.username || ""
-        ).trim();
-
         if (nome) {
           setNomeAtendente(nome);
         }
-
-        setLoginAtendente(login);
       } catch {
         //mantem fallback.
       }
@@ -246,6 +250,20 @@ export function DemissaoForm() {
 
     carregarAtendente();
   }, []);
+
+  useEffect(() => {
+    if (!erro) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      avisoErroRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      avisoErroRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [erro, ocorrenciaErro]);
 
   const saldoCapitalNum = useMemo(() => parseBRL(saldoCapital), [saldoCapital]);
   const debitoContaNum = useMemo(() => parseBRL(debitoConta), [debitoConta]);
@@ -340,27 +358,29 @@ export function DemissaoForm() {
     setErro("");
     setInfo("");
     setConvenioOdontologico(null);
+    setIdDemissaoGravada(null);
+    pdfDemissaoGravadaRef.current = null;
   }
 
   function validarAntesDeGerar() {
     const cpfLimpo = String(cpf || "").replace(/\D/g, "");
     if (!cpfLimpo || (cpfLimpo.length !== 11 && cpfLimpo.length !== 14)) {
-      setErro("Informe um CPF/CNPJ válido.");
+      mostrarErro("Informe um CPF/CNPJ válido.");
       return false;
     }
 
     if (!telefone.trim()) {
-      setErro("Telefone do associado não preenchido.");
+      mostrarErro("Telefone do associado não preenchido.");
       return false;
     }
 
     if (!motivoDemissao) {
-      setErro("Motivo da demissão não foi selecionado.");
+      mostrarErro("Motivo da demissão não foi selecionado.");
       return false;
     }
 
     if (!cidadeAtendimento) {
-      setErro("Cidade do atendimento não foi selecionada.");
+      mostrarErro("Cidade do atendimento não foi selecionada.");
       return false;
     }
 
@@ -368,50 +388,50 @@ export function DemissaoForm() {
 
     if (temValorADevolver) {
       if (!banco.trim()) {
-        setErro("Número do banco não preenchido.");
+        mostrarErro("Número do banco não preenchido.");
         return false;
       }
 
       if (!agencia.trim()) {
-        setErro("Número da agência não preenchido.");
+        mostrarErro("Número da agência não preenchido.");
         return false;
       }
 
       if (!conta.trim()) {
-        setErro("Número da conta corrente não preenchido.");
+        mostrarErro("Número da conta corrente não preenchido.");
         return false;
       }
 
       if (!digito.trim()) {
-        setErro("Dígito da conta corrente não preenchido.");
+        mostrarErro("Dígito da conta corrente não preenchido.");
         return false;
       }
 
       if (!valorPrimeiraParcela || parseBRL(valorPrimeiraParcela) <= 0) {
-        setErro("Valor da primeira parcela não preenchido.");
+        mostrarErro("Valor da primeira parcela não preenchido.");
         return false;
       }
 
       if (!dataPrimeiraParcela) {
-        setErro("Data da primeira parcela não preenchida.");
+        mostrarErro("Data da primeira parcela não preenchida.");
         return false;
       }
 
       if (parcelas.length === 0) {
-        setErro("Não há parcelas adicionadas. Adicione ao menos uma parcela.");
+        mostrarErro("Não há parcelas adicionadas. Adicione ao menos uma parcela.");
         return false;
       }
 
       const primeiraParcelaTabela = Number(parseBRL(parcelas[0]?.valor || "").toFixed(2));
       const primeiraParcelaInformada = Number(parseBRL(valorPrimeiraParcela).toFixed(2));
       if (primeiraParcelaTabela !== primeiraParcelaInformada) {
-        setErro("Valor da primeira parcela não corresponde ao valor informado.");
+        mostrarErro("Valor da primeira parcela não corresponde ao valor informado.");
         return false;
       }
 
       const totalParcelado = Number(totalDevolucaoParcelada.toFixed(2));
       if (totalParcelado !== totalAjustado) {
-        setErro("O total da devolução parcelada não bate com o total a devolver.");
+        mostrarErro("O total da devolução parcelada não bate com o total a devolver.");
         return false;
       }
     }
@@ -419,12 +439,12 @@ export function DemissaoForm() {
     if (temValorAPagar) {
       const totalReciboNum = Number(totalRecibo.toFixed(2));
       if (totalReciboNum <= 0) {
-        setErro("Preencha os valores do recibo.");
+        mostrarErro("Preencha os valores do recibo.");
         return false;
       }
 
       if (totalReciboNum !== totalAjustado) {
-        setErro("O total do recibo deve ser igual ao total a pagar.");
+        mostrarErro("O total do recibo deve ser igual ao total a pagar.");
         return false;
       }
     }
@@ -436,18 +456,18 @@ export function DemissaoForm() {
     const hoje = hojeISO();
 
     if (data < hoje) {
-      setErro("A data da 1ª parcela não pode ser anterior a hoje.");
+      mostrarErro("A data da 1ª parcela não pode ser anterior a hoje.");
       return false;
     }
 
     try {
       const resposta = await buscarDiaUtil(data);
       if (!resposta?.diaUtil) {
-        setErro("A data da 1ª parcela deve ser um dia útil.");
+        mostrarErro("A data da 1ª parcela deve ser um dia útil.");
         return false;
       }
     } catch {
-      setErro("Não foi possível validar se a data da 1ª parcela é dia útil.");
+      mostrarErro("Não foi possível validar se a data da 1ª parcela é dia útil.");
       return false;
     }
 
@@ -459,22 +479,22 @@ export function DemissaoForm() {
     const valorPrimeiro = Number(parseBRL(valorPrimeiraParcela).toFixed(2));
 
     if (tipoFormulario !== "CREDOR") {
-      setErro("Parcelas só podem ser adicionadas no formulário credor.");
+      mostrarErro("Parcelas só podem ser adicionadas no formulário credor.");
       return false;
     }
 
     if (totalADevolver <= 0) {
-      setErro("Não há saldo para devolução parcelada.");
+      mostrarErro("Não há saldo para devolução parcelada.");
       return false;
     }
 
     if (!valorPrimeiraParcela || valorPrimeiro <= 0) {
-      setErro("Preencha o valor da primeira parcela.");
+      mostrarErro("Preencha o valor da primeira parcela.");
       return false;
     }
 
     if (!dataPrimeiraParcela) {
-      setErro("Preencha a data da primeira parcela.");
+      mostrarErro("Preencha a data da primeira parcela.");
       return false;
     }
 
@@ -482,7 +502,7 @@ export function DemissaoForm() {
     if (!dataValida) return false;
 
     if (valorPrimeiro > totalADevolver) {
-      setErro("O valor da primeira parcela não pode ser maior que o total a devolver.");
+      mostrarErro("O valor da primeira parcela não pode ser maior que o total a devolver.");
       return false;
     }
 
@@ -559,7 +579,7 @@ export function DemissaoForm() {
       const data = await buscarAssociadoDemissaoPorCpf(cpf);
 
       if (!data) {
-        setErro("Associado não encontrado.");
+        mostrarErro("Associado não encontrado.");
         return;
       }
 
@@ -601,7 +621,7 @@ export function DemissaoForm() {
       }
       setInfo("Associado carregado com sucesso.");
     } catch (error: any) {
-      setErro(error?.response?.data?.error || "Erro ao buscar associado.");
+      mostrarErro(error?.response?.data?.error || "Erro ao buscar associado.");
       setInfo("");
     } finally {
       setLoading(false);
@@ -609,7 +629,7 @@ export function DemissaoForm() {
   };
 
   const gerarPdfAtual = async () => {
-    await gerarPdfDemissao({
+    return gerarPdfDemissao({
       tipoFormulario,
       cpf: formatCpfCnpjView(cpf),
       nome,
@@ -663,6 +683,17 @@ export function DemissaoForm() {
     } as any);
   };
 
+  const baixarPdf = (arquivo: Awaited<ReturnType<typeof gerarPdfAtual>>) => {
+    const url = URL.createObjectURL(arquivo.blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = arquivo.nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+  };
+
   const gerar = async () => {
     try {
       setErro("");
@@ -685,88 +716,88 @@ export function DemissaoForm() {
         !convenioOdontologico
           ?.idBeneficiario
       ) {
-        setErro(
+        mostrarErro(
           "Não foi possível identificar o beneficiário do Convênio Odontológico para realizar a inativação."
         );
 
         return;
       }
 
-      await gerarPdfAtual();
-
-      let falhaConvenio = "";
-
-      if (
-        deveInativarConvenio &&
-        convenioOdontologico
-          ?.idBeneficiario
-      ) {
-        try {
-          await desativarConvenioDemissao(
-            convenioOdontologico.idBeneficiario,
-            {
-              nomeUsuario:
-                nomeAtendente ||
-                "Atendente",
-
-              loginUsuario:
-                loginAtendente || "",
-
-              observacao:
-                "Benefício odontológico inativado através do Formulário de Demissão.",
-            }
-          );
-
-          setInativarConvenioAoSalvar(
-            false
-          );
-        } catch (error: any) {
-          falhaConvenio =
-            error?.response?.data
-              ?.error ||
-            error?.response?.data
-              ?.details ||
-            error?.message ||
-            "Falha ao inativar o benefício odontológico.";
-
-          console.error(
-            "Falha ao inativar convênio na demissão:",
-            error
-          );
-        }
+      if (idDemissaoGravada) {
+        const pdfAnterior = pdfDemissaoGravadaRef.current;
+        if (!pdfAnterior) throw new Error("O PDF desta demissão não está mais disponível nesta sessão. Consulte o registro antes de gerar outro documento.");
+        baixarPdf(pdfAnterior);
+        setInfo(`Demissão já registrada sob o nº ${idDemissaoGravada}. PDF gerado novamente; nenhum novo registro ou desligamento foi feito.`);
+        return;
       }
 
-      if (falhaConvenio) {
-        setInfo(
-          `PDF gerado com sucesso. Atenção: ${falhaConvenio}`
-        );
-
+      const pdf = await gerarPdfAtual();
+      const totalFinal = Number(Math.abs(saldoFinal).toFixed(2));
+      const registro = await registrarDemissao({
+        cpf,
+        nome,
+        matricula,
+        empresa,
+        telefone,
+        credito: tipoFormulario === "CREDOR" ? totalFinal : 0,
+        debito: tipoFormulario === "DEVEDOR" ? totalFinal : 0,
+        total: totalFinal,
+        tipo: tipoFormulario,
+        motivo: motivoDemissao,
+        dataCarencia: dataRetorno,
+        dataDemissao: hojeISO(),
+        atendente: nomeAtendente || "Atendente",
+        cidade: cidadeAtendimento,
+        inativarConvenioOdontologico: deveInativarConvenio,
+        idBeneficiarioOdontologico: deveInativarConvenio ? convenioOdontologico?.idBeneficiario : undefined,
+      });
+      setIdDemissaoGravada(registro.idDemissao);
+      pdfDemissaoGravadaRef.current = pdf;
+      if (registro.convenioInativado) {
+        setConvenioOdontologico((atual) => atual ? { ...atual, situacao: "INATIVO" } : atual);
+        setInativarConvenioAoSalvar(false);
+      }
+      try {
+        baixarPdf(pdf);
+      } catch (error) {
+        console.error("Demissão registrada, mas o download do PDF falhou:", error);
+        mostrarErro(`Demissão registrada sob o nº ${registro.idDemissao}, mas não foi possível baixar o PDF. Clique em salvar novamente para tentar o download, sem gravar outra demissão.`);
         return;
       }
 
       if (deveInativarConvenio) {
         setInfo(
-          "PDF gerado e benefício odontológico inativado com sucesso."
+          registro.emailConvenioEnviado
+            ? "PDF gerado, benefício odontológico inativado e e-mail enviado ao solicitante e ao Cadastro."
+            : `PDF gerado e benefício odontológico inativado. Atenção: a notificação por e-mail não foi enviada${registro.erroEmailConvenio ? ` (${registro.erroEmailConvenio})` : ""}.`
         );
 
         return;
       }
 
-      setInfo(
-        "PDF gerado com sucesso. O benefício odontológico não foi alterado."
-      );
+      if (convenioOdontologico?.situacao === "ATIVO") {
+        setInfo(
+          registro.notificacaoConvenioAtivoEnviada
+            ? "PDF gerado. O benefício odontológico permaneceu ativo e o e-mail de alerta foi enviado ao solicitante e ao Financeiro."
+            : `PDF gerado. O benefício odontológico permaneceu ativo. Atenção: o e-mail de alerta não foi enviado${registro.erroNotificacaoConvenioAtivo ? ` (${registro.erroNotificacaoConvenioAtivo})` : ""}.`
+        );
+        return;
+      }
+
+      setInfo("PDF gerado com sucesso. O benefício odontológico não foi alterado.");
     } catch (error: any) {
       console.error(
-        "Erro ao gerar PDF da demissão:",
+        "Erro ao preparar PDF ou registrar demissão:",
         error
       );
 
-      setErro(
+      mostrarErro(
+        error?.response?.data?.details ||
         error?.response?.data?.error ||
         error?.response?.data
           ?.detail ||
         error?.message ||
-        "Erro ao gerar PDF da demissão."
+        "Não foi possível preparar o PDF ou registrar a demissão."
       );
     } finally {
       setLoadingGerar(false);
@@ -774,12 +805,37 @@ export function DemissaoForm() {
   };
 
   const salvar = async () => {
+    if (salvamentoEmAndamentoRef.current) return;
+    salvamentoEmAndamentoRef.current = true;
     try {
       setLoadingSalvar(true);
       await gerar();
     } finally {
+      salvamentoEmAndamentoRef.current = false;
       setLoadingSalvar(false);
     }
+  };
+
+  const solicitarSalvar = () => {
+    setErro("");
+    setInfo("");
+
+    if (!validarAntesDeGerar()) return;
+
+    const deveInativarConvenio =
+      convenioOdontologico?.situacao === "ATIVO" &&
+      inativarConvenioAoSalvar;
+
+    if (convenioOdontologico?.situacao === "ATIVO") {
+      if (deveInativarConvenio) {
+        setMostrarConfirmacaoDesligamento(true);
+      } else {
+        setMostrarConfirmacaoSemDesligamento(true);
+      }
+      return;
+    }
+
+    void salvar();
   };
 
   const onDocumentoKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -864,7 +920,7 @@ export function DemissaoForm() {
           <div className="flex items-end gap-2">
             <button
               type="button"
-              onClick={salvar}
+              onClick={solicitarSalvar}
               disabled={loadingGerar || loadingSalvar}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-fourth cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -877,7 +933,11 @@ export function DemissaoForm() {
         {(erro || info) && (
           <div className="mt-4">
             {erro ? (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+              <div
+                ref={avisoErroRef}
+                tabIndex={-1}
+                className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700 outline-none"
+              >
                 {erro}
               </div>
             ) : (
@@ -1565,6 +1625,124 @@ export function DemissaoForm() {
           </div>
         </div>
       </div>
+
+      {mostrarConfirmacaoDesligamento && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="confirmar-desligamento-titulo"
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-start gap-4 border-b border-amber-100 bg-amber-50 px-6 py-5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                <FaExclamationTriangle size={21} />
+              </div>
+              <div>
+                <h2 id="confirmar-desligamento-titulo" className="text-lg font-bold text-slate-900">
+                  Confirmar desligamento odontológico
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Revise a ação antes de continuar.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-5">
+              <p className="text-sm leading-6 text-slate-700">
+                Você confirma a inativação do benefício odontológico de <strong>{nome || "este associado"}</strong>?
+              </p>
+
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <p><strong>CPF/CNPJ:</strong> {formatCpfCnpjView(cpf)}</p>
+                <p className="mt-1"><strong>Tipo:</strong> {convenioOdontologico?.nomeTipoBeneficiario || convenioOdontologico?.tipoBeneficiario || "Beneficiário"}</p>
+                {convenioOdontologico?.tipoBeneficiario === "TITULAR" && (
+                  <p className="mt-2 font-semibold text-amber-800">Os dependentes ativos vinculados a este titular também serão inativados.</p>
+                )}
+              </div>
+
+              <p className="mt-4 text-sm leading-6 text-slate-600">
+                Após a confirmação, o formulário será salvo, o PDF será gerado e uma notificação será enviada ao solicitante e ao Cadastro.
+              </p>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmacaoDesligamento(false)}
+                className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarConfirmacaoDesligamento(false);
+                  void salvar();
+                }}
+                className="h-10 rounded-xl bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700"
+              >
+                Confirmar desligamento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mostrarConfirmacaoSemDesligamento && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="confirmar-manter-convenio-titulo"
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-start gap-4 border-b border-red-100 bg-red-50 px-6 py-5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-700">
+                <FaExclamationTriangle size={21} />
+              </div>
+              <div>
+                <h2 id="confirmar-manter-convenio-titulo" className="text-lg font-bold text-slate-900">
+                  Convênio odontológico continuará ativo
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Confirme que esta é a ação desejada.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-5">
+              <p className="text-sm leading-6 text-slate-700">
+                <strong>{nome || "Este associado"}</strong> possui convênio odontológico ativo, mas a opção de inativação não foi marcada.
+              </p>
+
+              <div className="mt-4 rounded-2xl border border-red-100 bg-red-50/70 p-4 text-sm leading-6 text-slate-700">
+                O formulário e o PDF serão gerados, mas o benefício odontológico permanecerá ativo e nenhum e-mail de desligamento será enviado.
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmacaoSemDesligamento(false)}
+                className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Voltar e revisar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarConfirmacaoSemDesligamento(false);
+                  void salvar();
+                }}
+                className="h-10 rounded-xl bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700"
+              >
+                Continuar sem desligar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

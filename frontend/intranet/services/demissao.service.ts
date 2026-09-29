@@ -23,6 +23,43 @@ export type MotivoDemissaoOption = {
   label: string;
 };
 
+export type RegistrarDemissaoPayload = {
+  cpf: string;
+  nome: string;
+  matricula: string;
+  empresa: string;
+  telefone: string;
+  credito: number;
+  debito: number;
+  total: number;
+  tipo: "CREDOR" | "DEVEDOR";
+  motivo: string;
+  dataCarencia: string;
+  dataDemissao: string;
+  atendente: string;
+  cidade: string;
+  inativarConvenioOdontologico?: boolean;
+  idBeneficiarioOdontologico?: number;
+};
+
+export async function registrarDemissao(payload: RegistrarDemissaoPayload) {
+  const { data } = await api.post<{
+    success: boolean;
+    idDemissao: number;
+    convenioInativado?: boolean;
+    dependentesInativados?: number;
+    emailConvenioEnviado?: boolean;
+    erroEmailConvenio?: string;
+    notificacaoConvenioAtivoEnviada?: boolean;
+    erroNotificacaoConvenioAtivo?: string;
+  }>(
+    "/v1/demissao",
+    payload,
+    { headers: getAuditoriaHeaders() }
+  );
+  return data;
+}
+
 export type ConvenioStatusResponse = {
   situacao:
   | "ATIVO"
@@ -167,6 +204,7 @@ export async function desativarConvenioDemissao(
     nomeUsuario: string;
     loginUsuario: string;
     observacao?: string | null;
+    origem?: "DEMISSAO";
   }
 ) {
   if (

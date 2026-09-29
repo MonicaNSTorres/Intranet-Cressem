@@ -105,6 +105,7 @@ export function DeclaracaoResponsabilidadeHoleriteForm() {
   const [erroLocal, setErroLocal] = useState("");
   const [infoLocal, setInfoLocal] = useState("");
   const [modoManual, setModoManual] = useState(false);
+  const [empresaConsultada, setEmpresaConsultada] = useState<{ cpf: string; nome: string } | null>(null);
 
   const { loading, erro, info, buscar } = useAssociadoPorCpf();
   const erroAtual = erroLocal || erro;
@@ -129,6 +130,7 @@ export function DeclaracaoResponsabilidadeHoleriteForm() {
   const onBuscar = async () => {
     setErroLocal("");
     setInfoLocal("");
+    setEmpresaConsultada(null);
 
     const result = await buscar(cpf);
     const cpfFormatado = formatCpfView(cpf);
@@ -147,6 +149,10 @@ export function DeclaracaoResponsabilidadeHoleriteForm() {
     setCpf(cpfEncontrado);
     setRg(formatCpfView(cpfEncontrado));
     setLocal(resolverCidadeSelect(result.data.cidade || "", cidades));
+    setEmpresaConsultada({
+      cpf: onlyDigits(cpfEncontrado),
+      nome: result.data.empresa || "",
+    });
     setModoManual(false);
   };
 
@@ -182,6 +188,7 @@ export function DeclaracaoResponsabilidadeHoleriteForm() {
       prazoMeses,
       local: local.trim(),
       dataDeclaracao,
+      empresa: empresaConsultada?.cpf === onlyDigits(cpf) ? empresaConsultada.nome : "",
     });
 
     setInfoLocal("PDF gerado com sucesso.");
@@ -189,7 +196,7 @@ export function DeclaracaoResponsabilidadeHoleriteForm() {
 
   return (
     <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
-      <div className="h-1 bg-linear-to-r from-primary via-secondary to-third" />
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-third" />
 
       <div className="space-y-5 p-5 md:p-6">
         <SectionCard

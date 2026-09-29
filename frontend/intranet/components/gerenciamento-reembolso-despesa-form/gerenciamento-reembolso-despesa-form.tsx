@@ -2,10 +2,12 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FaCheck,
+  FaChevronLeft,
+  FaChevronRight,
   FaEdit,
   FaFilePdf,
   FaPlus,
@@ -141,8 +143,23 @@ const totaisInicial: Totais = {
   total: 0,
 };
 
+const inputBase =
+  "h-11 w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#00AE9D] focus:ring-4 focus:ring-[#00AE9D]/10";
+
+const primaryButtonBase =
+  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[#79B729] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#00AE9D] hover:shadow-md";
+
+const neutralButtonBase =
+  "inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-[#49479D]/40 hover:bg-[#49479D]/10 hover:text-[#49479D]";
+
+const tableHeaderBase =
+  "border-b border-slate-200 bg-slate-100 px-3 py-2 text-[11px] font-black uppercase tracking-[0.04em] text-slate-600";
+
+const tableCellBase = "border-b border-slate-100 px-3 py-2 text-sm text-slate-700";
+
 export function GerenciamentoReembolsoDespesaForm() {
   const router = useRouter();
+  const loginUsuarioLogado = useRef("");
 
   const [loading, setLoading] = useState(true);
   const [loadingBusca, setLoadingBusca] = useState(false);
@@ -155,6 +172,14 @@ export function GerenciamentoReembolsoDespesaForm() {
   const [filtroStatus, setFiltroStatus] = useState("");
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit, setLimit] = useState(10);
+  const [filtrosAplicados, setFiltrosAplicados] = useState({
+    pesquisa: "",
+    cpf: "",
+    cidade: "",
+    status: "",
+  });
 
   const [nomeResponsavel, setNomeResponsavel] = useState("");
   const [nomeResponsavelAD, setNomeResponsavelAD] = useState("");
@@ -225,6 +250,7 @@ export function GerenciamentoReembolsoDespesaForm() {
       };
 
       const nomeAD = me?.nome_completo || me?.nome || "";
+      loginUsuarioLogado.current = String(me?.username || "").trim();
       const grupos = Array.isArray(me?.grupos) ? me.grupos : [];
       setNomeResponsavelAD(nomeAD);
       setNomeUsuarioLogado(nomeAD);
@@ -251,16 +277,15 @@ export function GerenciamentoReembolsoDespesaForm() {
         }
       }
 
-      if (!usuarioPodeVerTodos && !nomeFiltro) {
+      if (!nomeAD) {
         setNomeResponsavel("");
         setDiretoriaCompleto(null);
         setLista([]);
         setListaContador([]);
         setTotais(totaisInicial);
+        setTotalItems(0);
 
-        alert(
-          "Seu usuário do AD não foi encontrado na base de funcionários. Por isso, não foi possível carregar suas solicitações."
-        );
+        alert("Não foi possível identificar seu nome no AD para consultar as solicitações.");
 
         return;
       }
@@ -284,13 +309,7 @@ export function GerenciamentoReembolsoDespesaForm() {
 
   async function carregarContadores(
     nome: string,
-    verTodos = podeVerTodos,
-    filtros?: {
-      pesquisa?: string;
-      cpf?: string;
-      cidade?: string;
-      status?: string;
-    }
+    verTodos = podeVerTodos
   ) {
     try {
       const nomeSeguro = nome || nomeResponsavel || nomeResponsavelAD;
@@ -303,10 +322,8 @@ export function GerenciamentoReembolsoDespesaForm() {
 
       const response = await buscarSolicitacoesReembolsoPaginado({
         nome: nomeSeguro,
-        pesquisa: (filtros?.pesquisa ?? pesquisa).trim(),
-        cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
-        cidade: filtros?.cidade ?? filtroCidade ?? "",
-        status: filtros?.status ?? filtroStatus ?? "",
+        login: loginUsuarioLogado.current,
+        pesquisa: "",
         verTodos,
         page: 1,
         limit: 999999,
@@ -322,15 +339,15 @@ export function GerenciamentoReembolsoDespesaForm() {
     const novosTotais = { ...totaisInicial };
 
     items.forEach((item) => {
-      const status = String(item.DESC_ANDAMENTO || "");
+      const status = normalizeStatus(item.DESC_ANDAMENTO || "");
 
-      if (status === "Pendente Funcionario") novosTotais.funcionario += 1;
-      else if (status === "Pendente Financeiro") novosTotais.financeiro += 1;
-      else if (status === "Pendente Gerencia") novosTotais.gerencia += 1;
-      else if (status === "Pendente Gerencia Superior") novosTotais.gerenciaSup += 1;
-      else if (status === "Pendente Diretoria") novosTotais.diretoria += 1;
-      else if (status === "Aprovado") novosTotais.aprovados += 1;
-      else if (status === "Reprovado") novosTotais.reprovados += 1;
+      if (status === "PENDENTE FUNCIONARIO") novosTotais.funcionario += 1;
+      else if (status === "PENDENTE FINANCEIRO") novosTotais.financeiro += 1;
+      else if (status === "PENDENTE GERENCIA") novosTotais.gerencia += 1;
+      else if (status === "PENDENTE GERENCIA SUPERIOR") novosTotais.gerenciaSup += 1;
+      else if (status === "PENDENTE DIRETORIA") novosTotais.diretoria += 1;
+      else if (status === "APROVADO") novosTotais.aprovados += 1;
+      else if (status === "REPROVADO") novosTotais.reprovados += 1;
 
       novosTotais.total += 1;
     });
@@ -340,41 +357,41 @@ export function GerenciamentoReembolsoDespesaForm() {
 
   async function buscarDespesas(
     pagina = 1,
-    textoPesquisa = pesquisa,
+    textoPesquisa = filtrosAplicados.pesquisa,
     nome = nomeResponsavel,
     verTodos = podeVerTodos,
     filtros?: {
       cpf?: string;
       cidade?: string;
       status?: string;
-    }
+    },
+    pageLimit = limit
   ) {
     try {
       setLoadingBusca(true);
 
       const nomeFiltro = nomeResponsavel || nome || nomeResponsavelAD;
 
-      console.log("BUSCANDO COM:", {
-        verTodos,
-        nomeFiltro,
-        nomeResponsavel,
-        nome,
-      });
-
+      const filtrosConsulta = {
+        pesquisa: textoPesquisa.trim(),
+        cpf: onlyDigits(filtros?.cpf ?? filtrosAplicados.cpf),
+        cidade: filtros?.cidade ?? filtrosAplicados.cidade,
+        status: filtros?.status ?? filtrosAplicados.status,
+      };
       const response = await buscarSolicitacoesReembolsoPaginado({
         nome: nomeFiltro,
-        pesquisa: textoPesquisa.trim(),
-        cpf: onlyDigits(filtros?.cpf ?? filtroCpf),
-        cidade: filtros?.cidade ?? filtroCidade ?? "",
-        status: filtros?.status ?? filtroStatus ?? "",
+        login: loginUsuarioLogado.current,
+        ...filtrosConsulta,
         verTodos,
         page: pagina,
-        limit: 10,
+        limit: pageLimit,
       });
 
       setLista(response.items || []);
       setPaginaAtual(pagina);
       setTotalPages(response.total_pages || 1);
+      setTotalItems(Number(response.total || 0));
+      setFiltrosAplicados(filtrosConsulta);
     } catch (error) {
       console.error(error);
       alert("Solicitações não encontradas.");
@@ -409,22 +426,26 @@ export function GerenciamentoReembolsoDespesaForm() {
     setFiltroCpf("");
     setFiltroCidade("");
     setFiltroStatus("");
-    setLista([]);
-    setTotalPages(1);
-    setPaginaAtual(1);
-
     buscarDespesas(1, "", nomeResponsavel, podeVerTodos, {
       cpf: "",
       cidade: "",
       status: "",
     });
 
-    carregarContadores(nomeResponsavel, podeVerTodos, {
-      pesquisa: "",
-      cpf: "",
-      cidade: "",
-      status: "",
+  }
+
+  function filtrarPorResumo(status: string) {
+    setFiltroStatus(status);
+    buscarDespesas(1, filtrosAplicados.pesquisa, nomeResponsavel, podeVerTodos, {
+      cpf: filtrosAplicados.cpf,
+      cidade: filtrosAplicados.cidade,
+      status,
     });
+  }
+
+  function alterarLimite(novoLimite: number) {
+    setLimit(novoLimite);
+    buscarDespesas(1, undefined, nomeResponsavel, podeVerTodos, undefined, novoLimite);
   }
 
   function podeEditarSolicitacao() {
@@ -608,7 +629,7 @@ export function GerenciamentoReembolsoDespesaForm() {
       setModalOpen(false);
 
       await Promise.all([
-        buscarDespesas(paginaAtual, pesquisa, nomeResponsavel, podeVerTodos),
+        buscarDespesas(paginaAtual),
         carregarContadores(nomeResponsavel, podeVerTodos),
       ]);
     } catch (error) {
@@ -632,7 +653,7 @@ export function GerenciamentoReembolsoDespesaForm() {
       setModalOpen(false);
 
       await Promise.all([
-        buscarDespesas(paginaAtual, pesquisa, nomeResponsavel, podeVerTodos),
+        buscarDespesas(paginaAtual),
         carregarContadores(nomeResponsavel, podeVerTodos),
       ]);
     } catch (error) {
@@ -743,36 +764,24 @@ export function GerenciamentoReembolsoDespesaForm() {
       cidade: filtroCidade,
       status: filtroStatus,
     });
-
-    carregarContadores(nomeResponsavel, podeVerTodos, {
-      pesquisa,
-      cpf: filtroCpf,
-      cidade: filtroCidade,
-      status: filtroStatus,
-    });
   }
 
   return (
     <>
-      <div className="min-w-225 mx-auto rounded-xl bg-white p-6 shadow">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="h-1 bg-gradient-to-r from-[#006f65] via-[#00AE9D] to-[#C7D300]" />
+        <div className="p-4 lg:p-5">
+        <div className="mb-3">
+          <p className="text-xs font-black uppercase tracking-[0.12em] text-[#00AE9D]">Filtros</p>
+          <h2 className="mt-0.5 text-base font-black text-slate-900">Solicitações cadastradas</h2>
+          <p className="mt-0.5 text-xs text-slate-500">Pesquise e acompanhe as solicitações de reembolso de despesas.</p>
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();
-
-            buscarDespesas(1, pesquisa, nomeResponsavel, podeVerTodos, {
-              cpf: filtroCpf,
-              cidade: filtroCidade,
-              status: filtroStatus,
-            });
-
-            carregarContadores(nomeResponsavel, podeVerTodos, {
-              pesquisa,
-              cpf: filtroCpf,
-              cidade: filtroCidade,
-              status: filtroStatus,
-            });
+            executarBusca();
           }}
-          className="grid grid-cols-1 gap-3"
+          className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr_auto_auto]">
             <input
@@ -780,7 +789,7 @@ export function GerenciamentoReembolsoDespesaForm() {
               value={pesquisa}
               onChange={(e) => setPesquisa(e.target.value)}
               placeholder="Digite o nome do funcionário, CPF, andamento ou cidade"
-              className="w-full rounded border px-3 py-2"
+              className={inputBase}
             />
 
             <input
@@ -788,7 +797,7 @@ export function GerenciamentoReembolsoDespesaForm() {
               value={filtroCpf}
               onChange={(e) => setFiltroCpf(formatCpfView(e.target.value))}
               placeholder="Filtrar por CPF"
-              className="w-full rounded border px-3 py-2"
+              className={inputBase}
             />
 
             <input
@@ -796,13 +805,13 @@ export function GerenciamentoReembolsoDespesaForm() {
               value={filtroCidade}
               onChange={(e) => setFiltroCidade(e.target.value)}
               placeholder="Filtrar por cidade"
-              className="w-full rounded border px-3 py-2"
+              className={inputBase}
             />
 
             <select
               value={filtroStatus}
               onChange={(e) => setFiltroStatus(e.target.value)}
-              className="w-full rounded border px-3 py-2"
+              className={inputBase}
             >
               <option value="">TODOS OS STATUS</option>
               <option value="Pendente Funcionario">PENDENTE FUNCIONÁRIO</option>
@@ -816,7 +825,7 @@ export function GerenciamentoReembolsoDespesaForm() {
 
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 rounded border bg-secondary border-secondary px-4 py-2 text-sm font-medium text-white cursor-pointer"
+              className={primaryButtonBase}
             >
               <FaSearch size={12} />
               Buscar
@@ -825,39 +834,61 @@ export function GerenciamentoReembolsoDespesaForm() {
             <button
               type="button"
               onClick={limparBusca}
-              className="inline-flex items-center justify-center gap-2 rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+              className={neutralButtonBase}
             >
               Limpar
             </button>
           </div>
         </form>
 
-        <div className="mt-6 overflow-x-auto">
-          <table className="min-w-full overflow-hidden rounded-lg border border-gray-200">
-            <thead className="bg-gray-50">
+        <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-4 xl:grid-cols-8">
+          <ResumoCard label="Total" value={totais.total} active={!filtrosAplicados.status} onClick={() => filtrarPorResumo("")} />
+          <ResumoCard label="P. Funcionário" value={totais.funcionario} tone="amber" active={normalizeStatus(filtrosAplicados.status) === "PENDENTE FUNCIONARIO"} onClick={() => filtrarPorResumo("Pendente Funcionario")} />
+          <ResumoCard label="P. Financeiro" value={totais.financeiro} tone="violet" active={normalizeStatus(filtrosAplicados.status) === "PENDENTE FINANCEIRO"} onClick={() => filtrarPorResumo("Pendente Financeiro")} />
+          <ResumoCard label="P. Gerência" value={totais.gerencia} tone="sky" active={normalizeStatus(filtrosAplicados.status) === "PENDENTE GERENCIA"} onClick={() => filtrarPorResumo("Pendente Gerencia")} />
+          <ResumoCard label="P. Gerência Sup." value={totais.gerenciaSup} tone="teal" active={normalizeStatus(filtrosAplicados.status) === "PENDENTE GERENCIA SUPERIOR"} onClick={() => filtrarPorResumo("Pendente Gerencia Superior")} />
+          <ResumoCard label="P. Diretoria" value={totais.diretoria} tone="sky" active={normalizeStatus(filtrosAplicados.status) === "PENDENTE DIRETORIA"} onClick={() => filtrarPorResumo("Pendente Diretoria")} />
+          <ResumoCard label="Aprovados" value={totais.aprovados} tone="emerald" active={normalizeStatus(filtrosAplicados.status) === "APROVADO"} onClick={() => filtrarPorResumo("Aprovado")} />
+          <ResumoCard label="Reprovados" value={totais.reprovados} tone="red" active={normalizeStatus(filtrosAplicados.status) === "REPROVADO"} onClick={() => filtrarPorResumo("Reprovado")} />
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[1120px] table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-[20%]" />
+              <col className="w-[12%]" />
+              <col className="w-[14%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[15%]" />
+              <col className="w-[9%]" />
+            </colgroup>
+            <thead>
               <tr>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className={`${tableHeaderBase} text-left`}>
                   Nome
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className={`${tableHeaderBase} text-left`}>
                   CPF
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className={`${tableHeaderBase} text-left`}>
                   Cidade
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className={`${tableHeaderBase} text-left`}>
                   Abertura
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className={`${tableHeaderBase} text-left`}>
                   Ida
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className={`${tableHeaderBase} text-left`}>
                   Volta
                 </th>
-                <th className="border-b px-3 py-2 text-left text-xs font-semibold text-gray-600">
+                <th className={`${tableHeaderBase} text-left`}>
                   Status
                 </th>
-                <th className="border-b px-3 py-2 text-center text-xs font-semibold text-gray-600">
+                <th className={`${tableHeaderBase} text-center`}>
                   Ação
                 </th>
               </tr>
@@ -866,46 +897,47 @@ export function GerenciamentoReembolsoDespesaForm() {
             <tbody>
               {loadingBusca ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-3 py-8 text-center text-sm text-slate-500">
                     Carregando...
                   </td>
                 </tr>
               ) : lista.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-3 py-8 text-center text-sm text-slate-500">
                     Nenhuma solicitação encontrada.
                   </td>
                 </tr>
               ) : (
                 lista.map((item) => (
-                  <tr key={item.ID_SOLICITACAO_REEMBOLSO_DESPESA} className="hover:bg-gray-50">
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                  <tr key={item.ID_SOLICITACAO_REEMBOLSO_DESPESA} className="transition hover:bg-emerald-50/40">
+                    <td className={`${tableCellBase} font-semibold text-slate-900`}>
                       {primeiroUltimoNome(capitalizeWords(item.NM_FUNCIONARIO))}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                    <td className={tableCellBase}>
                       {formatCpfView(item.NR_CPF_FUNCIONARIO)}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                    <td className={tableCellBase}>
                       {capitalizeWords(item.NM_CIDADE)}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                    <td className={tableCellBase}>
                       {formatDateBR(item.DT_ABERTURA)}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                    <td className={tableCellBase}>
                       {formatDateBR(item.DT_IDA)}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
+                    <td className={tableCellBase}>
                       {formatDateBR(item.DT_VOLTA)}
                     </td>
-                    <td className="border-b px-3 py-2 text-sm text-gray-700">
-                      {capitalizeWords(item.DESC_ANDAMENTO)}
+                    <td className="border-b border-slate-100 px-2 py-2 text-sm text-slate-700">
+                      <StatusReembolsoBadge status={item.DESC_ANDAMENTO} />
                     </td>
-                    <td className="border-b px-3 py-2 text-center">
+                    <td className="border-b border-slate-100 px-2 py-2 text-center">
                       <button
                         type="button"
                         onClick={() => abrirSolicitacao(item)}
-                        className={`rounded px-3 py-1.5 text-xs font-semibold cursor-pointer text-white ${item.SN_FINALIZADO ? "bg-green-600" : "bg-blue-600"
-                          }`}
+                        className={`whitespace-nowrap rounded-xl border px-2 py-2 text-xs font-black shadow-sm transition hover:shadow-md ${item.SN_FINALIZADO
+                          ? "border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+                          : "border-[#00AE9D]/35 bg-[#00AE9D]/10 text-[#006f65] hover:bg-[#00AE9D] hover:text-white"}`}
                       >
                         {item.SN_FINALIZADO ? "Concluído" : "Informações"}
                       </button>
@@ -915,36 +947,17 @@ export function GerenciamentoReembolsoDespesaForm() {
               )}
             </tbody>
           </table>
+          </div>
+          <Pagination
+            currentPage={paginaAtual}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            limit={limit}
+            loading={loadingBusca}
+            onChange={(page) => buscarDespesas(page)}
+            onLimitChange={alterarLimite}
+          />
         </div>
-
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              type="button"
-              onClick={() => buscarDespesas(page)}
-              className={`rounded px-3 py-1.5 text-sm ${page === paginaAtual
-                ? "bg-green-600 text-white"
-                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                }`}
-            >
-              {page}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-5">
-          <ResumoCard label="Funcionário" value={totais.funcionario} />
-          <ResumoCard label="Financeiro" value={totais.financeiro} />
-          <ResumoCard label="Gerência" value={totais.gerencia} />
-          <ResumoCard label="Gerência Sup." value={totais.gerenciaSup} />
-          <ResumoCard label="Diretoria" value={totais.diretoria} />
-        </div>
-
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-          <ResumoCard label="Aprovados" value={totais.aprovados} />
-          <ResumoCard label="Reprovados" value={totais.reprovados} />
-          <ResumoCard label="Total" value={totais.total} />
         </div>
       </div>
 
@@ -1558,11 +1571,130 @@ export function GerenciamentoReembolsoDespesaForm() {
   );
 }
 
-function ResumoCard({ label, value }: { label: string; value: number }) {
+function StatusReembolsoBadge({ status }: { status?: string }) {
+  const estilos: Record<string, string> = {
+    "PENDENTE FUNCIONARIO": "border-amber-300 bg-amber-100 text-amber-800",
+    "PENDENTE FINANCEIRO": "border-violet-300 bg-violet-100 text-violet-800",
+    "PENDENTE GERENCIA": "border-sky-300 bg-sky-100 text-sky-800",
+    "PENDENTE GERENCIA SUPERIOR": "border-teal-300 bg-teal-100 text-teal-800",
+    "PENDENTE DIRETORIA": "border-sky-300 bg-sky-100 text-sky-800",
+    APROVADO: "border-emerald-300 bg-emerald-100 text-emerald-800",
+    REPROVADO: "border-red-300 bg-red-100 text-red-800",
+  };
+
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <div className="text-xs font-medium text-gray-500">{label}</div>
-      <div className="mt-2 text-xl font-semibold text-gray-900">{value}</div>
+    <span className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-black uppercase ${estilos[normalizeStatus(status || "")] || "border-slate-200 bg-slate-50 text-slate-600"}`}>
+      {status || "Não informado"}
+    </span>
+  );
+}
+
+type ResumoTone = "slate" | "amber" | "violet" | "sky" | "teal" | "emerald" | "red";
+
+function ResumoCard({
+  label,
+  value,
+  tone = "slate",
+  active = false,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  tone?: ResumoTone;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  const tones: Record<ResumoTone, string> = {
+    slate: "border-slate-200 bg-slate-50 text-slate-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    violet: "border-violet-200 bg-violet-50 text-violet-700",
+    sky: "border-sky-200 bg-sky-50 text-sky-700",
+    teal: "border-teal-200 bg-teal-50 text-teal-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    red: "border-red-200 bg-red-50 text-red-700",
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-xl border px-3 py-2.5 text-left shadow-sm transition ${tones[tone]} ${active
+        ? "ring-2 ring-[#00AE9D]/35 ring-offset-1"
+        : "hover:-translate-y-0.5 hover:border-[#00AE9D]/45 hover:shadow-md"}`}
+    >
+      <span className="block text-[10px] font-black uppercase tracking-[0.08em] opacity-75">{label}</span>
+      <span className="mt-1 block text-xl font-black leading-none">{value}</span>
+    </button>
+  );
+}
+
+function Pagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  limit,
+  loading,
+  onChange,
+  onLimitChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  limit: number;
+  loading: boolean;
+  onChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
+}) {
+  const primeiro = totalItems === 0 ? 0 : (currentPage - 1) * limit + 1;
+  const ultimo = Math.min(currentPage * limit, totalItems);
+
+  return (
+    <div className="mt-4 border-t border-slate-100 bg-white px-3 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <p className="text-xs text-slate-500">
+            Mostrando <span className="font-semibold text-slate-700">{primeiro}</span> até{" "}
+            <span className="font-semibold text-slate-700">{ultimo}</span> de{" "}
+            <span className="font-semibold text-slate-700">{totalItems}</span> solicitação(ões)
+          </p>
+          <select
+            aria-label="Solicitações por página"
+            value={limit}
+            onChange={(event) => onLimitChange(Number(event.target.value))}
+            disabled={loading}
+            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 outline-none transition focus:border-[#00AE9D] focus:ring-2 focus:ring-[#00AE9D]/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <option value={10}>10 por página</option>
+            <option value={20}>20 por página</option>
+            <option value={50}>50 por página</option>
+            <option value={100}>100 por página</option>
+          </select>
+        </div>
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(currentPage - 1, 1))}
+            disabled={currentPage <= 1 || loading}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FaChevronLeft />
+            Anterior
+          </button>
+          <span className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange(Math.min(currentPage + 1, totalPages))}
+            disabled={currentPage >= totalPages || loading}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Próxima
+            <FaChevronRight />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,8 +3,24 @@ import oracledb from "oracledb";
 import {
   oracleExecute,
   oracleExecuteCommitWithAudit,
+  setAuditoriaContext,
 } from "../services/oracle.service";
+import { getOraclePool } from "../config/oracle.pool";
 import { sendEmail } from "../services/email.service";
+import { criarPendenciaOdontoDesligamento } from "../services/odonto-pendencia-desligamento.service";
+
+type BeneficiarioInativadoDemissao = {
+  ID_BENEFICIARIO: number;
+  ID_TITULAR: number | null;
+  NM_BENEFICIARIO: string;
+  NR_CPF: string;
+  NR_MATRICULA: string | null;
+  SN_ATIVO: number;
+  CD_TIPO_BENEFICIARIO: string;
+  NM_EMPRESA: string | null;
+  NM_OPERADORA: string;
+  NM_PLANO: string;
+};
 
 function somenteNumeros(valor: string) {
   return String(valor || "").replace(/\D/g, "");
@@ -13,6 +29,178 @@ function somenteNumeros(valor: string) {
 
 function documentoValido(documento: string) {
   return documento.length === 11 || documento.length === 14;
+}
+
+function dataParaIso(valor: unknown) {
+  const texto = String(valor || "").trim();
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(texto);
+  if (iso) return texto;
+  const br = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto);
+  return br ? `${br[3]}-${br[2]}-${br[1]}` : null;
+}
+
+function valorNaoNegativo(valor: unknown) {
+  const numero = Number(valor);
+  return Number.isFinite(numero) && numero >= 0 ? Number(numero.toFixed(2)) : null;
+}
+
+function escaparHtml(valor: unknown) {
+  return String(valor || "").replace(/[&<>"']/g, (caractere) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[caractere] || caractere));
+}
+
+function formatarDocumento(valor: unknown) {
+  const documento = somenteNumeros(String(valor || ""));
+  if (documento.length === 11) {
+    return `${documento.slice(0, 3)}.${documento.slice(3, 6)}.${documento.slice(6, 9)}-${documento.slice(9)}`;
+  }
+  if (documento.length === 14) {
+    return `${documento.slice(0, 2)}.${documento.slice(2, 5)}.${documento.slice(5, 8)}/${documento.slice(8, 12)}-${documento.slice(12)}`;
+  }
+  return documento || "-";
+}
+
+function valorVerdadeiro(valor: unknown) {
+  return ["1", "true", "sim", "yes"].includes(String(valor || "").trim().toLowerCase());
+}
+
+function modoTesteEmailAtivo() {
+  return valorVerdadeiro(process.env.EMAIL_MODO_TESTE);
+}
+
+function listaEmails(valor: unknown) {
+  return String(valor || "")
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+}
+
+function montarEmailDemissaoComConvenioAtivo(params: {
+  nome: string;
+  cpf: string;
+  matricula: string;
+  empresa: string;
+  dataDemissao: string;
+  solicitante: string;
+  operadora: string;
+  plano: string;
+  tipoBeneficiario: string;
+  valorMensalidade: unknown;
+}) {
+  const valor = Number(params.valorMensalidade || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+  const linhas = [
+    ["Associado", params.nome],
+    ["CPF/CNPJ", formatarDocumento(params.cpf)],
+    ["Matrícula", params.matricula || "-"],
+    ["Empresa", params.empresa || "-"],
+    ["Data da demissão", params.dataDemissao],
+    ["Operadora", params.operadora || "-"],
+    ["Plano", params.plano || "-"],
+    ["Tipo de beneficiário", params.tipoBeneficiario || "-"],
+    ["Valor vigente", valor],
+  ]
+    .map(([rotulo, conteudo]) => `<tr><td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;width:38%;font-size:12px;font-weight:bold;color:#475569;">${escaparHtml(rotulo)}</td><td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;font-size:12px;color:#0F172A;">${escaparHtml(conteudo)}</td></tr>`)
+    .join("");
+
+  return `<!doctype html><html><body style="margin:0;padding:24px;background:#F6FBFA;font-family:Arial,Helvetica,sans-serif;color:#0F172A;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center"><table role="presentation" width="760" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:760px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:18px;overflow:hidden;border-collapse:separate;"><tr><td style="padding:20px 24px;background:#DC2626;color:#FFFFFF;"><div style="font-size:10px;line-height:14px;font-weight:bold;letter-spacing:.8px;">INTRANET CRESSEM</div><div style="font-size:18px;line-height:24px;font-weight:bold;margin-top:2px;">Atenção: convênio odontológico permanece ativo</div></td></tr><tr><td style="padding:22px 24px 18px;"><p style="margin:0 0 13px;font-size:13px;line-height:20px;">O desligamento foi registrado, mas o benefício odontológico <strong>não foi inativado</strong>.</p><p style="margin:0 0 16px;font-size:12px;line-height:18px;color:#475569;">Ação realizada por: <strong>${escaparHtml(params.solicitante)}</strong>.</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;border:1px solid #E2E8F0;">${linhas}</table><div style="margin-top:16px;padding:12px 14px;border-left:4px solid #DC2626;background:#FEF2F2;color:#991B1B;font-size:12px;line-height:18px;"><strong>Ação necessária:</strong> o Financeiro deve avaliar o impacto do benefício ativo e providenciar o tratamento adequado.</div></td></tr><tr><td style="padding:0 24px 21px;color:#64748B;font-size:11px;line-height:16px;">Mensagem automática da Intranet Cressem.</td></tr></table></td></tr></table></body></html>`;
+}
+
+async function buscarConvenioOdontologicoAtivo(documento: string) {
+  const resultado = await oracleExecute(
+    `SELECT B.NM_BENEFICIARIO, TB.NM_TIPO_BENEFICIARIO, O.NM_OPERADORA, P.NM_PLANO, PV.VL_MENSALIDADE
+       FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+       INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB ON TB.ID_TIPO_BENEFICIARIO = B.ID_TIPO_BENEFICIARIO
+       INNER JOIN DBACRESSEM.ODONTO_PLANO P ON P.ID_PLANO = B.ID_PLANO
+       INNER JOIN DBACRESSEM.ODONTO_OPERADORA O ON O.ID_OPERADORA = P.ID_OPERADORA
+       LEFT JOIN DBACRESSEM.ODONTO_PLANO_VALOR PV ON PV.ID_PLANO = P.ID_PLANO
+         AND PV.SN_ATIVO = 1
+         AND TRUNC(PV.DT_VIGENCIA_INICIO) <= TRUNC(SYSDATE)
+         AND (PV.DT_VIGENCIA_FIM IS NULL OR TRUNC(PV.DT_VIGENCIA_FIM) >= TRUNC(SYSDATE))
+      WHERE REGEXP_REPLACE(B.NR_CPF, '[^0-9]', '') = :documento
+        AND B.SN_ATIVO = 1
+        AND P.SN_ATIVO = 1
+        AND O.SN_ATIVO = 1
+      FETCH FIRST 1 ROWS ONLY`,
+    { documento },
+    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+  );
+  return resultado.rows?.[0] as any;
+}
+
+async function enviarNotificacaoConvenioOdontologicoAtivo(params: {
+  req: Request;
+  cpf: string;
+  associado: any;
+  atendente: string;
+}) {
+  try {
+    const convenioAtivo = await buscarConvenioOdontologicoAtivo(params.cpf);
+    if (!convenioAtivo) {
+      return { enviado: false, erro: "", possuiConvenioAtivo: false };
+    }
+
+    const usuarioAutenticado = (params.req as any).user || {};
+    const emailSolicitante = String(usuarioAutenticado.email || "").trim();
+    const emailsFinanceiro = listaEmails(
+      process.env.REEMBOLSO_FINANCEIRO_EMAIL || process.env.FINANCEIRO_EMAIL
+    );
+
+    if (!emailsFinanceiro.length && !modoTesteEmailAtivo()) {
+      throw new Error(
+        "REEMBOLSO_FINANCEIRO_EMAIL ou FINANCEIRO_EMAIL não configurado."
+      );
+    }
+
+    const destinatarios = Array.from(
+      new Set([...listaEmails(emailSolicitante), ...emailsFinanceiro])
+    );
+
+    if (!destinatarios.length) {
+      throw new Error(
+        "Não foi possível identificar o e-mail do solicitante para a notificação."
+      );
+    }
+
+    await sendEmail(
+      destinatarios,
+      `SICOOB CRESSEM - Atenção: desligamento com convênio odontológico ativo - ${params.associado.NM_CLIENTE}`,
+      montarEmailDemissaoComConvenioAtivo({
+        nome: String(params.req.body?.nome || params.associado.NM_CLIENTE || ""),
+        cpf: params.cpf,
+        matricula: String(params.req.body?.matricula || params.associado.NR_MATRICULA || ""),
+        empresa: String(params.req.body?.empresa || params.associado.NM_EMPRESA || ""),
+        dataDemissao: new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeZone: "America/Sao_Paulo",
+        }).format(new Date()),
+        solicitante: String(
+          usuarioAutenticado.nome_completo || params.atendente || "Solicitante"
+        ),
+        operadora: String(convenioAtivo.NM_OPERADORA || ""),
+        plano: String(convenioAtivo.NM_PLANO || ""),
+        tipoBeneficiario: String(convenioAtivo.NM_TIPO_BENEFICIARIO || ""),
+        valorMensalidade: convenioAtivo.VL_MENSALIDADE,
+      })
+    );
+    return { enviado: true, erro: "", possuiConvenioAtivo: true };
+  } catch (emailError: any) {
+    const erro = String(
+      emailError?.message || emailError || "Falha ao enviar a notificação."
+    );
+    console.error(
+      "Demissão registrada, mas a notificação de convênio odontológico ativo falhou:",
+      emailError
+    );
+    return { enviado: false, erro, possuiConvenioAtivo: true };
+  }
 }
 
 function montarEmailConvenioHtml(documentoTitular: string, pessoas: any[]) {
@@ -50,7 +238,237 @@ function montarEmailConvenioHtml(documentoTitular: string, pessoas: any[]) {
   `;
 }
 
+async function inativarConvenioNaDemissao(conn: oracledb.Connection, idBeneficiario: number, cpf: string, usuario: { nome: string; login: string }) {
+  const resultado = await conn.execute<BeneficiarioInativadoDemissao>(`
+    SELECT B.ID_BENEFICIARIO, B.ID_TITULAR, B.NM_BENEFICIARIO, B.NR_CPF,
+           B.NR_MATRICULA, B.SN_ATIVO, TB.CD_TIPO_BENEFICIARIO,
+           E.NM_EMPRESA, O.NM_OPERADORA, P.NM_PLANO
+      FROM DBACRESSEM.ODONTO_BENEFICIARIO B
+      INNER JOIN DBACRESSEM.ODONTO_TIPO_BENEFICIARIO TB ON TB.ID_TIPO_BENEFICIARIO = B.ID_TIPO_BENEFICIARIO
+      INNER JOIN DBACRESSEM.ODONTO_PLANO P ON P.ID_PLANO = B.ID_PLANO
+      INNER JOIN DBACRESSEM.ODONTO_OPERADORA O ON O.ID_OPERADORA = P.ID_OPERADORA
+      LEFT JOIN DBACRESSEM.ODONTO_BENEFICIARIO T ON T.ID_BENEFICIARIO = B.ID_TITULAR
+      LEFT JOIN DBACRESSEM.ODONTO_EMPRESA E ON E.ID_EMPRESA = NVL(T.ID_EMPRESA, B.ID_EMPRESA)
+     WHERE B.ID_BENEFICIARIO = :id OR B.ID_TITULAR = :id
+     FOR UPDATE OF B.SN_ATIVO
+  `, { id: idBeneficiario }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+  const encontrados = (resultado.rows || []) as BeneficiarioInativadoDemissao[];
+  const principal = encontrados.find((item) => Number(item.ID_BENEFICIARIO) === idBeneficiario);
+  if (!principal || Number(principal.SN_ATIVO) !== 1 || somenteNumeros(principal.NR_CPF) !== cpf) {
+    throw Object.assign(new Error("O benefício odontológico selecionado não está ativo ou não pertence ao CPF/CNPJ da demissão."), { status: 409 });
+  }
+  const desligados = encontrados.filter((item) => Number(item.SN_ATIVO) === 1 && (
+    Number(item.ID_BENEFICIARIO) === idBeneficiario ||
+    (principal.CD_TIPO_BENEFICIARIO === "TITULAR" && Number(item.ID_TITULAR) === idBeneficiario)
+  ));
+  for (const item of desligados) {
+    const atualizacao = await conn.execute(`
+      UPDATE DBACRESSEM.ODONTO_BENEFICIARIO
+         SET SN_ATIVO = 0, DT_EXCLUSAO_PLANO = SYSDATE, DT_ATUALIZACAO = SYSDATE,
+             DS_OBSERVACAO = :observacao, NM_USUARIO_ATUALIZACAO = :nomeUsuario,
+             LOGIN_USUARIO_ATUALIZACAO = :loginUsuario
+       WHERE ID_BENEFICIARIO = :id AND SN_ATIVO = 1
+    `, {
+      id: item.ID_BENEFICIARIO,
+      observacao: "Benefício odontológico inativado através do Formulário de Demissão.",
+      nomeUsuario: usuario.nome,
+      loginUsuario: usuario.login,
+    });
+    if (atualizacao.rowsAffected !== 1) throw new Error(`Não foi possível inativar o beneficiário ${item.ID_BENEFICIARIO}.`);
+  }
+  await conn.execute(`
+    UPDATE DBACRESSEM.ODONTO_PENDENCIA_DESLIGAMENTO
+       SET ST_PENDENCIA = 'RESOLVIDA_MANUAL', DT_RESOLUCAO = SYSDATE,
+           DT_ATUALIZACAO = SYSDATE, DS_ERRO_EMAIL = NULL
+     WHERE NR_CPF = :cpf AND ST_PENDENCIA = 'PENDENTE'
+  `, { cpf });
+  return desligados;
+}
+
+function montarEmailConvenioInativadoDemissao(nome: string, cpf: string, usuario: string, desligados: BeneficiarioInativadoDemissao[]) {
+  const linhas = desligados.map((item) => `<tr>
+    <td style="padding:9px;border-bottom:1px solid #E2E8F0;">${escaparHtml(item.NM_BENEFICIARIO)}</td>
+    <td style="padding:9px;border-bottom:1px solid #E2E8F0;">${escaparHtml(formatarDocumento(item.NR_CPF))}</td>
+    <td style="padding:9px;border-bottom:1px solid #E2E8F0;">${escaparHtml(item.CD_TIPO_BENEFICIARIO)}</td>
+    <td style="padding:9px;border-bottom:1px solid #E2E8F0;">${escaparHtml(item.NR_MATRICULA || "-")}</td>
+    <td style="padding:9px;border-bottom:1px solid #E2E8F0;">${escaparHtml(item.NM_EMPRESA || "-")}</td>
+    <td style="padding:9px;border-bottom:1px solid #E2E8F0;">${escaparHtml(item.NM_OPERADORA)}</td>
+    <td style="padding:9px;border-bottom:1px solid #E2E8F0;">${escaparHtml(item.NM_PLANO)}</td>
+  </tr>`).join("");
+  const data = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  return `<!doctype html><html><body style="margin:0;padding:24px;background:#F6FBFA;font-family:Arial,Helvetica,sans-serif;color:#0F172A;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="760" cellspacing="0" cellpadding="0" style="width:100%;max-width:760px;background:#fff;border:1px solid #E2E8F0;border-radius:18px;overflow:hidden;"><tr><td style="padding:22px 26px;background:#00AE9D;color:#fff;"><div style="font-size:11px;font-weight:bold;letter-spacing:1px;">INTRANET CRESSEM</div><div style="margin-top:5px;font-size:19px;font-weight:bold;">Desligamento do convênio odontológico</div></td></tr><tr><td style="padding:24px 26px;font-size:13px;line-height:20px;"><p style="margin:0 0 14px;">O convênio odontológico foi inativado no registro de demissão de <strong>${escaparHtml(nome)}</strong> (${escaparHtml(formatarDocumento(cpf))}) em ${escaparHtml(data)}. Ação realizada por ${escaparHtml(usuario)}.</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:11px;"><tr style="background:#F6FBFA;"><th align="left" style="padding:9px;">Beneficiário</th><th align="left" style="padding:9px;">CPF</th><th align="left" style="padding:9px;">Tipo</th><th align="left" style="padding:9px;">Matrícula</th><th align="left" style="padding:9px;">Empresa</th><th align="left" style="padding:9px;">Operadora</th><th align="left" style="padding:9px;">Plano</th></tr>${linhas}</table></td></tr><tr><td style="padding:0 26px 22px;color:#64748B;font-size:11px;">Mensagem automática da Intranet Cressem.</td></tr></table></td></tr></table></body></html>`;
+}
+
+async function enviarNotificacaoConvenioInativado(req: Request, associado: any, cpf: string, desligados: BeneficiarioInativadoDemissao[]) {
+  try {
+    const usuario = (req as any).user || {};
+    const emailUsuario = String(usuario.email || "").trim();
+    if (!emailUsuario) throw new Error("E-mail do usuário que realizou a demissão não identificado.");
+    const destinatarios = Array.from(new Set([emailUsuario, String(process.env.EMAIL_CADASTRO_ODONTOLOGICO || "cadastro.cressem@sicoob.com.br").trim()]));
+    await sendEmail(destinatarios, `SICOOB CRESSEM - Convênio odontológico inativado na demissão - ${associado.NM_CLIENTE}`, montarEmailConvenioInativadoDemissao(
+      String(req.body?.nome || associado.NM_CLIENTE || ""), cpf,
+      String(usuario.nome_completo || usuario.sub || emailUsuario), desligados
+    ));
+    return { enviado: true, erro: "" };
+  } catch (error: any) {
+    const erro = String(error?.message || error);
+    console.error("Falha ao notificar inativação odontológica na demissão:", error);
+    return { enviado: false, erro };
+  }
+}
+
 export const demissaoController = {
+  async registrarDemissao(req: Request, res: Response) {
+    try {
+      const cpf = somenteNumeros(String(req.body?.cpf || ""));
+      const dataCarencia = dataParaIso(req.body?.dataCarencia);
+      const dataDemissao = dataParaIso(req.body?.dataDemissao);
+      const credito = valorNaoNegativo(req.body?.credito);
+      const debito = valorNaoNegativo(req.body?.debito);
+      const total = valorNaoNegativo(req.body?.total);
+      const tipo = String(req.body?.tipo || "").trim().toUpperCase();
+      const motivo = String(req.body?.motivo || "").trim();
+      const atendente = String(req.body?.atendente || "").trim();
+      const cidade = String(req.body?.cidade || "").trim();
+      const inativarConvenioOdontologico = valorVerdadeiro(
+        req.body?.inativarConvenioOdontologico
+      );
+      const idBeneficiarioOdontologico = Number(req.body?.idBeneficiarioOdontologico);
+
+      if (!documentoValido(cpf)) {
+        return res.status(400).json({ error: "CPF/CNPJ inválido ou não informado." });
+      }
+      if (!dataCarencia || !dataDemissao) {
+        return res.status(400).json({ error: "Datas de carência e demissão são obrigatórias." });
+      }
+      if (credito === null || debito === null || total === null) {
+        return res.status(400).json({ error: "Valores da demissão inválidos." });
+      }
+      if (tipo !== "CREDOR" && tipo !== "DEVEDOR") {
+        return res.status(400).json({ error: "Tipo de demissão inválido." });
+      }
+      if (!motivo || !atendente || !cidade) {
+        return res.status(400).json({ error: "Motivo, atendente e cidade são obrigatórios." });
+      }
+      if (inativarConvenioOdontologico && (!Number.isInteger(idBeneficiarioOdontologico) || idBeneficiarioOdontologico <= 0)) {
+        return res.status(400).json({ error: "Informe o beneficiário odontológico que será inativado." });
+      }
+
+      const associadoResult = await oracleExecute(
+        `SELECT ID_CLIENTE, NM_CLIENTE, NR_MATRICULA, NM_EMPRESA, NR_TELEFONE
+           FROM DBACRESSEM.ASSOCIADO_ANALITICO
+          WHERE REGEXP_REPLACE(NR_CPF_CNPJ, '[^0-9]', '') = :cpf
+          FETCH FIRST 1 ROWS ONLY`,
+        { cpf },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+      const associado: any = associadoResult.rows?.[0];
+      if (!associado) {
+        return res.status(404).json({ error: "Associado não encontrado para registrar a demissão." });
+      }
+
+      const telefone = somenteNumeros(String(req.body?.telefone || associado.NR_TELEFONE || ""));
+      const conn = await getOraclePool().getConnection();
+      let idDemissao: number;
+      let desligados: BeneficiarioInativadoDemissao[] = [];
+      try {
+        await setAuditoriaContext(conn, req);
+        const insert = await conn.execute(`INSERT INTO DBACRESSEM.DEMISSAO (
+           ID_CLIENTE, NR_CPF_CNPJ, NM_CLIENTE, CD_MATRICULA, NM_EMPRESA,
+           NR_TELEFONE, VL_CREDITO, VL_DEBITO, VL_TOTAL, NM_TIPO,
+           DESC_MOTIVO, DT_CARENCIA, DT_DEMISSAO, NM_ATENDENTE, NM_CIDADE
+         ) VALUES (
+           :idCliente, :cpf, :nome, :matricula, :empresa,
+           :telefone, :credito, :debito, :total, :tipo,
+           :motivo, TO_DATE(:dataCarencia, 'YYYY-MM-DD'), TO_DATE(:dataDemissao, 'YYYY-MM-DD'), :atendente, :cidade
+         ) RETURNING ID_DEMISSAO INTO :idDemissao`,
+        {
+          idCliente: associado.ID_CLIENTE || null,
+          cpf,
+          nome: String(req.body?.nome || associado.NM_CLIENTE || "").trim() || null,
+          matricula: String(req.body?.matricula || associado.NR_MATRICULA || "").trim() || null,
+          empresa: String(req.body?.empresa || associado.NM_EMPRESA || "").trim() || null,
+          telefone: telefone ? Number(telefone) : null,
+          credito,
+          debito,
+          total,
+          tipo,
+          motivo,
+          dataCarencia,
+          dataDemissao,
+          atendente,
+          cidade,
+          idDemissao: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+        },
+        { autoCommit: false });
+        const idRetornado = Array.isArray((insert.outBinds as any)?.idDemissao)
+          ? (insert.outBinds as any).idDemissao[0]
+          : (insert.outBinds as any)?.idDemissao;
+        idDemissao = Number(idRetornado);
+        if (!Number.isInteger(idDemissao) || idDemissao <= 0) throw new Error("O banco não retornou o ID da demissão.");
+
+        if (inativarConvenioOdontologico) {
+          desligados = await inativarConvenioNaDemissao(conn, idBeneficiarioOdontologico, cpf, {
+            nome: String((req as any).user?.nome_completo || atendente),
+            login: String((req as any).user?.sub || ""),
+          });
+        } else {
+          await criarPendenciaOdontoDesligamento({
+            origem: "DEMISSAO",
+            idOrigem: idDemissao,
+            cpf,
+            nomeAssociado: String(req.body?.nome || associado.NM_CLIENTE || "").trim(),
+            usuario: {
+              nome: (req as any).user?.nome_completo,
+              login: (req as any).user?.sub,
+              email: (req as any).user?.email,
+            },
+          }, conn);
+        }
+        await conn.commit();
+      } catch (error) {
+        try { await conn.rollback(); } catch (rollbackError) { console.error("Falha ao reverter demissão:", rollbackError); }
+        throw error;
+      } finally {
+        await conn.close();
+      }
+
+      let notificacaoConvenioAtivoEnviada = false;
+      let erroNotificacaoConvenioAtivo = "";
+      let emailConvenioEnviado = false;
+      let erroEmailConvenio = "";
+
+      if (inativarConvenioOdontologico) {
+        const notificacao = await enviarNotificacaoConvenioInativado(req, associado, cpf, desligados);
+        emailConvenioEnviado = notificacao.enviado;
+        erroEmailConvenio = notificacao.erro;
+      } else {
+        const notificacao = await enviarNotificacaoConvenioOdontologicoAtivo({
+          req,
+          cpf,
+          associado,
+          atendente,
+        });
+        notificacaoConvenioAtivoEnviada = notificacao.enviado;
+        erroNotificacaoConvenioAtivo = notificacao.erro;
+      }
+
+      return res.status(201).json({
+        success: true,
+        idDemissao,
+        convenioInativado: inativarConvenioOdontologico,
+        dependentesInativados: desligados.filter((item) => Number(item.ID_BENEFICIARIO) !== idBeneficiarioOdontologico).length,
+        emailConvenioEnviado,
+        erroEmailConvenio,
+        notificacaoConvenioAtivoEnviada,
+        erroNotificacaoConvenioAtivo,
+      });
+    } catch (error: any) {
+      console.error("Erro ao registrar demissão:", error);
+      return res.status(error?.status || 500).json({ error: "Não foi possível registrar a demissão.", details: error?.message });
+    }
+  },
+
   async buscarAssociado(req: Request, res: Response) {
     try {
       const documento = somenteNumeros(String(req.params.cpf || ""));

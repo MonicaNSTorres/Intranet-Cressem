@@ -2,9 +2,14 @@
 import oracledb from "oracledb";
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import { getOraclePool } from "../config/oracle.pool";
 import { sendEmail } from "../services/email.service";
 import { setAuditoriaContext } from "../services/oracle.service";
+
+const execFileAsync = promisify(execFile);
 
 
 function escapeHtml(value: any) {
@@ -83,6 +88,55 @@ function parseJsonIfNeeded<T = any>(value: any, fallback: T): T {
   return value as T;
 }
 
+function getUsuarioAbertura(req: Request) {
+  const usuario = ((req as any).user || {}) as any;
+
+  const nomeUsuario = String(
+    usuario.nome_completo ||
+    usuario.nome ||
+    req.body?.NM_USUARIO_ABERTURA ||
+    ""
+  )
+    .trim()
+    .toUpperCase();
+
+  const loginUsuario = String(
+    usuario.sub ||
+    usuario.email ||
+    usuario.username ||
+    req.body?.NM_LOGIN_ABERTURA ||
+    ""
+  )
+    .trim()
+    .toUpperCase();
+
+  return { nomeUsuario, loginUsuario };
+}
+
+function normalizarTextoPermissao(value: any) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function usuarioAtualAbriuSolicitacao(req: Request, solicitacao: any) {
+  const usuario = ((req as any).user || {}) as any;
+  const nomeAtual = normalizarTextoPermissao(usuario.nome_completo || usuario.nome);
+  const loginAtual = normalizarTextoPermissao(usuario.sub);
+  const nomeAbertura = normalizarTextoPermissao(solicitacao?.NM_USUARIO_ABERTURA);
+  const loginAbertura = normalizarTextoPermissao(solicitacao?.NM_LOGIN_ABERTURA);
+
+  if (!loginAtual) return true;
+
+  return (
+    (!!nomeAtual && !!nomeAbertura && nomeAtual === nomeAbertura) ||
+    (!!loginAtual && !!loginAbertura && loginAtual === loginAbertura)
+  );
+}
+
 function extFromMime(mime: string) {
   const map: Record<string, string> = {
     "application/pdf": ".pdf",
@@ -149,20 +203,165 @@ function formatFolderDateTime(date = new Date()) {
 }
 
 function getBaseReembolsoPath() {
+  const server = String(process.env.SMB_SERVER || "10.0.107.251").trim();
+  const share = String(process.env.SMB_SHARE || "dados$").trim();
+
   return (
     process.env.REEMBOLSO_DESPESA_BASE_PATH ||
-    "\\\\10.0.107.251\\dados$\\CRM\\REEMBOLSO_DESPESA"
+    `\\\\${server}\\${share}\\CRM\\REEMBOLSO_DESPESA`
   );
 }
 
 function isUncPath(filePath: string | null | undefined) {
-  return String(filePath || "").startsWith("\\\\");
+  const caminho = String(filePath || "");
+  return caminho.startsWith("\\\\") || caminho.startsWith("//");
+}
+
+function isWindowsRuntime() {
+  return process.platform === "win32";
+}
+
+function getSmbConfigReembolso() {
+  const server = String(process.env.SMB_SERVER || "10.0.107.251").trim();
+  const share = String(process.env.SMB_SHARE || "dados$").trim();
+  const user = String(process.env.SMB_USER || "").trim();
+  const password = String(process.env.SMB_PASSWORD || "");
+  const domain = String(process.env.SMB_DOMAIN || "").trim();
+
+  if (!server) throw new Error("SMB_SERVER não configurado.");
+  if (!share) throw new Error("SMB_SHARE não configurado.");
+  if (!user) throw new Error("SMB_USER não configurado.");
+  if (!password) throw new Error("SMB_PASSWORD não configurado.");
+
+  return { server, share, user, password, domain };
+}
+
+function getSmbShareRootLinux() {
+  const { server, share } = getSmbConfigReembolso();
+  return `//${server}/${share}`;
+}
+
+function getSmbRelativePath(caminhoOriginal: string) {
+  const { server, share } = getSmbConfigReembolso();
+  const caminho = String(caminhoOriginal || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+  const prefix = `${server}/${share}/`;
+
+  if (caminho.toLowerCase().startsWith(prefix.toLowerCase())) {
+    return caminho.slice(prefix.length);
+  }
+
+  const marcador = "CRM/REEMBOLSO_DESPESA/";
+  const posicaoMarcador = caminho.toUpperCase().indexOf(marcador);
+
+  if (posicaoMarcador >= 0) {
+    return caminho.slice(posicaoMarcador);
+  }
+
+  return caminho;
+}
+
+async function execSmbClientReembolso(command: string) {
+  const { server, share, user, password, domain } = getSmbConfigReembolso();
+  const args = [`//${server}/${share}`];
+
+  if (domain) {
+    args.push("-W", domain);
+  }
+
+  args.push("-U", `${user}%${password}`, "-c", command);
+
+  try {
+    return await execFileAsync("smbclient", args);
+  } catch (error: any) {
+    throw new Error(
+      `Falha ao executar smbclient. Comando: ${command}. Detalhes: ${String(
+        error?.stderr || error?.stdout || error?.message || error
+      )}`
+    );
+  }
+}
+
+async function salvarComprovanteReembolsoLinux(
+  parsed: NonNullable<ReturnType<typeof parseBase64File>>,
+  funcionarioSafe: string,
+  pastaDataHora: string,
+  finalName: string
+) {
+  const diretorioDestino = `CRM/REEMBOLSO_DESPESA/${funcionarioSafe}/${pastaDataHora}`;
+  const pastasParaGarantir = [
+    "CRM",
+    "CRM/REEMBOLSO_DESPESA",
+    `CRM/REEMBOLSO_DESPESA/${funcionarioSafe}`,
+    diretorioDestino,
+  ];
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "reembolso-smb-"));
+  const tempFilePath = path.join(tempDir, finalName);
+
+  try {
+    for (const pasta of pastasParaGarantir) {
+      try {
+        await execSmbClientReembolso(`mkdir "${pasta}"`);
+      } catch {
+        // Se a pasta ja existe, o smbclient retorna erro. Pode seguir.
+      }
+    }
+
+    await fs.writeFile(tempFilePath, parsed.buffer);
+    await execSmbClientReembolso(
+      `cd "${diretorioDestino}"; put "${tempFilePath}" "${finalName}"`
+    );
+
+    return `${getSmbShareRootLinux()}/${diretorioDestino}/${finalName}`;
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+async function readFileFromSmbLinux(caminhoOriginal: string) {
+  const caminhoRelativo = getSmbRelativePath(caminhoOriginal);
+  const fileName = path.posix.basename(caminhoRelativo);
+  const pastaRemota = path.posix.dirname(caminhoRelativo);
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "reembolso-smb-download-"));
+  const tempFilePath = path.join(tempDir, fileName);
+
+  try {
+    const comando =
+      pastaRemota && pastaRemota !== "."
+        ? `cd "${pastaRemota}"; get "${fileName}" "${tempFilePath}"`
+        : `get "${fileName}" "${tempFilePath}"`;
+
+    await execSmbClientReembolso(comando);
+    const buffer = await fs.readFile(tempFilePath);
+
+    return {
+      buffer,
+      fileName,
+    };
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
 }
 
 async function removeFileIfExists(filePath: string | null | undefined) {
   if (!filePath) return;
 
   try {
+    if (!isWindowsRuntime() && isUncPath(filePath)) {
+      const caminhoRelativo = getSmbRelativePath(filePath);
+      const fileName = path.posix.basename(caminhoRelativo);
+      const pastaRemota = path.posix.dirname(caminhoRelativo);
+      const comando =
+        pastaRemota && pastaRemota !== "."
+          ? `cd "${pastaRemota}"; del "${fileName}"`
+          : `del "${fileName}"`;
+
+      await execSmbClientReembolso(comando);
+      return;
+    }
+
     await fs.unlink(filePath);
   } catch {
     // ignora se não existir
@@ -181,8 +380,18 @@ async function salvarComprovante(
 
   const funcionarioSafe = sanitizeFolderName(nomeFuncionario || "SEM_NOME");
   const pastaDataHora = formatFolderDateTime();
+  const finalName = sanitizeFileName(parsed.nomeOriginal);
 
-  const baseDir = path.join(
+  if (!isWindowsRuntime()) {
+    return salvarComprovanteReembolsoLinux(
+      parsed,
+      funcionarioSafe,
+      pastaDataHora,
+      finalName
+    );
+  }
+
+  const baseDir = path.win32.join(
     getBaseReembolsoPath(),
     funcionarioSafe,
     pastaDataHora
@@ -190,8 +399,7 @@ async function salvarComprovante(
 
   await ensureDir(baseDir);
 
-  const finalName = sanitizeFileName(parsed.nomeOriginal);
-  const finalPath = path.join(baseDir, finalName);
+  const finalPath = path.win32.join(baseDir, finalName);
 
   await fs.writeFile(finalPath, parsed.buffer);
 
@@ -699,7 +907,7 @@ async function buscarResumoSolicitacaoParaEmail(
   };
 }
 
-async function enviarEmailPendenciaProximoAprovador(
+export async function enviarEmailPendenciaProximoAprovador(
   connection: oracledb.Connection,
   params: {
     idSolicitacao: number;
@@ -707,6 +915,7 @@ async function enviarEmailPendenciaProximoAprovador(
     idAprovGerencia: number;
     idAprovGerenciaSup: number;
     idAprovDiretoria: number;
+    introducao?: string;
   }
 ) {
   let idDestino = 0;
@@ -765,7 +974,9 @@ async function enviarEmailPendenciaProximoAprovador(
     justificativa: String(resumo.DESC_JTF_EVENTO || ""),
     despesas: resumo.DESPESAS || [],
     titulo: "Solicitação de reembolso aguardando sua aprovação",
-    introducao: `Uma solicitação avançou no fluxo e está aguardando sua análise na etapa "${params.etapaAtual}".`,
+    introducao:
+      params.introducao ||
+      `Uma solicitação avançou no fluxo e está aguardando sua análise na etapa "${params.etapaAtual}".`,
   });
 
   await sendEmail(destinatarios, subject, html);
@@ -786,6 +997,9 @@ type NivelHierarquia =
   | "GERENCIA SUPERIOR"
   | "DIRETORIA"
   | "";
+
+const ID_APROV_DIRETORIA_REEMBOLSO_PADRAO = 94;
+const ID_APROV_DIRETORIA_REEMBOLSO_ALTERNATIVO = 93;
 
 function normalizarNivelHierarquia(value: string): NivelHierarquia {
   const nivel = String(value || "")
@@ -917,7 +1131,30 @@ async function derivarAprovadoresPorEscala(
     nomeSolicitante,
     cpfSolicitante
   );
+
+  if (!solicitante) {
+    return {
+      idSolicitante: null,
+      idAprovGerencia: null,
+      idAprovGerenciaSup: null,
+      idAprovDiretoria: ID_APROV_DIRETORIA_REEMBOLSO_PADRAO,
+    };
+  }
+
   const idSolicitante = Number(solicitante?.ID_FUNCIONARIO || 0);
+  const nivelSolicitante = normalizarNivelHierarquia(String(solicitante?.NM_NIVEL || ""));
+
+  if (nivelSolicitante === "DIRETORIA") {
+    return {
+      idSolicitante,
+      idAprovGerencia: null,
+      idAprovGerenciaSup: null,
+      idAprovDiretoria:
+        idSolicitante === ID_APROV_DIRETORIA_REEMBOLSO_PADRAO
+          ? ID_APROV_DIRETORIA_REEMBOLSO_ALTERNATIVO
+          : ID_APROV_DIRETORIA_REEMBOLSO_PADRAO,
+    };
+  }
 
   let idAprovGerencia = 0;
   let idAprovGerenciaSup = 0;
@@ -975,6 +1212,10 @@ async function resolverProximoAndamentoPorHierarquia(
   );
   const nivelSolicitante = normalizarNivelHierarquia(String(solicitante?.NM_NIVEL || ""));
   const cdGerenciaSolicitante = Number(solicitante?.CD_GERENCIA || 0);
+
+  if (!solicitante && etapaAtual === "Pendente Financeiro") {
+    return "Pendente Diretoria";
+  }
 
   const aprovadoresDerivados = await derivarAprovadoresPorEscala(
     connection,
@@ -1128,6 +1369,7 @@ export const solicitacaoReembolsoDespesaController = {
       const idSolicitacao = await getNextSolicitacaoId(connection);
       const nomeSolicitanteCadastro = String(req.body.NM_FUNCIONARIO || "").toUpperCase();
       const cpfSolicitanteCadastro = onlyDigits(req.body.NR_CPF_FUNCIONARIO);
+      const usuarioAbertura = getUsuarioAbertura(req);
       const aprovadores = await derivarAprovadoresPorEscala(
         connection,
         nomeSolicitanteCadastro,
@@ -1148,6 +1390,8 @@ export const solicitacaoReembolsoDespesaController = {
           CD_AGENCIA,
           NR_CONTA,
           DESC_ANDAMENTO,
+          NM_USUARIO_ABERTURA,
+          NM_LOGIN_ABERTURA,
           ID_SOLICITANTE,
           ID_APROV_GERENCIA,
           ID_APROV_GERENCIA_SUP,
@@ -1165,6 +1409,8 @@ export const solicitacaoReembolsoDespesaController = {
           :CD_AGENCIA,
           :NR_CONTA,
           :DESC_ANDAMENTO,
+          :NM_USUARIO_ABERTURA,
+          :NM_LOGIN_ABERTURA,
           :ID_SOLICITANTE,
           :ID_APROV_GERENCIA,
           :ID_APROV_GERENCIA_SUP,
@@ -1184,6 +1430,8 @@ export const solicitacaoReembolsoDespesaController = {
         CD_AGENCIA: req.body.CD_AGENCIA,
         NR_CONTA: req.body.NR_CONTA,
         DESC_ANDAMENTO: req.body.DESC_ANDAMENTO || "Pendente Financeiro",
+        NM_USUARIO_ABERTURA: usuarioAbertura.nomeUsuario || null,
+        NM_LOGIN_ABERTURA: usuarioAbertura.loginUsuario || null,
         ID_SOLICITANTE: aprovadores.idSolicitante || null,
         ID_APROV_GERENCIA: aprovadores.idAprovGerencia || null,
         ID_APROV_GERENCIA_SUP: aprovadores.idAprovGerenciaSup || null,
@@ -1608,7 +1856,9 @@ export const solicitacaoReembolsoDespesaController = {
           ID_SOLICITANTE,
           ID_APROV_GERENCIA,
           ID_APROV_GERENCIA_SUP,
-          ID_APROV_DIRETORIA
+          ID_APROV_DIRETORIA,
+          NM_USUARIO_ABERTURA,
+          NM_LOGIN_ABERTURA
         FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
         WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
       `,
@@ -1671,6 +1921,20 @@ export const solicitacaoReembolsoDespesaController = {
       let novoAndamento = andamentoAtual;
 
       if (andamentoAtual === "Pendente Financeiro") {
+        const grupos = Array.isArray((req as any).user?.grupos)
+          ? (req as any).user.grupos
+          : [];
+        if (!grupos.includes("GG_USERS_FIN")) {
+          return res.status(403).json({ error: "Apenas o Financeiro pode dar parecer nesta etapa." });
+        }
+
+        if (usuarioAtualAbriuSolicitacao(req, atual)) {
+          return res.status(403).json({
+            error:
+              "Quem abriu a solicitação não pode dar parecer financeiro nela. Encaminhe para outro usuário do financeiro.",
+          });
+        }
+
         if (acao === "aprovar") {
           const proximoAndamento = await resolverProximoAndamentoPorHierarquia(
             connection,
@@ -1912,6 +2176,33 @@ export const solicitacaoReembolsoDespesaController = {
 
       await setAuditoriaContext(connection, req);
 
+      const resultAtual = await connection.execute(
+        `
+          SELECT
+            ID_SOLICITACAO_REEMBOLSO_DESPESA,
+            DESC_ANDAMENTO,
+            NM_USUARIO_ABERTURA,
+            NM_LOGIN_ABERTURA
+          FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
+          WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
+        `,
+        { id: idSolicitacao },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      const atual: any = resultAtual.rows?.[0] || null;
+
+      if (!atual) {
+        return res.status(404).json({ error: "Solicitação não encontrada." });
+      }
+
+      if (usuarioAtualAbriuSolicitacao(req, atual)) {
+        return res.status(403).json({
+          error:
+            "Quem abriu a solicitação não pode concluir o próprio reembolso como financeiro.",
+        });
+      }
+
       const result = await connection.execute(
         `
         UPDATE DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
@@ -1986,7 +2277,9 @@ export const solicitacaoReembolsoDespesaController = {
             NR_BANCO,
             CD_AGENCIA,
             NR_CONTA,
-            DESC_ANDAMENTO
+            DESC_ANDAMENTO,
+            NM_USUARIO_ABERTURA,
+            NM_LOGIN_ABERTURA
           FROM DBACRESSEM.SOLICITACAO_REEMBOLSO_DESPESA
           WHERE ID_SOLICITACAO_REEMBOLSO_DESPESA = :id
         `,
@@ -2053,6 +2346,17 @@ export const solicitacaoReembolsoDespesaController = {
 
       if (!oficio) {
         return res.status(400).json({ error: "Arquivo não informado." });
+      }
+
+      if (!isWindowsRuntime() && isUncPath(oficio)) {
+        const { buffer, fileName } = await readFileFromSmbLinux(oficio);
+        res.setHeader("Content-Type", "application/octet-stream");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${sanitizeFileName(fileName)}"`
+        );
+
+        return res.send(buffer);
       }
 
       const filePath = path.isAbsolute(oficio) || isUncPath(oficio)

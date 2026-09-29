@@ -116,6 +116,53 @@ export interface InativarBeneficiarioPayload {
     observacao?: string | null;
 }
 
+export interface ResultadoFolhaOdontologico {
+    competencia: string;
+    referencia: string;
+    enviado: boolean;
+    destinatario: string;
+    empresas: Array<{
+        empresa: string;
+        titulares: number;
+        total: number;
+        arquivo?: string;
+    }>;
+    totalGeral: number;
+    ignoradas: string[];
+}
+
+export interface CalendarioFolhaOdontologico {
+    ID_ODONTO_FOLHA_CALENDARIO: number;
+    CD_COMPETENCIA_CORTE: string;
+    ID_EMPRESA: number;
+    NM_EMPRESA: string;
+    DT_CORTE: string;
+    DT_CORTE_EFETIVO: string;
+    DT_ENVIO_AVISO: string;
+    DT_ENVIO_AVISO_EFETIVO: string;
+    ST_FECHAMENTO: "ABERTO" | "FECHADO" | "ERRO";
+    ST_AVISO: "PENDENTE" | "ENVIADO" | "FALHA";
+    DS_ERRO_FECHAMENTO?: string | null;
+    DS_ERRO_AVISO?: string | null;
+}
+
+export async function listarCalendarioFolhaOdontologico(competencia?: string): Promise<CalendarioFolhaOdontologico[]> {
+    const { data } = await api.get<CalendarioFolhaOdontologico[]>(
+        "/v1/convenio-odontologico/folha/calendario",
+        { params: competencia ? { competencia } : undefined }
+    );
+    return Array.isArray(data) ? data : [];
+}
+
+export async function salvarCalendarioFolhaOdontologico(payload: { competencia: string; idEmpresa: number; dataCorte: string; dataEnvioAviso: string; }) {
+    const { data } = await api.post(
+        "/v1/convenio-odontologico/folha/calendario",
+        payload,
+        { headers: getAuditoriaHeaders() }
+    );
+    return data;
+}
+
 export interface FiltrosRelatorioOdonto {
     idEmpresa?: number;
     cpf?: string;
@@ -244,6 +291,34 @@ export async function criarEmpresaOdonto(
         }
     );
 
+    return data;
+}
+
+export async function testarEnvioFolhaOdontologico(): Promise<ResultadoFolhaOdontologico> {
+    const { data } = await api.post<ResultadoFolhaOdontologico>(
+        "/v1/convenio-odontologico/folha/testar-envio",
+        {},
+        { headers: getAuditoriaHeaders() }
+    );
+
+    return data;
+}
+
+export type ResultadoTestePendenciaOdonto = {
+    processadas: number;
+    resolvidasManualmente: number;
+    avisos: number;
+    desligadas: number;
+    erros: number;
+    ignoradasTeste: number;
+};
+
+export async function executarTestePendenciasOdonto(nivel: 1 | 2 | 3): Promise<ResultadoTestePendenciaOdonto> {
+    const { data } = await api.post<ResultadoTestePendenciaOdonto>(
+        "/v1/convenio-odontologico/folha/testar-automacao",
+        { nivel },
+        { headers: getAuditoriaHeaders() }
+    );
     return data;
 }
 

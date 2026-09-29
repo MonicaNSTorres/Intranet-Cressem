@@ -37,6 +37,8 @@ export type SolicitaoListaItem = {
   ID_APROV_GERENCIA?: number;
   ID_APROV_GERENCIA_SUP?: number;
   ID_APROV_DIRETORIA?: number;
+  NM_USUARIO_ABERTURA?: string;
+  NM_LOGIN_ABERTURA?: string;
   NR_BANCO?: string;
   CD_AGENCIA?: string;
   NR_CONTA?: string;
@@ -74,6 +76,7 @@ export async function buscarFuncionarioPorNomeGerenciamento(
 
 export async function buscarSolicitacoesReembolsoPaginado(params: {
   nome: string;
+  login?: string;
   pesquisa: string;
   cpf?: string;
   cidade?: string;

@@ -96,6 +96,9 @@ import { bancoImagensController } from "../controllers/banco-imagens.controller"
 import { convenioOdontologicoController } from "../controllers/convenio-odontologico.controller";
 import { assinaturaEmailController } from "../controllers/assinatura-email.controller";
 import { odontoInformeRendimentosController } from "../controllers/odonto-informe-rendimentos.controller";
+import { convenioOdontologicoFolhaController } from "../controllers/convenio-odontologico-folha.controller";
+import { convenioOdontologicoCalendarioController } from "../controllers/convenio-odontologico-calendario.controller";
+import { odontoPendenciaDesligamentoController } from "../controllers/odonto-pendencia-desligamento.controller";
 
 const routes = Router();
 
@@ -263,9 +266,22 @@ routes.post(
   rcoController.processaCalculoRco
 );
 
+routes.post(
+  "/v1/convenio-odontologico/folha/testar-envio",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE", "GG_INTRANET_CADASTRO_ODONTO"]),
+  convenioOdontologicoFolhaController.testarEnvio
+);
+
 routes.get(
   "/v1/demissao/associado/:cpf",
   demissaoController.buscarAssociado
+);
+
+routes.post(
+  "/v1/demissao",
+  authMiddleware,
+  demissaoController.registrarDemissao
 );
 
 routes.get(
@@ -1016,11 +1032,14 @@ routes.put(
 routes.put(
   "/v1/solicitacao_reembolso_despesa/:id/concluir",
   authMiddleware,
+  authorizeGroups(["GG_USERS_FIN"]),
   solicitacaoReembolsoDespesaController.concluir
 );
 
 routes.put(
   "/v1/solicitacao_reembolso_despesa_final/:id",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_FIN"]),
   solicitacaoReembolsoDespesaController.concluir
 );
 
@@ -1033,6 +1052,7 @@ routes.get(
 
 routes.get(
   "/v1/solicitacao_reembolso_despesa_paginado",
+  authMiddleware,
   solicitacaoReembolsoDespesaPaginadoController.listar
 );
 
@@ -1773,6 +1793,27 @@ routes.get(
   "/v1/convenio-odontologico/informes/consolidado",
   authMiddleware,
   odontoInformeRendimentosController.consolidarAno
+);
+
+routes.get(
+  "/v1/convenio-odontologico/folha/calendario",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE", "GG_INTRANET_CADASTRO_ODONTO"]),
+  convenioOdontologicoCalendarioController.listar
+);
+
+routes.post(
+  "/v1/convenio-odontologico/folha/calendario",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE", "GG_INTRANET_CADASTRO_ODONTO"]),
+  convenioOdontologicoCalendarioController.salvar
+);
+
+routes.post(
+  "/v1/convenio-odontologico/folha/testar-automacao",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE", "GG_INTRANET_CADASTRO_ODONTO"]),
+  odontoPendenciaDesligamentoController.executarTeste
 );
 
 routes.post(

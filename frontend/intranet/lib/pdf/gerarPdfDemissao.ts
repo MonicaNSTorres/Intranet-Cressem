@@ -563,7 +563,10 @@ export async function gerarPdfDemissao(data: GerarPdfDemissaoData) {
   doc.text("Validação", x1 + assinaturaW / 2, y, { align: "center" });
 
   doc.setTextColor(0, 0, 0);
-  doc.save(`demissao_${sanitize(data.nome || "associado")}.pdf`);
+  return {
+    blob: doc.output("blob"),
+    nomeArquivo: `demissao_${sanitize(data.nome || "associado")}.pdf`,
+  };
 }
 
 

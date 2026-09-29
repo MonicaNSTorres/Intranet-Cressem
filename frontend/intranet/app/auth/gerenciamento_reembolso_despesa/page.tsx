@@ -39,7 +39,7 @@ export default function GerenciamentoReembolsoDespesaPage() {
           <button
             type="button"
             onClick={handleNovaSolicitacao}
-            className="rounded-lg bg-secondary px-6 py-2 text-md font-semibold text-white shadow hover:bg-primary cursor-pointer"
+            className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#79B729] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#00AE9D] hover:shadow-md"
           >
             Nova Solicitação
           </button>
@@ -82,10 +82,6 @@ export default function GerenciamentoReembolsoDespesaPage() {
 
       <div className="mt-6">
         <GerenciamentoReembolsoDespesaForm />
-      </div>
-
-      <div className="mt-8 text-xs text-gray-500">
-        * Os dados da listagem, pareceres e andamento serão carregados via intranet-api.
       </div>
     </div>
   );

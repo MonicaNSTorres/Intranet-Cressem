@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import oracledb from "oracledb";
 import { oracleExecute } from "../services/oracle.service";
+import type { AuthenticatedRequest } from "../middleware/auth.middleware";
 
 function onlyDigits(value: string) {
   return String(value || "").replace(/\D/g, "");
@@ -39,7 +40,7 @@ const SECRETARIAS_DIRETORIA = new Set([
   "JANAINA GABRIELA",
 ]);
 
-async function buscarTipoUsuarioPorNome(nome: string, verTodos: boolean) {
+async function buscarTipoUsuarioPorNome(nome: string, verTodos: boolean, ehFinanceiroAutorizado: boolean) {
   const nomeLimpo = String(nome || "").trim();
   if (!nomeLimpo) {
     return {
@@ -78,8 +79,8 @@ async function buscarTipoUsuarioPorNome(nome: string, verTodos: boolean) {
     };
   }
 
-  // Mesmo com ver_todos=0, usuário do financeiro enxerga tudo.
-  if (idSetor === 26) return { tipoUsuario: "financeiro", idFuncionario };
+  // Mesmo com ver_todos=0, usuário do financeiro enxerga tudo se pertencer ao grupo do AD.
+  if (idSetor === 26 && ehFinanceiroAutorizado) return { tipoUsuario: "financeiro", idFuncionario };
 
   if (nivelUpper === "DIRETORIA") return { tipoUsuario: "diretoria", idFuncionario };
   if (nivelUpper === "GERENCIA SUPERIOR") return { tipoUsuario: "gerencia superior", idFuncionario };
@@ -90,17 +91,27 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
   async listar(req: Request, res: Response) {
     try {
       const pesquisa = String(req.query.pesquisa || "").trim();
-      const nome = String(req.query.nome || "").trim().toUpperCase();
+      const usuario = (req as AuthenticatedRequest).user;
+      const nome = String(usuario?.nome_completo || "").trim().toUpperCase();
+      const login = String(usuario?.sub || "").trim().toUpperCase();
       const cpf = onlyDigits(String(req.query.cpf || ""));
       const cidade = String(req.query.cidade || "").trim().toUpperCase();
       const status = String(req.query.status || "").trim().toUpperCase();
-      const verTodos = parseVerTodos(req.query.ver_todos);
+      const verTodosSolicitado = parseVerTodos(req.query.ver_todos);
+      const grupos = Array.isArray(usuario?.grupos) ? usuario.grupos : [];
+      const podeVerTodos = grupos.includes("GG_USERS_FIN") || grupos.includes("GG_USERS_SUPORTE");
 
-      if (!verTodos && !nome) {
-        return res.status(400).json({
-          error: "Nome do usuário é obrigatório para consulta por perfil.",
+      if (!nome || !login) {
+        return res.status(401).json({
+          error: "Usuário autenticado sem nome ou login para consulta.",
         });
       }
+
+      if (verTodosSolicitado && !podeVerTodos) {
+        return res.status(403).json({ error: "Acesso negado à consulta de todas as solicitações." });
+      }
+
+      const verTodos = verTodosSolicitado && podeVerTodos;
 
       const page = parsePage(req.query.page, 1);
       const limit = parseLimit(req.query.limit, 10);
@@ -108,7 +119,11 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
 
       const pesquisaUpper = pesquisa.toUpperCase();
       const pesquisaCpf = onlyDigits(pesquisa);
-      const { tipoUsuario, idFuncionario } = await buscarTipoUsuarioPorNome(nome, verTodos) as any;
+      const { tipoUsuario, idFuncionario } = await buscarTipoUsuarioPorNome(
+        nome,
+        verTodos,
+        grupos.includes("GG_USERS_FIN")
+      ) as any;
 
       let wherePerfilSql = "1 = 1";
 
@@ -122,6 +137,8 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               OR s.ID_APROV_GERENCIA = :idFuncionarioPerfil
               OR s.ID_APROV_GERENCIA_SUP = :idFuncionarioPerfil
               OR s.ID_APROV_DIRETORIA = :idFuncionarioPerfil
+              OR UPPER(TRIM(NVL(s.NM_USUARIO_ABERTURA, ' '))) = UPPER(TRIM(:nomePerfil))
+              OR UPPER(TRIM(NVL(s.NM_LOGIN_ABERTURA, ' '))) = UPPER(TRIM(:loginPerfil))
               OR UPPER(TRIM(s.NM_FUNCIONARIO)) IN (
                 'ISABELI LOHANA CARVALHO MARTINS',
                 'JANAINA GABRIELA'
@@ -154,10 +171,18 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
               OR s.ID_APROV_GERENCIA = :idFuncionarioPerfil
               OR s.ID_APROV_GERENCIA_SUP = :idFuncionarioPerfil
               OR s.ID_APROV_DIRETORIA = :idFuncionarioPerfil
+              OR UPPER(TRIM(NVL(s.NM_USUARIO_ABERTURA, ' '))) = UPPER(TRIM(:nomePerfil))
+              OR UPPER(TRIM(NVL(s.NM_LOGIN_ABERTURA, ' '))) = UPPER(TRIM(:loginPerfil))
             )
           `;
         } else {
-          wherePerfilSql = `UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)`;
+          wherePerfilSql = `
+            (
+              UPPER(NVL(s.NM_FUNCIONARIO, ' ')) = UPPER(:nomePerfil)
+              OR UPPER(TRIM(NVL(s.NM_USUARIO_ABERTURA, ' '))) = UPPER(TRIM(:nomePerfil))
+              OR UPPER(TRIM(NVL(s.NM_LOGIN_ABERTURA, ' '))) = UPPER(TRIM(:loginPerfil))
+            )
+          `;
         }
       }
 
@@ -176,6 +201,9 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
 
       if (wherePerfilSql.includes(":nomePerfil")) {
         bindsBase.nomePerfil = nome;
+      }
+      if (wherePerfilSql.includes(":loginPerfil")) {
+        bindsBase.loginPerfil = login || nome;
       }
       if (wherePerfilSql.includes(":idFuncionarioPerfil")) {
         bindsBase.idFuncionarioPerfil = idFuncionario;
@@ -239,6 +267,8 @@ export const solicitacaoReembolsoDespesaPaginadoController = {
           s.NR_CONTA,
           s.DESC_ANDAMENTO,
           s.SN_FINALIZADO,
+          s.NM_USUARIO_ABERTURA,
+          s.NM_LOGIN_ABERTURA,
 
           s.DESC_PRC_FINANCEIRO,
           s.NM_FNC_FINANCEIRO,
