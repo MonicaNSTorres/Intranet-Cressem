@@ -1,4 +1,4 @@
-import cron from "node-cron";
+import cron from "./cron-email-protegido";
 import oracledb from "oracledb";
 
 import { oracleExecute } from "../services/oracle.service";

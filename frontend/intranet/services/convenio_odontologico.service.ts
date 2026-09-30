@@ -294,6 +294,57 @@ export async function criarEmpresaOdonto(
     return data;
 }
 
+export type FiltrosAlertaIdadeOdontologico = { referencia: string; idade?: 18 | 24 };
+
+export type AlertaIdadeOdontologico = {
+    ID_BENEFICIARIO: number;
+    NOME_BENEFICIARIO: string;
+    CPF_BENEFICIARIO: string;
+    DATA_NASCIMENTO: string;
+    NOME_TITULAR: string;
+    CPF_TITULAR: string;
+    MATRICULA_TITULAR: string | null;
+    EMPRESA: string | null;
+    OPERADORA: string;
+    NM_PLANO: string;
+    VL_MENSALIDADE: number | null;
+    IDADE_ALVO: 18 | 24;
+    DATA_ANIVERSARIO: string;
+    ALERTA_BENEFICIARIO: string;
+};
+
+export type ConsultaAlertaIdadeOdontologico = {
+    referencia: string;
+    mesAviso: string;
+    mesAniversario: string;
+    modoTesteAtivo: boolean;
+    alertas: AlertaIdadeOdontologico[];
+};
+
+export type ResultadoTesteAlertaIdadeOdontologico = {
+    enviado: boolean;
+    enviados: number;
+    destinatario: string;
+    referencia: string;
+    mesAviso: string;
+    mesAniversario: string;
+};
+
+export async function consultarAlertasIdadeOdontologico(filtros: FiltrosAlertaIdadeOdontologico) {
+    const { data } = await api.get<ConsultaAlertaIdadeOdontologico>(
+        "/v1/convenio-odontologico/alertas-idade", { params: filtros }
+    );
+    return data;
+}
+
+export async function testarEnvioAlertaIdadeOdontologico(filtros: FiltrosAlertaIdadeOdontologico) {
+    const { data } = await api.post<ResultadoTesteAlertaIdadeOdontologico>(
+        "/v1/convenio-odontologico/alertas-idade/testar-envio", filtros,
+        { headers: getAuditoriaHeaders() }
+    );
+    return data;
+}
+
 export async function testarEnvioFolhaOdontologico(): Promise<ResultadoFolhaOdontologico> {
     const { data } = await api.post<ResultadoFolhaOdontologico>(
         "/v1/convenio-odontologico/folha/testar-envio",

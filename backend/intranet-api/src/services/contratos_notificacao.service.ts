@@ -1,6 +1,6 @@
 import oracledb from "oracledb";
 import { oracleExecute, oracleExecuteCommit } from "./oracle.service";
-import { sendEmail } from "./email.service";
+import { emailFoiIniciadoPorCron, sendEmail } from "./email.service";
 import os from "os";
 
 const JANELAS_AVISO = [60, 30, 20, 10, 5, 4, 3, 2, 1];
@@ -33,6 +33,10 @@ function getLocalIpv4s() {
 function validarHostAutorizadoParaEmail() {
   const ipsPermitidos = getAllowedEmailIps();
   const ipsLocais = getLocalIpv4s();
+
+  if (!emailFoiIniciadoPorCron()) {
+    return { autorizado: true, motivo: "Envio manual: validação de IP não aplicável.", ipsPermitidos, ipsLocais };
+  }
 
   if (!ipsPermitidos.length) {
     return {

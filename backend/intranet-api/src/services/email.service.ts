@@ -1,5 +1,16 @@
 ﻿import axios from "axios";
 import os from "os";
+import { AsyncLocalStorage } from "node:async_hooks";
+
+const contextoEnvioCron = new AsyncLocalStorage<boolean>();
+
+export function executarCronComValidacaoIpEmail<T>(tarefa: () => T): T {
+  return contextoEnvioCron.run(true, tarefa);
+}
+
+export function emailFoiIniciadoPorCron() {
+  return contextoEnvioCron.getStore() === true;
+}
 
 function getEnv(name: string) {
   const value = process.env[name];
@@ -55,6 +66,8 @@ function getLocalIpv4s() {
 }
 
 export function validarHostAutorizadoParaEmail() {
+  if (!emailFoiIniciadoPorCron()) return;
+
   const ipsPermitidos = getAllowedEmailIps();
   const ipsLocais = getLocalIpv4s();
 
@@ -131,9 +144,8 @@ export async function sendEmail(
   attachments: EmailAttachment[] = [],
   options: SendEmailOptions = {}
 ) {
-  // A verificação fica no ponto central de envio para que nenhum fluxo
-  // (inclusive os que não a chamam explicitamente) consiga contorná-la.
-  // O modo de teste também passa obrigatoriamente por esta proteção.
+  // A restrição de IP se aplica somente aos e-mails iniciados pelos crons.
+  // O modo de teste continua redirecionando destinatários em qualquer fluxo.
   validarHostAutorizadoParaEmail();
 
   const accessToken = await getAccessToken();

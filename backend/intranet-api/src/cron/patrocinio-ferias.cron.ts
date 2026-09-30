@@ -1,4 +1,4 @@
-import cron from "node-cron";
+import cron from "./cron-email-protegido";
 
 import { encaminharPatrociniosDeGerentesEmFerias } from "../services/patrocinio-ferias.service";
 

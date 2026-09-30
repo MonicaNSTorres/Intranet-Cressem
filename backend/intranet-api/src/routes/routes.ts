@@ -97,6 +97,7 @@ import { convenioOdontologicoController } from "../controllers/convenio-odontolo
 import { assinaturaEmailController } from "../controllers/assinatura-email.controller";
 import { odontoInformeRendimentosController } from "../controllers/odonto-informe-rendimentos.controller";
 import { convenioOdontologicoFolhaController } from "../controllers/convenio-odontologico-folha.controller";
+import { convenioOdontologicoAlertaIdadeController } from "../controllers/convenio-odontologico-alerta-idade.controller";
 import { convenioOdontologicoCalendarioController } from "../controllers/convenio-odontologico-calendario.controller";
 import { odontoPendenciaDesligamentoController } from "../controllers/odonto-pendencia-desligamento.controller";
 
@@ -264,6 +265,20 @@ routes.get(
 routes.post(
   "/v1/rco/processar",
   rcoController.processaCalculoRco
+);
+
+routes.get(
+  "/v1/convenio-odontologico/alertas-idade",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE", "GG_INTRANET_CADASTRO_ODONTO"]),
+  convenioOdontologicoAlertaIdadeController.consultar
+);
+
+routes.post(
+  "/v1/convenio-odontologico/alertas-idade/testar-envio",
+  authMiddleware,
+  authorizeGroups(["GG_USERS_SUPORTE", "GG_INTRANET_CADASTRO_ODONTO"]),
+  convenioOdontologicoAlertaIdadeController.testarEnvio
 );
 
 routes.post(

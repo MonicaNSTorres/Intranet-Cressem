@@ -1,4 +1,4 @@
-import cron from "node-cron";
+import cron from "./cron-email-protegido";
 import { competenciaAnterior, gerarEEnviarFolhaOdontologica } from "../services/convenio-odontologico-folha.service";
 
 // O Cadastro conclui as movimentações antes do dia 7. A folha enviada no dia

@@ -7,7 +7,7 @@ import os from "os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { Document, Packer, Paragraph, TextRun } from "docx";
-import { PDFDocument } from "pdf-lib";
+import { decodePDFRawStream, PDFArray, PDFDict, PDFDocument, PDFName, PDFRawStream, PDFStream } from "pdf-lib";
 import { pathToFileURL } from "url";
 
 const execFileAsync = promisify(execFile);
@@ -67,19 +67,20 @@ function getPngDimensions(buffer: Buffer) {
 
 async function criarPdfaDefTemporario(
     dir: string,
-    iccProfilePath: string
+    iccProfileName: string
 ): Promise<string> {
-    const iccPathPs = iccProfilePath.replace(/\\/g, "/");
+    const iccNamePs = iccProfileName.replace(/[\\()]/g, "\\$&");
 
     const conteudo = `%!
 % Arquivo temporário gerado pela API para conversão PDF/A
+/ICCProfile (${iccNamePs}) def
 
 [/_objdef {icc_PDFA} /type /stream /OBJ pdfmark
 [{icc_PDFA}
 <<
   /N 3
 >> /PUT pdfmark
-[{icc_PDFA} (${iccPathPs}) /PUTFILE pdfmark
+[{icc_PDFA} ICCProfile (r) file /PUT pdfmark
 
 [/_objdef {OutputIntent_PDFA} /type /dict /OBJ pdfmark
 [{OutputIntent_PDFA}
@@ -316,38 +317,119 @@ async function converterPdfParaSvgs(
     }
 }
 
+function adicionarPerfisIcc(candidatos: string[], diretorio?: string) {
+    if (!diretorio) return;
+    for (const nome of ["default_rgb.icc", "srgb.icc", "sRGB.icc"]) {
+        candidatos.push(path.resolve(diretorio, nome));
+    }
+}
+
+function resolverPerfilIccGhostscript(gsExec: string): string {
+    const candidatos: string[] = [];
+    const configurado = process.env.GS_ICC_PROFILE?.trim();
+    if (configurado) candidatos.push(path.resolve(configurado));
+
+    for (const gsLibDir of (process.env.GS_LIB_DIR || "").split(path.delimiter).filter(Boolean)) {
+        adicionarPerfisIcc(candidatos, path.resolve(gsLibDir, "../iccprofiles"));
+    }
+
+    if (path.isAbsolute(gsExec)) {
+        adicionarPerfisIcc(candidatos, path.resolve(path.dirname(gsExec), "../iccprofiles"));
+    }
+
+    for (const diretorio of [
+        "/usr/share/color/icc/ghostscript",
+        "/usr/share/ghostscript/iccprofiles",
+        "/usr/local/share/ghostscript/iccprofiles",
+        "/usr/share/color/icc/colord",
+        "/usr/share/color/icc",
+    ]) {
+        adicionarPerfisIcc(candidatos, diretorio);
+    }
+
+    const raizesGhostscript = [
+        "/usr/share/ghostscript",
+        "/usr/local/share/ghostscript",
+        ...[process.env.ProgramFiles, process.env["ProgramFiles(x86)"]]
+            .filter((diretorio): diretorio is string => Boolean(diretorio))
+            .map((diretorio) => path.join(diretorio, "gs")),
+    ];
+
+    for (const raiz of raizesGhostscript) {
+        try {
+            for (const versao of fs.readdirSync(raiz)) {
+                adicionarPerfisIcc(candidatos, path.join(raiz, versao, "iccprofiles"));
+            }
+        } catch {
+            // A distribuição pode não usar esse diretório.
+        }
+    }
+
+    const perfil = [...new Set(candidatos)].find((candidato) => {
+        try {
+            return fs.statSync(candidato).isFile();
+        } catch {
+            return false;
+        }
+    });
+
+    if (!perfil) {
+        throw new Error(
+            "Perfil ICC RGB do Ghostscript não encontrado. Configure GS_ICC_PROFILE com o caminho completo de default_rgb.icc ou srgb.icc no servidor."
+        );
+    }
+
+    return fs.realpathSync(perfil);
+}
+
+function ehPerfilIccRgbValido(conteudo: Uint8Array): boolean {
+    const perfil = Buffer.from(conteudo);
+    return perfil.length >= 128 &&
+        perfil.readUInt32BE(0) >= 128 &&
+        perfil.readUInt32BE(0) <= perfil.length &&
+        perfil.toString("ascii", 16, 20) === "RGB " &&
+        perfil.toString("ascii", 36, 40) === "acsp";
+}
+
+async function validarPdfaGerado(outputPdfPath: string) {
+    const pdf = await PDFDocument.load(await fsp.readFile(outputPdfPath));
+    const outputIntents = pdf.catalog.lookupMaybe(PDFName.of("OutputIntents"), PDFArray);
+    const outputIntent = outputIntents?.lookupMaybe(0, PDFDict);
+    const perfilObjeto = outputIntent?.lookupMaybe(PDFName.of("DestOutputProfile"), PDFStream);
+    const perfil = perfilObjeto instanceof PDFRawStream ? perfilObjeto : undefined;
+    const conteudoIcc = perfil ? decodePDFRawStream(perfil).decode() : new Uint8Array();
+
+    if (!ehPerfilIccRgbValido(conteudoIcc)) {
+        throw new Error("O PDF/A gerado não incorporou um perfil ICC RGB válido. O arquivo não será disponibilizado.");
+    }
+
+    const metadadosObjeto = pdf.catalog.lookupMaybe(PDFName.of("Metadata"), PDFStream);
+    const metadados = metadadosObjeto instanceof PDFRawStream ? metadadosObjeto : undefined;
+    const xmp = metadados
+        ? Buffer.from(decodePDFRawStream(metadados).decode()).toString("utf8")
+        : "";
+    if (!/pdfaid:part\s*=\s*['"]2['"]|<pdfaid:part>\s*2\s*<\/pdfaid:part>/i.test(xmp)) {
+        throw new Error("O PDF/A gerado não contém a identificação PDF/A-2 nos metadados. O arquivo não será disponibilizado.");
+    }
+}
+
 async function converterPdfParaPdfA(
     gsExec: string,
     inputPdfPath: string,
     outputPdfPath: string,
     tempDir: string
 ) {
-    const iccEnv = process.env.GS_ICC_PROFILE;
-    const gsLibDir = process.env.GS_LIB_DIR;
-    const iccCandidates = [
-        iccEnv,
-        gsLibDir ? path.resolve(gsLibDir, "../iccprofiles/default_rgb.icc") : undefined,
-        gsLibDir ? path.resolve(gsLibDir, "../iccprofiles/srgb.icc") : undefined,
-        "C:/Program Files/gs/gs10.07.0/iccprofiles/default_rgb.icc",
-        "C:/Program Files/gs/gs10.07.0/iccprofiles/srgb.icc",
-        "C:/Program Files (x86)/gs/gs10.07.0/iccprofiles/default_rgb.icc",
-        "C:/Program Files (x86)/gs/gs10.07.0/iccprofiles/srgb.icc",
-    ].filter(Boolean) as string[];
-
-    const iccProfile = iccCandidates.find((iccPath) => fs.existsSync(iccPath));
-
-    if (!iccProfile) {
-        const hint = iccEnv
-            ? `Perfil ICC não encontrado em: ${iccEnv}`
-            : "Variável GS_ICC_PROFILE não configurada";
-        throw new Error(
-            `${hint}. Configure GS_ICC_PROFILE para um arquivo válido, por exemplo: C:/Program Files/gs/gs10.07.0/iccprofiles/default_rgb.icc`
-        );
+    const iccProfile = resolverPerfilIccGhostscript(gsExec);
+    if (!ehPerfilIccRgbValido(await fsp.readFile(iccProfile))) {
+        throw new Error(`O perfil ICC configurado não é RGB válido: ${iccProfile}`);
     }
 
-    const pdfaDefPath = await criarPdfaDefTemporario(tempDir, iccProfile);
+    const iccProfileName = path.basename(iccProfile);
+    const pdfaDefPath = await criarPdfaDefTemporario(tempDir, iccProfileName);
 
     await execFileAsync(gsExec, [
+        `--permit-file-read=${iccProfileName}`,
+        `--permit-file-read=${iccProfile}`,
         "-dPDFA=2",
         "-dBATCH",
         "-dNOPAUSE",
@@ -357,7 +439,9 @@ async function converterPdfParaPdfA(
         `-sOutputFile=${outputPdfPath}`,
         pdfaDefPath,
         inputPdfPath,
-    ]);
+    ], { cwd: path.dirname(iccProfile) });
+
+    await validarPdfaGerado(outputPdfPath);
 }
 
 async function converterComLibreOffice(

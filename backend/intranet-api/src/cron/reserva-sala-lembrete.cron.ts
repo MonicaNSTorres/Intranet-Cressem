@@ -1,4 +1,4 @@
-import cron from "node-cron";
+import cron from "./cron-email-protegido";
 import oracledb from "oracledb";
 import { getOraclePool } from "../config/oracle.pool";
 import { sendEmail } from "../services/email.service";

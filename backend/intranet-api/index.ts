@@ -6,6 +6,7 @@ import "./src/cron/patrocinio-ferias.cron";
 import "./src/cron/reembolso-ferias.cron";
 import "./src/cron/convenio-odontologico-folha.cron";
 import "./src/cron/odonto-pendencia-desligamento.cron";
+import "./src/cron/convenio-odontologico-alerta-idade.cron";
 //import "./src/cron/reserva-sala-lembrete.cron";
 import { iniciarCronLembreteReservaSala } from "./src/cron/reserva-sala-lembrete.cron";
 import { iniciarCronLeiloes } from "./src/cron/leiloes.cron";
