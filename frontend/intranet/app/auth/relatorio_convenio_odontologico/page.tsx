@@ -23,7 +23,7 @@ export default function RelatoriosConvenioOdontologicoPage() {
         setAllowed(
           canAccess(
             user,
-            PAGE_ACCESS.convenioOdontologico
+            PAGE_ACCESS.relatorioOdontologico
           )
         );
       } catch (error) {

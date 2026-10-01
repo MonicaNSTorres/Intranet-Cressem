@@ -460,4 +460,16 @@ export const PAGE_ACCESS = {
         allowedGroups: [AD_GROUPS.SUPORTE],
     },
 
+    informeRendimentos: {
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+
+    relatorioOdontologico: {
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+
+    viagens: {
+        allowedGroups: [AD_GROUPS.SUPORTE],
+    },
+
 } satisfies Record<string, AccessRule>;

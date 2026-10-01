@@ -36,7 +36,7 @@ export default function InformeRendimentosOdontologicoPage() {
                 setAllowed(
                     canAccess(
                         user,
-                        PAGE_ACCESS.convenioOdontologico
+                        PAGE_ACCESS.informeRendimentos
                     )
                 );
             } catch (error) {
