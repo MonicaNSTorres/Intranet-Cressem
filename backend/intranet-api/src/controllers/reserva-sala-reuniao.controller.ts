@@ -359,8 +359,20 @@ export const reservaSalaReuniaoController = {
       try {
         console.log("TP_ESPACO recebido:", TP_ESPACO);
 
-        if (toUpperTrim(TP_ESPACO) === "AUDITORIO") {
+        const tipoEspacoChecklist = toUpperTrim(TP_ESPACO);
+        const exigeChecklist =
+          tipoEspacoChecklist === "AUDITORIO" ||
+          tipoEspacoChecklist === "SALA_TREINAMENTO" ||
+          tipoEspacoChecklist === "AUDITORIO_CENTRO_CONVIVENCIA";
+
+        if (exigeChecklist) {
           const checklist = CHECKLIST_AUDITORIO || {};
+          const nomeEspacoChecklist =
+            tipoEspacoChecklist === "AUDITORIO"
+              ? "Auditório"
+              : tipoEspacoChecklist === "SALA_TREINAMENTO"
+                ? "Sala de Treinamento"
+                : "Auditório do Centro de Convivência";
 
           const emailsInfra = [
             "ricardo.henrique@sicoob.com.br",
@@ -391,7 +403,7 @@ export const reservaSalaReuniaoController = {
             <tr>
               <td style="background:#00AE9D;padding:24px;color:#fff;">
                 <h1 style="margin:0;font-size:24px;">
-                  Nova reserva do Auditório
+                  Nova reserva - ${nomeEspacoChecklist}
                 </h1>
 
                 <p style="margin-top:8px;font-size:14px;">
@@ -407,9 +419,6 @@ export const reservaSalaReuniaoController = {
 
             <table width="100%">
             <tr><td><strong>Nome do Evento</strong></td><td>${checklist.nomeEvento || "-"}</td></tr>
-            <tr><td><strong>Data do Evento</strong></td><td>${checklist.dataEvento || "-"}</td></tr>
-            <tr><td><strong>Horário Inicial</strong></td><td>${checklist.horarioInicio || "-"}</td></tr>
-            <tr><td><strong>Horário Final</strong></td><td>${checklist.horarioTermino || "-"}</td></tr>
             <tr><td><strong>Responsável</strong></td><td>${checklist.responsavelEvento || "-"}</td></tr>
             <tr><td><strong>Participantes</strong></td><td>${checklist.quantidadeParticipantes || "-"}</td></tr>
             </table>
@@ -480,7 +489,6 @@ export const reservaSalaReuniaoController = {
             <h2 style="color:#00AE9D;">Equipe Técnica</h2>
 
             <table width="100%">
-            <tr><td>Técnico escalado</td><td>${checklist.tecnicoEscalado || "-"}</td></tr>
             <tr><td>Equipe de apoio orientada</td><td>${simNao(checklist.instrucoesEquipeApoio)}</td></tr>
             <tr><td>Limitações técnicas informadas</td><td>${simNao(checklist.responsavelInformadoLimitacoes)}</td></tr>
             </table>
@@ -507,15 +515,16 @@ export const reservaSalaReuniaoController = {
           for (const emailInfra of emailsInfra) {
             await sendEmail(
               emailInfra,
-              "Nova reserva do Auditório - Checklist preenchido",
+              `Nova reserva - ${nomeEspacoChecklist} - Checklist preenchido`,
               htmlInfra
             );
           }
 
-          await sendEmail(
-            "monica.torres@sicoob.com.br",
-            "Auditório reservado - ciência do evento",
-            `
+          if (tipoEspacoChecklist === "AUDITORIO") {
+            await sendEmail(
+              "monica.torres@sicoob.com.br",
+              "Auditório reservado - ciência do evento",
+              `
             <div style="
               background:#79B729;
               padding:40px 20px;
@@ -591,11 +600,11 @@ export const reservaSalaReuniaoController = {
                           <td style="padding:8px 0;color:#6b7280;">Solicitante</td>
                           <td style="padding:8px 0;font-weight:600;">
                             ${toNullable(
-              USUARIO?.nome_completo ||
-              USUARIO?.nome ||
-              USUARIO?.username
-            ) || "-"
-            }
+                USUARIO?.nome_completo ||
+                USUARIO?.nome ||
+                USUARIO?.username
+              ) || "-"
+              }
                           </td>
                         </tr>
                       </table>
@@ -647,12 +656,12 @@ export const reservaSalaReuniaoController = {
               </table>
             </div>
           `
-          );
+            );
 
-          await sendEmail(
-            "julia.a.coutinho@sicoob.com.br",
-            "Auditório reservado - ciência do evento",
-            `
+            await sendEmail(
+              "julia.a.coutinho@sicoob.com.br",
+              "Auditório reservado - ciência do evento",
+              `
 <div style="
   background:#79B729;
   padding:40px 20px;
@@ -729,16 +738,16 @@ export const reservaSalaReuniaoController = {
               <td style="padding:8px 0;color:#6b7280;">Solicitante</td>
               <td style="padding:8px 0;font-weight:600;">
                 ${toNullable(
-              USUARIO?.nome_completo ||
-              USUARIO?.nome ||
-              USUARIO?.username
-            ) || "-"
-            }
+                USUARIO?.nome_completo ||
+                USUARIO?.nome ||
+                USUARIO?.username
+              ) || "-"
+              }
               </td>
             </tr>
 
             ${DS_OBSERVACAO
-              ? `
+                ? `
                   <tr>
                     <td style="padding:8px 0;color:#6b7280;">
                       Observação
@@ -748,8 +757,8 @@ export const reservaSalaReuniaoController = {
                     </td>
                   </tr>
                 `
-              : ""
-            }
+                : ""
+              }
           </table>
         </div>
 
@@ -802,7 +811,8 @@ export const reservaSalaReuniaoController = {
   </table>
 </div>
 `
-          );
+            );
+          }
         }
       } catch (emailInfraError) {
         console.error("Erro ao enviar e-mail para Infra:", emailInfraError);

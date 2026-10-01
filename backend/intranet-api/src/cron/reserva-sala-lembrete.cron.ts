@@ -3,6 +3,14 @@ import oracledb from "oracledb";
 import { getOraclePool } from "../config/oracle.pool";
 import { sendEmail } from "../services/email.service";
 
+const EMAIL_RESPONSAVEL_RESERVA = process.env.RESERVA_EMAIL_RESPONSAVEL || "";
+const EMAIL_MARKETING = process.env.RESERVA_EMAIL_MARKETING || "";
+const EMAILS_INFRA =
+  process.env.RESERVA_EMAILS_INFRA
+    ?.split(",")
+    .map((email) => email.trim())
+    .filter(Boolean) || [];
+
 function formatDateTimeBR(value: any) {
   if (!value) return "";
 
@@ -240,13 +248,19 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
   `
         );
 
-        if (toTrim(reserva.TP_ESPACO).toUpperCase() !== "AUDITORIO") {
+        const tipoEspacoReserva = toTrim(reserva.TP_ESPACO).toUpperCase();
+        const exigeChecklistEspecial =
+          tipoEspacoReserva === "AUDITORIO" ||
+          tipoEspacoReserva === "SALA_TREINAMENTO" ||
+          tipoEspacoReserva === "AUDITORIO_CENTRO_CONVIVENCIA";
+
+        if (!exigeChecklistEspecial) {
           //lembrete da Sala de Reuniao para ciencia da Janaina (e-mail temporario da Monica durante os testes)
           await sendEmail(
-            "monica.torres@sicoob.com.br",
+            EMAIL_RESPONSAVEL_RESERVA,
             isLembrete08h
-              ? "Lembrete - Reserva de sala agendada para hoje"
-              : "Lembrete - Reserva de sala inicia em 10 minutos",
+              ? "Lembrete - Reserva de espaço agendada para hoje"
+              : "Lembrete - Reserva de espaço inicia em 10 minutos",
             `
 <div style="
   background:#00AE9D;
@@ -269,13 +283,13 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
     <tr>
       <td style="background:#00AE9D;padding:24px;color:white;">
         <h1 style="margin:0;font-size:24px;">
-          Lembrete de Reserva de Sala
+          Lembrete de Reserva de Espaço
         </h1>
 
         <p style="margin-top:8px;font-size:14px;opacity:.95;">
           ${isLembrete08h
-              ? "Existe uma reserva de sala agendada para hoje."
-              : "Existe uma reserva de sala iniciando em aproximadamente 10 minutos."}
+              ? "Existe uma reserva de espaço agendada para hoje."
+              : "Existe uma reserva de espaço iniciando em aproximadamente 10 minutos."}
         </p>
       </td>
     </tr>
@@ -288,8 +302,8 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
         <p style="color:#4b5563;font-size:15px;">
           ${isLembrete08h
-              ? "Este é um aviso para ciência de que existe uma reserva de sala de reunião agendada para hoje."
-              : "Este é um aviso para ciência de que existe uma reserva de sala de reunião prestes a iniciar."}
+              ? "Este é um aviso para ciência de que existe uma reserva de espaço agendada para hoje."
+              : "Este é um aviso para ciência de que existe uma reserva de espaço prestes a iniciar."}
         </p>
 
         <div
@@ -310,7 +324,7 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
             </tr>
 
             <tr>
-              <td style="padding:8px 0;color:#6b7280;">Sala</td>
+              <td style="padding:8px 0;color:#6b7280;">Espaço</td>
               <td style="padding:8px 0;font-weight:600;">
                 ${toTrim(reserva.NM_ESPACO)}
               </td>
@@ -370,7 +384,7 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
           <strong>Aviso automático</strong>
 
           <p style="margin:8px 0 0 0;color:#374151;">
-            Este e-mail foi enviado apenas para ciência da reserva da sala de reunião.
+            Este e-mail foi enviado apenas para ciência da reserva do espaço.
           </p>
         </div>
       </td>
@@ -397,13 +411,25 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
           );
         }
 
-        if (toTrim(reserva.TP_ESPACO).toUpperCase() === "AUDITORIO") {
+        if (exigeChecklistEspecial) {
+          const nomeEspacoEspecial =
+            tipoEspacoReserva === "AUDITORIO"
+              ? "auditório"
+              : tipoEspacoReserva === "SALA_TREINAMENTO"
+                ? "sala de treinamento"
+                : "auditório do Centro de Convivência";
+          const nomeEspacoEspecialTitulo =
+            tipoEspacoReserva === "AUDITORIO"
+              ? "Auditório"
+              : tipoEspacoReserva === "SALA_TREINAMENTO"
+                ? "Sala de Treinamento"
+                : "Auditório do Centro de Convivência";
           //lembrete do Auditorio para ciencia da Janaina (e-mail temporario da Monica durante os testes)
           await sendEmail(
-            "monica.torres@sicoob.com.br",
+            EMAIL_RESPONSAVEL_RESERVA,
             isLembrete08h
-              ? "Lembrete - Evento no auditório agendado para hoje"
-              : "Lembrete - Evento no auditório inicia em 10 minutos",
+              ? "Lembrete - Evento na ${nomeEspacoEspecial} agendado para hoje"
+              : "Lembrete - Evento na ${nomeEspacoEspecial} inicia em 10 minutos",
             `
 <div style="
   background:#00AE9D;
@@ -426,13 +452,13 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
     <tr>
       <td style="background:#00AE9D;padding:24px;color:white;">
         <h1 style="margin:0;font-size:24px;">
-          Lembrete do Auditório
+          Lembrete - ${nomeEspacoEspecialTitulo}
         </h1>
 
         <p style="margin-top:8px;font-size:14px;opacity:.95;">
           ${isLembrete08h
-              ? "Existe um evento no auditório agendado para hoje."
-              : "Evento no auditório inicia em aproximadamente 10 minutos."}
+              ? "Existe um evento na ${nomeEspacoEspecial} agendado para hoje."
+              : "Evento na ${nomeEspacoEspecial} inicia em aproximadamente 10 minutos."}
         </p>
       </td>
     </tr>
@@ -445,8 +471,8 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
         <p style="color:#4b5563;font-size:15px;">
           ${isLembrete08h
-              ? "Este é um aviso para ciência de que existe uma reserva do auditório agendada para hoje."
-              : "Este é um aviso para ciência de que existe uma reserva do auditório prestes a iniciar."}
+              ? "Este é um aviso para ciência de que existe uma reserva da ${nomeEspacoEspecial} agendada para hoje."
+              : "Este é um aviso para ciência de que existe uma reserva da ${nomeEspacoEspecial} prestes a iniciar."}
         </p>
 
         <div
@@ -467,7 +493,7 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
             </tr>
 
             <tr>
-              <td style="padding:8px 0;color:#6b7280;">Auditório</td>
+              <td style="padding:8px 0;color:#6b7280;">Espaço</td>
               <td style="padding:8px 0;font-weight:600;">
                 ${toTrim(reserva.NM_ESPACO)}
               </td>
@@ -527,7 +553,7 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
           <strong>Aviso automático</strong>
 
           <p style="margin:8px 0 0 0;color:#374151;">
-            Este e-mail foi enviado apenas para ciência da reserva do auditório.
+            Este e-mail foi enviado apenas para ciência da reserva da ${nomeEspacoEspecial}.
           </p>
         </div>
       </td>
@@ -555,10 +581,10 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
           //lembrete do Auditorio para ciencia da equipe de Marketing
           await sendEmail(
-            "julia.a.coutinho@sicoob.com.br",
+            EMAIL_MARKETING,
             isLembrete08h
-              ? "Lembrete - Evento no auditório agendado para hoje"
-              : "Lembrete - Evento no auditório inicia em 10 minutos",
+              ? "Lembrete - Evento na ${nomeEspacoEspecial} agendado para hoje"
+              : "Lembrete - Evento na ${nomeEspacoEspecial} inicia em 10 minutos",
             `
 <div style="
   background:#00AE9D;
@@ -581,13 +607,13 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
     <tr>
       <td style="background:#00AE9D;padding:24px;color:white;">
         <h1 style="margin:0;font-size:24px;">
-          Lembrete do Auditório
+          Lembrete - ${nomeEspacoEspecialTitulo}
         </h1>
 
         <p style="margin-top:8px;font-size:14px;opacity:.95;">
           ${isLembrete08h
-              ? "Existe um evento no auditório agendado para hoje."
-              : "Evento no auditório inicia em aproximadamente 10 minutos."}
+              ? "Existe um evento na ${nomeEspacoEspecial} agendado para hoje."
+              : "Evento na ${nomeEspacoEspecial} inicia em aproximadamente 10 minutos."}
         </p>
       </td>
     </tr>
@@ -600,8 +626,8 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
 
         <p style="color:#4b5563;font-size:15px;">
           ${isLembrete08h
-              ? "Este é um aviso para ciência de que existe uma reserva do auditório agendada para hoje, caso seja necessária alguma divulgação, cobertura ou apoio da equipe."
-              : "Este é um aviso para ciência de que existe uma reserva do auditório prestes a iniciar, caso seja necessária alguma divulgação, cobertura ou apoio da equipe."}
+              ? "Este é um aviso para ciência de que existe uma reserva da ${nomeEspacoEspecial} agendada para hoje, caso seja necessária alguma divulgação, cobertura ou apoio da equipe."
+              : "Este é um aviso para ciência de que existe uma reserva da ${nomeEspacoEspecial} prestes a iniciar, caso seja necessária alguma divulgação, cobertura ou apoio da equipe."}
         </p>
 
         <div
@@ -622,7 +648,7 @@ async function processarLembretesReservaSala(tipoLembrete: TipoLembreteReserva) 
             </tr>
 
             <tr>
-              <td style="padding:8px 0;color:#6b7280;">Auditório</td>
+              <td style="padding:8px 0;color:#6b7280;">Espaço</td>
               <td style="padding:8px 0;font-weight:600;">
                 ${toTrim(reserva.NM_ESPACO)}
               </td>
@@ -784,7 +810,7 @@ async function processarAvisosInfraAuditorio() {
         NVL(SN_INFRA_DIA_ENVIADO, 'N') AS SN_INFRA_DIA_ENVIADO
       FROM DBACRESSEM.RESERVA_SALA_REUNIAO
       WHERE ST_RESERVA = 'ATIVA'
-        AND UPPER(TRIM(TP_ESPACO)) = 'AUDITORIO'
+        AND UPPER(TRIM(TP_ESPACO)) IN ('AUDITORIO', 'SALA_TREINAMENTO', 'AUDITORIO_CENTRO_CONVIVENCIA')
         AND (
           (
             TRUNC(DT_INICIO) = TRUNC(CURRENT_TIMESTAMP) + 5
@@ -811,7 +837,7 @@ async function processarAvisosInfraAuditorio() {
     const reservas = (result.rows || []) as any[];
 
     console.log(
-      "[CRON RESERVA SALA] Avisos de Infra do auditório encontrados:",
+      "[CRON RESERVA SALA] Avisos de Infra de Auditório/Sala de Treinamento/Auditório do Centro de Convivência encontrados:",
       reservas.length
     );
 
@@ -821,10 +847,24 @@ async function processarAvisosInfraAuditorio() {
       "ricardo.henrique@sicoob.com.br",
       "fabio.sprado@sicoob.com.br",
       "thiago.msantos@sicoob.com.br",
-      "monica.torres@sicoob.com.br",
+      EMAIL_RESPONSAVEL_RESERVA,
     ];
 
     for (const reserva of reservas) {
+      const tipoEspacoInfra = toTrim(reserva.TP_ESPACO).toUpperCase();
+      const nomeEspacoInfra =
+        tipoEspacoInfra === "AUDITORIO"
+          ? "auditório"
+          : tipoEspacoInfra === "SALA_TREINAMENTO"
+            ? "sala de treinamento"
+            : "auditório do Centro de Convivência";
+      const nomeEspacoInfraTitulo =
+        tipoEspacoInfra === "AUDITORIO"
+          ? "Auditório"
+          : tipoEspacoInfra === "SALA_TREINAMENTO"
+            ? "Sala de Treinamento"
+            : "Auditório do Centro de Convivência";
+
       const tiposAviso: TipoAvisoInfraAuditorio[] = [];
 
       if (
@@ -906,17 +946,17 @@ async function processarAvisosInfraAuditorio() {
         try {
           const tituloPrazo =
             tipoAviso === "5_DIAS"
-              ? "Evento no auditório em 5 dias"
+              ? "Evento na ${nomeEspacoInfra} em 5 dias"
               : tipoAviso === "1_DIA"
-                ? "Evento no auditório amanhã"
-                : "Evento no auditório hoje";
+                ? "Evento na ${nomeEspacoInfra} amanhã"
+                : "Evento na ${nomeEspacoInfra} hoje";
 
           const textoPrazo =
             tipoAviso === "5_DIAS"
-              ? "Existe um evento reservado no auditório para daqui a 5 dias."
+              ? "Existe um evento reservado na ${nomeEspacoInfra} para daqui a 5 dias."
               : tipoAviso === "1_DIA"
-                ? "Existe um evento reservado no auditório para amanhã."
-                : "Existe um evento reservado no auditório para hoje.";
+                ? "Existe um evento reservado na ${nomeEspacoInfra} para amanhã."
+                : "Existe um evento reservado na ${nomeEspacoInfra} para hoje.";
 
           const htmlInfra = `
 <div style="
@@ -940,7 +980,7 @@ async function processarAvisosInfraAuditorio() {
     <tr>
       <td style="background:#00AE9D;padding:24px;color:white;">
         <h1 style="margin:0;font-size:24px;">
-          Lembrete do Auditório - Infra
+          Lembrete - ${nomeEspacoInfraTitulo} - Infra
         </h1>
 
         <p style="margin-top:8px;font-size:14px;opacity:.95;">
@@ -957,7 +997,7 @@ async function processarAvisosInfraAuditorio() {
 
         <p style="color:#4b5563;font-size:15px;">
           Este é um aviso automático para ciência e preparação da equipe
-          para o evento reservado no auditório.
+          para o evento reservado na ${nomeEspacoInfra}.
         </p>
 
         <div
@@ -978,7 +1018,7 @@ async function processarAvisosInfraAuditorio() {
             </tr>
 
             <tr>
-              <td style="padding:8px 0;color:#6b7280;">Auditório</td>
+              <td style="padding:8px 0;color:#6b7280;">Espaço</td>
               <td style="padding:8px 0;font-weight:600;">
                 ${toTrim(reserva.NM_ESPACO)}
               </td>
@@ -1121,7 +1161,7 @@ async function processarAvisosInfraAuditorio() {
     }
   } catch (err) {
     console.error(
-      "[CRON RESERVA SALA] Erro geral ao processar avisos de Infra do auditório:",
+      "[CRON RESERVA SALA] Erro geral ao processar avisos de Infra de Auditório/Sala de Treinamento/Auditório do Centro de Convivência:",
       err
     );
   } finally {
@@ -1156,6 +1196,6 @@ export function iniciarCronLembreteReservaSala() {
   );
 
   console.log(
-    "[CRON RESERVA SALA] Cron das 08h, avisos da Infra do auditório e cron de 10 minutos iniciados."
+    "[CRON RESERVA SALA] Cron das 08h, avisos da Infra de Auditório/Sala de Treinamento/Auditório do Centro de Convivência e cron de 10 minutos iniciados."
   );
 }

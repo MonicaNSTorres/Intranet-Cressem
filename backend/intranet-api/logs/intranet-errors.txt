@@ -87005,3 +87005,1347 @@ NJS-503: connection to host 10.0.107.216 port 1521 could not be established. (CO
 connect EHOSTUNREACH 10.0.107.216:1521
 ==============================
 
+
+==============================
+DATA: 2026-09-29T11:35:16.849Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: Network Error
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4190:25
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:36:33.488Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:37:02.262Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:37:33.525Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:38:03.502Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:38:33.742Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:39:03.547Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:39:33.809Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:40:02.299Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:40:33.899Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:41:03.557Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:41:33.977Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:42:03.562Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:42:34.086Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:43:03.599Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:43:33.597Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:44:03.613Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:44:33.591Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:45:03.636Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:45:33.603Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:46:03.642Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:46:33.642Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:47:03.663Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:47:33.656Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:48:03.680Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:48:33.662Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:49:02.852Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:49:33.653Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:50:02.460Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:50:32.567Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:51:03.024Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:51:34.296Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:52:05.576Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:52:35.614Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:53:06.863Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:53:39.357Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:54:09.381Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:54:39.362Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:55:09.396Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:55:39.374Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:56:09.414Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:56:38.917Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:57:09.427Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:57:39.455Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:58:09.437Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:58:39.047Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:59:09.452Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T11:59:39.060Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:00:08.220Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:00:40.723Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:01:11.303Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:01:39.505Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:02:11.969Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:02:42.031Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:03:11.977Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:03:40.766Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:04:11.994Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:04:42.029Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:05:11.998Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:05:42.043Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:06:12.011Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-09-29T12:06:42.051Z
+USERNAME: monica.torres
+NOME: Monica Nathalia Sousa Torres
+EMAIL: monica.torres@sicoob.com.br
+DEPARTAMENTO: Tecnologia da Informação
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-10-01T11:26:10.234Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
+
+==============================
+DATA: 2026-10-01T11:26:40.251Z
+USERNAME: NÃO IDENTIFICADO
+NOME: NÃO IDENTIFICADO
+EMAIL: NÃO IDENTIFICADO
+DEPARTAMENTO: NÃO IDENTIFICADO
+TELA: http://localhost:3000/auth/home
+ORIGEM: FRONTEND_AXIOS
+IP: ::ffff:127.0.0.1
+NAVEGADOR: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0
+ERRO: timeout of 15000ms exceeded
+STACK:
+AxiosError@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:2326:9
+handleTimeout@http://localhost:3000/_next/static/chunks/dc52e_5d81baee._.js:4203:20
+
+
+ERRO AO SALVAR NO ORACLE:
+NJS-040: connection request timeout. Request exceeded "queueTimeout" of 60000
+==============================
+
