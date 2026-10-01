@@ -56,6 +56,21 @@ const espacos = [
     nome: "Auditório",
     label: "Auditório",
   },
+  {
+    tipo: "CENTRO_CONVIVENCIA" as TipoEspacoReserva,
+    nome: "Centro de Convivência",
+    label: "Centro de Convivência",
+  },
+  {
+    tipo: "SALA_TREINAMENTO" as TipoEspacoReserva,
+    nome: "Sala de Treinamento",
+    label: "Sala de Treinamento",
+  },
+  {
+    tipo: "AUDITORIO_CENTRO_CONVIVENCIA" as TipoEspacoReserva,
+    nome: "Auditório do Centro de Convivência",
+    label: "Auditório do Centro de Convivência",
+  },
 ];
 
 function hojeISO() {
@@ -246,6 +261,21 @@ export function ConsultaSalaReuniao() {
         case "Auditório":
           backgroundColor = "#2563EB";
           borderColor = "#1D4ED8";
+          break;
+
+        case "Centro de Convivência":
+          backgroundColor = "#8B5CF6";
+          borderColor = "#7C3AED";
+          break;
+
+        case "Sala de Treinamento":
+          backgroundColor = "#EC4899";
+          borderColor = "#DB2777";
+          break;
+
+        case "Auditório do Centro de Convivência":
+          backgroundColor = "#64748B";
+          borderColor = "#475569";
           break;
 
         default:
@@ -699,6 +729,21 @@ export function ConsultaSalaReuniao() {
                 <div className="flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800">
                   <span className="h-3 w-3 rounded-full bg-[#2563EB]" />
                   Auditório
+                </div>
+
+                <div className="flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-semibold text-violet-800">
+                  <span className="h-3 w-3 rounded-full bg-[#8B5CF6]" />
+                  Centro de Convivência
+                </div>
+
+                <div className="flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-3 py-2 text-sm font-semibold text-pink-800">
+                  <span className="h-3 w-3 rounded-full bg-[#EC4899]" />
+                  Sala de Treinamento
+                </div>
+
+                <div className="flex items-center gap-2 rounded-full border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700">
+                  <span className="h-3 w-3 rounded-full bg-[#64748B]" />
+                  Auditório do Centro de Convivência
                 </div>
               </div>
             </div>

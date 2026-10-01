@@ -5,7 +5,10 @@ import type { MeResponse } from "./auth.service";
 
 export type TipoEspacoReserva =
   | "SALA_REUNIAO"
-  | "AUDITORIO";
+  | "AUDITORIO"
+  | "CENTRO_CONVIVENCIA"
+  | "SALA_TREINAMENTO"
+  | "AUDITORIO_CENTRO_CONVIVENCIA";
 
 export type ReservaSalaPayload = {
   TP_ESPACO: TipoEspacoReserva;

@@ -37,6 +37,15 @@ const buttonDanger =
 const espacosPorTipo: Record<TipoEspacoReserva, string[]> = {
     SALA_REUNIAO: ["Sala de Reunião", "Sala da Diretória"],
     AUDITORIO: ["Auditório"],
+    CENTRO_CONVIVENCIA: ["Centro de Convivência"],
+    SALA_TREINAMENTO: ["Sala de Treinamento"],
+    AUDITORIO_CENTRO_CONVIVENCIA: ["Auditório do Centro de Convivência"],
+};
+
+const capacidadePorTipo: Partial<Record<TipoEspacoReserva, number>> = {
+    AUDITORIO: 136,
+    SALA_TREINAMENTO: 34,
+    AUDITORIO_CENTRO_CONVIVENCIA: 64,
 };
 
 function Field({
@@ -110,9 +119,7 @@ function montarDateTime(data: string, hora: string) {
 
 export function ReservaSalaReuniaoForm() {
     const router = useRouter();
-
     const [usuario, setUsuario] = useState<MeResponse | null>(null);
-
     const [tipoEspaco, setTipoEspaco] =
         useState<TipoEspacoReserva>("SALA_REUNIAO");
     const [nomeEspaco, setNomeEspaco] = useState("Sala de Reunião 1");
@@ -121,13 +128,10 @@ export function ReservaSalaReuniaoForm() {
     const [horaInicio, setHoraInicio] = useState("");
     const [horaFim, setHoraFim] = useState("");
     const [observacao, setObservacao] = useState("");
-
     const [reservas, setReservas] = useState<ReservaSalaItem[]>([]);
     const [loadingInicial, setLoadingInicial] = useState(true);
     const [loadingSalvar, setLoadingSalvar] = useState(false);
     const [loadingLista, setLoadingLista] = useState(false);
-
-    const [erro, setErro] = useState("");
     const [info, setInfo] = useState("");
 
     const [checklistAuditorio, setChecklistAuditorio] = useState({
@@ -158,6 +162,17 @@ export function ReservaSalaReuniaoForm() {
         return espacosPorTipo[tipoEspaco] || [];
     }, [tipoEspaco]);
 
+    function exibirErro(error: any, mensagemPadrao: string) {
+        console.error(error);
+
+        const mensagem =
+            error?.response?.data?.error ||
+            error?.message ||
+            mensagemPadrao;
+
+        window.alert(mensagem);
+    }
+
     useEffect(() => {
         const primeiraOpcao = espacosPorTipo[tipoEspaco]?.[0] || "";
         setNomeEspaco(primeiraOpcao);
@@ -167,16 +182,14 @@ export function ReservaSalaReuniaoForm() {
         async function loadInicial() {
             try {
                 setLoadingInicial(true);
-                setErro("");
 
                 const me = await getMeAdUser();
                 setUsuario(me);
 
                 await carregarReservas(dataReserva);
             } catch (error: any) {
-                console.error(error);
-                setErro(
-                    error?.response?.data?.error ||
+                exibirErro(
+                    error,
                     "Não foi possível carregar os dados da reserva."
                 );
             } finally {
@@ -201,9 +214,13 @@ export function ReservaSalaReuniaoForm() {
             });
 
             setReservas(Array.isArray(response) ? response : []);
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
             setReservas([]);
+
+            exibirErro(
+                error,
+                "Não foi possível carregar as reservas."
+            );
         } finally {
             setLoadingLista(false);
         }
@@ -212,6 +229,13 @@ export function ReservaSalaReuniaoForm() {
     function abrirConsulta() {
         router.push("/auth/consulta_sala_reuniao");
     }
+
+    const exigeChecklist =
+        tipoEspaco === "AUDITORIO" ||
+        tipoEspaco === "SALA_TREINAMENTO" ||
+        tipoEspaco === "AUDITORIO_CENTRO_CONVIVENCIA";
+
+    const capacidadeMaxima = capacidadePorTipo[tipoEspaco];
 
     function validarCampos() {
         if (!tipoEspaco) return "Selecione o tipo de espaço.";
@@ -243,7 +267,7 @@ export function ReservaSalaReuniaoForm() {
             return "O horário final deve ser maior que o horário inicial.";
         }
 
-        if (tipoEspaco === "AUDITORIO") {
+        if (exigeChecklist) {
             if (!checklistAuditorio.nomeEvento.trim()) {
                 return "Informe o nome do evento.";
             }
@@ -256,8 +280,11 @@ export function ReservaSalaReuniaoForm() {
                 return "Informe a quantidade estimada de participantes.";
             }
 
-            if (Number(checklistAuditorio.quantidadeParticipantes) > 136) {
-                return "O auditório possui capacidade máxima de 136 participantes.";
+            if (
+                capacidadeMaxima &&
+                Number(checklistAuditorio.quantidadeParticipantes) > capacidadeMaxima
+            ) {
+                return `Este espaço possui capacidade máxima de ${capacidadeMaxima} participantes.`;
             }
 
             if (
@@ -306,18 +333,17 @@ export function ReservaSalaReuniaoForm() {
 
     async function salvarReserva() {
         try {
-            setErro("");
             setInfo("");
 
-            const msg = validarCampos();
+            const mensagemValidacao = validarCampos();
 
-            if (msg) {
-                setErro(msg);
+            if (mensagemValidacao) {
+                window.alert(mensagemValidacao);
                 return;
             }
 
             if (!usuario) {
-                setErro("Não foi possível identificar o usuário logado.");
+                window.alert("Não foi possível identificar o usuário logado.");
                 return;
             }
 
@@ -331,17 +357,16 @@ export function ReservaSalaReuniaoForm() {
                 DT_INICIO: montarDateTime(dataReserva, horaInicio),
                 DT_FIM: montarDateTime(dataReserva, horaFim),
                 USUARIO: usuario,
-                CHECKLIST_AUDITORIO: tipoEspaco === "AUDITORIO" ? checklistAuditorio : null,
+                CHECKLIST_AUDITORIO: exigeChecklist ? checklistAuditorio : null,
             });
 
-            setInfo("Reserva cadastrada com sucesso.");
+            window.alert("Reserva cadastrada com sucesso.");
+
             limparFormulario();
             await carregarReservas(dataReserva);
         } catch (error: any) {
-            console.error(error);
-
-            setErro(
-                error?.response?.data?.error ||
+            exibirErro(
+                error,
                 "Não foi possível cadastrar a reserva. Verifique se o espaço já está ocupado nesse horário."
             );
         } finally {
@@ -355,7 +380,6 @@ export function ReservaSalaReuniaoForm() {
         if (!confirmar) return;
 
         try {
-            setErro("");
             setInfo("");
 
             await cancelarReservaSala(id);
@@ -363,9 +387,9 @@ export function ReservaSalaReuniaoForm() {
             setInfo("Reserva cancelada com sucesso.");
             await carregarReservas(dataReserva);
         } catch (error: any) {
-            console.error(error);
-            setErro(
-                error?.response?.data?.error || "Não foi possível cancelar a reserva."
+            exibirErro(
+                error,
+                "Não foi possível cancelar a reserva."
             );
         }
     }
@@ -375,7 +399,7 @@ export function ReservaSalaReuniaoForm() {
     );
 
     const checklistAuditorioPreenchido = useMemo(() => {
-        if (tipoEspaco !== "AUDITORIO") return true;
+        if (!exigeChecklist) return true;
 
         return (
             checklistAuditorio.nomeEvento.trim() !== "" &&
@@ -401,7 +425,7 @@ export function ReservaSalaReuniaoForm() {
                 checklistAuditorio.internetDedicada !== ""
             )
         );
-    }, [tipoEspaco, checklistAuditorio]);
+    }, [tipoEspaco, checklistAuditorio, exigeChecklist]);
 
     if (loadingInicial) {
         return (
@@ -435,17 +459,11 @@ export function ReservaSalaReuniaoForm() {
                         </button>
                     </div>
 
-                    {(erro || info) && (
+                    {info && (
                         <div className="mb-5">
-                            {erro ? (
-                                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                                    {erro}
-                                </div>
-                            ) : (
-                                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-primary">
-                                    {info}
-                                </div>
-                            )}
+                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-primary">
+                                {info}
+                            </div>
                         </div>
                     )}
 
@@ -495,6 +513,11 @@ export function ReservaSalaReuniaoForm() {
                                 >
                                     <option value="SALA_REUNIAO">Sala de reunião</option>
                                     <option value="AUDITORIO">Auditório</option>
+                                    <option value="CENTRO_CONVIVENCIA">Centro de Convivência</option>
+                                    <option value="SALA_TREINAMENTO">Sala de Treinamento</option>
+                                    <option value="AUDITORIO_CENTRO_CONVIVENCIA">
+                                        Auditório do Centro de Convivência
+                                    </option>
                                 </select>
                             </Field>
 
@@ -603,10 +626,14 @@ export function ReservaSalaReuniaoForm() {
                             </Field>
                         </div>
 
-                        {tipoEspaco === "AUDITORIO" && (
+                        {exigeChecklist && (
                             <div className="md:col-span-12 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                                 <h3 className="mb-4 text-sm font-bold text-primary">
-                                    Checklist obrigatório do Auditório
+                                    {tipoEspaco === "AUDITORIO"
+                                        ? "Checklist obrigatório do Auditório"
+                                        : tipoEspaco === "SALA_TREINAMENTO"
+                                            ? "Checklist obrigatório da Sala de Treinamento"
+                                            : "Checklist obrigatório do Auditório do Centro de Convivência"}
                                 </h3>
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -627,12 +654,16 @@ export function ReservaSalaReuniaoForm() {
                                         <input
                                             type="number"
                                             min={1}
-                                            max={136}
+                                            max={capacidadeMaxima}
                                             value={checklistAuditorio.quantidadeParticipantes}
                                             onChange={(e) => {
                                                 const valor = e.target.value;
 
-                                                if (valor === "" || Number(valor) <= 136) {
+                                                if (
+                                                    valor === "" ||
+                                                    !capacidadeMaxima ||
+                                                    Number(valor) <= capacidadeMaxima
+                                                ) {
                                                     setChecklistAuditorio((prev) => ({
                                                         ...prev,
                                                         quantidadeParticipantes: valor,
@@ -642,12 +673,15 @@ export function ReservaSalaReuniaoForm() {
                                             className={inputBase}
                                         />
 
-                                        <p className="mt-1 text-xs text-gray-500">
-                                            Capacidade máxima do auditório: <strong>136 pessoas</strong>.
-                                        </p>
+                                        {capacidadeMaxima && (
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                Capacidade máxima:{" "}
+                                                <strong>{capacidadeMaxima} pessoas</strong>.
+                                            </p>
+                                        )}
                                     </Field>
 
-                                    <Field label="Responsável pelo Evento">
+                                    <Field label="Responsável pelo Evento(preencha o nome e telefone)">
                                         <input
                                             value={checklistAuditorio.responsavelEvento}
                                             onChange={(e) =>
@@ -843,7 +877,7 @@ export function ReservaSalaReuniaoForm() {
                                     <FaSave />
                                     {loadingSalvar
                                         ? "Salvando..."
-                                        : tipoEspaco === "AUDITORIO" && !checklistAuditorioPreenchido
+                                        : exigeChecklist && !checklistAuditorioPreenchido
                                             ? "Preencha o checklist"
                                             : "Cadastrar Reserva"}
                                 </button>
