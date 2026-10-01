@@ -829,4 +829,12 @@ export const SCREENS: ScreenItem[] = [
     allowedGroups: [AD_GROUPS.SUPORTE],
     keywords: ["convenio", "convênio", "relatorio", "emissao", "odontologico"],
   },
+  {
+    title: "Informe de Rendimentos Odontológico",
+    desc: "Emissão de informe de rendimentos.",
+    href: "/auth/informe_rendimentos_odontologico",
+    group: "Beneficios",
+    allowedGroups: [AD_GROUPS.SUPORTE],
+    keywords: ["informe", "rendimentos", "odontologico", "emissao", "rendimento"],
+  },
 ];

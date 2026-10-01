@@ -36,7 +36,8 @@ import {
     FaHeadphones,
     FaHeart,
     FaTv,
-    FaLevelUpAlt
+    FaLevelUpAlt,
+    FaUserPlus
 } from "react-icons/fa";
 import { useMe } from "@/hooks/use-me";
 
@@ -754,6 +755,34 @@ const links: LinkItem[] = [
                 title: "Relatórios",
                 href: "/auth/relatorio_convenio_odonto",
                 allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.GERENCIAR_CONVENIO_ODONTO],
+            },
+        ],
+    },
+    {
+        title: "Gerenciador Odontologico",
+        description: "Acesse beneficiarios, planos, relatórios e informe de rendimentos.",
+        icon: FaUserPlus,
+        category: "Convênios",
+        children: [
+            {
+                title: "Beneficiarios",
+                href: "/auth/convenio_odontologico",
+                allowedGroups: [AD_GROUPS.SUPORTE],
+            },
+            {
+                title: "Planos",
+                href: "/auth/planos_odontologicos",
+                allowedGroups: [AD_GROUPS.SUPORTE],
+            },
+            {
+                title: "Relatórios",
+                href: "/auth/relatorio_convenio_odontologico",
+                allowedGroups: [AD_GROUPS.SUPORTE],
+            },
+            {
+                title: "Informe de Rendimentos",
+                href: "/auth/informe_rendimentos_odontologico",
+                allowedGroups: [AD_GROUPS.SUPORTE],
             },
         ],
     },
