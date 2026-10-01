@@ -1938,87 +1938,13 @@ function ModalNovoBeneficiario({
                   </h3>
 
                   <p className="mt-1 text-sm leading-5 text-slate-500">
-                    Escolha a operadora e o plano. O valor vigente será
-                    carregado automaticamente.
+                    {dependente
+                      ? "Selecione primeiro o titular responsável. A operadora, o plano e o valor vigente serão carregados automaticamente conforme o vínculo do titular."
+                      : "Selecione a operadora e o plano. O valor vigente será carregado automaticamente."}
                   </p>
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <SelectField
-                    label="Operadora *"
-                    value={
-                      form.idOperadora
-                    }
-                    onChange={
-                      handleOperadoraChange
-                    }
-                  >
-                    <option value="">
-                      Selecione
-                    </option>
-
-                    {operadoras.map(
-                      (item) => (
-                        <option
-                          key={
-                            item.ID_OPERADORA
-                          }
-                          value={
-                            item.ID_OPERADORA
-                          }
-                        >
-                          {
-                            item.NM_OPERADORA
-                          }
-                        </option>
-                      )
-                    )}
-                  </SelectField>
-
-                  <SelectField
-                    label="Plano *"
-                    value={form.idPlano}
-                    onChange={
-                      handlePlanoChange
-                    }
-                    disabled={
-                      !form.idOperadora
-                    }
-                  >
-                    <option value="">
-                      {form.idOperadora
-                        ? "Selecione"
-                        : "Selecione primeiro a operadora"}
-                    </option>
-
-                    {planos.map(
-                      (item) => (
-                        <option
-                          key={
-                            item.ID_PLANO
-                          }
-                          value={
-                            item.ID_PLANO
-                          }
-                        >
-                          {item.NM_PLANO}
-                        </option>
-                      )
-                    )}
-                  </SelectField>
-
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-slate-600">
-                      Valor vigente
-                    </label>
-
-                    <div className="flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 shadow-sm">
-                      {formatarMoeda(
-                        valorPlano
-                      )}
-                    </div>
-                  </div>
-
                   {dependente && (
                     <div className="md:col-span-2 xl:col-span-3">
                       <label className="mb-1 block text-xs font-semibold text-slate-600">
@@ -2146,6 +2072,81 @@ function ModalNovoBeneficiario({
                         )}
                     </div>
                   )}
+
+                  <SelectField
+                    label="Operadora *"
+                    value={
+                      form.idOperadora
+                    }
+                    onChange={
+                      handleOperadoraChange
+                    }
+                  >
+                    <option value="">
+                      Selecione
+                    </option>
+
+                    {operadoras.map(
+                      (item) => (
+                        <option
+                          key={
+                            item.ID_OPERADORA
+                          }
+                          value={
+                            item.ID_OPERADORA
+                          }
+                        >
+                          {
+                            item.NM_OPERADORA
+                          }
+                        </option>
+                      )
+                    )}
+                  </SelectField>
+
+                  <SelectField
+                    label="Plano *"
+                    value={form.idPlano}
+                    onChange={
+                      handlePlanoChange
+                    }
+                    disabled={
+                      !form.idOperadora
+                    }
+                  >
+                    <option value="">
+                      {form.idOperadora
+                        ? "Selecione"
+                        : "Selecione primeiro a operadora"}
+                    </option>
+
+                    {planos.map(
+                      (item) => (
+                        <option
+                          key={
+                            item.ID_PLANO
+                          }
+                          value={
+                            item.ID_PLANO
+                          }
+                        >
+                          {item.NM_PLANO}
+                        </option>
+                      )
+                    )}
+                  </SelectField>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">
+                      Valor vigente
+                    </label>
+
+                    <div className="flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 shadow-sm">
+                      {formatarMoeda(
+                        valorPlano
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {dependente && (
