@@ -697,7 +697,7 @@ export const SCREENS: ScreenItem[] = [
     href: "/auth/solicitacao_participacao",
     group: "Marketing",
     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
-    keywords: ["marketing", "participacao", "participação", "solicitacao", "solicitação"],
+    keywords: ["marketing", "participacao", "patrocinio", "solicitacao", "solicitação"],
   },
   {
     title: "Notificação",
@@ -713,7 +713,7 @@ export const SCREENS: ScreenItem[] = [
     href: "/auth/gerenciamento_participacao",
     group: "Marketing",
     allowedGroups: [AD_GROUPS.SUPORTE, AD_GROUPS.TODO_MUNDO],
-    keywords: ["marketing", "participacao", "participação", "consulta", "gerenciamento"],
+    keywords: ["marketing", "participacao", "patrocinio", "consulta", "gerenciamento"],
   },
   {
     title: "Migração de Contrato",
