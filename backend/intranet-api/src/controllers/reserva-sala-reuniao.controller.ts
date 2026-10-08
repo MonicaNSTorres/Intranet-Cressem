@@ -309,7 +309,7 @@ export const reservaSalaReuniaoController = {
 
           <p style="margin:8px 0 0 0;color:#374151;">
             Você receberá um novo e-mail
-            30 minutos antes do início da reunião.
+            10 minutos antes do início da reunião.
           </p>
         </div>
 
@@ -356,6 +356,59 @@ export const reservaSalaReuniaoController = {
         console.error("Erro ao enviar e-mail de confirmação da reserva:", emailError);
       }
 
+      //ciencia imediata para Janaina ao cadastrar uma reserva de sala comum.
+      try {
+        const tipoEspacoReserva = toUpperTrim(TP_ESPACO);
+        const exigeChecklistEspecial =
+          tipoEspacoReserva === "AUDITORIO" ||
+          tipoEspacoReserva === "SALA_TREINAMENTO" ||
+          tipoEspacoReserva === "AUDITORIO_CENTRO_CONVIVENCIA";
+
+        const emailResponsavelReserva = process.env.RESERVA_EMAIL_RESPONSAVEL?.trim();
+
+        if (!exigeChecklistEspecial && emailResponsavelReserva) {
+          await sendEmail(
+            emailResponsavelReserva,
+            "Nova reserva de espaço - ciência",
+            `
+<div style="background:#00AE9D;padding:40px 20px;font-family:Segoe UI,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:700px;margin:auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+    <tr><td style="background:#00AE9D;padding:24px;color:white;">
+      <h1 style="margin:0;font-size:24px;">Nova Reserva de Espaço</h1>
+      <p style="margin-top:8px;font-size:14px;opacity:.95;">Uma nova reserva foi cadastrada na Intranet.</p>
+    </td></tr>
+    <tr><td style="padding:32px;">
+      <p style="font-size:16px;margin-top:0;">Olá, <strong>Janaina</strong>.</p>
+      <p style="color:#4b5563;font-size:15px;">Este aviso é para ciência de uma nova reserva de espaço.</p>
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-top:24px;">
+        <table width="100%">
+          <tr><td style="padding:8px 0;color:#6b7280;">Reunião</td><td style="padding:8px 0;font-weight:600;">${toTrim(DS_TITULO)}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280;">Espaço</td><td style="padding:8px 0;font-weight:600;">${toTrim(NM_ESPACO)}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280;">Responsável</td><td style="padding:8px 0;font-weight:600;">${toNullable(USUARIO?.nome_completo || USUARIO?.nome || USUARIO?.username) || "-"}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280;">Departamento</td><td style="padding:8px 0;font-weight:600;">${toNullable(USUARIO?.department) || "-"}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280;">Início</td><td style="padding:8px 0;font-weight:700;color:#00AE9D;font-size:16px;">${formatDateTimeBR(DT_INICIO)}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280;">Fim</td><td style="padding:8px 0;font-weight:700;color:#00AE9D;font-size:16px;">${formatDateTimeBR(DT_FIM)}</td></tr>
+          ${DS_OBSERVACAO ? `<tr><td style="padding:8px 0;color:#6b7280;">Observação</td><td style="padding:8px 0;">${toTrim(DS_OBSERVACAO)}</td></tr>` : ""}
+        </table>
+      </div>
+      <div style="margin-top:24px;background:#ecfdf5;border-left:4px solid #00AE9D;padding:16px;border-radius:8px;">
+        <strong>Aviso automático</strong>
+        <p style="margin:8px 0 0 0;color:#374151;">Este e-mail foi enviado imediatamente após o cadastro da reserva para sua ciência.</p>
+      </div>
+      <div style="margin-top:32px;text-align:center;">
+        <a href="https://intranet/auth/consulta_sala_reuniao" style="display:inline-block;background:#79B729;color:white;text-decoration:none;padding:14px 24px;border-radius:10px;font-weight:600;">Abrir Intranet</a>
+      </div>
+    </td></tr>
+    <tr><td style="background:#f9fafb;padding:20px;text-align:center;color:#6b7280;font-size:12px;">Este é um e-mail automático da Intranet. Não responda esta mensagem.</td></tr>
+  </table>
+</div>
+`
+          );
+        }
+      } catch (emailCienciaError) {
+        console.error("Erro ao enviar e-mail imediato de ciência da reserva:", emailCienciaError);
+      }
+
       try {
         console.log("TP_ESPACO recebido:", TP_ESPACO);
 
@@ -374,12 +427,13 @@ export const reservaSalaReuniaoController = {
                 ? "Sala de Treinamento"
                 : "Auditório do Centro de Convivência";
 
-          const emailsInfra = [
-            "ricardo.henrique@sicoob.com.br",
-            "fabio.sprado@sicoob.com.br",
-            "thiago.msantos@sicoob.com.br",
-            "monica.torres@sicoob.com.br",
-          ];
+          const emailsInfra = (process.env.RESERVA_EMAILS_INFRA || "")
+            .split(",")
+            .map((email) => email.trim())
+            .filter(Boolean);
+
+          const emailCiencia = process.env.RESERVA_EMAIL_CIENCIA?.trim();
+          const emailMarketing = process.env.RESERVA_EMAIL_MARKETING?.trim();
 
           console.log("Enviando e-mail para Infra:", emailsInfra);
 
@@ -520,9 +574,9 @@ export const reservaSalaReuniaoController = {
             );
           }
 
-          if (tipoEspacoChecklist === "AUDITORIO") {
+          if (emailCiencia) {
             await sendEmail(
-              "monica.torres@sicoob.com.br",
+              emailCiencia,
               "Auditório reservado - ciência do evento",
               `
             <div style="
@@ -539,7 +593,7 @@ export const reservaSalaReuniaoController = {
                 box-shadow:0 4px 20px rgba(0,0,0,0.08);
               ">
                 <tr>
-                  <td style="background:#16a34a;padding:24px;color:white;">
+                  <td style="background:#00AE9D;padding:24px;color:white;">
                     <h1 style="margin:0;font-size:24px;">
                       Auditório Reservado
                     </h1>
@@ -613,7 +667,7 @@ export const reservaSalaReuniaoController = {
                     <div style="
                       margin-top:24px;
                       background:#ecfdf5;
-                      border-left:4px solid #16a34a;
+                      border-left:4px solid #00AE9D;
                       padding:16px;
                       border-radius:8px;
                     ">
@@ -657,9 +711,12 @@ export const reservaSalaReuniaoController = {
             </div>
           `
             );
+          }
 
+          // Envio independente para o Marketing, conforme configuração do .env.
+          if (emailMarketing) {
             await sendEmail(
-              "julia.a.coutinho@sicoob.com.br",
+              emailMarketing,
               "Auditório reservado - ciência do evento",
               `
 <div style="
@@ -676,7 +733,7 @@ export const reservaSalaReuniaoController = {
     box-shadow:0 4px 20px rgba(0,0,0,0.08);
   ">
     <tr>
-      <td style="background:#16a34a;padding:24px;color:white;">
+      <td style="background:#00AE9D;padding:24px;color:white;">
         <h1 style="margin:0;font-size:24px;">
           Auditório Reservado
         </h1>
@@ -765,7 +822,7 @@ export const reservaSalaReuniaoController = {
         <div style="
           margin-top:24px;
           background:#ecfdf5;
-          border-left:4px solid #16a34a;
+          border-left:4px solid #00AE9D;
           padding:16px;
           border-radius:8px;
         ">

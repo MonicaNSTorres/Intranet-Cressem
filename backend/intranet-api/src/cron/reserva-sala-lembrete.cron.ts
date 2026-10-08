@@ -843,12 +843,7 @@ async function processarAvisosInfraAuditorio() {
 
     if (!reservas.length) return;
 
-    const emailsInfra = [
-      "ricardo.henrique@sicoob.com.br",
-      "fabio.sprado@sicoob.com.br",
-      "thiago.msantos@sicoob.com.br",
-      EMAIL_RESPONSAVEL_RESERVA,
-    ];
+    const emailsInfra = EMAILS_INFRA;
 
     for (const reserva of reservas) {
       const tipoEspacoInfra = toTrim(reserva.TP_ESPACO).toUpperCase();
@@ -946,17 +941,17 @@ async function processarAvisosInfraAuditorio() {
         try {
           const tituloPrazo =
             tipoAviso === "5_DIAS"
-              ? "Evento na ${nomeEspacoInfra} em 5 dias"
+              ? `Evento na ${nomeEspacoInfra} em 5 dias`
               : tipoAviso === "1_DIA"
-                ? "Evento na ${nomeEspacoInfra} amanhã"
-                : "Evento na ${nomeEspacoInfra} hoje";
+                ? `Evento na ${nomeEspacoInfra} amanhã`
+                : `Evento na ${nomeEspacoInfra} hoje`;
 
           const textoPrazo =
             tipoAviso === "5_DIAS"
-              ? "Existe um evento reservado na ${nomeEspacoInfra} para daqui a 5 dias."
+              ? `Existe um evento reservado na ${nomeEspacoInfra} para daqui a 5 dias.`
               : tipoAviso === "1_DIA"
-                ? "Existe um evento reservado na ${nomeEspacoInfra} para amanhã."
-                : "Existe um evento reservado na ${nomeEspacoInfra} para hoje.";
+                ? `Existe um evento reservado na ${nomeEspacoInfra} para amanhã.`
+                : `Existe um evento reservado na ${nomeEspacoInfra} para hoje.`;
 
           const htmlInfra = `
 <div style="
@@ -1052,9 +1047,8 @@ async function processarAvisosInfraAuditorio() {
               </td>
             </tr>
 
-            ${
-              reserva.DS_OBSERVACAO
-                ? `
+            ${reserva.DS_OBSERVACAO
+              ? `
                   <tr>
                     <td style="padding:8px 0;color:#6b7280;">Observação</td>
                     <td style="padding:8px 0;">
@@ -1062,7 +1056,7 @@ async function processarAvisosInfraAuditorio() {
                     </td>
                   </tr>
                 `
-                : ""
+              : ""
             }
           </table>
         </div>
@@ -1079,12 +1073,11 @@ async function processarAvisosInfraAuditorio() {
           <strong>Aviso automático</strong>
 
           <p style="margin:8px 0 0 0;color:#374151;">
-            ${
-              tipoAviso === "5_DIAS"
-                ? "Faltam 5 dias para o evento."
-                : tipoAviso === "1_DIA"
-                  ? "O evento acontece amanhã."
-                  : "O evento acontece hoje."
+            ${tipoAviso === "5_DIAS"
+              ? "Faltam 5 dias para o evento."
+              : tipoAviso === "1_DIA"
+                ? "O evento acontece amanhã."
+                : "O evento acontece hoje."
             }
           </p>
         </div>

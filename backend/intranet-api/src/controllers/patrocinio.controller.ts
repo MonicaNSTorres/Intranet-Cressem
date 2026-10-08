@@ -50,7 +50,7 @@ function ensurePdf(file?: UploadedFile | null) {
         file.name.toLowerCase().endsWith(".pdf");
 
     if (!isPdf) {
-        throw new Error("Apenas arquivos PDF sÃ£o permitidos.");
+        throw new Error("Apenas arquivos PDF são permitidos.");
     }
 }
 
@@ -124,10 +124,10 @@ function getSmbConfig() {
     const password = String(process.env.SMB_PASSWORD || "");
     const domain = String(process.env.SMB_DOMAIN || "").trim();
 
-    if (!server) throw new Error("SMB_SERVER nÃ£o configurado.");
-    if (!share) throw new Error("SMB_SHARE nÃ£o configurado.");
-    if (!user) throw new Error("SMB_USER nÃ£o configurado.");
-    if (!password) throw new Error("SMB_PASSWORD nÃ£o configurado.");
+    if (!server) throw new Error("SMB_SERVER não configurado.");
+    if (!share) throw new Error("SMB_SHARE não configurado.");
+    if (!user) throw new Error("SMB_USER não configurado.");
+    if (!password) throw new Error("SMB_PASSWORD não configurado.");
 
     return { server, share, user, password, domain };
 }
@@ -480,15 +480,17 @@ async function buscarTipoFuncionarioPorNome(nome: string) {
 
     const nomeUpper = String(row.NM_FUNCIONARIO || "").toUpperCase();
     const nivelUpper = String(row.NM_NIVEL || "").toUpperCase();
+    const idCargo = Number(row.ID_CARGO || 0);
 
     let tipo = "funcionario";
 
     const nomesConselho = [
         "JANAINA GABRIELA",
         "ISABELI LOHANA CARVALHO MARTINS",
+        "JULIA DE ALMEIDA COUTINHO",
     ];
 
-    if (nomesConselho.includes(nomeUpper)) {
+    if (nomesConselho.includes(nomeUpper) || idCargo === 46) {
         tipo = "conselho";
     } else if (nivelUpper === "DIRETORIA") {
         tipo = "diretoria";
@@ -1018,6 +1020,8 @@ export const patrocinioController = {
             const page = Math.max(Number(req.query.page || 1), 1);
             const limit = Math.max(Number(req.query.limit || 10), 1);
             const offset = (page - 1) * limit;
+            const verTodos = String(req.query.ver_todos || "") === "1";
+            const status = String(req.query.status || "").trim().toUpperCase();
 
             const funcionario = await buscarTipoFuncionarioPorNome(nome);
 
@@ -1026,67 +1030,111 @@ export const patrocinioController = {
                 pesquisa: `%${pesquisa || ""}%`,
             };
 
-            if (funcionario.TIPO !== "conselho" && funcionario.TIPO !== "diretoria") {
+            if (verTodos) {
+                wherePerfil = "1 = 1";
+            } else if (funcionario.TIPO === "funcionario") {
                 bindsBase.nome = nome;
-            }
-
-            if (funcionario.TIPO === "funcionario") {
                 wherePerfil = "UPPER(p.NM_FUNCIONARIO) = UPPER(:nome)";
             } else if (funcionario.TIPO === "gerencia") {
+                bindsBase.nome = nome;
                 wherePerfil = `
-          (
-            UPPER(p.NM_FUNCIONARIO) IN (
-              SELECT UPPER(f.NM_FUNCIONARIO)
-              FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
-              WHERE UPPER(f.NM_FUNCIONARIO) = UPPER(:nome)
-                 OR f.CD_GERENCIA = (
-                   SELECT fg.ID_FUNCIONARIO
-                   FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
-                   WHERE UPPER(fg.NM_FUNCIONARIO) = UPPER(:nome)
-                     AND ROWNUM = 1
-                 )
-            )
-          )
-        `;
+              (
+                UPPER(p.NM_FUNCIONARIO) IN (
+                  SELECT UPPER(f.NM_FUNCIONARIO)
+                  FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM f
+                  WHERE UPPER(f.NM_FUNCIONARIO) = UPPER(:nome)
+                     OR f.CD_GERENCIA = (
+                       SELECT fg.ID_FUNCIONARIO
+                       FROM DBACRESSEM.FUNCIONARIOS_SICOOB_CRESSEM fg
+                       WHERE UPPER(fg.NM_FUNCIONARIO) = UPPER(:nome)
+                         AND ROWNUM = 1
+                     )
+                )
+              )
+            `;
             } else if (funcionario.TIPO === "diretoria") {
                 wherePerfil = "1 = 1";
+                /*} else if (funcionario.NM_FUNCIONARIO === "JULIA DE ALMEIDA COUTINHO") {
+                    wherePerfil = "1 = 1";*/
             } else if (funcionario.TIPO === "conselho") {
                 wherePerfil = "1 = 1";
             }
 
             const wherePesquisa = `
-        (
-          :pesquisa = '%%'
-          OR UPPER(p.NM_SOLICITANTE) LIKE :pesquisa
-          OR REGEXP_REPLACE(UPPER(p.NR_CPF_CNPJ), '[^A-Z0-9]', '') LIKE REGEXP_REPLACE(UPPER(:pesquisa), '[^A-Z0-9]', '')
-          OR UPPER(p.NM_ANDAMENTO) LIKE :pesquisa
-        )
-      `;
+          (
+            :pesquisa = '%%'
+            OR UPPER(p.NM_SOLICITANTE) LIKE :pesquisa
+            OR REGEXP_REPLACE(
+                UPPER(p.NR_CPF_CNPJ),
+                '[^A-Z0-9]',
+                ''
+            ) LIKE REGEXP_REPLACE(
+                UPPER(:pesquisa),
+                '[^A-Z0-9]',
+                ''
+            )
+            OR UPPER(p.NM_ANDAMENTO) LIKE :pesquisa
+          )
+        `;
+
+            // Filtro dos cards de status
+            let whereStatus = "1 = 1";
+
+            if (status) {
+                whereStatus = "UPPER(TRIM(p.NM_ANDAMENTO)) = :status";
+                bindsBase.status = status;
+            }
 
             const sqlCount = `
-        SELECT COUNT(*) AS TOTAL
-        FROM DBACRESSEM.PATROCINIO p
-        WHERE ${wherePerfil}
-          AND ${wherePesquisa}
-      `;
+          SELECT COUNT(*) AS TOTAL
+          FROM DBACRESSEM.PATROCINIO p
+          WHERE ${wherePerfil}
+            AND ${wherePesquisa}
+            AND ${whereStatus}
+        `;
 
-            const countResult = await oracleExecute(sqlCount, bindsBase, {
-                outFormat: oracledb.OUT_FORMAT_OBJECT,
-            });
+            const countResult = await oracleExecute(
+                sqlCount,
+                bindsBase,
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
+            );
 
-            const total = Number((countResult.rows?.[0] as any)?.TOTAL || 0);
-            const total_pages = total > 0 ? Math.ceil(total / limit) : 1;
+            const total = Number(
+                (countResult.rows?.[0] as any)?.TOTAL || 0
+            );
+
+            const total_pages =
+                total > 0 ? Math.ceil(total / limit) : 1;
 
             const sql = `
-        SELECT *
-        FROM (
-          SELECT
+    SELECT *
+    FROM (
+        SELECT
             p.ID_PATROCINIO,
             p.NM_SOLICITANTE,
             p.NR_CPF_CNPJ,
             p.NM_CIDADE,
             p.NM_FUNCIONARIO,
-            TO_CHAR(p.DT_SOLICITACAO, 'YYYY-MM-DD') AS DT_SOLICITACAO,
+
+            (
+                SELECT TO_CHAR(MIN(d.DT_DIA), 'YYYY-MM-DD')
+                FROM DBACRESSEM.DATA_HORA_PATROCINIO d
+                WHERE d.ID_PATROCINIO = p.ID_PATROCINIO
+            ) AS DT_EVENTO_INICIO,
+
+            (
+                SELECT TO_CHAR(MAX(d.DT_DIA), 'YYYY-MM-DD')
+                FROM DBACRESSEM.DATA_HORA_PATROCINIO d
+                WHERE d.ID_PATROCINIO = p.ID_PATROCINIO
+            ) AS DT_EVENTO_FIM,
+
+            TO_CHAR(
+                p.DT_SOLICITACAO,
+                'YYYY-MM-DD'
+            ) AS DT_SOLICITACAO,
+
             p.NM_ANDAMENTO,
             p.CD_CONTA_COOPERATIVA,
             p.VL_SALDO_MEDCIOCC,
@@ -1114,20 +1162,24 @@ export const patrocinioController = {
             p.DESC_PARECER_ESCRITO_CONSELHO,
             p.NM_GERENTE_EVENTO,
             p.NM_SUGESTAO_PARTICIPANTES,
+
             ROW_NUMBER() OVER (
-              ORDER BY
-                p.DT_SOLICITACAO DESC,
-                UPPER(TRIM(p.NM_SOLICITANTE)) ASC,
-                p.ID_PATROCINIO DESC
+                ORDER BY
+                    p.DT_SOLICITACAO DESC,
+                    UPPER(TRIM(p.NM_SOLICITANTE)) ASC,
+                    p.ID_PATROCINIO DESC
             ) AS RN
-          FROM DBACRESSEM.PATROCINIO p
-          WHERE ${wherePerfil}
-            AND ${wherePesquisa}
-        )
-        WHERE RN > :offset
-          AND RN <= (:offset + :limit)
-        ORDER BY RN
-      `;
+
+        FROM DBACRESSEM.PATROCINIO p
+
+        WHERE ${wherePerfil}
+          AND ${wherePesquisa}
+          AND ${whereStatus}
+    )
+    WHERE RN > :offset
+      AND RN <= (:offset + :limit)
+    ORDER BY RN
+`;
 
             const result = await oracleExecute(
                 sql,
@@ -1136,7 +1188,9 @@ export const patrocinioController = {
                     offset,
                     limit,
                 },
-                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+                {
+                    outFormat: oracledb.OUT_FORMAT_OBJECT,
+                }
             );
 
             return res.json({
@@ -1147,13 +1201,18 @@ export const patrocinioController = {
                 limit,
             });
         } catch (err: any) {
-            console.error("patrocinioController.listarPaginado erro:", err);
+            console.error(
+                "patrocinioController.listarPaginado erro:",
+                err
+            );
+
             return res.status(500).json({
                 error: "Falha ao listar solicitações de participação.",
                 details: String(err?.message || err),
             });
         }
     },
+
     async buscarPorId(req: Request, res: Response) {
         try {
             const id = Number(req.params.id || 0);
@@ -1391,4 +1450,3 @@ export const patrocinioController = {
         }
     },
 };
-
